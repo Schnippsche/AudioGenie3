@@ -7,7 +7,7 @@
  * Usage: call AUDIOAnalyzeFileW() first; all other functions then work on the analyzed file. The library is single-threaded
  * by design and keeps its state in global objects.
  *
- * The functions are grouped by tag or format, see the <a href="modules.html">Modules</a> page.
+ * The functions are grouped by tag or format, see the <a href="topics.html">Topics</a> page.
  */
 
 /** @defgroup AUDIO Generic audio functions
