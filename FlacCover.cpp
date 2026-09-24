@@ -52,13 +52,20 @@ CFlacCover::CFlacCover(void)
 
 CFlacCover::CFlacCover(CBlob *tmpData)
 {
+	// Alle Laengenangaben stammen aus der Datei und duerfen den Block nicht verlassen
+	const size_t total = tmpData->GetLength();
+	auto clampLen = [total](size_t pos, long value) -> size_t {
+		const size_t avail = (pos < total) ? total - pos : 0;
+		const size_t ln = (size_t)(unsigned long)value;
+		return (ln < avail) ? ln : avail;
+	};
 	type = tmpData->Get4B(0);
-	size_t ln = tmpData->Get4B(4); // Length
 	int start = 8;
 	int dummy = 0;
+	size_t ln = clampLen(start, tmpData->Get4B(4)); // Length
 	_mime = tmpData->GetStringAt(start, ln); // ASCII Mime
 	start+=(int)ln;
-	ln = tmpData->Get4B(start); // Length
+	ln = clampLen(start + 4, tmpData->Get4B(start)); // Length
 	start+=4;
 	data.Clear();
 	data.AddMemory(tmpData->m_pData + start, ln);
@@ -68,9 +75,9 @@ CFlacCover::CFlacCover(CBlob *tmpData)
 	height = tmpData->Get4B(start + 4); // height
 	colordepth = tmpData->Get4B(start + 8); // color depth
 	colornumbers = tmpData->Get4B(start + 12); // numbers of colors
-	ln = tmpData->Get4B(start + 16); //picture length
 	data.Clear();
 	start+=20;
+	ln = clampLen(start, tmpData->Get4B(start - 4)); //picture length
 	// Falls Mime --> ist , dann Bild aus Datei lesen
 	if (_mime.Compare(_T("-->")) == 0)
 	{

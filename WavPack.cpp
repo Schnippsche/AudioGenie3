@@ -93,7 +93,11 @@ float CWavPack::GetDuration()
 
 long CWavPack::GetSampleRate()
 {
-	return (_flags > 0) ? sample_rates[(_flags & (0xfL << 23)) >> 23] : 0;
+	if (_flags <= 0)
+		return 0;
+	// Index 15 bedeutet "benutzerdefinierte Rate" und liegt ausserhalb der Tabelle
+	const size_t index = (size_t)((_flags & (0xfL << 23)) >> 23);
+	return (index < sizeof(sample_rates) / sizeof(sample_rates[0])) ? (long)sample_rates[index] : 0;
 }
 
 long CWavPack::GetChannels()
