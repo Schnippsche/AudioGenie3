@@ -86,6 +86,12 @@ const Fixture kFixtures[] = {
     { "ape/mono_22k.ape",        MONKEY, 22050, 1, 1.0, 0.01, false, false },
     { "ape/tagged.ape",          MONKEY, 44100, 2, 1.0, 0.01, true,  false },
     { "ape/tagged_id3v1.ape",    MONKEY, 44100, 2, 1.0, 0.01, true,  false },   // ID3v1 statt APE-Tag am Dateiende
+    // Musepack SV7 (synthetische Header, siehe make_mpc_fixtures.py): Dauer = Frames * 1152 / Samplerate
+    { "mpc/sv7_synthetic_standard.mpc",         MPEGPLUS, 44100, 2, 2.612, 0.01, false, true  },
+    { "mpc/sv7_synthetic_thumb_joint_48k.mpc",  MPEGPLUS, 48000, 2, 4.8,   0.01, false, true  },
+    { "mpc/sv7_synthetic_insane_32k.mpc",       MPEGPLUS, 32000, 2, 1.8,   0.01, false, true  },
+    { "mpc/sv7_synthetic_tagged_ape.mpc",       MPEGPLUS, 44100, 2, 2.612, 0.01, true,  false },
+    { "mpc/sv7_synthetic_tagged_id3v2.mpc",     MPEGPLUS, 44100, 2, 2.612, 0.01, true,  false },
     // Roher ADTS-Strom aus den realen Samples (generate.bat); Dauer aus Dateigroesse und Bitrate geschaetzt.
     { "aac/adts_sample-1.aac",     AAC,  44100, 2, 5.06,  0.2,  false, false },
     { "aac/adts_id3_sample-2.aac", AAC,  44100, 2, 5.06,  0.2,  true,  false },
@@ -172,6 +178,17 @@ TEST_CASE("Formate: Tags lesen", "[formats][tags]")
                 CHECK(getField(f) == expected);
             }
         }
+    }
+}
+
+TEST_CASE("Musepack SV8 (MPCK, mpcenc 1.30) wird erkannt", "[formats][mpc][!shouldfail]")
+{
+    // Erwartet fehlschlagend: die DLL kennt nur Stream-Version 4-7 ('MP+'), der aktuelle Musepack-Encoder schreibt SV8 ('MPCK').
+    // Wird SV8 unterstuetzt, schlaegt dieser Test um: dann in kFixtures aufnehmen und diesen Test entfernen.
+    for (const char* rel : { "mpc/sv8_thumb.mpc", "mpc/sv8_standard.mpc", "mpc/sv8_insane.mpc", "mpc/sv8_mono_44k.mpc" }) {
+        INFO(rel);
+        REQUIRE(fs::exists(fixturePath(rel)));
+        CHECK(AUDIOAnalyzeFileW(fixturePath(rel).c_str()) == MPEGPLUS);
     }
 }
 

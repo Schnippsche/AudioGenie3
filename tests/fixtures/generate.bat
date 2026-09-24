@@ -76,6 +76,19 @@ copy /y ape\tagged.ape ape\tagged_id3v1.ape >nul
 "%MAC%" ape\tagged_id3v1.ape -L >nul || goto :fail
 :skipape
 
+rem ---- Musepack SV8 (mpcenc 1.30 schreibt nur SV8) aus den WAV-Fixtures; Pfad ueber MPCENC ueberschreibbar
+if "%MPCENC%"=="" set "MPCENC=D:\Entwicklung\Musepack\64bit\mpcenc.exe"
+if not exist "%MPCENC%" (echo Hinweis: mpcenc.exe nicht gefunden, SV8-Dateien werden nicht neu erzeugt. & goto :skipmpc)
+"%MPCENC%" --silent --overwrite --thumb wav\no_tags.wav mpc\sv8_thumb.mpc || goto :fail
+"%MPCENC%" --silent --overwrite --standard wav\no_tags.wav mpc\sv8_standard.mpc || goto :fail
+"%MPCENC%" --silent --overwrite --insane wav\no_tags.wav mpc\sv8_insane.mpc || goto :fail
+%FF% %SINE% -ac 1 -ar 44100 %NOMETA% "%TEMP%\ag3_mono44.wav" || goto :fail
+"%MPCENC%" --silent --overwrite --standard "%TEMP%\ag3_mono44.wav" mpc\sv8_mono_44k.mpc || goto :fail
+del "%TEMP%\ag3_mono44.wav" >nul 2>nul
+:skipmpc
+rem Musepack SV7: synthetische Header (mpcenc 1.30 kann kein SV7 mehr), braucht Python
+where python >nul 2>nul && python make_mpc_fixtures.py || echo Hinweis: Python nicht gefunden, SV7-Fixtures werden nicht neu erzeugt.
+
 rem ---- roher ADTS-Strom aus den realen MP4/AAC-Beispielen (aac\sample-*.aac, unveraendert uebernommen), ohne und mit ID3v2-Tag
 if exist aac\sample-1.aac %FF% -i aac\sample-1.aac -map 0:a -c copy -f adts aac\adts_sample-1.aac || goto :fail
 if exist aac\sample-2.aac %FF% -i aac\sample-2.aac -map 0:a -c copy -map_metadata -1 %TAGS% -write_id3v2 1 -f adts aac\adts_id3_sample-2.aac || goto :fail
