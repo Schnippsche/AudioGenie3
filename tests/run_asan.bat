@@ -37,7 +37,7 @@ rem --- 2. Tests mit ASan bauen
 pushd "%OUT%"
 set "OPTS=/nologo /EHsc /utf-8 /wd4828 /std:c++17 /Zi /Od /MD /fsanitize=address /I"%TESTS%third_party""
 if not exist catch2.obj cl %OPTS% /c /Fo:catch2.obj "%TESTS%third_party\catch2\catch_amalgamated.cpp" || goto :fail
-cl %OPTS% /DAG3_FIXTURES_DIR=\"%TESTS:\=/%fixtures\" /DAG3_DEF_PATH=\"%ROOT:\=/%/AudioGenie3.def\" /Fe:ag3tests.exe "%TESTS%support.cpp" "%TESTS%test_exports.cpp" "%TESTS%test_wav.cpp" "%TESTS%test_mpeg.cpp" "%TESTS%test_robustness.cpp" "%TESTS%test_formats.cpp" catch2.obj /link /DEBUG "%BUILD%\AudioGenie3.lib" oleaut32.lib || goto :fail
+cl %OPTS% /DAG3_FIXTURES_DIR=\"%TESTS:\=/%fixtures\" /DAG3_DEF_PATH=\"%ROOT:\=/%/AudioGenie3.def\" /Fe:ag3tests.exe "%TESTS%support.cpp" "%TESTS%test_exports.cpp" "%TESTS%test_wav.cpp" "%TESTS%test_mpeg.cpp" "%TESTS%test_robustness.cpp" "%TESTS%test_formats.cpp" "%TESTS%test_id3v2.cpp" "%TESTS%test_id3v2_frames.cpp" catch2.obj /link /DEBUG "%BUILD%\AudioGenie3.lib" oleaut32.lib || goto :fail
 
 rem --- 3. Ausfuehren (DLL-Verzeichnis zuerst im Suchpfad; die ASan-Laufzeit liefert vcvarsall im PATH)
 set "PATH=%BUILD%;%PATH%"
