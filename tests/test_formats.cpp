@@ -42,6 +42,7 @@ struct Fixture {
 };
 
 const Fixture kFixtures[] = {
+    { "mp3/id3v1_only.mp3",   MPEG,      44100, 2, 1.071, 0.15, true,  true  },   // nur ID3v1-Tag am Dateiende
     { "mp3/no_tags_cbr.mp3",  MPEG,      44100, 2, 1.045, 0.15, false, true  },
     { "mp3/no_tags_xing.mp3", MPEG,      44100, 2, 1.071, 0.15, false, true  },
     { "mp3/tagged.mp3",       MPEG,      44100, 2, 1.071, 0.15, true,  true  },
@@ -106,10 +107,6 @@ const Gap kGaps[] = {
     { "tta/tagged.tta",     Year,    "APE-Feld 'date' statt 'Year'" },
     { "wav/tagged.wav",     Track,   "INFO-Feld ITRK wird nicht als Track geliefert" },
     { "aac/adts_id3_sample-2.aac", Year,    "ID3v2.4-Frame TDRC wird nicht gelesen (nur TYER aus v2.3)" },
-    { "ape/tagged_id3v1.ape", Title, "ID3v1-Felder behalten die NUL-Auffuellung (30 Zeichen statt getrimmt; ID3V1TagInfo.cpp TrimRight entfernt keine NULs)" },
-    { "ape/tagged_id3v1.ape", Artist, "ID3v1-Felder behalten die NUL-Auffuellung (30 Zeichen statt getrimmt; ID3V1TagInfo.cpp TrimRight entfernt keine NULs)" },
-    { "ape/tagged_id3v1.ape", Album, "ID3v1-Felder behalten die NUL-Auffuellung (30 Zeichen statt getrimmt; ID3V1TagInfo.cpp TrimRight entfernt keine NULs)" },
-    { "ape/tagged_id3v1.ape", Comment, "ID3v1-Felder behalten die NUL-Auffuellung (30 Zeichen statt getrimmt; ID3V1TagInfo.cpp TrimRight entfernt keine NULs)" },
     { "aac/adts_id3_sample-2.aac", Comment, "COMM-Frame aus ffmpeg wird nicht als Kommentar geliefert" },
 };
 
@@ -252,6 +249,27 @@ TEST_CASE("Formate: Tags loeschen durch Leerwerte", "[formats][tags][roundtrip]"
             CHECK(getField(Artist) == L"");
             CHECK(getField(Album) == L"");
             CHECK(getField(Genre) == L"Rock");   // nicht geleerte Felder bleiben erhalten
+        }
+    }
+}
+
+TEST_CASE("ID3v1: Textfelder werden ohne NUL-/Leerzeichen-Auffuellung geliefert", "[formats][tags][id3v1]")
+{
+    // ID3v1-Felder haben feste Laenge (30 Byte), aufgefuellt meist mit NUL-Bytes.
+    for (const char* rel : { "mp3/id3v1_only.mp3", "ape/tagged_id3v1.ape" }) {
+        DYNAMIC_SECTION(rel) {
+            if (!fs::exists(fixturePath(rel))) SKIP("Fixture fehlt: " << rel);
+            REQUIRE(AUDIOAnalyzeFileW(fixturePath(rel).c_str()) != UNKNOWN);
+            CHECK(ID3V1ExistsW() != 0);
+            CHECK(take(ID3V1GetTitleW()) == L"Testtitel");
+            CHECK(take(ID3V1GetArtistW()) == L"Testkuenstler");
+            CHECK(take(ID3V1GetAlbumW()) == L"Testalbum");
+            CHECK(take(ID3V1GetYearW()) == L"2024");
+            CHECK(take(ID3V1GetCommentW()) == L"Kommentar");
+            CHECK(take(ID3V1GetTrackW()) == L"3");
+            // dieselben Werte ueber die abstrakten Felder
+            CHECK(getField(Title) == L"Testtitel");
+            CHECK(getField(Comment) == L"Kommentar");
         }
     }
 }

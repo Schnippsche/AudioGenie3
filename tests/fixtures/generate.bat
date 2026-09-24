@@ -21,11 +21,14 @@ set "COVER=%~dp0cover_64x64.jpg"
 %FF% -f lavfi -i color=c=blue:s=64x64:d=1 -frames:v 1 "%COVER%" || goto :fail
 
 rem ---- MP3 (ohne ID3v2, ohne Xing-Header -> Parser muss Frames selbst zaehlen)
-%FF% %SINE% %STEREO% %NOMETA% -b:a 128k -write_id3v2 0 -write_xing 0 mp3\no_tags_cbr.mp3 || goto :fail
+%FF% %SINE% %STEREO% %NOMETA% -b:a 128k -id3v2_version 0 -write_xing 0 mp3\no_tags_cbr.mp3 || goto :fail
 %FF% %SINE% %STEREO% %NOMETA% -b:a 128k mp3\no_tags_xing.mp3 || goto :fail
 %FF% %SINE% %STEREO% %NOMETA% %TAGS% -b:a 128k mp3\tagged.mp3 || goto :fail
 %FF% %SINE% -i "%COVER%" -map 0:a -map 1:v %STEREO% -b:a 128k -c:v copy -id3v2_version 3 %TAGS% -disposition:v attached_pic mp3\with_cover.mp3 || goto :fail
 %FF% %SINE% %MONO% %NOMETA% -b:a 64k mp3\mono_22k.mp3 || goto :fail
+
+rem MP3 nur mit ID3v1.1-Tag (ffmpeg schreibt bei Metadaten immer auch ID3v2, daher der Tag von Hand angehaengt)
+powershell -NoProfile -Command "$f='mp3\id3v1_only.mp3'; Copy-Item 'mp3\no_tags_cbr.mp3' $f -Force; $t=New-Object byte[] 128; function put($s,$o){ $e=[Text.Encoding]::GetEncoding(28591).GetBytes($s); [Array]::Copy($e,0,$t,$o,$e.Length) }; put 'TAG' 0; put 'Testtitel' 3; put 'Testkuenstler' 33; put 'Testalbum' 63; put '2024' 93; put 'Kommentar' 97; $t[126]=3; $t[127]=17; $fs=[IO.File]::Open($f,'Append'); $fs.Write($t,0,128); $fs.Close()" || goto :fail
 
 rem ---- WAV
 %FF% %SINE% %STEREO% %NOMETA% wav\no_tags.wav || goto :fail
