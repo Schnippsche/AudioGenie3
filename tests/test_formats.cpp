@@ -70,6 +70,11 @@ const Fixture kFixtures[] = {
     // Roher ADTS-Strom: Dauer wird aus Dateigroesse und Bitrate geschaetzt, daher grosse Toleranz;
     // beim Schreiben eines ID3v2-Tags aendert sich die Schaetzung (Tag zaehlt mit).
     { "aac/no_tags.aac",      AAC,       44100, 2, 1.06,  0.1,  false, false },
+    // Reale MP4-Dateien (AAC-LC, 320 kbit) mit der Endung .aac, auf 5 s gekuerzt (Originale: testsixtures_localac).
+    // Dauer laut DLL 5,062 s, ffprobe meldet 5,015 s (Encoder-Priming).
+    { "aac/sample-1.aac",     MP4M4A,    44100, 2, 5.05,  0.1,  false, true  },
+    { "aac/sample-2.aac",     MP4M4A,    44100, 2, 5.05,  0.1,  false, true  },
+    { "aac/sample-5.aac",     MP4M4A,    44100, 2, 5.05,  0.1,  false, true  },
 };
 
 const wchar_t* kStdTags[FieldCount] = { L"Testtitel", L"Testkuenstler", L"Testalbum", L"2024", L"3", L"Rock", L"Kommentar" };
