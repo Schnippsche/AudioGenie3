@@ -58,6 +58,15 @@ CID3V1TagInfo::~CID3V1TagInfo()
 	delete tmp;
 }
 
+// Liest ein Textfeld fester Laenge: die Auffuellung besteht meist aus NUL-Bytes (Leerzeichen kommen ebenfalls vor),
+// daher beim ersten NUL abschneiden und danach Leerzeichen am Ende entfernen.
+static CAtlString ReadFixedField(CBlob *blob, size_t pos, size_t len)
+{
+	CAtlString raw = blob->GetStringAt(pos, len);
+	CAtlString text((LPCTSTR)raw);   // stoppt beim ersten NUL
+	return text.TrimRight();
+}
+
 bool CID3V1TagInfo::ReadFromFile(FILE *Stream)
 {
   errno = 0;
@@ -78,11 +87,11 @@ bool CID3V1TagInfo::ReadFromFile(FILE *Stream)
   Year = st.Mid(90, 4).TrimRight(); 
   Comment = st.Mid(94, 30).TrimRight(); 
   */
-  Title = tmp->GetStringAt(6, 30).TrimRight();
-  Artist = tmp->GetStringAt(36, 30).TrimRight();
-  Album = tmp->GetStringAt(66, 30).TrimRight();
-  Year = tmp->GetStringAt(96, 4).TrimRight();
-  Comment = tmp->GetStringAt(100, 30).TrimRight();
+  Title = ReadFixedField(tmp, 6, 30);
+  Artist = ReadFixedField(tmp, 36, 30);
+  Album = ReadFixedField(tmp, 66, 30);
+  Year = ReadFixedField(tmp, 96, 4);
+  Comment = ReadFixedField(tmp, 100, 30);
   if ((tmp->GetAt(128) == 0 && tmp->GetAt(129) != 0) ||
       (tmp->GetAt(128) == 32 && tmp->GetAt(129) != 32))
     Track = tmp->GetAt(129);
