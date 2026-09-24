@@ -41,15 +41,7 @@ cl %OPTS% /DAG3_FIXTURES_DIR=\"%TESTS:\=/%fixtures\" /DAG3_DEF_PATH=\"%ROOT:\=/%
 
 rem --- 3. Ausfuehren (DLL-Verzeichnis zuerst im Suchpfad; die ASan-Laufzeit liefert vcvarsall im PATH)
 set "PATH=%BUILD%;%PATH%"
-rem Bekannter Befund: CMP4Atom hat keinen virtuellen Destruktor (delete ueber Basiszeiger, MP4_Container.cpp:252),
-rem ASan meldet dann "new-delete-type-mismatch" und bricht beim ersten M4A ab. Bis das behoben ist, ist die Pruefung aus;
-rem alle uebrigen ASan-Pruefungen bleiben aktiv.  Strikt testen:  set ASAN_OPTIONS=new_delete_type_mismatch=1
-if not defined ASAN_OPTIONS set "ASAN_OPTIONS=new_delete_type_mismatch=0"
-echo === ASan-Tests %A% ===
-rem Ohne Argumente laufen alle Tests ausser den bekannten, noch offenen ASan-Funden ([known-asan]).
-set "ARGS=%1 %2 %3 %4"
-if "%~1"=="" set "ARGS=~[known-asan]"
-.\ag3tests.exe %ARGS% || goto :fail
+.\ag3tests.exe %1 %2 %3 %4 || goto :fail
 popd
 endlocal
 exit /b 0

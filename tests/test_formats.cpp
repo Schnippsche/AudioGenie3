@@ -388,10 +388,9 @@ TEST_CASE("Beschaedigte Fixtures: kein Absturz beim Analysieren", "[formats][rob
 
 // ------------------------------------------- Regressionen aus ASan-Funden (Fuzzing)
 
-// Diese Dateien loesen in der DLL Speicherfehler aus, die nur unter AddressSanitizer auffallen
-// (tests\run_asan.bat schliesst den Tag [known-asan] standardmaessig aus; mit "tests\run_asan.bat x64 [known-asan]"
-// laufen sie und brechen mit dem ASan-Bericht ab, solange der Fehler nicht behoben ist).
-TEST_CASE("Bekannte ASan-Funde: kaputte Dateien", "[formats][robust][known-asan]")
+// Diese Dateien haben in der DLL Speicherfehler ausgeloest, die nur unter AddressSanitizer auffielen
+// (FlacCover.cpp, WavPack.cpp); sie bleiben als Regressionen erhalten.
+TEST_CASE("ASan-Regressionen: kaputte Dateien", "[formats][robust][asan-regression]")
 {
     SECTION("FLAC: PICTURE-Block mit falscher Laengenangabe (Lesen ueber das Pufferende, FlacCover.cpp)") {
         const auto p = fixturePath("broken/flac_cover_length_overflow.flac");
