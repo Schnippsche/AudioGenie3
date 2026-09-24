@@ -37,17 +37,30 @@ bestehen, und schlaegt um, sobald eine geschlossen wird – dann den Eintrag aus
 unberuehrt, COM-Registrierung abgeschaltet) **und** die Tests mit `/fsanitize=address` und fuehrt sie aus. Ein Speicherfehler
 bricht mit Stacktrace samt Zeile ab. Laengerer Fuzz-Lauf: `set AG3_FUZZ_ROUNDS=40` (Standard 1).
 
-Bekannte Befunde (Stand jetzt, noch nicht behoben):
+Per ASan gefundene und behobene Fehler (Regressionsdateien in `fixtures/broken/`, Test `[asan-regression]`):
 
-| Befund | Ort | Reproduktion |
+| Befund | Ort | Regression |
 |---|---|---|
-| FLAC: PICTURE-Block liest `ln` Bytes ohne Pruefung der Blocklaenge (heap-buffer-overflow, Lesen) | `FlacCover.cpp` (`AddMemory(..., ln)`) | `broken/flac_cover_length_overflow.flac`, Tag `[known-asan]` |
-| WavPack: Sample-Rate-Index 15 liegt ausserhalb der Tabelle (global-buffer-overflow) | `WavPack.cpp` `GetSampleRate` | `broken/wavpack_samplerate_index.wv`, Tag `[known-asan]` |
-| `CMP4Atom` hat keinen virtuellen Destruktor (`delete` ueber Basiszeiger, new-delete-type-mismatch) | `MP4Atom.h`, `MP4_Container.cpp:252` | jede M4A-Datei, zweite Analyse; per `ASAN_OPTIONS=new_delete_type_mismatch=0` ausgeblendet |
-
-Die `[known-asan]`-Tests sind im Standardlauf ausgeschlossen; `tests\run_asan.bat x64 [known-asan]` fuehrt sie aus und bricht ab, bis der
-Fehler behoben ist. Den Ausschluss (und die `ASAN_OPTIONS`-Zeile in `run_asan.bat`) nach dem Beheben entfernen.
+| FLAC: PICTURE-Block las `ln` Bytes ohne Pruefung der Blocklaenge (heap-buffer-overflow) | `FlacCover.cpp` | `broken/flac_cover_length_overflow.flac` |
+| WavPack: Sample-Rate-Index 15 ausserhalb der Tabelle (global-buffer-overflow) | `WavPack.cpp` `GetSampleRate` | `broken/wavpack_samplerate_index.wv` |
+| `CMP4Atom` ohne virtuellen Destruktor (`delete` ueber Basiszeiger) | `MP4Atom.h` | jede M4A-Datei (zweite Analyse) |
 
 Hinweis: Am Ende eines Testlaufs setzt ein Catch2-Listener (`support.cpp`) die DLL zurueck. Ohne das bricht der Prozess unter ASan
 beim Beenden ab (0xC0000409), wenn zuletzt eine OGG-/FLAC-Datei analysiert wurde: die statischen Objekte der DLL geben ihren Speicher
 erst nach dem Abbau der ASan-Laufzeit frei. Das ist ein Artefakt der Kombination aus statischer CRT und ASan, kein Fehler im Code.
+
+## Bewusste Designentscheidungen (keine Fehler)
+
+Diese Verhaeltnisse sind gewollt und in den Tests so festgehalten; sie nicht als Befund melden.
+
+- **Erkennung: Endung nur als Vorfilter (Performance).** Die meisten Formate werden am Dateiinhalt erkannt (Signaturen in
+  `Header.h`), auch bei falscher Endung (z. B. MP4 mit Endung `.aac` wird als M4A erkannt). Nur bei den "Wackelkandidaten"
+  ohne eindeutigen Header wird die Endung vorab geprueft (`dllmain.cpp`, `AUDIOAnalyzeFileW`): **AAC** (`.aac`) und
+  **MPEG-Audio** (`.mp3`, `.mp2`, `.mp1`, `.msf`, `.mp3~`). Eine MP3-Datei mit anderer Endung wird deshalb nicht erkannt.
+- **`AUDIOSaveChangesW` schreibt je nach Format unterschiedlich** (Tabelle in der Doku): AAC, WavPack und MONKEY als APE-Tag,
+  MP3/MPC/TTA als ID3v2. Ein vorhandener ID3v2-Tag am Dateianfang einer AAC-Datei bleibt dabei unveraendert und hat beim Lesen
+  Vorrang (Test "AAC mit vorhandenem ID3v2-Tag ...").
+- **`AUDIOSaveChangesW` ueberschreibt ID3v2-Frames** aus den abstrakten Feldern (Titel, Interpret ...); fuer Frame-Tests
+  `ID3V2SaveChangesW` verwenden. `ID3V2RemoveTagW` wirkt sofort auf die Datei.
+- **Einzelthread-DLL mit globalem Zustand:** Erst `AUDIOAnalyzeFileW`, dann arbeiten alle anderen Funktionen auf dem
+  gemerkten Zustand. Die Tests analysieren deshalb vor jedem Zugriff die betroffene Datei neu.
