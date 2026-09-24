@@ -33,7 +33,8 @@ enum AudioFormatID : short
     MPEGPLUS = 7,
     AAC = 8,
     MP4M4A = 9,
-    TTA = 10
+    TTA = 10,
+    WAVPACK = 11
 };
 
 enum PictureType : short

@@ -492,6 +492,7 @@ Public Enum AudioFormatID
   AAC = 8
   MP4M4A = 9
   TTA = 10
+  WAVPACK = 11
 End Enum
 
 Public Enum PictureType
