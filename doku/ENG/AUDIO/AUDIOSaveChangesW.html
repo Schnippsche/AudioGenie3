@@ -22,7 +22,7 @@
 <h5>from Group <a href="index.html">AUDIO</a> , released since Version 2.0.1.0</h5>
 <h4><font color="#3333FF">Int16</font> AUDIOSaveChangesW</h4>
 <h5>Description:</h5>
- store the changes in the last analyzed file, depending on format of the destination file:<br /><br /><table width="90%" class="tablelayout"><tr><th width="15%">audio format</th><th width="80%">changes saved as</th></tr><tr><td>MP3</td><td>ID3V2-Tag</td></tr><tr><td>WMA</td><td>WMA Fields</td></tr><tr><td>MONKEY</td><td>APE-Tag</td></tr><tr><td>FLAC</td><td>Vorbis Comment</td></tr><tr><td>WAV</td><td>wav chunk</td></tr><tr><td>OGG</td><td>Vorbis Comment</td></tr><tr><td>MPP</td><td>ID3V2-Tag</td></tr><tr><td>AAC</td><td>ID3V2-Tag</td></tr><tr><td>MP4</td><td>mp4 atoms</td></tr><tr><td>WavPack</td><td>APE-Tag</td></tr><tr><td>TTA</td><td>ID3V2-Tag</td></tr></table>
+ store the changes in the last analyzed file, depending on format of the destination file:<br /><br /><table width="90%" class="tablelayout"><tr><th width="15%">audio format</th><th width="80%">changes saved as</th></tr><tr><td>MP3</td><td>ID3V2-Tag</td></tr><tr><td>WMA</td><td>WMA Fields</td></tr><tr><td>MONKEY</td><td>APE-Tag</td></tr><tr><td>FLAC</td><td>Vorbis Comment</td></tr><tr><td>WAV</td><td>wav chunk</td></tr><tr><td>OGG</td><td>Vorbis Comment</td></tr><tr><td>MPP</td><td>ID3V2-Tag</td></tr><tr><td>AAC</td><td>APE-Tag (an existing ID3V2-Tag is left unchanged and takes precedence when reading)</td></tr><tr><td>MP4</td><td>mp4 atoms</td></tr><tr><td>WavPack</td><td>APE-Tag</td></tr><tr><td>TTA</td><td>ID3V2-Tag</td></tr></table>
 <h5>Parameter:</h5>none<br />
 <h5>Return Value:</h5>
 <i>Int16</i> 0 on error, otherwise -1

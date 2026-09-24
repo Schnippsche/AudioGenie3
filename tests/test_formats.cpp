@@ -107,9 +107,8 @@ bool isGap(const char* file, Field f)
     return false;
 }
 
-// Fixtures, bei denen das Schreiben ueber AUDIOSaveChangesW nicht wie dokumentiert wirkt (siehe Test [gaps] unten).
-// AAC: laut Doku wird ein ID3v2-Tag geschrieben, der Code (dllmain.cpp, AUDIO_FORMAT_AAC) haengt aber einen APE-Tag an;
-// ein bereits vorhandener ID3v2-Tag am Dateianfang bleibt beim Lesen vorrangig und ueberdeckt die Aenderung.
+// Fixtures, bei denen der Standard-Round-Trip nicht gilt: AAC wird als APE-Tag geschrieben (siehe Doku von
+// AUDIOSaveChangesW); ein vorhandener ID3v2-Tag am Dateianfang hat beim Lesen Vorrang (eigener Test unten).
 bool skipWriteTests(const char* file) { return !strcmp(file, "aac/adts_id3_sample-2.aac"); }
 
 fs::path fixturePath(const char* rel) { return fs::path(AG3_FIXTURES_DIR) / rel; }
@@ -166,16 +165,24 @@ TEST_CASE("Formate: bekannte Luecken beim Lesen", "[formats][gaps][!shouldfail]"
     }
 }
 
-TEST_CASE("AAC mit vorhandenem ID3v2-Tag: Schreiben aendert den gelesenen Tag", "[formats][gaps][!shouldfail]")
+TEST_CASE("AAC mit vorhandenem ID3v2-Tag: Schreiben landet im APE-Tag, ID3v2 hat beim Lesen Vorrang", "[formats][tags]")
 {
-    // Erwartet fehlschlagend: AUDIOSaveChangesW schreibt bei AAC einen APE-Tag (Doku: ID3v2). Ist ein ID3v2-Tag
-    // vorhanden, liest AUDIOAnalyzeFileW weiter diesen und zeigt die alten Werte; die Datei waechst um den APE-Tag.
+    // Dokumentiertes Verhalten (AUDIOSaveChangesW: AAC -> APE-Tag): der vorhandene ID3v2-Tag bleibt unveraendert,
+    // die neuen Werte stehen in einem angehaengten APE-Tag und werden erst gelesen, wenn kein ID3v2-Tag existiert.
     const fs::path p = copyToTemp("aac/adts_id3_sample-2.aac");
+    const Bytes before = readFile(p);
     REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == AAC);
     AUDIOSetTitleW(L"Neuer Titel");
     REQUIRE(AUDIOSaveChangesW() != 0);
+
+    const Bytes after = readFile(p);
+    REQUIRE(after.size() > before.size());
+    CHECK(std::equal(before.begin(), before.end(), after.begin()));   // ID3v2-Tag und Audio unveraendert davor
+    const std::string tail(after.begin() + before.size(), after.end());
+    CHECK(tail.find("APETAGEX") != std::string::npos);                // APE-Tag angehaengt
+
     REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == AAC);
-    CHECK(getField(Title) == L"Neuer Titel");
+    CHECK(getField(Title) == L"Testtitel");                           // ID3v2 hat Vorrang
 }
 
 TEST_CASE("Formate: Tags schreiben (Round-Trip), Audiodaten bleiben unveraendert", "[formats][tags][roundtrip]")

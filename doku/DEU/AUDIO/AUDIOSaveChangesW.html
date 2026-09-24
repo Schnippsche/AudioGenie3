@@ -22,7 +22,7 @@
 <h5>aus Gruppe <a href="index.html">AUDIO</a> , released seit Version 2.0.1.0</h5>
 <h4><font color="#3333FF">Int16</font> AUDIOSaveChangesW</h4>
 <h5>Beschreibung:</h5>
- speichert die &Auml;nderungen in die zuletz analysierte Datei, abh&auml;ngig vom Format der Zieldatei:<br /><br /><table width="90%" class="tablelayout"><tr><th width="15%">Audioformat</th><th width="80%">Speicherung erfolgt als</th></tr><tr><td>MP3</td><td>ID3V2-Tag</td></tr><tr><td>WMA</td><td>WMA Felder</td></tr><tr><td>MONKEY</td><td>APE-Tag</td></tr><tr><td>FLAC</td><td>Vorbis Comment</td></tr><tr><td>WAV</td><td>wav chunk</td></tr><tr><td>OGG</td><td>Vorbis Comment</td></tr><tr><td>MPP</td><td>ID3V2-Tag</td></tr><tr><td>AAC</td><td>ID3V2-Tag</td></tr><tr><td>MP4</td><td>MP4 atom</td><tr><td>WavPack</td><td>APE-Tag</td></tr></tr><tr><td>TTA</td><td>ID3V2-Tag</td></tr></table>
+ speichert die &Auml;nderungen in die zuletz analysierte Datei, abh&auml;ngig vom Format der Zieldatei:<br /><br /><table width="90%" class="tablelayout"><tr><th width="15%">Audioformat</th><th width="80%">Speicherung erfolgt als</th></tr><tr><td>MP3</td><td>ID3V2-Tag</td></tr><tr><td>WMA</td><td>WMA Felder</td></tr><tr><td>MONKEY</td><td>APE-Tag</td></tr><tr><td>FLAC</td><td>Vorbis Comment</td></tr><tr><td>WAV</td><td>wav chunk</td></tr><tr><td>OGG</td><td>Vorbis Comment</td></tr><tr><td>MPP</td><td>ID3V2-Tag</td></tr><tr><td>AAC</td><td>APE-Tag (ein vorhandener ID3V2-Tag bleibt unverändert und hat beim Lesen Vorrang)</td></tr><tr><td>MP4</td><td>MP4 atom</td><tr><td>WavPack</td><td>APE-Tag</td></tr></tr><tr><td>TTA</td><td>ID3V2-Tag</td></tr></table>
 <h5>Parameter:</h5>keine<br />
 <h5>R&uuml;ckgabewert:</h5>
 <i>Int16</i> liefert 0 bei Fehler, ansonsten -1
