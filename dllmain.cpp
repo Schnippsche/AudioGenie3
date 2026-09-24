@@ -197,6 +197,8 @@ extern "C" long __stdcall AUDIOAnalyzeFileW(LPCWSTR FileName)
 			Title = wma.GetUserItem(WM_TITLE);
 			Track = wma.GetUserItem(WM_TRACKNUMBER);
 			Year = wma.GetUserItem(WM_YEAR);
+			if (Year.IsEmpty())
+				Year = wma.GetUserItem(_T("date"));   // z. B. von ffmpeg geschrieben
 			Composer = wma.GetUserItem(WM_COMPOSER);
 			goto ende;
 		}
@@ -232,6 +234,8 @@ extern "C" long __stdcall AUDIOAnalyzeFileW(LPCWSTR FileName)
 			Year = wav.getTextFrame(WAV_ICRD);
 			Genre = wav.getTextFrame(WAV_IGNR);
 			Track = wav.getTextFrame(WAV_ITRK);	
+			if (Track.IsEmpty())
+				Track = wav.getTextFrame(0x49505254);   // "IPRT" (Part), von ffmpeg fuer die Tracknummer verwendet
 			Composer = wav.getTextFrame(WAV_IMUS);
 			goto ende;
 		}
@@ -244,6 +248,8 @@ extern "C" long __stdcall AUDIOAnalyzeFileW(LPCWSTR FileName)
 			Album = flac.GetUserItem(VORBIS_ALBUM);
 			Artist = flac.GetUserItem(VORBIS_ARTIST);
 			Comment = flac.GetUserItem(VORBIS_COMMENT);
+			if (Comment.IsEmpty())
+				Comment = flac.GetUserItem(VORBIS_DESCRIPTION);   // Vorbis-Standardfeld, z. B. von ffmpeg geschrieben
 			Genre = flac.GetUserItem(VORBIS_GENRE);
 			Title = flac.GetUserItem(VORBIS_TITLE);
 			Track = flac.GetUserItem(VORBIS_TRACKNUMBER);
@@ -259,6 +265,8 @@ extern "C" long __stdcall AUDIOAnalyzeFileW(LPCWSTR FileName)
 			Album = ogg.GetUserItem(VORBIS_ALBUM);
 			Artist = ogg.GetUserItem(VORBIS_ARTIST);
 			Comment = ogg.GetUserItem(VORBIS_COMMENT);
+			if (Comment.IsEmpty())
+				Comment = ogg.GetUserItem(VORBIS_DESCRIPTION);   // Vorbis-Standardfeld, z. B. von ffmpeg geschrieben
 			Genre = ogg.GetUserItem(VORBIS_GENRE);
 			Title = ogg.GetUserItem(VORBIS_TITLE);
 			Track = ogg.GetUserItem(VORBIS_TRACKNUMBER);
@@ -284,6 +292,12 @@ extern "C" long __stdcall AUDIOAnalyzeFileW(LPCWSTR FileName)
 			Title = id3v2.GetText(F_TIT2);
 			Track = id3v2.GetText(F_TRCK);
 			Year = id3v2.GetText(F_TYER);
+			if (Year.IsEmpty())
+			{
+				// ID3v2.4: das Jahr steht im Zeitstempel TDRC (ISO 8601, z. B. "2024" oder "2024-05-01")
+				CAtlString timestamp = id3v2.GetText(F_TDRC);
+				Year = timestamp.Left(4);
+			}
 			Composer = id3v2.GetText(F_TCOM);
 		}
 		else if (CTools::APESize > 0)
@@ -295,6 +309,8 @@ extern "C" long __stdcall AUDIOAnalyzeFileW(LPCWSTR FileName)
 			Title = ape.GetTagItem(APE_TITLE);
 			Track = ape.GetTagItem(APE_TRACK);
 			Year = ape.GetTagItem(APE_YEAR);
+			if (Year.IsEmpty())
+				Year = ape.GetTagItem(_T("DATE"));   // z. B. von ffmpeg geschrieben
 			Composer = ape.GetTagItem(APE_COMPOSER);
 		}
 		else if (CTools::ID3v1Size > 0)
@@ -504,7 +520,11 @@ extern "C" short __stdcall AUDIOSaveChangesToFileW(LPCWSTR FileName)
 		id3v2.SetText(F_TCON, Genre);
 		id3v2.SetText(F_TIT2, Title);
 		id3v2.SetText(F_TRCK, Track);
-		id3v2.SetText(F_TYER, Year);
+		// ID3v2.4 kennt kein TYER, dort steht das Jahr in TDRC (in v2.2/v2.3 umgekehrt); das jeweils andere Frame wird beim Schreiben verworfen
+		if (CTools::ID3V2newTagVersion == TAG_VERSION_2_4)
+			id3v2.SetText(F_TDRC, Year);
+		else
+			id3v2.SetText(F_TYER, Year);
 		id3v2.SetText(F_TCOM, Composer);
 		return b2s(id3v2.SaveToFile(FileName));		
 	}  

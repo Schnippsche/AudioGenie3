@@ -57,20 +57,30 @@ CAtlString CWMA_File::GetUserItem(CAtlString key)
 	{
 		CWMA_ContentDescription *cd = static_cast<CWMA_ContentDescription*>(obj);
 		// Probieren wir es mal damit
+		// Ein leerer Wert im Standard-Objekt gilt nicht als Treffer: manche Encoder (z. B. ffmpeg) legen Felder
+		// wie "Description" stattdessen im ExtContentDescription-Objekt ab.
+		CAtlString value;
 		if (key.CompareNoCase(WM_TITLE) == 0 || key.CompareNoCase(WM_TITLE2) == 0)
-			return cd->GetTitle();
-		if (key.CompareNoCase(WM_AUTHOR) == 0 || key.CompareNoCase(WM_AUTHOR2) == 0)
-			return cd->GetAuthor();
-		if (key.CompareNoCase(WM_DESCRIPTION) == 0 || key.CompareNoCase(WM_DESCRIPTION2) == 0)
-			return cd->GetComment();
-		if (key.CompareNoCase(WM_PROVIDERRATING) == 0 || key.CompareNoCase(WM_PROVIDERRATING2) == 0)
-			return cd->GetRating();
-		if (key.CompareNoCase(WM_COPYRIGHT) == 0 || key.CompareNoCase(WM_COPYRIGHT2) == 0)
-			return cd->GetCopyright();
+			value = cd->GetTitle();
+		else if (key.CompareNoCase(WM_AUTHOR) == 0 || key.CompareNoCase(WM_AUTHOR2) == 0)
+			value = cd->GetAuthor();
+		else if (key.CompareNoCase(WM_DESCRIPTION) == 0 || key.CompareNoCase(WM_DESCRIPTION2) == 0)
+			value = cd->GetComment();
+		else if (key.CompareNoCase(WM_PROVIDERRATING) == 0 || key.CompareNoCase(WM_PROVIDERRATING2) == 0)
+			value = cd->GetRating();
+		else if (key.CompareNoCase(WM_COPYRIGHT) == 0 || key.CompareNoCase(WM_COPYRIGHT2) == 0)
+			value = cd->GetCopyright();
+		if (!value.IsEmpty())
+			return value;
 	}
 
 	// Suche nun im ExtContentDescription Object, wenn es da ist
 	int pos = CWMA_ObjectFactory::instance().FindField(key);
+	// Beschreibung: sowohl unter "WM/Description" als auch unter "Description" ablegbar
+	if (pos == -1 && key.CompareNoCase(WM_DESCRIPTION) == 0)
+		pos = CWMA_ObjectFactory::instance().FindField(WM_DESCRIPTION2);
+	if (pos == -1 && key.CompareNoCase(WM_DESCRIPTION2) == 0)
+		pos = CWMA_ObjectFactory::instance().FindField(WM_DESCRIPTION);
 	if (pos != -1)
 		return CWMA_ObjectFactory::instance().GetValue(pos);
 	// Nix gefunden
