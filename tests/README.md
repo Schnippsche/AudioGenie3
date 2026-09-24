@@ -111,3 +111,8 @@ Diese Verhaeltnisse sind gewollt und in den Tests so festgehalten; sie nicht als
 Delphi-Versionen erwarten ANSI, die HTML-Doku ist ISO-8859-1), Tests und Skripte UTF-8 (`tests/run.bat` kompiliert mit `/utf-8`).
 `.gitattributes` speichert Text mit LF im Repository und checkt Windows-Quellen und Batch-Dateien mit CRLF aus. String-Literale in den
 DLL-Quellen sind ASCII; Umlaute stehen nur in Kommentaren.
+
+## API-Dokumentation (Doxygen)
+
+Die API-Dokumentation steht als Doxygen-Kommentare in `dllmain.cpp` (nur Englisch, Gruppen in `doxygen_groups.dox`). Neu erzeugen:
+`doxygen Doxyfile` (Ausgabe nach `doku/`, Warnungen nach `doku/doxygen-warnings.txt`). `doku/` ist generiert und nicht von Hand zu aendern.

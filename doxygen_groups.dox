@@ -1,0 +1,56 @@
+/**
+ * @mainpage AudioGenie3
+ *
+ * AudioGenie3 is a library for analyzing and tagging audio files. All functions are exported from the DLL with the
+ * <tt>__stdcall</tt> calling convention and a <tt>W</tt> suffix for the Unicode variants.
+ *
+ * Usage: call AUDIOAnalyzeFileW() first; all other functions then work on the analyzed file. The library is single-threaded
+ * by design and keeps its state in global objects.
+ *
+ * The functions are grouped by tag or format, see the <a href="modules.html">Modules</a> page.
+ */
+
+/** @defgroup AUDIO Generic audio functions
+ *  Analyze a file and read or write the common fields (title, artist, album ...) independent of the format. */
+
+/** @defgroup AAC AAC
+ *  Properties of AAC files (ADTS/ADIF). */
+
+/** @defgroup APE APE tag
+ *  Read and write APEv2 tags (used by Monkey's Audio, WavPack, TTA, Musepack and AAC). */
+
+/** @defgroup FLAC FLAC
+ *  FLAC metadata: Vorbis comments and pictures. */
+
+/** @defgroup ID3V1 ID3v1 tag
+ *  Read and write the 128 byte ID3v1 tag. */
+
+/** @defgroup ID3V2 ID3v2 tag
+ *  Read and write ID3v2 tags (v2.2, v2.3, v2.4): text, URL, comment, lyrics, pictures, chapters and further frames. */
+
+/** @defgroup LYRICS Lyrics3 tag
+ *  Read and write Lyrics3 tags. */
+
+/** @defgroup MONKEY Monkey's Audio
+ *  Properties of Monkey's Audio (APE) files. */
+
+/** @defgroup MP4 MP4 / M4A
+ *  MP4 metadata (ilst atoms, pictures, iTunes frames). */
+
+/** @defgroup MPEG MPEG audio (MP1/MP2/MP3)
+ *  Properties of MPEG audio files. */
+
+/** @defgroup MPP Musepack
+ *  Properties of Musepack files (stream versions 4 to 8). */
+
+/** @defgroup OGG Ogg Vorbis
+ *  Ogg Vorbis comments and stream properties. */
+
+/** @defgroup UNIVERSAL Universal functions
+ *  Library-wide helpers such as version, MD5 and configuration. */
+
+/** @defgroup WAV WAV
+ *  RIFF/WAV info chunks, display and cart chunks. */
+
+/** @defgroup WMA WMA
+ *  Windows Media Audio fields and pictures. */

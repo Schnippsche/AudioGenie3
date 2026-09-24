@@ -1,0 +1,27 @@
+var group___i_d3_v1 =
+[
+    [ "ID3V1GetGenreW", "group___i_d3_v1.html#gaaa2595151c99e49d69e18f2f485be81b", null ],
+    [ "ID3V1SetGenreW", "group___i_d3_v1.html#gabe6b9b560e2f853da254dba08342d906", null ],
+    [ "ID3V1GetAlbumW", "group___i_d3_v1.html#ga7d0e9c211da1f29297b560ac06b015c5", null ],
+    [ "ID3V1SetAlbumW", "group___i_d3_v1.html#gaee3a7928969dd989377496f13ff47fc1", null ],
+    [ "ID3V1GetArtistW", "group___i_d3_v1.html#gaec3b669f55157e0e017c0d528ad2c333", null ],
+    [ "ID3V1SetArtistW", "group___i_d3_v1.html#gad6d9f4c7fc8144bdb936d51956211552", null ],
+    [ "ID3V1GetCommentW", "group___i_d3_v1.html#ga4e42e6c6d8c25e21e8041c9a955e76a8", null ],
+    [ "ID3V1SetCommentW", "group___i_d3_v1.html#gad47b51497bc1fc91fdb9ecceb89bf7e6", null ],
+    [ "ID3V1GetTitleW", "group___i_d3_v1.html#gac38fd7ccd94a6657636a00133be4493a", null ],
+    [ "ID3V1SetTitleW", "group___i_d3_v1.html#ga2a91061f26120835c659e2f172a36584", null ],
+    [ "ID3V1GetTrackW", "group___i_d3_v1.html#ga4f1b6f54f6d7c5b090e8e9a69757d50c", null ],
+    [ "ID3V1SetTrackW", "group___i_d3_v1.html#ga2b07dee21b6c911450579417c179ab4a", null ],
+    [ "ID3V1GetYearW", "group___i_d3_v1.html#ga1dc8f9b4f5790380c70b5848dcb8bdca", null ],
+    [ "ID3V1SetYearW", "group___i_d3_v1.html#gaa5618986b101ecd96abf757380a6ca56", null ],
+    [ "ID3V1GetGenreIDW", "group___i_d3_v1.html#ga864d3db6200b0d0d9fdfb84faabaef17", null ],
+    [ "ID3V1SetGenreIDW", "group___i_d3_v1.html#gaea955f5d0ba4bc725dbb017ab09fc356", null ],
+    [ "ID3V1GetGenreItemW", "group___i_d3_v1.html#ga4e313eef6143966a77db20d526a63ba6", null ],
+    [ "ID3V1GetGenresW", "group___i_d3_v1.html#gad62db37a97fd69f2c751a0983d6f7b03", null ],
+    [ "ID3V1ExistsW", "group___i_d3_v1.html#gad9a35914ebe8c0bafe27a309a4425cd3", null ],
+    [ "ID3V1GetVersionW", "group___i_d3_v1.html#ga394e11f9719c042014c92db1023a0c79", null ],
+    [ "ID3V1RemoveTagFromFileW", "group___i_d3_v1.html#gac3b2489145d29ba49198de1ff6ecad76", null ],
+    [ "ID3V1RemoveTagW", "group___i_d3_v1.html#ga7c1e5e2105323599591730b8d4464541", null ],
+    [ "ID3V1SaveChangesToFileW", "group___i_d3_v1.html#gaed20d49b8fe3a716626178a5e374d7f7", null ],
+    [ "ID3V1SaveChangesW", "group___i_d3_v1.html#ga12715da1ec27a20607453d9bd94f94a1", null ]
+];

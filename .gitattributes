@@ -47,3 +47,6 @@
 *.mpc binary
 *.aac binary
 *.bin binary
+
+# Generierte Doxygen-Doku: unveraendert speichern, in Diffs als generiert markieren
+doku/** -text linguist-generated

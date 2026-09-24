@@ -4016,7 +4016,7 @@ extern "C" short __stdcall ID3V2GetEncodingW(u32 FrameID)
 /**
  * @brief set a configuration value.
  *
- * The following keys are currently supported: <br /><br /><table class="tablelayout"><tr><th>Key</td><th>ID</th><th>Defaultvalue</th><th>Description</th></tr><tr><td>0</td><td>MPEGEXACTREAD</td><td>0</td><td>a non 0 value activates the reading from all MPEG frames<br />replaces SetMPEGAnalyzeAllFrames</td></tr><tr><td>1</td><td>ID3V2PADDINGSIZE</td><td>4096</td><td>the padding size in bytes for an id3v2 tag</td></tr><tr><td>2</td><td>WRITEBLOCKSIZE</td><td>524288</td><td>the blocksize in bytes for internal file copy</td></tr><tr><td>3</td><td>DOEVENTSMILLIS </td><td>250</td><td>millseconds, after that AudioGenie fires a DoEvent</td></tr><tr><td>4</td><td>MAXTEXTBUFFER</td><td>262144</td><td>the maximum text size in bytes</td></tr><tr><td>5</td><td>WMAPADDINGSIZE</td><td>4096</td><td>the padding size in bytes for a wma tag</td></tr><tr><td>6</td><td>MP4PADDINGSIZE</td><td>4096</td><td>the padding size in bytes for a mp4 tag</td></tr></table>
+ * The following keys are currently supported: <br /><br /><table class="tablelayout"><tr><th>Key</th><th>ID</th><th>Defaultvalue</th><th>Description</th></tr><tr><td>0</td><td>MPEGEXACTREAD</td><td>0</td><td>a non 0 value activates the reading from all MPEG frames<br />replaces SetMPEGAnalyzeAllFrames</td></tr><tr><td>1</td><td>ID3V2PADDINGSIZE</td><td>4096</td><td>the padding size in bytes for an id3v2 tag</td></tr><tr><td>2</td><td>WRITEBLOCKSIZE</td><td>524288</td><td>the blocksize in bytes for internal file copy</td></tr><tr><td>3</td><td>DOEVENTSMILLIS </td><td>250</td><td>millseconds, after that AudioGenie fires a DoEvent</td></tr><tr><td>4</td><td>MAXTEXTBUFFER</td><td>262144</td><td>the maximum text size in bytes</td></tr><tr><td>5</td><td>WMAPADDINGSIZE</td><td>4096</td><td>the padding size in bytes for a wma tag</td></tr><tr><td>6</td><td>MP4PADDINGSIZE</td><td>4096</td><td>the padding size in bytes for a mp4 tag</td></tr></table>
  *
  * @ingroup UNIVERSAL
  * @since 2.0.1.0
@@ -4030,7 +4030,7 @@ extern "C" void __stdcall SetConfigValueW(long key, long value)
 /**
  * @brief get a config value,
  *
- * The following keys are currently supported: <br /><br /><table class="tablelayout"><tr><th>Key</td><th>ID</th><th>Description</th></tr><tr><td>0</td><td>MPEGEXACTREAD</td><td>a non 0 value indicates the reading from all MPEG frames</td></tr><tr><td>1</td><td>ID3V2PADDINGSIZE</td><td>the padding size in bytes for an id3v2 tag</td></tr><tr><td>2</td><td>WRITEBLOCKSIZE</td><td>the blocksize in bytes for internal file copy</td></tr><tr><td>3</td><td>DOEVENTSMILLIS </td><td>millseconds after AudioGenie fires a DoEvent</td></tr><tr><td>4</td><td>MAXTEXTBUFFER</td><td>the maximum text size in bytes</td></tr><tr><td>5</td><td>WMAPADDINGSIZE</td><td>the padding size in bytes for a wma tag</td></tr><tr><td>6</td><td>MP4PADDINGSIZE</td><td>the padding size in bytes for a mp4 tag</td></tr></table></body>
+ * The following keys are currently supported: <br /><br /><table class="tablelayout"><tr><th>Key</th><th>ID</th><th>Description</th></tr><tr><td>0</td><td>MPEGEXACTREAD</td><td>a non 0 value indicates the reading from all MPEG frames</td></tr><tr><td>1</td><td>ID3V2PADDINGSIZE</td><td>the padding size in bytes for an id3v2 tag</td></tr><tr><td>2</td><td>WRITEBLOCKSIZE</td><td>the blocksize in bytes for internal file copy</td></tr><tr><td>3</td><td>DOEVENTSMILLIS </td><td>millseconds after AudioGenie fires a DoEvent</td></tr><tr><td>4</td><td>MAXTEXTBUFFER</td><td>the maximum text size in bytes</td></tr><tr><td>5</td><td>WMAPADDINGSIZE</td><td>the padding size in bytes for a wma tag</td></tr><tr><td>6</td><td>MP4PADDINGSIZE</td><td>the padding size in bytes for a mp4 tag</td></tr></table>
  *
  * @ingroup UNIVERSAL
  * @since 2.0.1.0
@@ -5474,7 +5474,7 @@ extern "C" short __stdcall ID3V2DeleteSubFrameW(LPCWSTR ID, u32 FrameID)
 
 // ENCR
 /**
- * @brief ENCR add an encryption frame<br \There may be more than one 'ENCR' frame in each tag, but only one with the same symbol and owner identifier.
+ * @brief ENCR add an encryption frame<br />There may be more than one 'ENCR' frame in each tag, but only one with the same symbol and owner identifier.
  *
  * @ingroup ID3V2
  * @since 2.0.1.0
@@ -5631,7 +5631,7 @@ extern "C" long __stdcall ID3V2GetEqualisationDataW(BYTE *arr, u32 maxLen, short
 /**
  * @brief ETCO add an event timing code frame
  *
- * <br \There may only be one 'ETCO' frame in each tag.
+ * <br />There may only be one 'ETCO' frame in each tag.
  *
  * @ingroup ID3V2
  * @since 2.0.1.0
