@@ -86,6 +86,13 @@ const Fixture kFixtures[] = {
     { "ape/mono_22k.ape",        MONKEY, 22050, 1, 1.0, 0.01, false, false },
     { "ape/tagged.ape",          MONKEY, 44100, 2, 1.0, 0.01, true,  false },
     { "ape/tagged_id3v1.ape",    MONKEY, 44100, 2, 1.0, 0.01, true,  false },   // ID3v1 statt APE-Tag am Dateiende
+    // Musepack SV8 (mpcenc 1.30): 1 s, Samplezahl im SH-Paket
+    { "mpc/sv8_thumb.mpc",      MPEGPLUS, 44100, 2, 1.0, 0.001, false, true  },
+    { "mpc/sv8_standard.mpc",   MPEGPLUS, 44100, 2, 1.0, 0.001, false, true  },
+    { "mpc/sv8_insane.mpc",     MPEGPLUS, 44100, 2, 1.0, 0.001, false, true  },
+    { "mpc/sv8_mono_44k.mpc",   MPEGPLUS, 44100, 1, 1.0, 0.001, false, true  },
+    { "mpc/sv8_tagged_ape.mpc", MPEGPLUS, 44100, 2, 1.0, 0.001, true,  false },
+    { "mpc/sv8_tagged_id3v2.mpc", MPEGPLUS, 44100, 2, 1.0, 0.001, true, false },
     // Musepack SV7 (synthetische Header, siehe make_mpc_fixtures.py): Dauer = Frames * 1152 / Samplerate
     { "mpc/sv7_synthetic_standard.mpc",         MPEGPLUS, 44100, 2, 2.612, 0.01, false, true  },
     { "mpc/sv7_synthetic_thumb_joint_48k.mpc",  MPEGPLUS, 48000, 2, 4.8,   0.01, false, true  },
@@ -181,15 +188,53 @@ TEST_CASE("Formate: Tags lesen", "[formats][tags]")
     }
 }
 
-TEST_CASE("Musepack SV8 (MPCK, mpcenc 1.30) wird erkannt", "[formats][mpc][!shouldfail]")
+TEST_CASE("Musepack SV8: Profil, Kanalmodus, Bitrate und Stream-Version", "[formats][mpc]")
 {
-    // Erwartet fehlschlagend: die DLL kennt nur Stream-Version 4-7 ('MP+'), der aktuelle Musepack-Encoder schreibt SV8 ('MPCK').
-    // Wird SV8 unterstuetzt, schlaegt dieser Test um: dann in kFixtures aufnehmen und diesen Test entfernen.
-    for (const char* rel : { "mpc/sv8_thumb.mpc", "mpc/sv8_standard.mpc", "mpc/sv8_insane.mpc", "mpc/sv8_mono_44k.mpc" }) {
-        INFO(rel);
-        REQUIRE(fs::exists(fixturePath(rel)));
-        CHECK(AUDIOAnalyzeFileW(fixturePath(rel).c_str()) == MPEGPLUS);
+    struct Case { const char* file; long channels; const wchar_t* profile; const wchar_t* mode; };
+    const Case cases[] = {
+        { "mpc/sv8_thumb.mpc",     2, L"Thumb",    L"Joint Stereo" },
+        { "mpc/sv8_standard.mpc",  2, L"Standard", L"Joint Stereo" },
+        { "mpc/sv8_insane.mpc",    2, L"Insane",   L"Joint Stereo" },
+        { "mpc/sv8_mono_44k.mpc",  1, L"Standard", L"Mono" },
+    };
+    for (const Case& c : cases) {
+        DYNAMIC_SECTION(c.file) {
+            if (!fs::exists(fixturePath(c.file))) SKIP("Fixture fehlt");
+            REQUIRE(AUDIOAnalyzeFileW(fixturePath(c.file).c_str()) == MPEGPLUS);
+            CHECK(AUDIOGetChannelsW() == c.channels);
+            CHECK(take(AUDIOGetVersionW()) == c.profile);
+            CHECK(take(AUDIOGetChannelModeW()) == c.mode);
+            CHECK(AUDIOGetDurationW() == Catch::Approx(1.0).margin(0.001));
+            CHECK(AUDIOGetBitrateW() > 20);
+            CHECK(AUDIOGetBitrateW() < 200);
+        }
     }
+}
+
+TEST_CASE("Musepack SV8: jedes der ersten 48 Header-Bytes systematisch veraendern (kein Absturz)", "[formats][mpc][robust]")
+{
+    const auto src = fixturePath("mpc/sv8_standard.mpc");
+    if (!fs::exists(src)) SKIP("Fixture fehlt");
+    const Bytes orig = readFile(src);
+    REQUIRE(orig.size() > 200);
+    int recognized = 0;
+    for (size_t pos = 0; pos < 48; pos++) {
+        for (uint8_t v : { 0x00, 0x01, 0x7F, 0x80, 0xFF }) {
+            Bytes b = orig;
+            b[pos] = v;
+            const long fmt = AUDIOAnalyzeFileW(writeTemp("sv8_mut.mpc", b).c_str());
+            AUDIOGetDurationW(); AUDIOGetBitrateW(); AUDIOGetChannelsW(); AUDIOGetSampleRateW();
+            take(AUDIOGetVersionW()); take(AUDIOGetChannelModeW());
+            if (fmt == MPEGPLUS) recognized++;
+        }
+    }
+    CHECK(recognized > 0);   // Veraenderungen ausserhalb des SH-Pakets muessen die Erkennung nicht zerstoeren
+    // abgeschnitten an jeder Stelle des Headers
+    for (size_t len = 0; len <= 64; len++) {
+        AUDIOAnalyzeFileW(writeTemp("sv8_cut.mpc", Bytes(orig.begin(), orig.begin() + len)).c_str());
+        AUDIOGetDurationW();
+    }
+    SUCCEED("kein Absturz");
 }
 
 TEST_CASE("AAC mit vorhandenem ID3v2-Tag: Schreiben landet im APE-Tag, ID3v2 hat beim Lesen Vorrang", "[formats][tags]")

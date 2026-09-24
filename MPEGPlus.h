@@ -29,6 +29,7 @@
 /* Used with ChannelModeID property */
 #define MPP_CM_STEREO  1                                // Index for stereo mode
 #define MPP_CM_JOINT_STEREO 2                     // Index for joint-stereo mode
+#define MPP_CM_MONO 3                             // Index for mono (nur SV8 kann Mono)
 
 /* Used with ProfileID property */
 #define MPP_PROFILE_UNKNOWN 0                                   /* Unknown profile */
@@ -71,6 +72,13 @@ private:
 	int  FBitRate;
 	BYTE FStreamVersion;
 	BYTE FProfileID;
+	// Stream-Version 8 ('MPCK'): paketbasierter Header, Werte kommen aus dem SH-Paket
+	bool FIsSV8;
+	long FChannels;
+	__int64 FSamples;
+	__int64 FBeginSilence;
+	bool ReadHeaderSV8(FILE *Stream);
+	static BYTE ProfileFromIndex(BYTE index);
 	bool FIsCorrupted();
 	bool ReadHeader(FILE *Stream);
 	int GetBitRateIntern();
@@ -83,7 +91,7 @@ public:
 	void ResetData();
 	bool ReadFromFile(FILE *Stream);
 	bool IsValid()             { return FValid; };
-	long GetChannels()         { return 2; }
+	long GetChannels()         { return FChannels; }
 	CAtlString GetChannelMode();
 	long GetFrameCount();
 	long  GetBitRate();

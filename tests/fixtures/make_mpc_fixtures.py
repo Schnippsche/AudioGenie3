@@ -64,3 +64,8 @@ if __name__ == '__main__':
     write('sv7_synthetic_insane_32k.mpc', sv7_header(50, 32000, 'insane', joint=False) + payload(50))
     write('sv7_synthetic_tagged_ape.mpc', base + ape_tag(STD_ITEMS))
     write('sv7_synthetic_tagged_id3v2.mpc', id3_tag(3, 'TYER', '2024') + base)
+    # SV8: aus der von mpcenc erzeugten Datei (siehe generate.bat) mit angehaengtem APEv2-Tag
+    sv8 = HERE / 'mpc' / 'sv8_standard.mpc'
+    if sv8.exists():
+        write('sv8_tagged_ape.mpc', sv8.read_bytes() + ape_tag(STD_ITEMS))
+        write('sv8_tagged_id3v2.mpc', id3_tag(3, 'TYER', '2024') + sv8.read_bytes())

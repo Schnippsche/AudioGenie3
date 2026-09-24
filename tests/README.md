@@ -84,6 +84,6 @@ Diese Verhaeltnisse sind gewollt und in den Tests so festgehalten; sie nicht als
 
 - **SV7** (`MP+`): mpcenc 1.30 schreibt kein SV7 mehr; `fixtures/make_mpc_fixtures.py` baut synthetische SV7-Dateien (24-Byte-Header mit
   bekannten Werten, Dummy-Frames, optional APEv2-/ID3v2-Tag). Sie pruefen das Header-Parsing (Samplerate, Dauer, Tags), keine Dekodierung.
-- **SV8** (`MPCK`, aktuelles Format): `generate.bat` erzeugt Dateien mit `mpcenc.exe` (Pfad ueber `MPCENC`, Standard
-  `D:\Entwicklung\Musepack\64bit\mpcenc.exe`). **Die DLL erkennt SV8 nicht** (Format 0/UNKNOWN); sie kennt nur Stream-Version 4-7. Der Test
-  `[mpc][!shouldfail]` haelt das fest und schlaegt um, sobald SV8 unterstuetzt wird.
+- **SV8** (`MPCK`): `generate.bat` erzeugt echte Dateien mit `mpcenc.exe` (Pfad ueber `MPCENC`, Standard
+  `D:\Entwicklung\Musepack\64bit\mpcenc.exe`); `make_mpc_fixtures.py` haengt APEv2- bzw. ID3v2-Tags an. Die DLL liest SV8 (Paket-Parser fuer
+  SH/EI in `MPEGPlus.cpp`): Samplerate, Kanaele inkl. Mono, Dauer aus der Samplezahl, Profil, Bitrate.
