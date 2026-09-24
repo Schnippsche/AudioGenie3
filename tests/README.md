@@ -27,11 +27,13 @@ Hinweise zur API (aus dem Code): `AUDIOSaveChangesW` schreibt die abstrakten Fel
 und ueberschreibt dabei ID3v2-Frames; fuer Frame-Tests `ID3V2SaveChangesW` nehmen.
 `ID3V2RemoveTagW` wirkt sofort auf die Datei.
 
-## Bekannte Luecken (`[gaps]`)
+## Encoder-Eigenheiten (`kQuirks`)
 
-`test_formats.cpp` fuehrt in `kGaps` Felder auf, die ffmpeg schreibt, die DLL aber nicht liefert (z. B. ID3v2.4-Jahr `TDRC`,
-Vorbis-`COMMENT`, APE-`date`). Der Test `[gaps]` ist mit `[!shouldfail]` markiert: er gilt als bestanden, solange die Luecken
-bestehen, und schlaegt um, sobald eine geschlossen wird – dann den Eintrag aus `kGaps` entfernen.
+Die frueheren "Lese-Luecken" (Jahr `TDRC`, Vorbis `DESCRIPTION`, APE `date`, WMA `Description`/`date`, WAV `IPRT`) sind in der DLL behoben
+(Fallbacks beim Lesen, siehe Commit). Uebrig ist eine Eigenheit von ffmpeg, keine DLL-Luecke: ffmpeg schreibt den Kommentar in ID3v2-Tags als
+`TXXX:comment` statt als `COMM`-Frame, die DLL liest `COMM`. Diese Faelle stehen in `kQuirks` (Kommentar erwartet leer); fuer echte
+`COMM`-Frames erzeugt `fixtures/make_id3_fixtures.py` von Hand gebaute ID3v2.3-/2.4-Tags (`mp3/id3v23_comm.mp3`, `mp3/id3v24_comm.mp3`,
+`aac/adts_id3v24_comm.aac`).
 
 ## AddressSanitizer (`run_asan.bat`)
 

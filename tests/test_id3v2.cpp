@@ -283,3 +283,39 @@ TEST_CASE("ID3v2: Audiodaten bleiben bei jedem Format/jeder Kodierung unveraende
         }
     }
 }
+
+// ============================================== Jahr: TYER (v2.2/2.3) und TDRC (v2.4)
+
+TEST_CASE("Jahr: v2.4-Tag (TDRC-Zeitstempel) lesen und beim Speichern nicht verlieren", "[id3v2][year]")
+{
+    const fs::path src = fs::path(AG3_FIXTURES_DIR) / "mp3/id3v24_comm.mp3";
+    if (!fs::exists(src)) SKIP("Fixture fehlt");
+    fs::path p = tempDir() / "year_v24.mp3";
+    fs::copy_file(src, p, fs::copy_options::overwrite_existing);
+
+    SECTION("Lesen: aus dem Zeitstempel 2024-05-01 wird das Jahr 2024") {
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        CHECK(take(ID3V2GetTextFrameW(ID3F_TDRC)) == L"2024-05-01");
+        CHECK(take(AUDIOGetYearW()) == L"2024");
+    }
+    SECTION("AUDIOSaveChangesW ohne Aenderung: der Tag wird als v2.3 geschrieben (Standard), das Jahr bleibt erhalten (TYER)") {
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        REQUIRE(AUDIOSaveChangesW() != 0);
+        const Bytes b = readFile(p);
+        CHECK(b[3] == 3);
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        CHECK(take(ID3V2GetTextFrameW(ID3F_TYER)) == L"2024");
+        CHECK(take(AUDIOGetYearW()) == L"2024");
+    }
+    SECTION("Zielversion v2.4: das neue Jahr steht in TDRC") {
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        REQUIRE(ID3V2SetFormatAndEncodingW(3, 3) != 0);
+        AUDIOSetYearW(L"1999");
+        REQUIRE(AUDIOSaveChangesW() != 0);
+        CHECK(readFile(p)[3] == 4);
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        CHECK(take(ID3V2GetTextFrameW(ID3F_TDRC)) == L"1999");
+        CHECK(take(AUDIOGetYearW()) == L"1999");
+    }
+    ID3V2SetFormatAndEncodingW(2, 0);   // Standard (v2.3) fuer die folgenden Tests wiederherstellen
+}

@@ -80,6 +80,9 @@ rem ---- roher ADTS-Strom aus den realen MP4/AAC-Beispielen (aac\sample-*.aac, u
 if exist aac\sample-1.aac %FF% -i aac\sample-1.aac -map 0:a -c copy -f adts aac\adts_sample-1.aac || goto :fail
 if exist aac\sample-2.aac %FF% -i aac\sample-2.aac -map 0:a -c copy -map_metadata -1 %TAGS% -write_id3v2 1 -f adts aac\adts_id3_sample-2.aac || goto :fail
 
+rem ---- ID3v2-Tags von Hand (echter COMM-Frame, TYER bzw. TDRC-Zeitstempel), braucht Python
+where python >nul 2>nul && python make_id3_fixtures.py || echo Hinweis: Python nicht gefunden, ID3-Fixtures werden nicht neu erzeugt.
+
 rem ---- kaputte Dateien: abgeschnitten (nur Header bzw. Haelfte)
 call :truncate mp3\tagged.mp3 broken\tagged_header_only.mp3 128 || goto :fail
 call :truncate mp3\tagged.mp3 broken\tagged_half.mp3 0 || goto :fail

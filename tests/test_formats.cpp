@@ -48,6 +48,8 @@ struct Fixture {
 
 const Fixture kFixtures[] = {
     { "mp3/id3v1_only.mp3",   MPEG,      44100, 2, 1.071, 0.15, true,  true  },   // nur ID3v1-Tag am Dateiende
+    { "mp3/id3v23_comm.mp3",  MPEG,      44100, 2, 1.045, 0.15, true,  true  },   // ID3v2.3 von Hand: TYER, COMM
+    { "mp3/id3v24_comm.mp3",  MPEG,      44100, 2, 1.045, 0.15, true,  true  },   // ID3v2.4 von Hand: TDRC-Zeitstempel, COMM
     { "mp3/no_tags_cbr.mp3",  MPEG,      44100, 2, 1.045, 0.15, false, true  },
     { "mp3/no_tags_xing.mp3", MPEG,      44100, 2, 1.071, 0.15, false, true  },
     { "mp3/tagged.mp3",       MPEG,      44100, 2, 1.071, 0.15, true,  true  },
@@ -87,7 +89,8 @@ const Fixture kFixtures[] = {
     // Roher ADTS-Strom aus den realen Samples (generate.bat); Dauer aus Dateigroesse und Bitrate geschaetzt.
     { "aac/adts_sample-1.aac",     AAC,  44100, 2, 5.06,  0.2,  false, false },
     { "aac/adts_id3_sample-2.aac", AAC,  44100, 2, 5.06,  0.2,  true,  false },
-    // Reale MP4-Dateien (AAC-LC, 320 kbit) mit der Endung .aac, auf 5 s gekuerzt (Originale: testsixtures_localac).
+    { "aac/adts_id3v24_comm.aac",  AAC,  44100, 2, 5.06,  0.2,  true,  false },   // ID3v2.4 von Hand, echter COMM-Frame
+    // Reale MP4-Dateien (AAC-LC, 320 kbit) mit der Endung .aac, auf 5 s gekuerzt (Originale: tests/fixtures_local/aac).
     // Dauer laut DLL 5,062 s, ffprobe meldet 5,015 s (Encoder-Priming).
     { "aac/sample-1.aac",     MP4M4A,    44100, 2, 5.05,  0.1,  false, true  },
     { "aac/sample-2.aac",     MP4M4A,    44100, 2, 5.05,  0.1,  false, true  },
@@ -96,34 +99,25 @@ const Fixture kFixtures[] = {
 
 const wchar_t* kStdTags[FieldCount] = { L"Testtitel", L"Testkuenstler", L"Testalbum", L"2024", L"3", L"Rock", L"Kommentar" };
 
-// Bekannte Luecken: ffmpeg schreibt das Feld, die DLL liefert es nicht (leer). Diese Felder werden im
-// Test "Tags lesen" nicht geprueft, sondern im Test "[gaps]" als erwartet fehlschlagend.
-struct Gap { const char* file; Field field; const char* why; };
-const Gap kGaps[] = {
-    { "mp3/tagged.mp3",     Year,    "ID3v2.4-Frame TDRC wird nicht gelesen (nur TYER aus v2.3)" },
-    { "mp3/tagged.mp3",     Comment, "COMM-Frame aus ffmpeg wird nicht als Kommentar geliefert" },
-    { "mp3/with_cover.mp3", Comment, "COMM-Frame aus ffmpeg wird nicht als Kommentar geliefert" },
-    { "flac/tagged.flac",   Comment, "Vorbis-Feld COMMENT wird nicht gelesen" },
-    { "flac/with_cover.flac", Comment, "Vorbis-Feld COMMENT wird nicht gelesen" },
-    { "ogg/tagged.ogg",     Comment, "Vorbis-Feld COMMENT wird nicht gelesen" },
-    { "wma/tagged.wma",     Year,    "WM/Year wird nicht gelesen (ffmpeg schreibt WM/Year)" },
-    { "wma/tagged.wma",     Comment, "Description wird nicht als Kommentar geliefert" },
-    { "wv/tagged.wv",       Year,    "APE-Feld 'date' statt 'Year'" },
-    { "tta/tagged.tta",     Year,    "APE-Feld 'date' statt 'Year'" },
-    { "wav/tagged.wav",     Track,   "INFO-Feld ITRK wird nicht als Track geliefert" },
-    { "aac/adts_id3_sample-2.aac", Year,    "ID3v2.4-Frame TDRC wird nicht gelesen (nur TYER aus v2.3)" },
-    { "aac/adts_id3_sample-2.aac", Comment, "COMM-Frame aus ffmpeg wird nicht als Kommentar geliefert" },
+// Eigenheiten der Encoder: ein Standardfeld bleibt bewusst leer, weil der Encoder es woanders ablegt.
+// ffmpeg schreibt den Kommentar in ID3v2-Tags als TXXX:comment statt als COMM-Frame; die DLL liest COMM
+// (Fixtures mit echtem COMM: mp3/id3v23_comm.mp3, mp3/id3v24_comm.mp3, aac/adts_id3v24_comm.aac).
+struct Quirk { const char* file; Field field; const char* why; };
+const Quirk kQuirks[] = {
+    { "mp3/tagged.mp3",            Comment, "ffmpeg: TXXX:comment statt COMM" },
+    { "mp3/with_cover.mp3",        Comment, "ffmpeg: TXXX:comment statt COMM" },
+    { "aac/adts_id3_sample-2.aac", Comment, "ffmpeg: TXXX:comment statt COMM" },
 };
 
-bool isGap(const char* file, Field f)
+bool isQuirk(const char* file, Field f)
 {
-    for (const Gap& g : kGaps) if (!strcmp(g.file, file) && g.field == f) return true;
+    for (const Quirk& q : kQuirks) if (!strcmp(q.file, file) && q.field == f) return true;
     return false;
 }
 
 // Fixtures, bei denen der Standard-Round-Trip nicht gilt: AAC wird als APE-Tag geschrieben (siehe Doku von
 // AUDIOSaveChangesW); ein vorhandener ID3v2-Tag am Dateianfang hat beim Lesen Vorrang (eigener Test unten).
-bool skipWriteTests(const char* file) { return !strcmp(file, "aac/adts_id3_sample-2.aac"); }
+bool skipWriteTests(const char* file) { return !strcmp(file, "aac/adts_id3_sample-2.aac") || !strcmp(file, "aac/adts_id3v24_comm.aac"); }
 
 // Bricht den Prozess mit Exitcode 98 ab, wenn f nicht innerhalb von 'seconds' fertig wird (Haenger statt Endlosschleife melden).
 template <class F> void mustFinishWithin(int seconds, const char* what, F f)
@@ -173,22 +167,11 @@ TEST_CASE("Formate: Tags lesen", "[formats][tags]")
             REQUIRE(AUDIOAnalyzeFileW(fixturePath(fx.file).c_str()) == fx.format);
             for (int i = 0; i < FieldCount; i++) {
                 const Field f = static_cast<Field>(i);
-                if (fx.tagged && isGap(fx.file, f)) continue;
                 INFO("Feld " << kFieldName[i]);
-                CHECK(getField(f) == (fx.tagged ? kStdTags[i] : L""));
+                const wchar_t* expected = fx.tagged && !isQuirk(fx.file, f) ? kStdTags[i] : L"";
+                CHECK(getField(f) == expected);
             }
         }
-    }
-}
-
-TEST_CASE("Formate: bekannte Luecken beim Lesen", "[formats][gaps][!shouldfail]")
-{
-    // Schlaegt absichtlich fehl (Catch2: !shouldfail). Wird eine Luecke in der DLL geschlossen, schlaegt dieser
-    // Test um -> Eintrag aus kGaps entfernen, dann wird das Feld im normalen Test mitgeprueft.
-    for (const Gap& g : kGaps) {
-        INFO(g.file << ": " << g.why);
-        REQUIRE(AUDIOAnalyzeFileW(fixturePath(g.file).c_str()) != UNKNOWN);
-        CHECK(getField(g.field) == kStdTags[g.field]);
     }
 }
 
