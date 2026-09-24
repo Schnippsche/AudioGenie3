@@ -171,6 +171,12 @@ bool CMP4::AddPictureFile(LPCWSTR FileName)
 
 bool CMP4::AddPictureArray(BYTE *arr, u32 length)
 {
+	// Die Bildart wird an den ersten 4 Bytes erkannt: kein Zeiger oder weniger Bytes ist kein Bild
+	if (arr == NULL || length < 4)
+	{
+		CTools::instance().setLastError(ERR_PICTUREARRAY_TOO_SMALL);
+		return false;
+	}
 	mainContainer->checkMetaBox();
 	CMP4Atom* atom = mainContainer->find(COVR_PFAD);
 	CMP4_Container *cont;

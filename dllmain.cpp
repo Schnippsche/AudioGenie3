@@ -146,7 +146,12 @@ extern "C" long __stdcall AUDIOAnalyzeFileW(LPCWSTR FileName)
 {
 	ClearAllTags();
 	FILE *Source;
-	FileName = getValidPointer(FileName);
+	// Kopie, denn FileName kann auf lastFile zeigen (interne Aufrufe AUDIOAnalyzeFileW(lastFile))
+	CAtlString requestedFile(getValidPointer(FileName));
+	// Als "zuletzt analysierte Datei" gilt erst wieder etwas, wenn diese Analyse die Datei oeffnen konnte. Sonst wuerde ein
+	// folgendes AUDIOSaveChangesW die durch ClearAllTags geleerten Felder in die vorherige Datei schreiben und deren Tags loeschen.
+	lastFile.Empty();
+	FileName = requestedFile;
 	errno = 0;
 	ATLTRACE(_T("Analysiere %s\n"), FileName);
 	if ( (Source = _wfsopen(FileName, READ_ONLY, _SH_DENYNO)) != NULL)
@@ -5561,7 +5566,8 @@ extern "C" short __stdcall ID3V2AddChapterW(LPCWSTR ID, LPCWSTR Title, LPCWSTR D
 extern "C" short __stdcall ID3V2AddChildElementW(LPCWSTR ParentTocID, LPCWSTR ChildID)
 {
 	id3frame = id3v2.findFrame(getValidPointer(ParentTocID));
-	if (id3frame == NULL)
+	// findFrame(ID) liefert auch Kapitel (CHAP); nur ein Inhaltsverzeichnis (CTOC) hat Unterelemente
+	if (id3frame == NULL || !cCHAPTER(id3frame)->isCTOC())
 		return b2s(false);
 	cCTOC(id3frame)->addChildElement(getValidPointer(ChildID));
 	return b2s(true);
@@ -5583,7 +5589,7 @@ extern "C" short __stdcall ID3V2AddChildElementW(LPCWSTR ParentTocID, LPCWSTR Ch
 extern "C" short __stdcall ID3V2DeleteChildElementW(LPCWSTR ParentTocID, LPCWSTR ChildID)
 {
 	id3frame = id3v2.findFrame(getValidPointer(ParentTocID));
-	if (id3frame == NULL)
+	if (id3frame == NULL || !cCHAPTER(id3frame)->isCTOC())
 		return b2s(false);
 	return cCTOC(id3frame)->deleteChildElement(getValidPointer(ChildID));	
 }
