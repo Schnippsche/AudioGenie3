@@ -82,8 +82,10 @@ Diese Verhaeltnisse sind gewollt und in den Tests so festgehalten; sie nicht als
 
 ## Musepack
 
-- **SV7** (`MP+`): mpcenc 1.30 schreibt kein SV7 mehr; `fixtures/make_mpc_fixtures.py` baut synthetische SV7-Dateien (24-Byte-Header mit
-  bekannten Werten, Dummy-Frames, optional APEv2-/ID3v2-Tag). Sie pruefen das Header-Parsing (Samplerate, Dauer, Tags), keine Dekodierung.
-- **SV8** (`MPCK`): `generate.bat` erzeugt echte Dateien mit `mpcenc.exe` (Pfad ueber `MPCENC`, Standard
-  `D:\Entwicklung\Musepack\64bit\mpcenc.exe`); `make_mpc_fixtures.py` haengt APEv2- bzw. ID3v2-Tags an. Die DLL liest SV8 (Paket-Parser fuer
-  SH/EI in `MPEGPlus.cpp`): Samplerate, Kanaele inkl. Mono, Dauer aus der Samplezahl, Profil, Bitrate.
+- **SV7** (`MP+`): echte Dateien von `mppenc.exe` 1.16 (Pfad ueber `MPPENC`, Standard `D:\Entwicklung\Musepack7\mppenc.exe`): alle fuenf Profile,
+  44,1/48/32 kHz, Stream-Version 7 (`0x07`) und 7.1 (`0x17`); Dauer und Samplerate stimmen mit ffprobe ueberein. SV7 kennt kein Mono
+  (Mono-Eingang wird als Stereo kodiert). Zusaetzlich baut `fixtures/make_mpc_fixtures.py` *synthetische* SV7-Header (bekannte Werte,
+  Dummy-Frames) und haengt APEv2-/ID3v2-Tags an echte Dateien.
+- **SV8** (`MPCK`): `generate.bat` erzeugt echte Dateien mit `mpcenc.exe` 1.30 (Pfad ueber `MPCENC`, Standard
+  `D:\Entwicklung\Musepack\64bit\mpcenc.exe`). Die DLL liest SV8 (Paket-Parser fuer SH/EI in `MPEGPlus.cpp`): Samplerate,
+  Kanaele inkl. Mono, Dauer aus der Samplezahl, Profil, Bitrate.

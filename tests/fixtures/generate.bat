@@ -86,7 +86,19 @@ if not exist "%MPCENC%" (echo Hinweis: mpcenc.exe nicht gefunden, SV8-Dateien we
 "%MPCENC%" --silent --overwrite --standard "%TEMP%\ag3_mono44.wav" mpc\sv8_mono_44k.mpc || goto :fail
 del "%TEMP%\ag3_mono44.wav" >nul 2>nul
 :skipmpc
-rem Musepack SV7: synthetische Header (mpcenc 1.30 kann kein SV7 mehr), braucht Python
+rem ---- Musepack SV7 (mppenc 1.16, Pfad ueber MPPENC ueberschreibbar) aus den WAV-Fixtures; 48/32 kHz aus temporaeren WAVs
+if "%MPPENC%"=="" set "MPPENC=D:\Entwicklung\Musepack7\mppenc.exe"
+if not exist "%MPPENC%" (echo Hinweis: mppenc.exe nicht gefunden, echte SV7-Dateien werden nicht neu erzeugt. & goto :skipmpp)
+for %%Q in (thumb radio standard extreme insane) do "%MPPENC%" --silent --overwrite --%%Q wav\no_tags.wav mpc\sv7_%%Q.mpc || goto :fail
+%FF% -f lavfi -i sine=frequency=440:duration=1:sample_rate=48000 -ac 2 -ar 48000 %NOMETA% "%TEMP%\ag3_s48.wav" || goto :fail
+%FF% -f lavfi -i sine=frequency=440:duration=1:sample_rate=32000 -ac 2 -ar 32000 %NOMETA% "%TEMP%\ag3_s32.wav" || goto :fail
+%FF% %SINE% -ac 1 -ar 44100 %NOMETA% "%TEMP%\ag3_mono44.wav" || goto :fail
+"%MPPENC%" --silent --overwrite --thumb "%TEMP%\ag3_s48.wav" mpc\sv7_thumb_48k.mpc || goto :fail
+"%MPPENC%" --silent --overwrite --thumb "%TEMP%\ag3_s32.wav" mpc\sv7_thumb_32k.mpc || goto :fail
+"%MPPENC%" --silent --overwrite --standard "%TEMP%\ag3_mono44.wav" mpc\sv7_mono_44k.mpc || goto :fail
+del "%TEMP%\ag3_s48.wav" "%TEMP%\ag3_s32.wav" "%TEMP%\ag3_mono44.wav" >nul 2>nul
+:skipmpp
+rem Musepack: synthetische SV7-Header und angehaengte Tags (APEv2/ID3v2), braucht Python
 where python >nul 2>nul && python make_mpc_fixtures.py || echo Hinweis: Python nicht gefunden, SV7-Fixtures werden nicht neu erzeugt.
 
 rem ---- roher ADTS-Strom aus den realen MP4/AAC-Beispielen (aac\sample-*.aac, unveraendert uebernommen), ohne und mit ID3v2-Tag

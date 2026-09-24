@@ -93,6 +93,17 @@ const Fixture kFixtures[] = {
     { "mpc/sv8_mono_44k.mpc",   MPEGPLUS, 44100, 1, 1.0, 0.001, false, true  },
     { "mpc/sv8_tagged_ape.mpc", MPEGPLUS, 44100, 2, 1.0, 0.001, true,  false },
     { "mpc/sv8_tagged_id3v2.mpc", MPEGPLUS, 44100, 2, 1.0, 0.001, true, false },
+    // Musepack SV7 echt (mppenc 1.16): 39 bzw. 28/42 Frames; Dauer laut Header und ffprobe 1,0188 s bzw. 1,008 s
+    { "mpc/sv7_thumb.mpc",      MPEGPLUS, 44100, 2, 1.0188, 0.001, false, true  },
+    { "mpc/sv7_radio.mpc",      MPEGPLUS, 44100, 2, 1.0188, 0.001, false, true  },
+    { "mpc/sv7_standard.mpc",   MPEGPLUS, 44100, 2, 1.0188, 0.001, false, true  },
+    { "mpc/sv7_extreme.mpc",    MPEGPLUS, 44100, 2, 1.0188, 0.001, false, true  },
+    { "mpc/sv7_insane.mpc",     MPEGPLUS, 44100, 2, 1.0188, 0.001, false, true  },
+    { "mpc/sv7_thumb_48k.mpc",  MPEGPLUS, 48000, 2, 1.008,  0.001, false, true  },
+    { "mpc/sv7_thumb_32k.mpc",  MPEGPLUS, 32000, 2, 1.008,  0.001, false, true  },
+    { "mpc/sv7_mono_44k.mpc",   MPEGPLUS, 44100, 2, 1.0188, 0.001, false, true  },   // SV7 kennt kein Mono: als Stereo kodiert
+    { "mpc/sv7_tagged_ape.mpc", MPEGPLUS, 44100, 2, 1.0188, 0.001, true,  false },
+    { "mpc/sv7_tagged_id3v2.mpc", MPEGPLUS, 44100, 2, 1.0188, 0.001, true, false },
     // Musepack SV7 (synthetische Header, siehe make_mpc_fixtures.py): Dauer = Frames * 1152 / Samplerate
     { "mpc/sv7_synthetic_standard.mpc",         MPEGPLUS, 44100, 2, 2.612, 0.01, false, true  },
     { "mpc/sv7_synthetic_thumb_joint_48k.mpc",  MPEGPLUS, 48000, 2, 4.8,   0.01, false, true  },
@@ -184,6 +195,25 @@ TEST_CASE("Formate: Tags lesen", "[formats][tags]")
                 const wchar_t* expected = fx.tagged && !isQuirk(fx.file, f) ? kStdTags[i] : L"";
                 CHECK(getField(f) == expected);
             }
+        }
+    }
+}
+
+TEST_CASE("Musepack SV7 (mppenc 1.16): Profil und Kanalmodus", "[formats][mpc]")
+{
+    struct Case { const char* file; const wchar_t* profile; };
+    const Case cases[] = {
+        { "mpc/sv7_thumb.mpc", L"Thumb" }, { "mpc/sv7_radio.mpc", L"Radio" }, { "mpc/sv7_standard.mpc", L"Standard" },
+        { "mpc/sv7_extreme.mpc", L"Xtreme" }, { "mpc/sv7_insane.mpc", L"Insane" }, { "mpc/sv7_thumb_48k.mpc", L"Thumb" },
+    };
+    for (const Case& c : cases) {
+        DYNAMIC_SECTION(c.file) {
+            if (!fs::exists(fixturePath(c.file))) SKIP("Fixture fehlt");
+            REQUIRE(AUDIOAnalyzeFileW(fixturePath(c.file).c_str()) == MPEGPLUS);
+            CHECK(take(AUDIOGetVersionW()) == c.profile);
+            CHECK(take(AUDIOGetChannelModeW()) == L"Joint Stereo");   // mppenc nutzt Mid/Side
+            CHECK(AUDIOGetBitrateW() > 20);
+            CHECK(AUDIOGetBitrateW() < 200);
         }
     }
 }

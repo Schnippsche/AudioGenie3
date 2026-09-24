@@ -2,7 +2,7 @@
 """Musepack-Fixtures.
 
 * SV8 (aktuelles Format, 'MPCK'): erzeugt mpcenc 1.30 (siehe generate.bat) - hier nur umbenannt/vorhanden.
-* SV7 ('MP+' + 0x07): mpcenc 1.30 schreibt kein SV7 mehr. Es werden daher *synthetische* SV7-Dateien gebaut:
+* SV7 ('MP+' + 0x07): echte Dateien erzeugt mppenc 1.16 (siehe generate.bat). Zusaetzlich werden *synthetische* SV7-Dateien gebaut:
   ein 24-Byte-Header mit bekannten Werten (Frames, Samplerate, Profil, Stereo/Joint) und Dummy-Frames. Sie pruefen das
   Header-Parsing der DLL, keine echte Audio-Dekodierung. Optional mit APEv2- oder ID3v2-Tag.
 
@@ -64,6 +64,11 @@ if __name__ == '__main__':
     write('sv7_synthetic_insane_32k.mpc', sv7_header(50, 32000, 'insane', joint=False) + payload(50))
     write('sv7_synthetic_tagged_ape.mpc', base + ape_tag(STD_ITEMS))
     write('sv7_synthetic_tagged_id3v2.mpc', id3_tag(3, 'TYER', '2024') + base)
+    # SV7 echt: aus der von mppenc 1.16 erzeugten Datei (siehe generate.bat) mit angehaengtem APEv2- bzw. vorangestelltem ID3v2-Tag
+    sv7 = HERE / 'mpc' / 'sv7_standard.mpc'
+    if sv7.exists():
+        write('sv7_tagged_ape.mpc', sv7.read_bytes() + ape_tag(STD_ITEMS))
+        write('sv7_tagged_id3v2.mpc', id3_tag(3, 'TYER', '2024') + sv7.read_bytes())
     # SV8: aus der von mpcenc erzeugten Datei (siehe generate.bat) mit angehaengtem APEv2-Tag
     sv8 = HERE / 'mpc' / 'sv8_standard.mpc'
     if sv8.exists():
