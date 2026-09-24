@@ -1,0 +1,50 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="de">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1" />
+<meta http-equiv="Content-Language" content="de" />
+<meta name="IDENTIFIER-URL" content="http://www.audiogenie.net" />
+<meta name="DESCRIPTION" content="Hier finden Sie Infos über AudioGenie eine Freeware OCX zum Einbinden in Visual Basic Projekte" />
+<meta name="KEYWORDS" content="AUDIO,AUDIOGENIE,MP3SetConfigValueW" />
+<meta http-equiv="KEYWORDS" content="AUDIO,AUDIOGENIE,MP3SetConfigValueW" />
+<meta name="Content-Language" content="de" />
+<meta http-equiv="AUTHOR" content="Stefan Toengi" />
+<meta name="COPYRIGHT" content="Stefan Toengi" />
+<meta name="PUBLISHER" content="Stefan Toengi" />
+<meta name="ROBOTS" content="INDEX, FOLLOW" />
+<title>Hilfe zur AudioGenie DLL - SetConfigValueW</title>
+<link rel="stylesheet" type="text/css" href="../style.css" />
+</head>
+<body>
+<h1 align="center">AudioGenie DLL Dokumentation</h1>
+<h6 align="center"><a href="../index.html">Inhaltsverzeichnis</a> | <a href="../list.html">Index</a> | <a href="../versions.html">Versionen</a></h6>
+<h3><b>Funktion: SetConfigValueW</b></h3>
+<h5>aus Gruppe <a href="index.html">UNIVERSAL</a> , released seit Version 2.0.1.0</h5>
+<h4><font color="#3333FF"></font> SetConfigValueW(<font color="#3333FF">Int32</font> key, <font color="#3333FF">Int32</font> value)</h4>
+<h5>Beschreibung:</h5>
+ setzt einen Konfigurationswert.<br />Momentan werden folgende Werte unterst&uuml;tzt:<br /><br /><table class="tablelayout"><tr><th>Schl&uuml;ssel</th><th>Bezeichnung</th><th>Default-Wert</th><th>Erl&auml;uterung</th></tr><tr><td>0</td><td>MPEGEXACTREAD</td><td>0</td><td>Ein Wert ungleich 0 schaltet das Auslesen aller MPEG Frames an;<br />ersetzt SetMPEGAnalyzeAllFrames</td></tr><tr><td>1</td><td>ID3V2PADDINGSIZE</td><td>4096</td><td>die Padding-Gr&ouml;sse in Bytes im id3v2 tag</td></tr><tr><td>2</td><td>WRITEBLOCKSIZE</td><td>524288</td><td>die Blockgr&ouml;sse in Bytes, die beim internen Kopieren von Dateien verwendet wird</td></tr><tr><td>3</td><td>DOEVENTSMILLIS </td><td>250</td><td>die Anzahl der Millisekunden, nachdem ein DoEvent abgefeuert wird</td></tr><tr><td>4</td><td>MAXTEXTBUFFER</td><td>262144</td><td>die maximale Gr&ouml;sse des internen Textpuffers in Byte</td></tr><tr><td>5</td><td>WMAPADDINGSIZE</td><td>4096</td><td>die Padding-Gr&ouml;sse in Bytes im wma tag</td></tr><tr><td>6</td><td>MP4PADDINGSIZE</td><td>4096</td><td>die Padding-Gr&ouml;sse in Bytes im mp4 tag</td></tr></table>
+<h5>Parameter:</h5>
+<table width="90%" class="tablelayout">
+<tr><th width="15%">Datentyp</th><th width="15%">Bezeichner</th><th width="70">Beschreibung</th></tr>
+<tr><td>Int32</td><td>key</td><td>der zu setzende Schl&uuml;ssel ( siehe oben ). </td></tr>
+<tr><td>Int32</td><td>value</td><td>der neue Wert</td></tr>
+</table>
+<h5>Beispiel:</h5>
+<h4>AudioGenie.SetConfigValueW(key, value)</h4>
+<br />
+<h5>Eine Übersicht der Datentypen <a href="../index.html">finden Sie hier</a></h5>
+<br /><br />
+<hr />
+<h5 align="center">Copyright &copy; 2007-2010 by Stefan T&ouml;ngi</h5>
+<h6 align="center"><a href="http://www.audiogenie.net">www.audiogenie.net</a></h6>
+<script type="text/javascript">
+var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
+document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
+</script>
+<script type="text/javascript">
+var pageTracker = _gat._getTracker("UA-5128903-3");
+pageTracker._initData();
+pageTracker._trackPageview();
+</script>
+</body>
+</html>

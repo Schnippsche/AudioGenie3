@@ -1,0 +1,69 @@
+body
+{
+	font-family: Verdana, Arial, Helvetica;
+	font-size: 10pt;
+	background-color:#f9fff2;
+}
+table, td,tr,th
+{
+  font-family: Verdana, Arial, Helvetica;
+	font-size: 10pt;	
+  padding: 1px;
+  border: none;
+  border-spacing: 0px;
+  border-collapse: collapse;
+}
+
+.tablelayout
+{ 
+	border: 1px solid black;
+	border-width: 1px;	
+	border-collapse: collapse;
+}
+.tablelayout td
+{
+	border: 1px solid black;
+ 	border-width: 1px;
+ 	border-collapse: collapse
+}
+
+.tablelayout th
+{	
+	border: 1px solid black;
+	color: #000000;
+	background: #DADADA;	
+	border-width: 1px;
+	border-collapse: collapse
+}
+
+h2
+{
+	font-family: Verdana, Arial, Helvetica;
+	color: rgb(58,90,204); 
+}
+
+h1, h3
+{
+	font-family: Verdana, Arial, Helvetica;
+	color: rgb(0,0,120);
+}
+
+h5, h6
+{
+	font-family: Verdana, Arial, Helvetica;
+	color: rgb(0, 0, 0);
+}
+h4
+{
+	 color: #000000;
+	 background: #FFFFCC;
+   font-family: Courier New,Courier,monospace;
+   font-size: 10pt;
+   font-style: normal;
+   text-decoration: none;
+   text-align : left;
+   margin-left : 20px;
+   text-align : left;
+   margin-top : 10px;
+   margin-bottom : 5px;
+}
