@@ -1,0 +1,726 @@
+// *******************************************************
+// *********** AUDIOGENIE DLL WRAPPER FOR C/C++ **********
+// *******************************************************
+// *   this class is a Wrapper for the audiogenie3.dll   *
+// *    written by Stefan Toengi, www.audiogenie.net     *
+// *  Visit my forum under http://forum.audiogenie.net   *
+// * To use the class, include this file in your project,*
+// * copy audiogenie3.dll in the %Windows%\%system32%    *
+// * folder. Don't forget to link the audiogenie3.lib.   *
+// * That's all you have to do!                          *
+// *******************************************************
+// *******   Copyright 2007-2010 by Stefan Toengi  *******
+// *******************************************************
+
+#include "windows.h"
+
+#pragma once
+
+#define DllImport extern "C" __declspec( dllimport )
+
+#define u32 unsigned int
+#define uint unsigned int
+
+static enum AudioFormatID : short
+{
+    UNKNOWN = 0,
+    MPEG = 1,
+    WMA = 2,
+    MONKEY = 3,
+    FLAC = 4,
+    WAV = 5,
+    OGGVORBIS = 6,
+    MPEGPLUS = 7,
+    AAC = 8,
+    MP4M4A = 9,
+    TTA = 10
+};
+
+static enum PictureType : short
+{
+    OTHER = 0,
+    FILE_ICON = 1,
+    OTHER_FILE_ICON = 2,
+    COVER_FRONT = 3,
+    COVER_BACK = 4,
+    LEAFLET_PAGE = 5,
+    MEDIA_LABEL = 6,
+    LEAD_ARTIST = 7,
+    ARTIST_PERFORMER = 8,
+    CONDUCTOR = 9,
+    BAND_ORCHESTRA = 10,
+    COMPOSER = 11,
+    LYRICIST = 12,
+    RECORDING_LOCATION = 13,
+    DURING_RECORDING = 14,
+    DURING_PERFORMANCE = 15,
+    MOVIE_VIDEO_SCREEN_CAPTURE = 16,
+    A_BRIGHT_COLOURED_FISH = 17,
+    ILLUSTRATION = 18,
+    BAND_ARTIST_LOGOTYPE = 19,
+    PUBLISHER_STUDIO_LOGOTYPE = 20
+};
+
+static enum ID3V2FRAMES : uint
+{
+    ID3F_AENC = 0x41454E43,
+    ID3F_APIC = 0x41504943,
+    ID3F_ASPI = 0x41535049,
+    ID3F_CHAP = 0x43484150,
+    ID3F_COMM = 0x434F4D4D,
+    ID3F_COMR = 0x434F4D52,
+    ID3F_CTOC = 0x43544F43,
+    ID3F_ENCR = 0x454E4352,
+    ID3F_EQU2 = 0x45515532,
+    ID3F_EQUA = 0x45515541,
+    ID3F_ETCO = 0x4554434F,
+    ID3F_GEOB = 0x47454F42,
+    ID3F_GRID = 0x47524944,
+    ID3F_IPLS = 0x49504C53,
+    ID3F_LINK = 0x4C494E4B,
+    ID3F_MCDI = 0x4D434449,
+    ID3F_MLLT = 0x4D4C4C54,
+    ID3F_OWNE = 0x4F574E45,
+    ID3F_PCNT = 0x50434E54,
+    ID3F_POPM = 0x504F504D,
+    ID3F_POSS = 0x504F5353,
+    ID3F_PRIV = 0x50524956,
+    ID3F_RBUF = 0x52425546,
+    ID3F_RVA2 = 0x52564132,
+    ID3F_RVAD = 0x52564144,
+    ID3F_RVRB = 0x52565242,
+    ID3F_SEEK = 0x5345454B,
+    ID3F_SIGN = 0x5349474E,
+    ID3F_SYLT = 0x53594C54,
+    ID3F_SYTC = 0x53595443,
+    ID3F_TALB = 0x54414C42,
+    ID3F_TBPM = 0x5442504D,
+    ID3F_TCMP = 0x54434D50,  //itunes
+    ID3F_TCOM = 0x54434F4D,
+    ID3F_TCON = 0x54434F4E,
+    ID3F_TCOP = 0x54434F50,
+    ID3F_TDAT = 0x54444154,
+    ID3F_TDEN = 0x5444454E,
+    ID3F_TDLY = 0x54444C59,
+    ID3F_TDOR = 0x54444F52,
+    ID3F_TDRC = 0x54445243,
+    ID3F_TDRL = 0x5444524C,
+    ID3F_TDTG = 0x54445447,
+    ID3F_TENC = 0x54454E43,
+    ID3F_TEXT = 0x54455854,
+    ID3F_TFLT = 0x54464C54,
+    ID3F_TIME = 0x54494D45,
+    ID3F_TIPL = 0x5449504C,
+    ID3F_TIT1 = 0x54495431,
+    ID3F_TIT2 = 0x54495432,
+    ID3F_TIT3 = 0x54495433,
+    ID3F_TKEY = 0x544B4559,
+    ID3F_TLAN = 0x544C414E,
+    ID3F_TLEN = 0x544C454E,
+    ID3F_TMCL = 0x544D434C,
+    ID3F_TMED = 0x544D4544,
+    ID3F_TMOO = 0x544D4F4F,
+    ID3F_TOAL = 0x544F414C,
+    ID3F_TOFN = 0x544F464E,
+    ID3F_TOLY = 0x544F4C59,
+    ID3F_TOPE = 0x544F5045,
+    ID3F_TORY = 0x544F5259,
+    ID3F_TOWN = 0x544F574E,
+    ID3F_TPE1 = 0x54504531,
+    ID3F_TPE2 = 0x54504532,
+    ID3F_TPE3 = 0x54504533,
+    ID3F_TPE4 = 0x54504534,
+    ID3F_TPOS = 0x54504F53,
+    ID3F_TPRO = 0x5450524F,
+    ID3F_TPUB = 0x54505542,
+    ID3F_TRCK = 0x5452434B,
+    ID3F_TRDA = 0x54524441,
+    ID3F_TRSN = 0x5452534E,
+    ID3F_TRSO = 0x5452534F,
+    ID3F_TSIZ = 0x5453495A,
+    ID3F_TSO2 = 0x54534F32, //itunes
+    ID3F_TSOA = 0x54534F41, //itunes
+    ID3F_TSOC = 0x54534F43, //itunes
+    ID3F_TSOP = 0x54534F50, //itunes
+    ID3F_TSOT = 0x54534F54, //itunes
+    ID3F_TSRC = 0x54535243,
+    ID3F_TSSE = 0x54535345,
+    ID3F_TSST = 0x54535354,
+    ID3F_TXXX = 0x54585858,
+    ID3F_TYER = 0x54594552,
+    ID3F_UFID = 0x55464944,
+    ID3F_USER = 0x55534552,
+    ID3F_USLT = 0x55534C54,
+    ID3F_WCOM = 0x57434F4D,
+    ID3F_WCOP = 0x57434F50,
+    ID3F_WOAF = 0x574F4146,
+    ID3F_WOAR = 0x574F4152,
+    ID3F_WOAS = 0x574F4153,
+    ID3F_WORS = 0x574F5253,
+    ID3F_WPAY = 0x57504159,
+    ID3F_WPUB = 0x57505542,
+    ID3F_WXXX = 0x57585858
+};
+
+static enum MP4FRAMES : uint
+{
+    MP4_ALBUM = 0xA9616C62, // ©alb
+    MP4_ARTIST = 0xA9617274, // ©art
+    MP4_AUTHOR = 0xA9617574, //  ©aut
+    MP4_ALBUMARTIST = 0x61415254, // aART
+    MP4_BEATSPERMINUTE = 0x746D706F, // tmpo
+    MP4_CATEGORY = 0x63617467,  // catg
+    MP4_CDSETNUMBER = 0x6469736B, // disk
+    MP4_COMMENT = 0xA9636D74, // ©cmt
+    MP4_COMPOSER = 0xA9777274, // ©wrt
+    MP4_COMPILATION = 0x6370696C, // cpil
+    MP4_DAY = 0xA9646179, // ©day
+    MP4_COPYRIGHT = 0xA9637079, // ©cpy
+    MP4_CREATEDATE = 0xA9646179, // ©day
+    MP4_DESCRIPTION = 0xA9646573, // ©des
+    MP4_INFORMATION = 0xA9696E66, // ©inf
+    MP4_DIRECTOR = 0xA9646972, // ©dir
+    MP4_DISCLAIMER = 0xA9646973, // ©dis
+    MP4_ENCODER = 0xA9746F6F, // ©too
+    MP4_GROUPING = 0xA9677270, // ©grp
+    MP4_KEYWORD = 0x6B657977, // keyw
+    MP4_LYRICS = 0xA96C7972, // ©lyr
+    MP4_TITLE = 0xA96E616D, // ©nam
+    MP4_NETURL = 0xA975726C, // ©url
+    MP4_ORIGINALARTIST = 0xA96F7065, // ©ope
+    MP4_ORIGINALFORMAT = 0xA9666D74, // ©fmt
+    MP4_ORIGINALSOURCE = 0xA9737263, // ©src
+    MP4_PERFORMER = 0xA9707266, // ©prf
+    MP4_PRODUCER = 0xA9707264, // ©prd
+    MP4_WARNING = 0xA977726E // ©wrn
+};
+
+static enum WAVFRAMES : uint
+{
+    WAV_IARL = 0x4941524C,
+    WAV_IART = 0x49415254,
+    WAV_ICMS = 0x49434D53,
+    WAV_ICMT = 0x49434D54,
+    WAV_ICOP = 0x49434F50,
+    WAV_ICRD = 0x49435244,
+    WAV_ICRP = 0x49435250,
+    WAV_IDIM = 0x4944494D,
+    WAV_IDPI = 0x49445049,
+    WAV_IENG = 0x49454E47,
+    WAV_IGNR = 0x49474E52,
+    WAV_IKEY = 0x494B4559,
+    WAV_ILGT = 0x494C4754,
+    WAV_IMED = 0x494D4544,
+    WAV_INAM = 0x494E414D,
+    WAV_IPLT = 0x49504C54,
+    WAV_IPRD = 0x49505244,
+    WAV_ISBJ = 0x4953424A,
+    WAV_ISFT = 0x49534654,
+    WAV_ISHP = 0x49534850,
+    WAV_ISRC = 0x49535243,
+    WAV_ISRF = 0x49535246,
+    WAV_ITCH = 0x49544348,
+    WAV_ITRK = 0x4954524B
+};
+
+static enum WAVCARTENTRIES : short
+{
+    WAV_CART_VERSION = 0,
+    WAV_CART_TITLE = 1,
+    WAV_CART_ARTIST = 2,
+    WAV_CART_CUTID = 3,
+    WAV_CART_CLIENTID = 4,
+    WAV_CART_CATEGORY = 5,
+    WAV_CART_CLASSIFICATION = 6,
+    WAV_CART_OUTCUE = 7,
+    WAV_CART_STARTDATE = 8,
+    WAV_CART_STARTTIME = 9,
+    WAV_CART_ENDDATE = 10,
+    WAV_CART_ENDTIME = 11,
+    WAV_CART_PRODUCERAPPID = 12,
+    WAV_CART_PRODUCERAPPVERSION = 13,
+    WAV_CART_USERDEF = 14,
+    WAV_CART_LEVELREFERENCE = 15,
+    WAV_CART_POSTTIMER0 = 16,
+    WAV_CART_POSTTIMER1 = 17,
+    WAV_CART_POSTTIMER2 = 18,
+    WAV_CART_POSTTIMER3 = 19,
+    WAV_CART_POSTTIMER4 = 20,
+    WAV_CART_POSTTIMER5 = 21,
+    WAV_CART_POSTTIMER6 = 22,
+    WAV_CART_POSTTIMER7 = 23,
+    WAV_CART_RESERVED = 24,
+    WAV_CART_URL = 25,
+    WAV_CART_TAGTEXT = 26
+};
+
+
+#define WM_ALBUMARTIST "WM/AlbumArtist"
+#define WM_ALBUMTITLE "WM/AlbumTitle"
+#define WM_AUTHOR "WM/Author"
+#define WM_AUTHORURL "WM/AuthorURL"
+#define WM_BEATSPERMINUTE "WM/BeatsPerMinute"
+#define WM_CATEGORY "WM/Category"
+#define WM_COMPOSER "WM/Composer"
+#define WM_CONDUCTOR "WM/Conductor"
+#define WM_CONTENTDISTRIBUTOR "WM/ContentDistributor"
+#define WM_CONTENTGROUPDESCRIPTION "WM/ContentGroupDescription"
+#define WM_DESCRIPTION "WM/Description"
+#define WM_ENCODEDBY "WM/EncodedBy"
+#define WM_ENCODINGSETTINGS "WM/EncodingSettings"
+#define WM_ENCODINGTIME "WM/EncodingTime"
+#define WM_GENRE "WM/Genre"
+#define WM_INITIALKEY "WM/InitialKey"
+#define WM_ISRC "WM/ISRC"
+#define WM_LANGUAGE "WM/Language"
+#define WM_LYRICS "WM/Lyrics"
+#define WM_MOOD "WM/Mood"
+#define WM_PARENTALRATING "WM/ParentalRating"
+#define WM_PARTOFSET "WM/PartOfSet"
+#define WM_PERIOD "WM/Period"
+#define WM_PRODUCER "WM/Producer"
+#define WM_PROMOTIONURL "WM/PromotionURL"
+#define WM_PROVIDER "WM/Provider"
+#define WM_PROVIDERCOPYRIGHT "WM/ProviderCopyright"
+#define WM_PROVIDERRATING "WM/ProviderRating"
+#define WM_PUBLISHER "WM/Publisher"
+#define WM_TITLE "WM/Title"
+#define WM_TOOLNAME "WM/ToolName"
+#define WM_TOOLVERSION "WM/ToolVersion"
+#define WM_TRACK "WM/Track"
+#define WM_TRACKNUMBER "WM/TrackNumber"
+#define WM_USERWEBURL "WM/UserWebURL"
+#define WM_WRITER "WM/Writer"
+#define WM_YEAR "WM/Year"
+
+
+DllImport BSTR __stdcall AACGetBitRateTypeW();
+DllImport BSTR __stdcall AACGetHeaderTypeW();
+DllImport BSTR __stdcall AACGetProfileW();
+DllImport BSTR __stdcall APEGetAlbumW();
+DllImport BSTR __stdcall APEGetArtistW();
+DllImport BSTR __stdcall APEGetCommentW();
+DllImport BSTR __stdcall APEGetCopyrightW();
+DllImport BSTR __stdcall APEGetGenreW();
+DllImport BSTR __stdcall APEGetItemKeysW();
+DllImport BSTR __stdcall APEGetTitleW();
+DllImport BSTR __stdcall APEGetTrackW();
+DllImport BSTR __stdcall APEGetUserItemW(LPCWSTR Key);
+DllImport BSTR __stdcall APEGetVersionW();
+DllImport BSTR __stdcall APEGetYearW();
+DllImport BSTR __stdcall AUDIOGetAlbumW();
+DllImport BSTR __stdcall AUDIOGetArtistW();
+DllImport BSTR __stdcall AUDIOGetChannelModeW();
+DllImport BSTR __stdcall AUDIOGetCommentW();
+DllImport BSTR __stdcall AUDIOGetComposerW();
+DllImport BSTR __stdcall AUDIOGetGenreW();
+DllImport BSTR __stdcall AUDIOGetLastErrorTextW();
+DllImport BSTR __stdcall AUDIOGetLastFileW();
+DllImport BSTR __stdcall AUDIOGetMD5ValueW();
+DllImport BSTR __stdcall AUDIOGetTitleW();
+DllImport BSTR __stdcall AUDIOGetTrackW();
+DllImport BSTR __stdcall AUDIOGetVersionW();
+DllImport BSTR __stdcall AUDIOGetYearW();
+DllImport BSTR __stdcall FLACGetItemKeysW();
+DllImport BSTR __stdcall FLACGetUserItemW(LPCWSTR ItemKey);
+DllImport BSTR __stdcall FLACGetVendorW();
+DllImport BSTR __stdcall GetAudioGenieVersionW();
+DllImport BSTR __stdcall GetMD5ValueFromFileW(LPCWSTR FileName);
+DllImport BSTR __stdcall ID3V1GetAlbumW();
+DllImport BSTR __stdcall ID3V1GetArtistW();
+DllImport BSTR __stdcall ID3V1GetCommentW();
+DllImport BSTR __stdcall ID3V1GetGenreItemW(short number);
+DllImport BSTR __stdcall ID3V1GetGenreW();
+DllImport BSTR __stdcall ID3V1GetTitleW();
+DllImport BSTR __stdcall ID3V1GetTrackW();
+DllImport BSTR __stdcall ID3V1GetVersionW();
+DllImport BSTR __stdcall ID3V1GetYearW();
+DllImport BSTR __stdcall ID3V2GetAddendumDescriptionW(LPCWSTR ID);
+DllImport BSTR __stdcall ID3V2GetAddendumTitleW(LPCWSTR ID);
+DllImport BSTR __stdcall ID3V2GetAllFrameIDsW();
+DllImport BSTR __stdcall ID3V2GetAudioEncryptionURLW(short Index);
+DllImport BSTR __stdcall ID3V2GetChildElementIDW(LPCWSTR ID, short Index);
+DllImport BSTR __stdcall ID3V2GetCommentDescriptionW(short Index);
+DllImport BSTR __stdcall ID3V2GetCommentLanguageW(short Index);
+DllImport BSTR __stdcall ID3V2GetCommentW(short Index);
+DllImport BSTR __stdcall ID3V2GetCommercialFrameContactURLW(short Index);
+DllImport BSTR __stdcall ID3V2GetCommercialFrameDescriptionW(short Index);
+DllImport BSTR __stdcall ID3V2GetCommercialFramePictureMimeW(short Index);
+DllImport BSTR __stdcall ID3V2GetCommercialFramePriceW(short Index);
+DllImport BSTR __stdcall ID3V2GetCommercialFrameSellerNameW(short Index);
+DllImport BSTR __stdcall ID3V2GetCommercialFrameValidUntilW(short Index);
+DllImport BSTR __stdcall ID3V2GetEncryptionURLW(short Index);
+DllImport BSTR __stdcall ID3V2GetEqualisationIdentificationW(short Index);
+DllImport BSTR __stdcall ID3V2GetGeneralObjectDescriptionW(short Index);
+DllImport BSTR __stdcall ID3V2GetGeneralObjectFilenameW(short Index);
+DllImport BSTR __stdcall ID3V2GetGeneralObjectMimeW(short Index);
+DllImport BSTR __stdcall ID3V2GetGenreW();
+DllImport BSTR __stdcall ID3V2GetGroupIdentificationURLW(short Index);
+DllImport BSTR __stdcall ID3V2GetLinkedInformationAdditionalDataW(short Index);
+DllImport BSTR __stdcall ID3V2GetLinkedInformationURLW(short Index);
+DllImport BSTR __stdcall ID3V2GetLyricDescriptionW(short Index);
+DllImport BSTR __stdcall ID3V2GetLyricLanguageW(short Index);
+DllImport BSTR __stdcall ID3V2GetLyricW(short Index);
+DllImport BSTR __stdcall ID3V2GetOwnershipDateW();
+DllImport BSTR __stdcall ID3V2GetOwnershipPriceW();
+DllImport BSTR __stdcall ID3V2GetOwnershipSellerW();
+DllImport BSTR __stdcall ID3V2GetPictureDescriptionW(short Index);
+DllImport BSTR __stdcall ID3V2GetPictureMimeW(short Index);
+DllImport BSTR __stdcall ID3V2GetPictureTypeTextW(short Index);
+DllImport BSTR __stdcall ID3V2GetPopularimeterEmailW(short Index);
+DllImport BSTR __stdcall ID3V2GetPossibleCHAPIDW();
+DllImport BSTR __stdcall ID3V2GetPossibleTOCIDW();
+DllImport BSTR __stdcall ID3V2GetPrivateFrameURLW(short Index);
+DllImport BSTR __stdcall ID3V2GetRelativeVolumeAdjustmentIdentifierW(short Index);
+DllImport BSTR __stdcall ID3V2GetSubFrameDescriptionW(LPCWSTR ID, short Index);
+DllImport BSTR __stdcall ID3V2GetSubFrameTextW(LPCWSTR ID, short Index);
+DllImport BSTR __stdcall ID3V2GetSyncLyricDescriptionW(short Index);
+DllImport BSTR __stdcall ID3V2GetSyncLyricLanguageW(short Index);
+DllImport BSTR __stdcall ID3V2GetSyncLyricW(short Index);
+DllImport BSTR __stdcall ID3V2GetTextFrameW(u32 FrameID);
+DllImport BSTR __stdcall ID3V2GetTOCRootIDW();
+DllImport BSTR __stdcall ID3V2GetUniqueFileIdentifierOwnerW(short Index);
+DllImport BSTR __stdcall ID3V2GetURLFrameW(u32 FrameID);
+DllImport BSTR __stdcall ID3V2GetUserFrameLanguageW(short Index);
+DllImport BSTR __stdcall ID3V2GetUserFrameW(short Index);
+DllImport BSTR __stdcall ID3V2GetUserTextDescriptionW(short Index);
+DllImport BSTR __stdcall ID3V2GetUserTextW(short Index);
+DllImport BSTR __stdcall ID3V2GetUserURLDescriptionW(short Index);
+DllImport BSTR __stdcall ID3V2GetUserURLW(short Index);
+DllImport BSTR __stdcall ID3V2GetVersionW();
+DllImport BSTR __stdcall LYRICSGetAlbumW();
+DllImport BSTR __stdcall LYRICSGetArtistW();
+DllImport BSTR __stdcall LYRICSGetAuthorW();
+DllImport BSTR __stdcall LYRICSGetGenreW();
+DllImport BSTR __stdcall LYRICSGetImageLinkW();
+DllImport BSTR __stdcall LYRICSGetIndicationW();
+DllImport BSTR __stdcall LYRICSGetInformationW();
+DllImport BSTR __stdcall LYRICSGetLyricsW();
+DllImport BSTR __stdcall LYRICSGetTitleW();
+DllImport BSTR __stdcall LYRICSGetVersionW();
+DllImport BSTR __stdcall MONKEYGetCompressionW();
+DllImport BSTR __stdcall MP4GetAllFrameIDsW();
+DllImport BSTR __stdcall MP4GetGenreW();
+DllImport BSTR __stdcall MP4GetiTuneFrameW(LPCWSTR FrameID);
+DllImport BSTR __stdcall MP4GetPictureMimeW(short Index);
+DllImport BSTR __stdcall MP4GetTextFrameW(u32 FrameID);
+DllImport BSTR __stdcall MP4GetTrackW();
+DllImport BSTR __stdcall MP4GetVersionW();
+DllImport BSTR __stdcall MPEGGetEmphasisW();
+DllImport BSTR __stdcall MPEGGetEncoderW();
+DllImport BSTR __stdcall MPEGGetLayerW();
+DllImport BSTR __stdcall MPEGGetVersionW();
+DllImport BSTR __stdcall OGGGetAlbumW();
+DllImport BSTR __stdcall OGGGetArtistW();
+DllImport BSTR __stdcall OGGGetCommentW();
+DllImport BSTR __stdcall OGGGetContactW();
+DllImport BSTR __stdcall OGGGetCopyrightW();
+DllImport BSTR __stdcall OGGGetDateW();
+DllImport BSTR __stdcall OGGGetDescriptionW();
+DllImport BSTR __stdcall OGGGetGenreW();
+DllImport BSTR __stdcall OGGGetISRCW();
+DllImport BSTR __stdcall OGGGetItemKeysW();
+DllImport BSTR __stdcall OGGGetLicenseW();
+DllImport BSTR __stdcall OGGGetLocationW();
+DllImport BSTR __stdcall OGGGetOrganizationW();
+DllImport BSTR __stdcall OGGGetPerformerW();
+DllImport BSTR __stdcall OGGGetTitleW();
+DllImport BSTR __stdcall OGGGetTrackW();
+DllImport BSTR __stdcall OGGGetUserItemW(LPCWSTR ItemKey);
+DllImport BSTR __stdcall OGGGetVendorW();
+DllImport BSTR __stdcall OGGGetVersionW();
+DllImport BSTR __stdcall WAVGetCartChunkEntryW(short Index);
+DllImport BSTR __stdcall WAVGetFormatW();
+DllImport BSTR __stdcall WAVGetTextFrameW(u32 FrameID);
+DllImport BSTR __stdcall WAVGetInfoChunkIDsW();
+DllImport BSTR __stdcall WMAGetItemKeysW();
+DllImport BSTR __stdcall WMAGetPictureDescriptionW(short Index);
+DllImport BSTR __stdcall WMAGetPictureMimeW(short Index);
+DllImport BSTR __stdcall WMAGetUserItemW(LPCWSTR ItemKey);
+DllImport float __stdcall AUDIOGetDurationW();
+DllImport float __stdcall FLACGetCompressionRatioW();
+DllImport float __stdcall MONKEYGetCompressionRatioW();
+DllImport float __stdcall MONKEYGetPeakW();
+DllImport long __stdcall APEGetSizeW();
+DllImport long __stdcall AUDIOGetBitrateW();
+DllImport long __stdcall AUDIOGetChannelsW();
+DllImport long __stdcall AUDIOGetDurationMillisW();
+DllImport long __stdcall AUDIOGetFileSizeW();
+DllImport long __stdcall AUDIOGetLastErrorNumberW();
+DllImport long __stdcall AUDIOGetSampleRateW();
+DllImport long __stdcall FLACGetBitsPerSampleW();
+DllImport long __stdcall FLACGetMaxBlockSizeW();
+DllImport long __stdcall FLACGetMaxFrameSizeW();
+DllImport long __stdcall FLACGetMinBlockSizeW();
+DllImport long __stdcall FLACGetMinFrameSizeW();
+DllImport long __stdcall FLACGetSamplesW();
+DllImport long __stdcall GetConfigValueW(u32 key);
+DllImport long __stdcall ID3V2GetAudioEncryptionDataW(BYTE *arr, u32 maxLen, short Index);
+DllImport long __stdcall ID3V2GetAudioSeekPointBitsPerIndexpointW();
+DllImport long __stdcall ID3V2GetAudioSeekPointDataW(BYTE *arr, u32 maxLen);
+DllImport long __stdcall ID3V2GetAudioSeekPointLengthW();
+DllImport long __stdcall ID3V2GetAudioSeekPointNumberW();
+DllImport long __stdcall ID3V2GetAudioSeekPointStartW();
+DllImport long __stdcall ID3V2GetCommercialFramePictureW(BYTE *arr, u32 maxLen, short Index);
+DllImport long __stdcall ID3V2GetEncryptionDataW(BYTE *arr, u32 maxLen, short Index);
+DllImport long __stdcall ID3V2GetEqualisationDataW(BYTE *arr, u32 maxLen, short Index);
+DllImport long __stdcall ID3V2GetEventTimingCodesDataW(BYTE *arr, u32 maxLen);
+DllImport long __stdcall ID3V2GetGeneralObjectDataW(BYTE *arr, u32 maxLen, short Index);
+DllImport long __stdcall ID3V2GetGroupIdentificationDataW(BYTE *arr, u32 maxLen, short Index);
+DllImport long __stdcall ID3V2GetLinkedInformationFrameIdentifierW(short Index);
+DllImport long __stdcall ID3V2GetMpegLocationLookupTableBytesDeviationW();
+DllImport long __stdcall ID3V2GetMpegLocationLookupTableBytesW();
+DllImport long __stdcall ID3V2GetMpegLocationLookupTableDataW(BYTE *arr, u32 maxLen);
+DllImport long __stdcall ID3V2GetMpegLocationLookupTableFramesW();
+DllImport long __stdcall ID3V2GetMpegLocationLookupTableMillisecondsDeviationW();
+DllImport long __stdcall ID3V2GetMpegLocationLookupTableMillisecondsW();
+DllImport long __stdcall ID3V2GetMusicCdIdentifierDataW(BYTE *arr, u32 maxLen);
+DllImport long __stdcall ID3V2GetPictureArrayW(BYTE *arr, u32 maxLen, short Index);
+DllImport long __stdcall ID3V2GetPlayCounterW();
+DllImport long __stdcall ID3V2GetPopularimeterCounterW(short Index);
+DllImport long __stdcall ID3V2GetPositionSynchronisationValueW();
+DllImport long __stdcall ID3V2GetPrivateFrameDataW(BYTE *arr, u32 maxLen, short Index);
+DllImport long __stdcall ID3V2GetRecommendedBufferSizeOffsetW();
+DllImport long __stdcall ID3V2GetRecommendedBufferSizeValueW();
+DllImport long __stdcall ID3V2GetRelativeVolumeAdjustmentDataW(BYTE *arr, u32 maxLen, short Index);
+DllImport long __stdcall ID3V2GetSeekOffsetW();
+DllImport long __stdcall ID3V2GetSignatureFrameDataW(BYTE *arr, u32 maxLen, short Index);
+DllImport long __stdcall ID3V2GetSizeW();
+DllImport long __stdcall ID3V2GetSubFrameImageW(BYTE *arr, u32 maxLen, LPCWSTR ID, short Index);
+DllImport long __stdcall ID3V2GetSynchronizedTempoDataW(BYTE *arr, u32 maxLen);
+DllImport long __stdcall ID3V2GetUniqueFileIdentifierDataW(BYTE *arr, u32 maxLen, short Index);
+DllImport long __stdcall LYRICSGetSizeW();
+DllImport long __stdcall LYRICSGetStartPositionW();
+DllImport long __stdcall MONKEYGetFramesW();
+DllImport long __stdcall MONKEYGetSamplesPerFrameW();
+DllImport long __stdcall MONKEYGetSamplesW();
+DllImport long __stdcall MP4GetPictureArrayW(BYTE *arr, u32 maxLen, short Index);
+DllImport long __stdcall MP4GetPictureCountW();
+DllImport long __stdcall MPEGGetFramePositionW();
+DllImport long __stdcall MPEGGetFrameSizeW();
+DllImport long __stdcall MPEGGetFramesW();
+DllImport long __stdcall MPPGetFramesW();
+DllImport long __stdcall OGGGetBitRateNominalW();
+DllImport long __stdcall WAVGetBitsPerSampleW();
+DllImport long __stdcall WAVGetBlockAlignW();
+DllImport long __stdcall WAVGetBytesPerSecondW();
+DllImport long __stdcall WAVGetChannelsW();
+DllImport long __stdcall WAVGetHeaderSizeW();
+DllImport long __stdcall WMAGetPictureArrayW(BYTE *arr, u32 maxLen, short Index);
+DllImport short __stdcall APEExistsW();
+DllImport short __stdcall APERemoveTagFromFileW(LPCWSTR FileName);
+DllImport short __stdcall APERemoveTagW();
+DllImport short __stdcall APESaveChangesToFileW(LPCWSTR FileName);
+DllImport short __stdcall APESaveChangesW();
+DllImport short __stdcall AUDIOAnalyzeFileW(LPCWSTR FileName);
+DllImport short __stdcall AUDIOIsValidFormatW();
+DllImport short __stdcall AUDIOSaveChangesToFileW(LPCWSTR FileName);
+DllImport short __stdcall AUDIOSaveChangesW();
+DllImport short __stdcall FLACSaveChangesToFileW(LPCWSTR FileName);
+DllImport short __stdcall FLACSaveChangesW();
+DllImport short __stdcall ID3V1ExistsW();
+DllImport short __stdcall ID3V1GetGenreIDW();
+DllImport short __stdcall ID3V1GetGenresW();
+DllImport short __stdcall ID3V1RemoveTagFromFileW(LPCWSTR FileName);
+DllImport short __stdcall ID3V1RemoveTagW();
+DllImport short __stdcall ID3V1SaveChangesToFileW(LPCWSTR FileName);
+DllImport short __stdcall ID3V1SaveChangesW();
+DllImport short __stdcall ID3V2AddAudioEncryptionW(BYTE *arr, u32 maxLen, LPCWSTR URL, short PreviewStart, short PreviewLength);
+DllImport short __stdcall ID3V2AddAudioSeekPointW(BYTE *arr, u32 maxLen, long start, long length, short numbers, BYTE BitsPerPoint);
+DllImport short __stdcall ID3V2AddChapterW(LPCWSTR ID, LPCWSTR Title, LPCWSTR Description, u32 startTime, u32 endTime);
+DllImport short __stdcall ID3V2AddChildElementW(LPCWSTR ParentTocID, LPCWSTR ChildID);
+DllImport short __stdcall ID3V2AddCommentW(LPCWSTR Language, LPCWSTR Description, LPCWSTR Text);
+DllImport short __stdcall ID3V2AddCommercialFrameW(BYTE *arr, u32 maxLen, LPCWSTR Price, LPCWSTR validUntil, LPCWSTR contactUrl , short receivedAs , LPCWSTR seller, LPCWSTR description);
+DllImport short __stdcall ID3V2AddEncryptionW(BYTE *arr, u32 maxLen, LPCWSTR URL, short Symbol);
+DllImport short __stdcall ID3V2AddEqualisationW(BYTE *arr, u32 maxLen, BYTE Interpolationmethod, LPCWSTR Identification);
+DllImport short __stdcall ID3V2AddEventTimingCodesW(BYTE *arr, u32 maxLen, BYTE TimestampFormat);
+DllImport short __stdcall ID3V2AddGeneralObjectW(BYTE *arr, u32 maxLen, LPCWSTR Mime, LPCWSTR FileName, LPCWSTR Description);
+DllImport short __stdcall ID3V2AddGroupIdentificationW(BYTE *arr, u32 length, LPCWSTR Url, BYTE symbol);
+DllImport short __stdcall ID3V2AddLinkedInformationW(long FrameIdentifier, LPCWSTR URL, LPCWSTR additionalData);
+DllImport short __stdcall ID3V2AddLyricW(LPCWSTR Language, LPCWSTR Description, LPCWSTR Text);
+DllImport short __stdcall ID3V2AddMpegLocationLookupTableW(BYTE *arr, u32 length, long Frames, long Bytes, long Milliseconds, BYTE BytesDeviation, BYTE MillisecondsDeviation);
+DllImport short __stdcall ID3V2AddMusicCdIdentifierW(BYTE *arr, u32 length);
+DllImport short __stdcall ID3V2AddOwnershipW(LPCWSTR Price, LPCWSTR dateString, LPCWSTR Seller);
+DllImport short __stdcall ID3V2AddPictureArrayW(BYTE *arr, u32 Length, LPCWSTR Description, short PictureType);
+DllImport short __stdcall ID3V2AddPictureFileW(LPCWSTR FileName, LPCWSTR Description, short PictureType, short asLink);
+DllImport short __stdcall ID3V2AddPopularimeterW(LPCWSTR Email, short Rating, long Counter);
+DllImport short __stdcall ID3V2AddPositionSynchronisationW(BYTE TimestampFormat, long Position);
+DllImport short __stdcall ID3V2AddPrivateFrameW(BYTE *arr, u32 length, LPCWSTR URL);
+DllImport short __stdcall ID3V2AddRecommendedBufferSizeW(long BufferSize, BYTE EmbeddedInfoFlag, long Offset);
+DllImport short __stdcall ID3V2AddRelativeVolumeAdjustmentW(BYTE *arr, u32 length, LPCWSTR Identifier);
+DllImport short __stdcall ID3V2AddReverbW(short reverbLeft, short reverbRight, BYTE bouncesLeft, BYTE bouncesRight, BYTE feedbackLeftToLeft, BYTE feedbackLeftToRight, BYTE feedbackRightToRight, BYTE feedbackRightToLeft, BYTE premixLeftToRight, BYTE premixRightToLeft);
+DllImport short __stdcall ID3V2AddSeekOffsetW(long offset);
+DllImport short __stdcall ID3V2AddSignatureFrameW(BYTE *arr, u32 length, short GroupSymbol);
+DllImport short __stdcall ID3V2AddSynchronizedTempoW(BYTE *arr, u32 length, short Format);
+DllImport short __stdcall ID3V2AddSyncLyricW(LPCWSTR Language, LPCWSTR Description, LPCWSTR Text, short ContentType, short TimeStampFormat);
+DllImport short __stdcall ID3V2AddTableOfContentW(LPCWSTR ID, LPCWSTR Title, LPCWSTR Description, short isOrdered);
+DllImport short __stdcall ID3V2AddUniqueFileIdentifierW(BYTE *arr, u32 length, LPCWSTR Owner);
+DllImport short __stdcall ID3V2AddUserFrameW(LPCWSTR Language, LPCWSTR Text);
+DllImport short __stdcall ID3V2AddUserTextW(LPCWSTR Description, LPCWSTR Text);
+DllImport short __stdcall ID3V2AddUserURLW(LPCWSTR Description, LPCWSTR URL);
+DllImport short __stdcall ID3V2DeleteAddendumW(LPCWSTR ID);
+DllImport short __stdcall ID3V2DeleteAllFramesW(u32 FrameID);
+DllImport short __stdcall ID3V2DeleteChildElementW(LPCWSTR ParentTocID, LPCWSTR ChildID);
+DllImport short __stdcall ID3V2DeleteSelectedFrameW(u32 FrameID, short Index);
+DllImport short __stdcall ID3V2DeleteSubFrameW(LPCWSTR ID, long FrameID);
+DllImport short __stdcall ID3V2ExistsW();
+DllImport short __stdcall ID3V2GetAddendumTypeW(LPCWSTR ID);
+DllImport short __stdcall ID3V2GetAudioEncryptionPreviewLengthW(short Index);
+DllImport short __stdcall ID3V2GetAudioEncryptionPreviewStartW(short Index);
+DllImport short __stdcall ID3V2GetChildElementsW(LPCWSTR ID);
+DllImport short __stdcall ID3V2GetCommercialFrameReceivedAsW(short Index);
+DllImport short __stdcall ID3V2GetEncodingW(u32 FrameID);
+DllImport short __stdcall ID3V2GetEncryptionSymbolW(short Index);
+DllImport short __stdcall ID3V2GetEqualisationAdjustmentBitsW(short Index);
+DllImport short __stdcall ID3V2GetEqualisationInterpolationW(short Index);
+DllImport short __stdcall ID3V2GetEventTimingCodesTimestampFormatW();
+DllImport short __stdcall ID3V2GetFrameCountW(u32 FrameID);
+DllImport short __stdcall ID3V2GetGroupIdentificationSymbolW(short Index);
+DllImport short __stdcall ID3V2GetPictureFileW(LPCWSTR FileName, short Index);
+DllImport short __stdcall ID3V2GetPictureTypeW(short Index);
+DllImport short __stdcall ID3V2GetPopularimeterRatingW(short Index);
+DllImport short __stdcall ID3V2GetPositionSynchronisationTimestampFormatW();
+DllImport short __stdcall ID3V2GetRecommendedBufferSizeFlagW();
+DllImport short __stdcall ID3V2GetReverbBouncesLeftW();
+DllImport short __stdcall ID3V2GetReverbBouncesRightW();
+DllImport short __stdcall ID3V2GetReverbFeedbackLeftToLeftW();
+DllImport short __stdcall ID3V2GetReverbFeedbackLeftToRightW();
+DllImport short __stdcall ID3V2GetReverbFeedbackRightToLeftW();
+DllImport short __stdcall ID3V2GetReverbFeedbackRightToRightW();
+DllImport short __stdcall ID3V2GetReverbLeftW();
+DllImport short __stdcall ID3V2GetReverbPremixLeftToRightW();
+DllImport short __stdcall ID3V2GetReverbPremixRightToLeftW();
+DllImport short __stdcall ID3V2GetReverbRightW();
+DllImport short __stdcall ID3V2GetSignatureFrameGroupSymbolW(short Index);
+DllImport short __stdcall ID3V2GetSubFrameImageTypeW(LPCWSTR ID, short Index);
+DllImport short __stdcall ID3V2GetSubFramesW(LPCWSTR ID);
+DllImport short __stdcall ID3V2GetSubFrameTypeW(LPCWSTR ID, short Index);
+DllImport short __stdcall ID3V2GetSynchronizedTempoFormatW();
+DllImport short __stdcall ID3V2GetSyncLyricContentTypeW(short Index);
+DllImport short __stdcall ID3V2GetSyncLyricTimeFormatW(short Index);
+DllImport short __stdcall ID3V2GetTOCIsOrderedW(LPCWSTR ID);
+DllImport short __stdcall ID3V2ImportCueFileW(LPCWSTR FileName);
+DllImport short __stdcall ID3V2RemoveTagFromFileW(LPCWSTR FileName);
+DllImport short __stdcall ID3V2RemoveTagW();
+DllImport short __stdcall ID3V2SaveChangesToFileW(LPCWSTR FileName);
+DllImport short __stdcall ID3V2SaveChangesW();
+DllImport short __stdcall ID3V2SetAddendumDescriptionW(LPCWSTR ID, LPCWSTR newDescription);
+DllImport short __stdcall ID3V2SetAddendumTitleW(LPCWSTR ID, LPCWSTR newTitle);
+DllImport short __stdcall ID3V2SetChapterTimesW(LPCWSTR ID, u32 startTime, u32 endTime);
+DllImport short __stdcall ID3V2SetFormatAndEncodingW(int format, int encoding);
+DllImport short __stdcall ID3V2SetImageSubFrameW(BYTE *arr, u32 maxLen, LPCWSTR ID, LPCWSTR Description, short PictureType);
+DllImport short __stdcall ID3V2SetTextSubFrameW(LPCWSTR ID, long FrameID, LPCWSTR textString, LPCWSTR description);
+DllImport short __stdcall ID3V2SetTOCIsOrderedW(LPCWSTR ID, short status);
+DllImport short __stdcall ID3V2SetURLSubFrameW(LPCWSTR ID, long FrameID, LPCWSTR urlString, LPCWSTR description);
+DllImport short __stdcall LYRICSExistsW();
+DllImport short __stdcall LYRICSRemoveTagFromFileW(LPCWSTR FileName);
+DllImport short __stdcall LYRICSRemoveTagW();
+DllImport short __stdcall LYRICSSaveChangesToFileW(LPCWSTR FileName);
+DllImport short __stdcall LYRICSSaveChangesW();
+DllImport short __stdcall MONKEYGetBitsW();
+DllImport short __stdcall MP4AddPictureArrayW(BYTE *arr, u32 Length);
+DllImport short __stdcall MP4AddPictureFileW(LPCWSTR FileName);
+DllImport short __stdcall MP4GetPictureFileW(LPCWSTR FileName, short Index);
+DllImport short __stdcall MP4SaveChangesToFileW(LPCWSTR FileName);
+DllImport short __stdcall MP4SaveChangesW();
+DllImport short __stdcall MPEGIsCopyrightedW();
+DllImport short __stdcall MPEGIsOriginalW();
+DllImport short __stdcall MPEGIsPaddingW();
+DllImport short __stdcall MPEGIsPrivateW();
+DllImport short __stdcall MPEGIsProtectedW();
+DllImport short __stdcall MPEGIsVBRW();
+DllImport short __stdcall MPEGSetCopyrightedW(LPCWSTR FileName, short newValue);
+DllImport short __stdcall MPEGSetOriginalW(LPCWSTR FileName, short newValue);
+DllImport short __stdcall MPEGSetPrivateW(LPCWSTR FileName, short newValue);
+DllImport short __stdcall MPPGetStreamVersionW();
+DllImport short __stdcall OGGRemoveTagFromFileW(LPCWSTR FileName);
+DllImport short __stdcall OGGRemoveTagW();
+DllImport short __stdcall OGGSaveChangesToFileW(LPCWSTR FileName);
+DllImport short __stdcall OGGSaveChangesW();
+DllImport short __stdcall WAVGetFormatIDW();
+DllImport short __stdcall WAVSaveChangesW();
+DllImport short __stdcall WAVSaveChangesToFileW(LPCWSTR FileName);
+DllImport short __stdcall WMADeletePictureW(short Index);
+DllImport short __stdcall WMAGetPictureFileW(LPCWSTR FileName, short Index);
+DllImport short __stdcall WMAGetPictureCountW();
+DllImport short __stdcall WMAGetPictureTypeW(short Index);
+DllImport short __stdcall WMAIsVBRW();
+DllImport short __stdcall WMASaveChangesToFileW(LPCWSTR FileName);
+DllImport short __stdcall WMASaveChangesW();
+DllImport short __stdcall WMAAddPictureArrayW(BYTE *arr, u32 Length, LPCWSTR Description, short PictureType, short index);
+DllImport short __stdcall WMAAddPictureFileW(LPCWSTR FileName, LPCWSTR Description, short PictureType, short Index);
+DllImport u32 __stdcall ID3V2GetChapterEndTimeW(LPCWSTR ID);
+DllImport u32 __stdcall ID3V2GetChapterStartTimeW(LPCWSTR ID);
+DllImport u32 __stdcall ID3V2GetSubFrameIDW(LPCWSTR ID, short Index);
+DllImport void __stdcall APESetAlbumW(LPCWSTR textString);
+DllImport void __stdcall APESetArtistW(LPCWSTR textString);
+DllImport void __stdcall APESetCommentW(LPCWSTR textString);
+DllImport void __stdcall APESetCopyrightW(LPCWSTR textString);
+DllImport void __stdcall APESetGenreW(LPCWSTR textString);
+DllImport void __stdcall APESetTitleW(LPCWSTR textString);
+DllImport void __stdcall APESetTrackW(LPCWSTR textString);
+DllImport void __stdcall APESetUserItemW(LPCWSTR Key, LPCWSTR textString);
+DllImport void __stdcall APESetYearW(LPCWSTR textString);
+DllImport void __stdcall AUDIOSetAlbumW(LPCWSTR textString);
+DllImport void __stdcall AUDIOSetArtistW(LPCWSTR textString);
+DllImport void __stdcall AUDIOSetCommentW(LPCWSTR textString);
+DllImport void __stdcall AUDIOSetComposerW(LPCWSTR textString);
+DllImport void __stdcall AUDIOSetGenreW(LPCWSTR textString);
+DllImport void __stdcall AUDIOSetTitleW(LPCWSTR textString);
+DllImport void __stdcall AUDIOSetTrackW(LPCWSTR textString);
+DllImport void __stdcall AUDIOSetYearW(LPCWSTR textString);
+DllImport void __stdcall SetPopupKeyW(LPCWSTR keyValue);
+DllImport void __stdcall FLACSetUserItemW(LPCWSTR ItemKey, LPCWSTR textString);
+DllImport void __stdcall FLACSetVendorW(LPCWSTR textString);
+DllImport void __stdcall ID3V1SetAlbumW(LPCWSTR textString);
+DllImport void __stdcall ID3V1SetArtistW(LPCWSTR textString);
+DllImport void __stdcall ID3V1SetCommentW(LPCWSTR textString);
+DllImport void __stdcall ID3V1SetGenreIDW(short nNewValue);
+DllImport void __stdcall ID3V1SetGenreW(LPCWSTR textString);
+DllImport void __stdcall ID3V1SetTitleW(LPCWSTR textString);
+DllImport void __stdcall ID3V1SetTrackW(LPCWSTR textString);
+DllImport void __stdcall ID3V1SetYearW(LPCWSTR textString);
+DllImport void __stdcall ID3V2SetGenreW(LPCWSTR textString);
+DllImport void __stdcall ID3V2SetPlayCounterW(long counter);
+DllImport void __stdcall ID3V2SetTextFrameW(u32 FrameID, LPCWSTR textString);
+DllImport void __stdcall ID3V2SetURLFrameW(u32 FrameID, LPCWSTR textString);
+DllImport void __stdcall LYRICSSetAlbumW(LPCWSTR textString);
+DllImport void __stdcall LYRICSSetArtistW(LPCWSTR textString);
+DllImport void __stdcall LYRICSSetAuthorW(LPCWSTR textString);
+DllImport void __stdcall LYRICSSetGenreW(LPCWSTR textString);
+DllImport void __stdcall LYRICSSetImageLinkW(LPCWSTR textString);
+DllImport void __stdcall LYRICSSetIndicationW(LPCWSTR textString);
+DllImport void __stdcall LYRICSSetInformationW(LPCWSTR textString);
+DllImport void __stdcall LYRICSSetLyricsW(LPCWSTR textString);
+DllImport void __stdcall LYRICSSetTitleW(LPCWSTR textString);
+DllImport void __stdcall MP4DeleteEntriesW();
+DllImport void __stdcall MP4DeletePictureW(short Index);
+DllImport void __stdcall MP4DeletePicturesW();
+DllImport void __stdcall MP4SetGenreW(LPCWSTR textString);
+DllImport void __stdcall MP4SetiTuneFrameW(LPCWSTR FrameID, LPCWSTR textString);
+DllImport void __stdcall MP4SetTextFrameW(u32 FrameID, LPCWSTR textString);
+DllImport void __stdcall MP4SetTrackW(LPCWSTR textString);
+DllImport void __stdcall OGGSetAlbumW(LPCWSTR textString);
+DllImport void __stdcall OGGSetArtistW(LPCWSTR textString);
+DllImport void __stdcall OGGSetCommentW(LPCWSTR textString);
+DllImport void __stdcall OGGSetContactW(LPCWSTR textString);
+DllImport void __stdcall OGGSetCopyrightW(LPCWSTR textString);
+DllImport void __stdcall OGGSetDateW(LPCWSTR textString);
+DllImport void __stdcall OGGSetDescriptionW(LPCWSTR textString);
+DllImport void __stdcall OGGSetGenreW(LPCWSTR textString);
+DllImport void __stdcall OGGSetISRCW(LPCWSTR textString);
+DllImport void __stdcall OGGSetLicenseW(LPCWSTR textString);
+DllImport void __stdcall OGGSetLocationW(LPCWSTR textString);
+DllImport void __stdcall OGGSetOrganizationW(LPCWSTR textString);
+DllImport void __stdcall OGGSetPerformerW(LPCWSTR textString);
+DllImport void __stdcall OGGSetTitleW(LPCWSTR textString);
+DllImport void __stdcall OGGSetTrackW(LPCWSTR textString);
+DllImport void __stdcall OGGSetUserItemW(LPCWSTR ItemKey, LPCWSTR textString);
+DllImport void __stdcall OGGSetVendorW(LPCWSTR textString);
+DllImport void __stdcall OGGSetVersionW(LPCWSTR textString);
+DllImport void __stdcall SetConfigValueW(short key, short value);
+DllImport void __stdcall SetLogFileW(LPCWSTR fileName);
+DllImport void __stdcall WAVSetCartChunkEntryW(short Index, LPCWSTR textString);
+DllImport void __stdcall WAVSetTextFrameW(u32 FrameID, LPCWSTR textString);
+DllImport void __stdcall WMADeletePicturesW();
+DllImport void __stdcall WMASetUserItemW(LPCWSTR ItemKey, LPCWSTR textString);
