@@ -1,0 +1,16 @@
+# graphify: nur Quellcode und Tests, keine generierte Doku, keine Audio-Fixtures, kein Drittanbieter-Code
+doku/
+tests/fixtures/
+tests/fixtures_local/
+tests/third_party/
+tests/out/
+build-asan/
+*.bak
+VBasic/Res/
+*.bmp
+*.gif
+*.jpg
+*.png
+*.ico
+*.txt
+*.md

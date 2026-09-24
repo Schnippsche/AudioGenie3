@@ -6,5 +6,5 @@
     <Platform Name="x64" />
     <Platform Name="x86" />
   </Configurations>
-  <Project Path="AudioGenie3.vcxproj" />
+  <Project Path="AudioGenie3.vcxproj" Id="9d2c8d2b-b702-452e-89a1-88cc79b1ab75" />
 </Solution>
