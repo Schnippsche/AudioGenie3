@@ -38,11 +38,13 @@ TEST_CASE("Zufaellig beschaedigte Dateien (deterministisch)", "[robust]")
 {
     uint32_t seed = 12345;
     auto rnd = [&] { seed = seed * 1664525u + 1013904223u; return seed >> 8; };
+    int which = 0;
     for (const Bytes& base : { makeWav(44100, 2, 0.05), makeMp3(10) }) {
+        const std::string name = (which++ == 0) ? "fuzz.wav" : "fuzz.mp3";   // MP3 wird nur mit passender Endung erkannt
         for (int round = 0; round < 200; round++) {
             Bytes b = base;
             for (int k = 0; k < 4; k++) b[rnd() % std::min<size_t>(b.size(), 200)] = static_cast<uint8_t>(rnd());
-            analyzeAndReadAll(writeTemp("fuzz.bin", b));
+            analyzeAndReadAll(writeTemp(name, b));
         }
     }
     SUCCEED("kein Absturz");

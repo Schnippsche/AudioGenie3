@@ -24,7 +24,7 @@ call "C:\Program Files\Microsoft Visual Studio\18\Community\VC\Auxiliary\Build\v
 pushd "%OUT%"
 rem Catch2 nur einmal pro Architektur uebersetzen
 if not exist catch2.obj cl /nologo /EHsc /utf-8 /std:c++17 /O1 /MD /I"%TESTS%third_party" /c /Fo:catch2.obj "%TESTS%third_party\catch2\catch_amalgamated.cpp" || goto :fail
-cl /nologo /EHsc /utf-8 /wd4828 /std:c++17 /O1 /W3 /MD /I"%TESTS%third_party" /DAG3_FIXTURES_DIR=\"%TESTS:\=/%fixtures\" /DAG3_DEF_PATH=\"%ROOT:\=/%/AudioGenie3.def\" /Fe:ag3tests.exe "%TESTS%support.cpp" "%TESTS%test_exports.cpp" "%TESTS%test_wav.cpp" "%TESTS%test_mpeg.cpp" "%TESTS%test_robustness.cpp" "%TESTS%test_formats.cpp" "%TESTS%test_id3v2.cpp" "%TESTS%test_id3v2_frames.cpp" catch2.obj /link "%DLLDIR%\AudioGenie3.lib" oleaut32.lib || goto :fail
+cl /nologo /EHsc /utf-8 /wd4828 /std:c++17 /O1 /W3 /MD /I"%TESTS%third_party" /DAG3_FIXTURES_DIR=\"%TESTS:\=/%fixtures\" /DAG3_DEF_PATH=\"%ROOT:\=/%/AudioGenie3.def\" /Fe:ag3tests.exe "%TESTS%support.cpp" "%TESTS%test_exports.cpp" "%TESTS%test_wav.cpp" "%TESTS%test_mpeg.cpp" "%TESTS%test_robustness.cpp" "%TESTS%test_formats.cpp" "%TESTS%test_id3v2.cpp" "%TESTS%test_id3v2_frames.cpp" "%TESTS%test_fuzz_write.cpp" catch2.obj /link "%DLLDIR%\AudioGenie3.lib" oleaut32.lib || goto :fail
 set "PATH=%DLLDIR%;%PATH%"
 echo === Tests %A% ===
 rem ".\" noetig: das aktuelle Verzeichnis liegt evtl. nicht im Suchpfad (NoDefaultCurrentDirectoryInExePath)

@@ -4,7 +4,12 @@
 #include "support.h"
 #include "../Wrapper/C C++/audiogenie3.h"
 #include <algorithm>
+#include <chrono>
 #include <cstdlib>
+#include <future>
+#include <memory>
+#include <process.h>
+#include <thread>
 #include <cstring>
 
 using namespace ag3test;
@@ -119,6 +124,19 @@ bool isGap(const char* file, Field f)
 // Fixtures, bei denen der Standard-Round-Trip nicht gilt: AAC wird als APE-Tag geschrieben (siehe Doku von
 // AUDIOSaveChangesW); ein vorhandener ID3v2-Tag am Dateianfang hat beim Lesen Vorrang (eigener Test unten).
 bool skipWriteTests(const char* file) { return !strcmp(file, "aac/adts_id3_sample-2.aac"); }
+
+// Bricht den Prozess mit Exitcode 98 ab, wenn f nicht innerhalb von 'seconds' fertig wird (Haenger statt Endlosschleife melden).
+template <class F> void mustFinishWithin(int seconds, const char* what, F f)
+{
+    auto done = std::make_shared<std::promise<void>>();
+    auto fut = done->get_future();
+    std::thread([done, f]() mutable { f(); done->set_value(); }).detach();
+    if (fut.wait_for(std::chrono::seconds(seconds)) != std::future_status::ready) {
+        fprintf(stderr, "\nHAENGER: %s dauert laenger als %d s\n", what, seconds);
+        fflush(stderr);
+        _exit(98);
+    }
+}
 
 fs::path fixturePath(const char* rel) { return fs::path(AG3_FIXTURES_DIR) / rel; }
 
@@ -432,14 +450,14 @@ TEST_CASE("Beschaedigte Fixtures: kein Absturz beim Analysieren", "[formats][rob
             for (int i = 0; i < 12 * rounds; i++) {
                 const size_t len = rnd() % orig.size();
                 Bytes b(orig.begin(), orig.begin() + len);
-                AUDIOAnalyzeFileW(writeTemp("cut.bin", b).c_str());
+                AUDIOAnalyzeFileW(writeTemp("cut" + fs::path(fx.file).extension().string(), b).c_str());   // Endung erhalten (MP3/AAC werden nur damit erkannt)
                 take(AUDIOGetTitleW()); AUDIOGetDurationW();
             }
             // 2) einzelne Bytes im Kopfbereich veraendert
             for (int i = 0; i < 40 * rounds; i++) {
                 Bytes b = orig;
                 for (int k = 0; k < 3; k++) b[rnd() % head] = static_cast<uint8_t>(rnd());
-                AUDIOAnalyzeFileW(writeTemp("mut.bin", b).c_str());
+                AUDIOAnalyzeFileW(writeTemp("mut" + fs::path(fx.file).extension().string(), b).c_str());
                 for (int f = 0; f < FieldCount; f++) getField(static_cast<Field>(f));
                 AUDIOGetDurationW(); take(AUDIOGetMD5ValueW());
             }
@@ -463,6 +481,18 @@ TEST_CASE("ASan-Regressionen: kaputte Dateien", "[formats][robust][asan-regressi
         AUDIOAnalyzeFileW(p.c_str());
         FLACGetPictureCountW(); FLACGetPictureSizeW(1);
         SUCCEED("kein Absturz");
+    }
+    SECTION("MP4: entry_count des stco-Atoms groesser als der Atom-Inhalt (Beinahe-Endlosschleife beim Speichern, MP4_STCO.cpp)") {
+        const auto src = fixturePath("broken/mp4_stco_count_overflow.m4a");
+        if (!fs::exists(src)) SKIP("Fixture fehlt");
+        const fs::path p = copyToTemp("broken/mp4_stco_count_overflow.m4a");
+        mustFinishWithin(30, "AUDIOSaveChangesW auf M4A mit kaputtem stco", [&] {
+            AUDIOAnalyzeFileW(p.c_str());
+            AUDIOSetTitleW(L"Reparaturversuch");
+            AUDIOSaveChangesW();
+            AUDIOAnalyzeFileW(p.c_str());
+        });
+        SUCCEED("beendet");
     }
     SECTION("WavPack: Sample-Rate-Index 15 (Tabellenzugriff ausserhalb, WavPack.cpp GetSampleRate)") {
         const auto p = fixturePath("broken/wavpack_samplerate_index.wv");
