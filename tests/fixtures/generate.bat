@@ -60,6 +60,19 @@ rem ---- WavPack, TTA, AAC (roher ADTS-Strom)
 %FF% %SINE% %STEREO% %NOMETA% %TAGS% -c:a tta tta\tagged.tta || goto :fail
 %FF% %SINE% %STEREO% %NOMETA% -c:a aac -b:a 96k -f adts aac\no_tags.aac || goto :fail
 
+rem ---- APE (Monkey's Audio, MAC.exe) aus den WAV-Fixtures; Kompressionsstufen 1000/2000/4000/5000, mono, mit APE-Tag, mit ID3v1-Tag
+set "MAC=%ProgramFiles%\Monkey's Audio x64\MAC.exe"
+if not exist "%MAC%" (echo Hinweis: MAC.exe nicht gefunden, APE-Dateien werden nicht neu erzeugt. & goto :skipape)
+"%MAC%" wav\no_tags.wav ape\no_tags_c1000.ape -c1000 >nul || goto :fail
+"%MAC%" wav\no_tags.wav ape\no_tags_c2000.ape -c2000 >nul || goto :fail
+"%MAC%" wav\no_tags.wav ape\no_tags_c4000.ape -c4000 >nul || goto :fail
+"%MAC%" wav\no_tags.wav ape\no_tags_c5000.ape -c5000 >nul || goto :fail
+"%MAC%" wav\mono_22k.wav ape\mono_22k.ape -c2000 >nul || goto :fail
+"%MAC%" wav\no_tags.wav ape\tagged.ape -c2000 -t "Title=Testtitel|Artist=Testkuenstler|Album=Testalbum|Year=2024|Track=3|Genre=Rock|Comment=Kommentar" >nul || goto :fail
+copy /y ape\tagged.ape ape\tagged_id3v1.ape >nul
+"%MAC%" ape\tagged_id3v1.ape -L >nul || goto :fail
+:skipape
+
 rem ---- roher ADTS-Strom aus den realen MP4/AAC-Beispielen (aac\sample-*.aac, unveraendert uebernommen), ohne und mit ID3v2-Tag
 if exist aac\sample-1.aac %FF% -i aac\sample-1.aac -map 0:a -c copy -f adts aac\adts_sample-1.aac || goto :fail
 if exist aac\sample-2.aac %FF% -i aac\sample-2.aac -map 0:a -c copy -map_metadata -1 %TAGS% -write_id3v2 1 -f adts aac\adts_id3_sample-2.aac || goto :fail

@@ -70,6 +70,14 @@ const Fixture kFixtures[] = {
     // Roher ADTS-Strom: Dauer wird aus Dateigroesse und Bitrate geschaetzt, daher grosse Toleranz;
     // beim Schreiben eines ID3v2-Tags aendert sich die Schaetzung (Tag zaehlt mit).
     { "aac/no_tags.aac",      AAC,       44100, 2, 1.06,  0.1,  false, false },
+    // APE (Monkey's Audio 13.26 aus den WAV-Fixtures); die Datei-Version meldet die DLL als 3.99. Der MD5 schliesst den Tag ein.
+    { "ape/no_tags_c1000.ape",   MONKEY, 44100, 2, 1.0, 0.01, false, false },
+    { "ape/no_tags_c2000.ape",   MONKEY, 44100, 2, 1.0, 0.01, false, false },
+    { "ape/no_tags_c4000.ape",   MONKEY, 44100, 2, 1.0, 0.01, false, false },
+    { "ape/no_tags_c5000.ape",   MONKEY, 44100, 2, 1.0, 0.01, false, false },
+    { "ape/mono_22k.ape",        MONKEY, 22050, 1, 1.0, 0.01, false, false },
+    { "ape/tagged.ape",          MONKEY, 44100, 2, 1.0, 0.01, true,  false },
+    { "ape/tagged_id3v1.ape",    MONKEY, 44100, 2, 1.0, 0.01, true,  false },   // ID3v1 statt APE-Tag am Dateiende
     // Roher ADTS-Strom aus den realen Samples (generate.bat); Dauer aus Dateigroesse und Bitrate geschaetzt.
     { "aac/adts_sample-1.aac",     AAC,  44100, 2, 5.06,  0.2,  false, false },
     { "aac/adts_id3_sample-2.aac", AAC,  44100, 2, 5.06,  0.2,  true,  false },
@@ -98,6 +106,10 @@ const Gap kGaps[] = {
     { "tta/tagged.tta",     Year,    "APE-Feld 'date' statt 'Year'" },
     { "wav/tagged.wav",     Track,   "INFO-Feld ITRK wird nicht als Track geliefert" },
     { "aac/adts_id3_sample-2.aac", Year,    "ID3v2.4-Frame TDRC wird nicht gelesen (nur TYER aus v2.3)" },
+    { "ape/tagged_id3v1.ape", Title, "ID3v1-Felder behalten die NUL-Auffuellung (30 Zeichen statt getrimmt; ID3V1TagInfo.cpp TrimRight entfernt keine NULs)" },
+    { "ape/tagged_id3v1.ape", Artist, "ID3v1-Felder behalten die NUL-Auffuellung (30 Zeichen statt getrimmt; ID3V1TagInfo.cpp TrimRight entfernt keine NULs)" },
+    { "ape/tagged_id3v1.ape", Album, "ID3v1-Felder behalten die NUL-Auffuellung (30 Zeichen statt getrimmt; ID3V1TagInfo.cpp TrimRight entfernt keine NULs)" },
+    { "ape/tagged_id3v1.ape", Comment, "ID3v1-Felder behalten die NUL-Auffuellung (30 Zeichen statt getrimmt; ID3V1TagInfo.cpp TrimRight entfernt keine NULs)" },
     { "aac/adts_id3_sample-2.aac", Comment, "COMM-Frame aus ffmpeg wird nicht als Kommentar geliefert" },
 };
 
