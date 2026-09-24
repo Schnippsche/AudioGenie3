@@ -20,6 +20,8 @@ Voraussetzung: `Release\AudioGenie3.dll/.lib` (Win32) bzw. `x64\Release\...` sin
 | `test_robustness.cpp` | fehlende/leere/abgeschnittene/beschaedigte Dateien (synthetisch) |
 | `test_formats.cpp` | alle Formate aus `fixtures/`: Eckdaten, Tags lesen/schreiben, Cover, kaputte Dateien, Fuzzing echter Dateien |
 | `test_id3v2.cpp`, `test_id3v2_frames.cpp` | ID3v2-API: Round-Trips je Frame-Typ ueber v2.2/2.3/2.4 und die Kodierungen ISO-8859-1/UTF-16/UTF-16BE/UTF-8 (Text, URL, Kommentar, Lyrics, Bilder, Kapitel, Binaer- und Zahlenframes) |
+| `test_special.cpp` | Sonderfaelle: Unicode-/Sonderzeichen-Dateinamen, Endungen in Gross/Klein, lange Pfade (bis 1500 Zeichen mit `\?\`), ungueltige Pfade, winzige Dateien, Schreibschutz und Sperren, sparse-Dateien von 3 und 5 GB |
+| `test_api_misuse.cpp` | jede exportierte Funktion mit zufaelligen, teils ungueltigen Argumenten (NULL, riesige Strings, Index 0/-1/32767, fremde Frame-IDs) auf einer Datei je Format; Aufrufliste `misuse_calls.inc` wird von `gen_misuse.py` aus dem Header erzeugt |
 | `test_fuzz_write.cpp` | Fuzzing der Schreibpfade: zufaellige Operationsfolgen (Tags, Bilder, Frames, Speichern) auf Fixture-Kopien und auf beschaedigten Kopien; Haenger-Waechter |
 | `contract/check_wrappers.py` | Signaturen von C++, C#, VB.NET, Delphi, VB6 gegen `dllmain.cpp` |
 
@@ -89,3 +91,16 @@ Diese Verhaeltnisse sind gewollt und in den Tests so festgehalten; sie nicht als
 - **SV8** (`MPCK`): `generate.bat` erzeugt echte Dateien mit `mpcenc.exe` 1.30 (Pfad ueber `MPCENC`, Standard
   `D:\Entwicklung\Musepack\64bit\mpcenc.exe`). Die DLL liest SV8 (Paket-Parser fuer SH/EI in `MPEGPlus.cpp`): Samplerate,
   Kanaele inkl. Mono, Dauer aus der Samplezahl, Profil, Bitrate.
+
+## Sonderfaelle: was gilt
+
+- **Pfade:** Unicode (Umlaute, CJK, Kyrillisch, Emoji), Sonderzeichen und mehrere Punkte im Namen funktionieren. Lange Pfade funktionieren mit
+  dem Praefix `\?\` (getestet bis 1500 Zeichen), ohne Praefix gilt die Windows-Grenze von 260 Zeichen.
+- **Endung:** wird bei MP3/AAC als Vorfilter geprueft, auch in Gross-/Mischschreibung (`.MP3`, `.Aac`).
+- **Schreibschutz/Sperren:** Lesen geht, `AUDIOSaveChangesW` liefert 0 und laesst die Datei unveraendert; eine exklusive Sperre verhindert schon
+  das Lesen (Format 0).
+- **Grosse Dateien:** Analyse funktioniert bei 3 GB (WAV, MP3 mit ID3v1 am Ende) und 5 GB (FLAC, WavPack mit APE-Tag am Ende);
+  `AUDIOGetFileSizeW` liefert ein `long` und wird ab 2 GiB auf 2147483647 begrenzt (Absicht).
+- **`AUDIOSaveChangesW` nach fehlgeschlagener Analyse:** schreibt nichts (frueher: die geleerten Felder in die vorher analysierte Datei).
+- `AG3_MISUSE_TRACE=1` protokolliert jeden Aufruf des Missbrauchstests nach `%TEMP%/ag3tests/misuse_trace.log` (letzte Zeile = Absturzursache),
+  `AG3_MISUSE_SKIP=Fn1,Fn2` laesst Funktionen aus, `AG3_FUZZ_ROUNDS` erhoeht die Aufrufe je Funktion (Standard 30).
