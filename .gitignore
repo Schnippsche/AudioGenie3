@@ -29,3 +29,5 @@ bin/
 obj/
 *.log
 _UpgradeReport.htm
+build-asan/
+AudioGenie3.asan.vcxproj

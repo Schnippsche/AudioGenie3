@@ -30,3 +30,24 @@ und ueberschreibt dabei ID3v2-Frames; fuer Frame-Tests `ID3V2SaveChangesW` nehme
 `test_formats.cpp` fuehrt in `kGaps` Felder auf, die ffmpeg schreibt, die DLL aber nicht liefert (z. B. ID3v2.4-Jahr `TDRC`,
 Vorbis-`COMMENT`, APE-`date`). Der Test `[gaps]` ist mit `[!shouldfail]` markiert: er gilt als bestanden, solange die Luecken
 bestehen, und schlaegt um, sobald eine geschlossen wird – dann den Eintrag aus `kGaps` entfernen.
+
+## AddressSanitizer (`run_asan.bat`)
+
+`tests\run_asan.bat [x64|x86] [Catch2-Argumente]` baut die DLL (nach `build-asan\<arch>\`, die normalen Builds bleiben
+unberuehrt, COM-Registrierung abgeschaltet) **und** die Tests mit `/fsanitize=address` und fuehrt sie aus. Ein Speicherfehler
+bricht mit Stacktrace samt Zeile ab. Laengerer Fuzz-Lauf: `set AG3_FUZZ_ROUNDS=40` (Standard 1).
+
+Bekannte Befunde (Stand jetzt, noch nicht behoben):
+
+| Befund | Ort | Reproduktion |
+|---|---|---|
+| FLAC: PICTURE-Block liest `ln` Bytes ohne Pruefung der Blocklaenge (heap-buffer-overflow, Lesen) | `FlacCover.cpp` (`AddMemory(..., ln)`) | `broken/flac_cover_length_overflow.flac`, Tag `[known-asan]` |
+| WavPack: Sample-Rate-Index 15 liegt ausserhalb der Tabelle (global-buffer-overflow) | `WavPack.cpp` `GetSampleRate` | `broken/wavpack_samplerate_index.wv`, Tag `[known-asan]` |
+| `CMP4Atom` hat keinen virtuellen Destruktor (`delete` ueber Basiszeiger, new-delete-type-mismatch) | `MP4Atom.h`, `MP4_Container.cpp:252` | jede M4A-Datei, zweite Analyse; per `ASAN_OPTIONS=new_delete_type_mismatch=0` ausgeblendet |
+
+Die `[known-asan]`-Tests sind im Standardlauf ausgeschlossen; `tests\run_asan.bat x64 [known-asan]` fuehrt sie aus und bricht ab, bis der
+Fehler behoben ist. Den Ausschluss (und die `ASAN_OPTIONS`-Zeile in `run_asan.bat`) nach dem Beheben entfernen.
+
+Hinweis: Am Ende eines Testlaufs setzt ein Catch2-Listener (`support.cpp`) die DLL zurueck. Ohne das bricht der Prozess unter ASan
+beim Beenden ab (0xC0000409), wenn zuletzt eine OGG-/FLAC-Datei analysiert wurde: die statischen Objekte der DLL geben ihren Speicher
+erst nach dem Abbau der ASan-Laufzeit frei. Das ist ein Artefakt der Kombination aus statischer CRT und ASan, kein Fehler im Code.

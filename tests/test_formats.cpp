@@ -4,6 +4,7 @@
 #include "support.h"
 #include "../Wrapper/C C++/audiogenie3.h"
 #include <algorithm>
+#include <cstdlib>
 #include <cstring>
 
 using namespace ag3test;
@@ -349,6 +350,9 @@ TEST_CASE("Kaputte Dateien: Tags speichern in abgeschnittene Datei stuerzt nicht
 
 TEST_CASE("Beschaedigte Fixtures: kein Absturz beim Analysieren", "[formats][robust]")
 {
+    // Umgebungsvariable AG3_FUZZ_ROUNDS vervielfacht die Durchlaeufe (z. B. 30 fuer einen langen ASan-Lauf).
+    const char* env = std::getenv("AG3_FUZZ_ROUNDS");
+    const int rounds = env ? std::max(1, std::atoi(env)) : 1;
     uint32_t seed = 4711;
     auto rnd = [&] { seed = seed * 1664525u + 1013904223u; return seed >> 8; };
 
@@ -360,14 +364,14 @@ TEST_CASE("Beschaedigte Fixtures: kein Absturz beim Analysieren", "[formats][rob
             const size_t head = std::min<size_t>(orig.size(), 4096);   // Header und Tags liegen am Anfang
 
             // 1) abgeschnitten an verschiedenen Stellen
-            for (int i = 0; i < 12; i++) {
+            for (int i = 0; i < 12 * rounds; i++) {
                 const size_t len = rnd() % orig.size();
                 Bytes b(orig.begin(), orig.begin() + len);
                 AUDIOAnalyzeFileW(writeTemp("cut.bin", b).c_str());
                 take(AUDIOGetTitleW()); AUDIOGetDurationW();
             }
             // 2) einzelne Bytes im Kopfbereich veraendert
-            for (int i = 0; i < 40; i++) {
+            for (int i = 0; i < 40 * rounds; i++) {
                 Bytes b = orig;
                 for (int k = 0; k < 3; k++) b[rnd() % head] = static_cast<uint8_t>(rnd());
                 AUDIOAnalyzeFileW(writeTemp("mut.bin", b).c_str());
@@ -379,5 +383,28 @@ TEST_CASE("Beschaedigte Fixtures: kein Absturz beim Analysieren", "[formats][rob
             AUDIOAnalyzeFileW(writeTemp("falsche_endung.flac", orig).c_str());
             SUCCEED("kein Absturz");
         }
+    }
+}
+
+// ------------------------------------------- Regressionen aus ASan-Funden (Fuzzing)
+
+// Diese Dateien loesen in der DLL Speicherfehler aus, die nur unter AddressSanitizer auffallen
+// (tests\run_asan.bat schliesst den Tag [known-asan] standardmaessig aus; mit "tests\run_asan.bat x64 [known-asan]"
+// laufen sie und brechen mit dem ASan-Bericht ab, solange der Fehler nicht behoben ist).
+TEST_CASE("Bekannte ASan-Funde: kaputte Dateien", "[formats][robust][known-asan]")
+{
+    SECTION("FLAC: PICTURE-Block mit falscher Laengenangabe (Lesen ueber das Pufferende, FlacCover.cpp)") {
+        const auto p = fixturePath("broken/flac_cover_length_overflow.flac");
+        if (!fs::exists(p)) SKIP("Fixture fehlt");
+        AUDIOAnalyzeFileW(p.c_str());
+        FLACGetPictureCountW(); FLACGetPictureSizeW(1);
+        SUCCEED("kein Absturz");
+    }
+    SECTION("WavPack: Sample-Rate-Index 15 (Tabellenzugriff ausserhalb, WavPack.cpp GetSampleRate)") {
+        const auto p = fixturePath("broken/wavpack_samplerate_index.wv");
+        if (!fs::exists(p)) SKIP("Fixture fehlt");
+        AUDIOAnalyzeFileW(p.c_str());
+        AUDIOGetDurationW(); AUDIOGetSampleRateW();
+        SUCCEED("kein Absturz");
     }
 }

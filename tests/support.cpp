@@ -1,4 +1,6 @@
 #include "support.h"
+#include "catch2/catch_amalgamated.hpp"
+#include "../Wrapper/C C++/audiogenie3.h"
 #include <cmath>
 #include <fstream>
 
@@ -71,3 +73,13 @@ size_t id3v2TotalSize(const Bytes& f)
 }
 
 }  // namespace ag3test
+
+// Am Ende eines Testlaufs den Zustand der DLL zuruecksetzen (Analyse einer nicht vorhandenen Datei ruft ClearAllTags auf),
+// damit beim Beenden des Prozesses keine grossen Objekte mehr in den globalen Tag-Objekten der DLL haengen.
+namespace {
+struct ResetDllListener : Catch::EventListenerBase {
+    using Catch::EventListenerBase::EventListenerBase;
+    void testRunEnded(Catch::TestRunStats const&) override { AUDIOAnalyzeFileW(L"Z:/gibt/es/nicht.mp3"); }
+};
+}
+CATCH_REGISTER_LISTENER(ResetDllListener)
