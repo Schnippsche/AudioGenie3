@@ -124,7 +124,7 @@ Functions</h2></td></tr>
 <tr class="memitem:gae2a9f1a38fbcdb187267d9a37d171770" id="r_gae2a9f1a38fbcdb187267d9a37d171770"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#gae2a9f1a38fbcdb187267d9a37d171770">SetLogFileW</a> (LPCWSTR fileName)</td></tr>
 <tr class="memdesc:gae2a9f1a38fbcdb187267d9a37d171770"><td class="mdescLeft">&#160;</td><td class="mdescRight">set a file name for audiogenie logging  <br /></td></tr>
 <tr class="memitem:ga815aa8a5937c519aa57387f5446ca592" id="r_ga815aa8a5937c519aa57387f5446ca592"><td class="memItemLeft">BSTR&#160;</td><td class="memItemRight"><a class="el" href="#ga815aa8a5937c519aa57387f5446ca592">GetMD5ValueFromFileW</a> (LPCWSTR FileName)</td></tr>
-<tr class="memdesc:ga815aa8a5937c519aa57387f5446ca592"><td class="mdescLeft">&#160;</td><td class="mdescRight">get a MP5 hash from the complete file  <br /></td></tr>
+<tr class="memdesc:ga815aa8a5937c519aa57387f5446ca592"><td class="mdescLeft">&#160;</td><td class="mdescRight">get a MD5 hash from the complete file  <br /></td></tr>
 </table>
 <a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Library-wide helpers such as version, MD5 and configuration. </p>
@@ -175,19 +175,19 @@ Functions</h2></td></tr>
 <tr class="markdownTableHead">
 <th class="markdownTableHeadNone">Key  </th><th class="markdownTableHeadNone">ID  </th><th class="markdownTableHeadNone">Defaultvalue  </th><th class="markdownTableHeadNone">Description  </th></tr>
 <tr class="markdownTableRowOdd">
-<td class="markdownTableBodyNone">0  </td><td class="markdownTableBodyNone">MPEGEXACTREAD  </td><td class="markdownTableBodyNone">0  </td><td class="markdownTableBodyNone">a non 0 value activates the reading from all MPEG frames; replaces SetMPEGAnalyzeAllFrames  </td></tr>
+<td class="markdownTableBodyNone">0  </td><td class="markdownTableBodyNone">MPEGEXACTREAD  </td><td class="markdownTableBodyNone">0  </td><td class="markdownTableBodyNone">a non-zero value activates the reading from all MPEG frames; replaces SetMPEGAnalyzeAllFrames  </td></tr>
 <tr class="markdownTableRowEven">
-<td class="markdownTableBodyNone">1  </td><td class="markdownTableBodyNone">ID3V2PADDINGSIZE  </td><td class="markdownTableBodyNone">4096  </td><td class="markdownTableBodyNone">the padding size in bytes for an id3v2 tag  </td></tr>
+<td class="markdownTableBodyNone">1  </td><td class="markdownTableBodyNone">ID3V2PADDINGSIZE  </td><td class="markdownTableBodyNone">4096  </td><td class="markdownTableBodyNone">the padding size in bytes for an ID3v2 tag  </td></tr>
 <tr class="markdownTableRowOdd">
-<td class="markdownTableBodyNone">2  </td><td class="markdownTableBodyNone">WRITEBLOCKSIZE  </td><td class="markdownTableBodyNone">524288  </td><td class="markdownTableBodyNone">the blocksize in bytes for internal file copy  </td></tr>
+<td class="markdownTableBodyNone">2  </td><td class="markdownTableBodyNone">WRITEBLOCKSIZE  </td><td class="markdownTableBodyNone">524288  </td><td class="markdownTableBodyNone">the block size in bytes for internal file copy  </td></tr>
 <tr class="markdownTableRowEven">
-<td class="markdownTableBodyNone">3  </td><td class="markdownTableBodyNone">DOEVENTSMILLIS  </td><td class="markdownTableBodyNone">250  </td><td class="markdownTableBodyNone">millseconds, after that AudioGenie fires a DoEvent  </td></tr>
+<td class="markdownTableBodyNone">3  </td><td class="markdownTableBodyNone">DOEVENTSMILLIS  </td><td class="markdownTableBodyNone">250  </td><td class="markdownTableBodyNone">milliseconds after which AudioGenie fires a DoEvent  </td></tr>
 <tr class="markdownTableRowOdd">
 <td class="markdownTableBodyNone">4  </td><td class="markdownTableBodyNone">MAXTEXTBUFFER  </td><td class="markdownTableBodyNone">262144  </td><td class="markdownTableBodyNone">the maximum text size in bytes  </td></tr>
 <tr class="markdownTableRowEven">
-<td class="markdownTableBodyNone">5  </td><td class="markdownTableBodyNone">WMAPADDINGSIZE  </td><td class="markdownTableBodyNone">4096  </td><td class="markdownTableBodyNone">the padding size in bytes for a wma tag  </td></tr>
+<td class="markdownTableBodyNone">5  </td><td class="markdownTableBodyNone">WMAPADDINGSIZE  </td><td class="markdownTableBodyNone">4096  </td><td class="markdownTableBodyNone">the padding size in bytes for a WMA tag  </td></tr>
 <tr class="markdownTableRowOdd">
-<td class="markdownTableBodyNone">6  </td><td class="markdownTableBodyNone">MP4PADDINGSIZE  </td><td class="markdownTableBodyNone">4096  </td><td class="markdownTableBodyNone">the padding size in bytes for a mp4 tag  </td></tr>
+<td class="markdownTableBodyNone">6  </td><td class="markdownTableBodyNone">MP4PADDINGSIZE  </td><td class="markdownTableBodyNone">4096  </td><td class="markdownTableBodyNone">the padding size in bytes for an MP4 tag  </td></tr>
 </table>
 <dl class="section since"><dt>Since</dt><dd>2.0.1.0 </dd></dl>
 <dl class="params"><dt>Parameters</dt><dd>
@@ -221,19 +221,19 @@ Functions</h2></td></tr>
 <tr class="markdownTableHead">
 <th class="markdownTableHeadNone">Key  </th><th class="markdownTableHeadNone">ID  </th><th class="markdownTableHeadNone">Description  </th></tr>
 <tr class="markdownTableRowOdd">
-<td class="markdownTableBodyNone">0  </td><td class="markdownTableBodyNone">MPEGEXACTREAD  </td><td class="markdownTableBodyNone">a non 0 value indicates the reading from all MPEG frames  </td></tr>
+<td class="markdownTableBodyNone">0  </td><td class="markdownTableBodyNone">MPEGEXACTREAD  </td><td class="markdownTableBodyNone">a non-zero value indicates the reading from all MPEG frames  </td></tr>
 <tr class="markdownTableRowEven">
-<td class="markdownTableBodyNone">1  </td><td class="markdownTableBodyNone">ID3V2PADDINGSIZE  </td><td class="markdownTableBodyNone">the padding size in bytes for an id3v2 tag  </td></tr>
+<td class="markdownTableBodyNone">1  </td><td class="markdownTableBodyNone">ID3V2PADDINGSIZE  </td><td class="markdownTableBodyNone">the padding size in bytes for an ID3v2 tag  </td></tr>
 <tr class="markdownTableRowOdd">
-<td class="markdownTableBodyNone">2  </td><td class="markdownTableBodyNone">WRITEBLOCKSIZE  </td><td class="markdownTableBodyNone">the blocksize in bytes for internal file copy  </td></tr>
+<td class="markdownTableBodyNone">2  </td><td class="markdownTableBodyNone">WRITEBLOCKSIZE  </td><td class="markdownTableBodyNone">the block size in bytes for internal file copy  </td></tr>
 <tr class="markdownTableRowEven">
-<td class="markdownTableBodyNone">3  </td><td class="markdownTableBodyNone">DOEVENTSMILLIS  </td><td class="markdownTableBodyNone">millseconds after AudioGenie fires a DoEvent  </td></tr>
+<td class="markdownTableBodyNone">3  </td><td class="markdownTableBodyNone">DOEVENTSMILLIS  </td><td class="markdownTableBodyNone">milliseconds after which AudioGenie fires a DoEvent  </td></tr>
 <tr class="markdownTableRowOdd">
 <td class="markdownTableBodyNone">4  </td><td class="markdownTableBodyNone">MAXTEXTBUFFER  </td><td class="markdownTableBodyNone">the maximum text size in bytes  </td></tr>
 <tr class="markdownTableRowEven">
-<td class="markdownTableBodyNone">5  </td><td class="markdownTableBodyNone">WMAPADDINGSIZE  </td><td class="markdownTableBodyNone">the padding size in bytes for a wma tag  </td></tr>
+<td class="markdownTableBodyNone">5  </td><td class="markdownTableBodyNone">WMAPADDINGSIZE  </td><td class="markdownTableBodyNone">the padding size in bytes for a WMA tag  </td></tr>
 <tr class="markdownTableRowOdd">
-<td class="markdownTableBodyNone">6  </td><td class="markdownTableBodyNone">MP4PADDINGSIZE  </td><td class="markdownTableBodyNone">the padding size in bytes for a mp4 tag  </td></tr>
+<td class="markdownTableBodyNone">6  </td><td class="markdownTableBodyNone">MP4PADDINGSIZE  </td><td class="markdownTableBodyNone">the padding size in bytes for an MP4 tag  </td></tr>
 </table>
 <dl class="section since"><dt>Since</dt><dd>2.0.1.0 </dd></dl>
 <dl class="params"><dt>Parameters</dt><dd>
@@ -287,7 +287,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>get a MP5 hash from the complete file </p>
+<p>get a MD5 hash from the complete file </p>
 <p>You can use this for comparing files.</p>
 <dl class="section since"><dt>Since</dt><dd>2.0.1.0 </dd></dl>
 <dl class="params"><dt>Parameters</dt><dd>
@@ -296,7 +296,7 @@ Functions</h2></td></tr>
   </table>
   </dd>
 </dl>
-<dl class="section return"><dt>Returns</dt><dd>MD5 Key ( 32 bytes long ) </dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>MD5 Key (32 bytes long) </dd></dl>
 
 </div>
 </div>

@@ -138,9 +138,9 @@ Functions</h2></td></tr>
 <tr class="memitem:ga6cb806e4a5292925919875f87fa32a4a" id="r_ga6cb806e4a5292925919875f87fa32a4a"><td class="memItemLeft">BSTR&#160;</td><td class="memItemRight"><a class="el" href="#ga6cb806e4a5292925919875f87fa32a4a">WAVGetDisplayTextW</a> ()</td></tr>
 <tr class="memdesc:ga6cb806e4a5292925919875f87fa32a4a"><td class="mdescLeft">&#160;</td><td class="mdescRight">get the text of a display chunk  <br /></td></tr>
 <tr class="memitem:gaa90da3391f3d9fd89db3844be1d9776f" id="r_gaa90da3391f3d9fd89db3844be1d9776f"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#gaa90da3391f3d9fd89db3844be1d9776f">WAVSetDisplayTextW</a> (LPCWSTR textString)</td></tr>
-<tr class="memdesc:gaa90da3391f3d9fd89db3844be1d9776f"><td class="mdescLeft">&#160;</td><td class="mdescRight">set the etxt of a DISPLAY chunk  <br /></td></tr>
+<tr class="memdesc:gaa90da3391f3d9fd89db3844be1d9776f"><td class="mdescLeft">&#160;</td><td class="mdescRight">set the text of a DISPLAY chunk  <br /></td></tr>
 <tr class="memitem:gab39d19034c99382dc530be852344cf17" id="r_gab39d19034c99382dc530be852344cf17"><td class="memItemLeft">short&#160;</td><td class="memItemRight"><a class="el" href="#gab39d19034c99382dc530be852344cf17">WAVSaveChangesToFileW</a> (LPCWSTR FileName)</td></tr>
-<tr class="memdesc:gab39d19034c99382dc530be852344cf17"><td class="mdescLeft">&#160;</td><td class="mdescRight">store the wav tag in a file  <br /></td></tr>
+<tr class="memdesc:gab39d19034c99382dc530be852344cf17"><td class="mdescLeft">&#160;</td><td class="mdescRight">store the WAV tag in a file  <br /></td></tr>
 <tr class="memitem:ga555d132d75ce66396473a1593e2d1e35" id="r_ga555d132d75ce66396473a1593e2d1e35"><td class="memItemLeft">short&#160;</td><td class="memItemRight"><a class="el" href="#ga555d132d75ce66396473a1593e2d1e35">WAVSaveChangesW</a> ()</td></tr>
 <tr class="memdesc:ga555d132d75ce66396473a1593e2d1e35"><td class="mdescLeft">&#160;</td><td class="mdescRight">stores the WAV tag into the last analyzed file  <br /></td></tr>
 <tr class="memitem:ga6f1ffb9d5f71fd20bf82b52ef24cb765" id="r_ga6f1ffb9d5f71fd20bf82b52ef24cb765"><td class="memItemLeft">BSTR&#160;</td><td class="memItemRight"><a class="el" href="#ga6f1ffb9d5f71fd20bf82b52ef24cb765">WAVGetCartChunkEntryW</a> (short Index)</td></tr>
@@ -303,7 +303,7 @@ Functions</h2></td></tr>
     <tr><td class="paramname">6</td><td>ITU G.711 a-law </td></tr>
     <tr><td class="paramname">7</td><td>ITU G.711 µ-law </td></tr>
     <tr><td class="paramname">17</td><td>IMA ADPCM </td></tr>
-    <tr><td class="paramname">20</td><td>ITU G.723 ADPCM ( Yamaha) </td></tr>
+    <tr><td class="paramname">20</td><td>ITU G.723 ADPCM (Yamaha) </td></tr>
     <tr><td class="paramname">49</td><td>GSM 6.10 </td></tr>
     <tr><td class="paramname">64</td><td>ITU G.721 ADPCM </td></tr>
     <tr><td class="paramname">80</td><td>MPEG </td></tr>
@@ -330,7 +330,7 @@ Functions</h2></td></tr>
 
 <p>get a comma based List of all unique info chunk ids </p>
 <dl class="section since"><dt>Since</dt><dd>2.0.1.0 </dd></dl>
-<dl class="section return"><dt>Returns</dt><dd>the text string comma based text string with info chunk IDs </dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>a comma-separated text string with info chunk IDs </dd></dl>
 
 </div>
 </div>
@@ -428,7 +428,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>set the etxt of a DISPLAY chunk </p>
+<p>set the text of a DISPLAY chunk </p>
 <dl class="section since"><dt>Since</dt><dd>2.0.3.0 </dd></dl>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
@@ -454,7 +454,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>store the wav tag in a file </p>
+<p>store the WAV tag in a file </p>
 <dl class="section since"><dt>Since</dt><dd>2.0.1.0 </dd></dl>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
@@ -506,7 +506,7 @@ Functions</h2></td></tr>
 <dl class="section since"><dt>Since</dt><dd>2.0.1.0 </dd></dl>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">Index</td><td>the Index of the entry from 0 to 26 </td></tr>
+    <tr><td class="paramname">Index</td><td>the index of the entry from 0 to 26 </td></tr>
   </table>
   </dd>
 </dl>
@@ -537,7 +537,7 @@ Functions</h2></td></tr>
 <dl class="section since"><dt>Since</dt><dd>2.0.1.0 </dd></dl>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">Index</td><td>the Index of the entry from 0 to 26 </td></tr>
+    <tr><td class="paramname">Index</td><td>the index of the entry from 0 to 26 </td></tr>
     <tr><td class="paramname">textString</td><td>the new text </td></tr>
   </table>
   </dd>

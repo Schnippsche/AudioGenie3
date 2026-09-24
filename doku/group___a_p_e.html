@@ -150,7 +150,7 @@ Functions</h2></td></tr>
 <tr class="memitem:ga5ebd642a1bf46815f95e4a0891e78740" id="r_ga5ebd642a1bf46815f95e4a0891e78740"><td class="memItemLeft">long&#160;</td><td class="memItemRight"><a class="el" href="#ga5ebd642a1bf46815f95e4a0891e78740">APEGetSizeW</a> ()</td></tr>
 <tr class="memdesc:ga5ebd642a1bf46815f95e4a0891e78740"><td class="mdescLeft">&#160;</td><td class="mdescRight">get the size of the tag in bytes  <br /></td></tr>
 <tr class="memitem:ga5ad3f3064aff24d31f2b9527cb25f453" id="r_ga5ad3f3064aff24d31f2b9527cb25f453"><td class="memItemLeft">short&#160;</td><td class="memItemRight"><a class="el" href="#ga5ad3f3064aff24d31f2b9527cb25f453">APEExistsW</a> ()</td></tr>
-<tr class="memdesc:ga5ad3f3064aff24d31f2b9527cb25f453"><td class="mdescLeft">&#160;</td><td class="mdescRight">shows -1, if the APE-Tag exists  <br /></td></tr>
+<tr class="memdesc:ga5ad3f3064aff24d31f2b9527cb25f453"><td class="mdescLeft">&#160;</td><td class="mdescRight">returns -1 if the APE tag exists  <br /></td></tr>
 <tr class="memitem:gafba9ffbb46ff08ac48d2f68c443c08e3" id="r_gafba9ffbb46ff08ac48d2f68c443c08e3"><td class="memItemLeft">BSTR&#160;</td><td class="memItemRight"><a class="el" href="#gafba9ffbb46ff08ac48d2f68c443c08e3">APEGetVersionW</a> ()</td></tr>
 <tr class="memdesc:gafba9ffbb46ff08ac48d2f68c443c08e3"><td class="mdescLeft">&#160;</td><td class="mdescRight">get the ape version  <br /></td></tr>
 <tr class="memitem:ga2db8f2d4ee3a4444f2240a7ea8475c58" id="r_ga2db8f2d4ee3a4444f2240a7ea8475c58"><td class="memItemLeft">BSTR&#160;</td><td class="memItemRight"><a class="el" href="#ga2db8f2d4ee3a4444f2240a7ea8475c58">APEGetUserItemW</a> (LPCWSTR Key)</td></tr>
@@ -158,7 +158,7 @@ Functions</h2></td></tr>
 <tr class="memitem:ga6c17761c14f49c86d207e2d985da0a86" id="r_ga6c17761c14f49c86d207e2d985da0a86"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#ga6c17761c14f49c86d207e2d985da0a86">APESetUserItemW</a> (LPCWSTR Key, LPCWSTR textString)</td></tr>
 <tr class="memdesc:ga6c17761c14f49c86d207e2d985da0a86"><td class="mdescLeft">&#160;</td><td class="mdescRight">set a user defined field  <br /></td></tr>
 <tr class="memitem:gaf4fb718810b154a4ead9f66fe86f43ef" id="r_gaf4fb718810b154a4ead9f66fe86f43ef"><td class="memItemLeft">BSTR&#160;</td><td class="memItemRight"><a class="el" href="#gaf4fb718810b154a4ead9f66fe86f43ef">APEGetItemKeysW</a> ()</td></tr>
-<tr class="memdesc:gaf4fb718810b154a4ead9f66fe86f43ef"><td class="mdescLeft">&#160;</td><td class="mdescRight">get all field names ( comma separated ) with text values  <br /></td></tr>
+<tr class="memdesc:gaf4fb718810b154a4ead9f66fe86f43ef"><td class="mdescLeft">&#160;</td><td class="mdescRight">get all field names (comma separated) with text values  <br /></td></tr>
 <tr class="memitem:gac4d48461f955cd3e8dce9671ea373677" id="r_gac4d48461f955cd3e8dce9671ea373677"><td class="memItemLeft">short&#160;</td><td class="memItemRight"><a class="el" href="#gac4d48461f955cd3e8dce9671ea373677">APESaveChangesToFileW</a> (LPCWSTR FileName)</td></tr>
 <tr class="memdesc:gac4d48461f955cd3e8dce9671ea373677"><td class="mdescLeft">&#160;</td><td class="mdescRight">store the APE tag in a file  <br /></td></tr>
 <tr class="memitem:ga3b042e0db83292175ee7a3456e94e9fa" id="r_ga3b042e0db83292175ee7a3456e94e9fa"><td class="memItemLeft">short&#160;</td><td class="memItemRight"><a class="el" href="#ga3b042e0db83292175ee7a3456e94e9fa">APESaveChangesW</a> ()</td></tr>
@@ -583,7 +583,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>shows -1, if the APE-Tag exists </p>
+<p>returns -1 if the APE tag exists </p>
 <dl class="section since"><dt>Since</dt><dd>2.0.1.0 </dd></dl>
 <dl class="section return"><dt>Returns</dt><dd>-1 if APE tag exists, otherwise 0 </dd></dl>
 
@@ -630,11 +630,11 @@ Functions</h2></td></tr>
 <dl class="section since"><dt>Since</dt><dd>2.0.1.0 </dd></dl>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">Key</td><td>userdefined key </td></tr>
+    <tr><td class="paramname">Key</td><td>user-defined key </td></tr>
   </table>
   </dd>
 </dl>
-<dl class="section return"><dt>Returns</dt><dd>field userdefined item or empty if key not present </dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>field user-defined item or empty if key not present </dd></dl>
 
 </div>
 </div>
@@ -662,8 +662,8 @@ Functions</h2></td></tr>
 <dl class="section since"><dt>Since</dt><dd>2.0.1.0 </dd></dl>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">Key</td><td>userdefined key </td></tr>
-    <tr><td class="paramname">textString</td><td>new value, empty string remove this item </td></tr>
+    <tr><td class="paramname">Key</td><td>user-defined key </td></tr>
+    <tr><td class="paramname">textString</td><td>new value, an empty string removes this item </td></tr>
   </table>
   </dd>
 </dl>
@@ -685,7 +685,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>get all field names ( comma separated ) with text values </p>
+<p>get all field names (comma separated) with text values </p>
 <dl class="section since"><dt>Since</dt><dd>2.0.1.0 </dd></dl>
 <dl class="section return"><dt>Returns</dt><dd>fieldnames </dd></dl>
 

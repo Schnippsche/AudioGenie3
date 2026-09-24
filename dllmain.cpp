@@ -134,9 +134,9 @@ void ClearAllTags()
 /**
  * @brief read an audio-file and all known tags
  *
- * the tags will be reading in this way:
- * files with format WMA, MP4, FLAC and OGG uses their own fields. All other formats have this rules:
- * at first id3v2 tag, if not exist then ape tag, if not exist then id3v1 tag and at least lyrics tag.
+ * the tags are read in this way:
+ * files with format WMA, MP4, FLAC and OGG use their own fields. All other formats follow these rules:
+ * first the ID3v2 tag, if it does not exist the APE tag, then the ID3v1 tag and finally the Lyrics tag.
  *
  * @ingroup AUDIO
  * @since 2.0.1.0
@@ -425,17 +425,17 @@ ende:
  *
  * | audio format | changes saved as |
  * |---|---|
- * | MP3 | ID3V2-Tag |
+ * | MP3 | ID3v2 tag |
  * | WMA | WMA Fields |
- * | MONKEY | APE-Tag |
+ * | MONKEY | APE tag |
  * | FLAC | Vorbis Comment |
  * | WAV | wav chunk |
  * | OGG | Vorbis Comment |
- * | MPP | ID3V2-Tag |
- * | AAC | APE-Tag (an existing ID3V2-Tag is left unchanged and takes precedence when reading) |
- * | MP4 | mp4 atoms |
- * | WavPack | APE-Tag |
- * | TTA | ID3V2-Tag |
+ * | MPP | ID3v2 tag |
+ * | AAC | APE tag (an existing ID3v2 tag is left unchanged and takes precedence when reading) |
+ * | MP4 | MP4 atoms |
+ * | WavPack | APE tag |
+ * | TTA | ID3v2 tag |
  *
  * @ingroup AUDIO
  * @since 2.0.1.0
@@ -564,17 +564,17 @@ extern "C" short __stdcall AUDIOSaveChangesToFileW(LPCWSTR FileName)
  *
  * | audio format | changes saved as |
  * |---|---|
- * | MP3 | ID3V2-Tag |
+ * | MP3 | ID3v2 tag |
  * | WMA | WMA Fields |
- * | MONKEY | APE-Tag |
+ * | MONKEY | APE tag |
  * | FLAC | Vorbis Comment |
  * | WAV | wav chunk |
  * | OGG | Vorbis Comment |
- * | MPP | ID3V2-Tag |
- * | AAC | APE-Tag (an existing ID3V2-Tag is left unchanged and takes precedence when reading) |
- * | MP4 | mp4 atoms |
- * | WavPack | APE-Tag |
- * | TTA | ID3V2-Tag |
+ * | MPP | ID3v2 tag |
+ * | AAC | APE tag (an existing ID3v2 tag is left unchanged and takes precedence when reading) |
+ * | MP4 | MP4 atoms |
+ * | WavPack | APE tag |
+ * | TTA | ID3v2 tag |
  *
  * @ingroup AUDIO
  * @since 2.0.1.0
@@ -623,7 +623,7 @@ extern "C" long __stdcall AUDIOGetDurationMillisW()
 }
 
 /**
- * @brief get the Samplerate in Hz
+ * @brief get the sample rate in Hz
  *
  * @ingroup AUDIO
  * @since 2.0.1.0
@@ -636,7 +636,7 @@ extern "C" long __stdcall AUDIOGetSampleRateW()
 
 
 /**
- * @brief get the Bitrate in kbps
+ * @brief get the bit rate in kbps
  *
  * @ingroup AUDIO
  * @since 2.0.1.0
@@ -649,7 +649,7 @@ extern "C" long __stdcall AUDIOGetBitrateW()
 
 
 /**
- * @brief get the channel mode ( mono / stereo )
+ * @brief get the channel mode (mono / stereo)
  *
  * @ingroup AUDIO
  * @since 2.0.1.0
@@ -711,7 +711,7 @@ extern "C" BSTR __stdcall AUDIOGetVersionW()
 }
 
 /**
- * @brief shows -1, if the File is valid
+ * @brief returns -1 if the file is valid
  *
  * @ingroup AUDIO
  * @since 2.0.1.0
@@ -957,11 +957,11 @@ extern "C" BSTR __stdcall AACGetProfileW()
 
 
 /**
- * @brief get the Bitratetype (CBR or VBR )
+ * @brief get the bit rate type (CBR or VBR)
  *
  * @ingroup AAC
  * @since 2.0.1.0
- * @return Bitratetype
+ * @return bit rate type
  */
 extern "C" BSTR __stdcall AACGetBitRateTypeW()
 {
@@ -1007,11 +1007,11 @@ extern "C" long __stdcall FLACGetSamplesW()
 }
 
 /**
- * @brief get the minimum blocksize
+ * @brief get the minimum block size
  *
  * @ingroup FLAC
  * @since 2.0.1.0
- * @return minimum blocksize
+ * @return minimum block size
  */
 extern "C" long __stdcall FLACGetMinBlockSizeW()
 {
@@ -1020,11 +1020,11 @@ extern "C" long __stdcall FLACGetMinBlockSizeW()
 
 
 /**
- * @brief get the maximum blocksize in bytes
+ * @brief get the maximum block size in bytes
  *
  * @ingroup FLAC
  * @since 2.0.1.0
- * @return maximum blocksize
+ * @return maximum block size
  */
 extern "C" long __stdcall FLACGetMaxBlockSizeW()
 {
@@ -1089,8 +1089,8 @@ extern "C" void __stdcall FLACSetVendorW(LPCWSTR textString)
  *
  * @ingroup FLAC
  * @since 2.0.1.0
- * @param ItemKey userdefined key
- * @return field userdefined item or empty if key not present
+ * @param ItemKey user-defined key
+ * @return field user-defined item or empty if key not present
  */
 extern "C" BSTR __stdcall FLACGetUserItemW(LPCWSTR ItemKey) 
 {
@@ -1105,14 +1105,14 @@ extern "C" BSTR __stdcall FLACGetUserItemW(LPCWSTR ItemKey)
  * @ingroup FLAC
  * @since 2.0.1.0
  * @param ItemKey the key you want to set
- * @param textString new value for the key, empty string remove this item
+ * @param textString new value for the key, an empty string removes this item
  */
 extern "C" void __stdcall FLACSetUserItemW(LPCWSTR ItemKey, LPCWSTR textString) 
 {
 	flac.SetUserItem(getValidPointer(ItemKey), getValidPointer(textString));
 }
 /**
- * @brief get all field names ( comma separated )
+ * @brief get all field names (comma separated)
  *
  * @ingroup FLAC
  * @since 2.0.1.0
@@ -1152,13 +1152,13 @@ extern "C" short __stdcall FLACAddPictureFileW(LPCWSTR FileName, LPCWSTR Descrip
 
 
 /**
- * @brief store a picture from a byte array in the flac tag
+ * @brief store a picture from a byte array in the FLAC tag
  *
- * There may be more than one picturee in each tag, but only one with the same content descriptor.
+ * There may be more than one picture in each tag, but only one with the same content descriptor.
  *
  * @ingroup FLAC
  * @since 2.0.2.0
- * @param arr pointer to a byte array with the picture datas
+ * @param arr pointer to a byte array with the picture data
  * @param Length the size of the array
  * @param Description a description of the picture
  * @param PictureType picture type from 0 to 20, see @ref picturetypes
@@ -1173,7 +1173,7 @@ extern "C" short __stdcall FLACAddPictureArrayW(BYTE *arr, u32 Length, LPCWSTR D
 
 
 /**
- * @brief remove all pictures from the flag tag
+ * @brief remove all pictures from the FLAC tag
  *
  * @ingroup FLAC
  * @since 2.0.2.0
@@ -1184,7 +1184,7 @@ extern "C" void __stdcall FLACDeletePicturesW()
 }
 
 /**
- * @brief remove a picture from the flag tag
+ * @brief remove a picture from the FLAC tag
  *
  * @ingroup FLAC
  * @since 2.0.2.0
@@ -1202,7 +1202,7 @@ extern "C" short __stdcall FLACDeletePictureW(short Index)
  *
  * @ingroup FLAC
  * @since 2.0.2.0
- * @param Index index from 1 FLACGetPictureCountW
+ * @param Index index from 1 to FLACGetPictureCountW
  * @return the description of the picture
  */
 extern "C" BSTR __stdcall FLACGetPictureDescriptionW(short Index) 
@@ -1246,7 +1246,7 @@ extern "C" short __stdcall FLACGetPictureTypeW(short Index)
  *
  * @ingroup FLAC
  * @since 2.0.2.0
- * @param Index index from 1 toFLACGetPictureCountW
+ * @param Index index from 1 to FLACGetPictureCountW
  * @return picture type as text
  */
 extern "C" BSTR __stdcall FLACGetPictureTypeTextW(short Index) 
@@ -1259,7 +1259,7 @@ extern "C" BSTR __stdcall FLACGetPictureTypeTextW(short Index)
 /**
  * @brief get the mime type from a picture, e.g. "image/jpeg" or "image/bmp" or "XXX" for unknown format
  *
- * If the file was stored as a Link then this method returns then filename starting with "-->", e.g. "-->C:\test.jpg"
+ * If the file was stored as a Link then this method returns the file name starting with "-->", e.g. "-->C:\test.jpg"
  *
  * @ingroup FLAC
  * @since 2.0.2.0
@@ -1318,7 +1318,7 @@ extern "C" long __stdcall FLACGetPictureArrayW(BYTE *arr, u32 maxLen, short Inde
 }
 
 /**
- * @brief store the comments in vorbis format in a file
+ * @brief store the comments in Vorbis format in a file
  *
  * @ingroup FLAC
  * @since 2.0.1.0
@@ -1335,7 +1335,7 @@ extern "C" short __stdcall FLACSaveChangesToFileW(LPCWSTR FileName)
 }
 
 /**
- * @brief store the comments in vorbis format in the last analyzed file
+ * @brief store the comments in Vorbis format in the last analyzed file
  *
  * @ingroup FLAC
  * @since 2.0.1.0
@@ -1445,7 +1445,7 @@ extern "C" long __stdcall MONKEYGetSamplesPerFrameW()
  *
  * @ingroup MP4
  * @since 2.0.1.0
- * @return the text string comma based text string with Frame IDs
+ * @return a comma-separated text string with Frame IDs
  */
 extern "C" BSTR __stdcall MP4GetAllFrameIDsW()
 {
@@ -1453,7 +1453,7 @@ extern "C" BSTR __stdcall MP4GetAllFrameIDsW()
 }
 
 /**
- * @brief get the text entry of a mp4 ILST textframe
+ * @brief get the text entry of an MP4 ILST text frame
  *
  * @ingroup MP4
  * @since 2.0.1.0
@@ -1466,7 +1466,7 @@ extern "C" BSTR __stdcall MP4GetTextFrameW(u32 FrameID)
 }
 
 /**
- * @brief set the text entry of a mp4 ILST textframe
+ * @brief set the text entry of an MP4 ILST text frame
  *
  * @ingroup MP4
  * @since 2.0.1.0
@@ -1479,7 +1479,7 @@ extern "C" void __stdcall MP4SetTextFrameW(u32 FrameID, LPCWSTR textString)
 }
 
 /**
- * @brief get the text entry of a mp4 iTune textframe
+ * @brief get the text entry of an MP4 iTune text frame
  *
  * @ingroup MP4
  * @since 2.0.1.0
@@ -1492,7 +1492,7 @@ extern "C" BSTR __stdcall MP4GetiTuneFrameW(LPCWSTR FrameID)
 }
 
 /**
- * @brief set the text entry of a mp4 iTune textframe
+ * @brief set the text entry of an MP4 iTune text frame
  *
  * @ingroup MP4
  * @since 2.0.1.0
@@ -1640,7 +1640,7 @@ extern "C" long __stdcall MP4GetPictureSizeW(short Index)
  *
  * @ingroup MP4
  * @since 2.0.1.0
- * @param arr to a byte array with the picture datas
+ * @param arr to a byte array with the picture data
  * @param Length the size of the array
  * @return normally -1, 0 on error
  */
@@ -1689,7 +1689,7 @@ extern "C" short __stdcall MP4DeletePictureW(short Index)
 
 
 /**
- * @brief deletes all userdefined entries like title, pictures etc.
+ * @brief deletes all user-defined entries like title, pictures etc.
  *
  * @ingroup MP4
  * @since 2.0.1.0
@@ -1700,7 +1700,7 @@ extern "C" void __stdcall MP4DeleteEntriesW()
 }
 
 /**
- * @brief store the mp4 changes in a file
+ * @brief store the MP4 changes in a file
  *
  * @ingroup MP4
  * @since 2.0.1.0
@@ -1722,7 +1722,7 @@ extern "C" short __stdcall MP4SaveChangesToFileW(LPCWSTR FileName)
 }
 
 /**
- * @brief store the mp4 in the last analyzed file
+ * @brief store the MP4 in the last analyzed file
  *
  * @ingroup MP4
  * @since 2.0.1.0
@@ -1889,7 +1889,7 @@ extern "C" BSTR __stdcall MPEGGetLayerW()
 
 
 /**
- * @brief shows -1, if it is variable bitrate
+ * @brief returns -1 if it is variable bitrate
  *
  * @ingroup MPEG
  * @since 2.0.1.0
@@ -1902,7 +1902,7 @@ extern "C" short __stdcall MPEGIsVBRW()
 
 
 /**
- * @brief modify the State of the Copyright Bit
+ * @brief modify the state of the copyright bit
  *
  * @ingroup MPEG
  * @since 2.0.1.0
@@ -1917,7 +1917,7 @@ extern "C" short __stdcall MPEGSetCopyrightedW(LPCWSTR FileName, short newValue)
 
 
 /**
- * @brief modify the State of the Original Bit
+ * @brief modify the state of the original bit
  *
  * @ingroup MPEG
  * @since 2.0.1.0
@@ -1932,7 +1932,7 @@ extern "C" short __stdcall MPEGSetOriginalW(LPCWSTR FileName, short newValue)
 
 
 /**
- * @brief modify the State of the Private Bit
+ * @brief modify the state of the private bit
  *
  * @ingroup MPEG
  * @since 2.0.1.0
@@ -2414,7 +2414,7 @@ extern "C" void __stdcall OGGSetISRCW(LPCWSTR textString)
 }
 
 /**
- * @brief get all field names ( comma separated )
+ * @brief get all field names (comma separated)
  *
  * @ingroup OGG
  * @since 2.0.1.0
@@ -2432,8 +2432,8 @@ extern "C" BSTR __stdcall OGGGetItemKeysW()
  *
  * @ingroup OGG
  * @since 2.0.1.0
- * @param ItemKey userdefined key
- * @return field userdefined item or empty if key not present
+ * @param ItemKey user-defined key
+ * @return field user-defined item or empty if key not present
  */
 extern "C" BSTR __stdcall OGGGetUserItemW(LPCWSTR ItemKey) 
 {
@@ -2448,7 +2448,7 @@ extern "C" BSTR __stdcall OGGGetUserItemW(LPCWSTR ItemKey)
  * @ingroup OGG
  * @since 2.0.1.0
  * @param ItemKey the key you want to set
- * @param textString new value for the key, empty string remove this item
+ * @param textString new value for the key, an empty string removes this item
  */
 extern "C" void __stdcall OGGSetUserItemW(LPCWSTR ItemKey, LPCWSTR textString) 
 {
@@ -2457,7 +2457,7 @@ extern "C" void __stdcall OGGSetUserItemW(LPCWSTR ItemKey, LPCWSTR textString)
 
 
 /**
- * @brief stores the ogg comments in a file
+ * @brief stores the Ogg comments in a file
  *
  * @ingroup OGG
  * @since 2.0.1.0
@@ -2474,7 +2474,7 @@ extern "C" short __stdcall OGGSaveChangesToFileW(LPCWSTR FileName)
 }
 
 /**
- * @brief stores the ogg comments in the last analyzed file
+ * @brief stores the Ogg comments in the last analyzed file
  *
  * @ingroup OGG
  * @since 2.0.1.0
@@ -2487,7 +2487,7 @@ extern "C" short __stdcall OGGSaveChangesW()
 
 
 /**
- * @brief remove the ogg comment from a file. Attention: This function removes the tag immediately!
+ * @brief remove the Ogg comment from a file. Attention: This function removes the tag immediately!
  *
  * @ingroup OGG
  * @since 2.0.1.0
@@ -2503,7 +2503,7 @@ extern "C" short __stdcall OGGRemoveTagFromFileW(LPCWSTR FileName)
 }
 
 /**
- * @brief remove the ogg comment from the last analyzed file. Attention: This function removes the tag immediately!
+ * @brief remove the Ogg comment from the last analyzed file. Attention: This function removes the tag immediately!
  *
  * @ingroup OGG
  * @since 2.0.1.0
@@ -2606,7 +2606,7 @@ extern "C" BSTR __stdcall WAVGetFormatW()
  * @retval 6 ITU G.711 a-law
  * @retval 7 ITU G.711 µ-law
  * @retval 17 IMA ADPCM
- * @retval 20 ITU G.723 ADPCM ( Yamaha)
+ * @retval 20 ITU G.723 ADPCM (Yamaha)
  * @retval 49 GSM 6.10
  * @retval 64 ITU G.721 ADPCM
  * @retval 80 MPEG
@@ -2621,7 +2621,7 @@ extern "C" short __stdcall WAVGetFormatIDW()
  *
  * @ingroup WAV
  * @since 2.0.1.0
- * @return the text string comma based text string with info chunk IDs
+ * @return a comma-separated text string with info chunk IDs
  */
 extern "C" BSTR __stdcall WAVGetInfoChunkIDsW()
 {
@@ -2757,7 +2757,7 @@ extern "C" short __stdcall WMAGetPictureCountW()
  * @param FileName name of the picture file
  * @param Description a description of the picture
  * @param PictureType type from 0 to 20, see @ref picturetypes
- * @param Index Index from 1 to n; if n is not present a new entry will be created
+ * @param Index index from 1 to n; if n is not present a new entry will be created
  * @return normally -1, 0 on error
  */
 extern "C" short __stdcall WMAAddPictureFileW(LPCWSTR FileName, LPCWSTR Description, short PictureType, short Index) 
@@ -2772,11 +2772,11 @@ extern "C" short __stdcall WMAAddPictureFileW(LPCWSTR FileName, LPCWSTR Descript
  * @since 2.0.1.0
  * @par ID3v2 frame
  *   WM/Picture
- * @param arr to a byte array with the picture datas
+ * @param arr to a byte array with the picture data
  * @param Length the size of the array
  * @param Description a description of the picture
  * @param PictureType type from 0 to 20, see @ref picturetypes
- * @param index Index from 1 to n; if n is not present a new entry will be created
+ * @param index index from 1 to n; if n is not present a new entry will be created
  * @return -1 if frame was replaced, 0 if frame was added
  */
 extern "C" short __stdcall WMAAddPictureArrayW(BYTE *arr, u32 Length, LPCWSTR Description, short PictureType, short index )
@@ -2792,8 +2792,8 @@ extern "C" short __stdcall WMAAddPictureArrayW(BYTE *arr, u32 Length, LPCWSTR De
  *
  * @ingroup WMA
  * @since 2.0.1.0
- * @param ItemKey userdefined key
- * @return field userdefined item or empty if key not present
+ * @param ItemKey user-defined key
+ * @return field user-defined item or empty if key not present
  */
 extern "C" BSTR __stdcall WMAGetUserItemW(LPCWSTR ItemKey) 
 {
@@ -2808,7 +2808,7 @@ extern "C" BSTR __stdcall WMAGetUserItemW(LPCWSTR ItemKey)
  * @ingroup WMA
  * @since 2.0.1.0
  * @param ItemKey the key you want to set
- * @param textString new value for the key, empty string remove this item
+ * @param textString new value for the key, an empty string removes this item
  */
 extern "C" void __stdcall WMASetUserItemW(LPCWSTR ItemKey, LPCWSTR textString) 
 {
@@ -2816,7 +2816,7 @@ extern "C" void __stdcall WMASetUserItemW(LPCWSTR ItemKey, LPCWSTR textString)
 }
 
 /**
- * @brief get all field names ( comma separated )
+ * @brief get all field names (comma separated)
  *
  * @ingroup WMA
  * @since 2.0.1.0
@@ -2856,7 +2856,7 @@ extern "C" void __stdcall WMADeletePicturesW()
 }
 
 /**
- * @brief shows -1, if it is variable bitrate
+ * @brief returns -1 if it is variable bitrate
  *
  * @ingroup WMA
  * @since 2.0.1.0
@@ -2868,7 +2868,7 @@ extern "C" short __stdcall WMAIsVBRW()
 }
 
 /**
- * @brief store the wma tag in a file
+ * @brief store the WMA tag in a file
  *
  * @ingroup WMA
  * @since 2.0.1.0
@@ -2893,7 +2893,7 @@ extern "C" short __stdcall WMASaveChangesToFileW(LPCWSTR FileName)
 }
 
 /**
- * @brief store the wma tag in the last analyzed file
+ * @brief store the WMA tag in the last analyzed file
  *
  * @ingroup WMA
  * @since 2.0.1.0
@@ -3127,7 +3127,7 @@ extern "C" long __stdcall APEGetSizeW()
 
 
 /**
- * @brief shows -1, if the APE-Tag exists
+ * @brief returns -1 if the APE tag exists
  *
  * @ingroup APE
  * @since 2.0.1.0
@@ -3159,8 +3159,8 @@ extern "C" BSTR __stdcall APEGetVersionW()
  *
  * @ingroup APE
  * @since 2.0.1.0
- * @param Key userdefined key
- * @return field userdefined item or empty if key not present
+ * @param Key user-defined key
+ * @return field user-defined item or empty if key not present
  */
 extern "C" BSTR __stdcall APEGetUserItemW(LPCWSTR Key) 
 {
@@ -3175,8 +3175,8 @@ extern "C" BSTR __stdcall APEGetUserItemW(LPCWSTR Key)
  *
  * @ingroup APE
  * @since 2.0.1.0
- * @param Key userdefined key
- * @param textString new value, empty string remove this item
+ * @param Key user-defined key
+ * @param textString new value, an empty string removes this item
  */
 extern "C" void __stdcall APESetUserItemW(LPCWSTR Key, LPCWSTR textString) 
 {
@@ -3185,7 +3185,7 @@ extern "C" void __stdcall APESetUserItemW(LPCWSTR Key, LPCWSTR textString)
 
 
 /**
- * @brief get all field names ( comma separated ) with text values
+ * @brief get all field names (comma separated) with text values
  *
  * @ingroup APE
  * @since 2.0.1.0
@@ -3469,7 +3469,7 @@ extern "C" void __stdcall ID3V1SetGenreIDW(short nNewValue)
 }
 
 /**
- * @brief get a genre for a specific number ( 0 to ID3V1GetGenresW - 1 )
+ * @brief get a genre for a specific number (0 to ID3V1GetGenresW - 1)
  *
  * @ingroup ID3V1
  * @since 2.0.1.0
@@ -3494,7 +3494,7 @@ extern "C" short __stdcall ID3V1GetGenresW()
 }
 
 /**
- * @brief shows -1, if ID3v1 tag exists
+ * @brief returns -1 if ID3v1 tag exists
  *
  * @ingroup ID3V1
  * @since 2.0.1.0
@@ -3520,7 +3520,7 @@ extern "C" BSTR __stdcall ID3V1GetVersionW()
 
 
 /**
- * @brief remove the ID3v1-Tag from a File. Attention: This function removes the tag immediately!
+ * @brief remove the ID3v1 tag from a file. Attention: This function removes the tag immediately!
  *
  * @ingroup ID3V1
  * @since 2.0.1.0
@@ -3541,7 +3541,7 @@ extern "C" short __stdcall ID3V1RemoveTagFromFileW(LPCWSTR FileName)
 }
 
 /**
- * @brief remove the ID3v1-Tag from the last analyzed File. Attention: This function removes the tag immediately!
+ * @brief remove the ID3v1 tag from the last analyzed file. Attention: This function removes the tag immediately!
  *
  * @ingroup ID3V1
  * @since 2.0.1.0
@@ -3591,7 +3591,7 @@ extern "C" short __stdcall ID3V1SaveChangesW()
 /* ------------------------------------------------------------------------------------- */
 
 /**
- * @brief shows -1, if the Lyrics tag exists
+ * @brief returns -1 if the Lyrics tag exists
  *
  * @ingroup LYRICS
  * @since 2.0.1.0
@@ -3803,7 +3803,7 @@ extern "C" void __stdcall LYRICSSetIndicationW(LPCWSTR textString)
  *
  * @ingroup LYRICS
  * @since 2.0.1.0
- * @return informations
+ * @return information
  */
 extern "C" BSTR __stdcall LYRICSGetInformationW()
 {
@@ -3816,7 +3816,7 @@ extern "C" BSTR __stdcall LYRICSGetInformationW()
  *
  * @ingroup LYRICS
  * @since 2.0.1.0
- * @param textString informations
+ * @param textString information
  */
 extern "C" void __stdcall LYRICSSetInformationW(LPCWSTR textString)
 {
@@ -3943,7 +3943,7 @@ extern "C" short __stdcall LYRICSSaveChangesW()
 /* ------------------------------------------------------------------------------------- */
 
 /**
- * @brief get the text entry of a id3v2 frame
+ * @brief get the text entry of an ID3v2 frame
  *
  * @ingroup ID3V2
  * @since 2.0.1.0
@@ -4031,7 +4031,7 @@ extern "C" short __stdcall ID3V2DeleteAllFramesW(u32 FrameID)
  * @ingroup ID3V2
  * @since 2.0.1.0
  * @param FrameID the ID of the frame
- * @param Index from 1 to Framecount
+ * @param Index from 1 to frame count
  * @return normally -1, 0 if frame not found
  */
 extern "C" short __stdcall ID3V2DeleteSelectedFrameW(u32 FrameID, short Index)
@@ -4040,7 +4040,7 @@ extern "C" short __stdcall ID3V2DeleteSelectedFrameW(u32 FrameID, short Index)
 }
 
 /**
- * @brief set the format and text encoding of the id3v2 tag
+ * @brief set the format and text encoding of the ID3v2 tag
  *
  * @ingroup ID3V2
  * @since 2.0.1.0
@@ -4073,13 +4073,13 @@ extern "C" short __stdcall ID3V2GetEncodingW(u32 FrameID)
  *
  * | Key | ID | Defaultvalue | Description |
  * |---|---|---|---|
- * | 0 | MPEGEXACTREAD | 0 | a non 0 value activates the reading from all MPEG frames; replaces SetMPEGAnalyzeAllFrames |
- * | 1 | ID3V2PADDINGSIZE | 4096 | the padding size in bytes for an id3v2 tag |
- * | 2 | WRITEBLOCKSIZE | 524288 | the blocksize in bytes for internal file copy |
- * | 3 | DOEVENTSMILLIS | 250 | millseconds, after that AudioGenie fires a DoEvent |
+ * | 0 | MPEGEXACTREAD | 0 | a non-zero value activates the reading from all MPEG frames; replaces SetMPEGAnalyzeAllFrames |
+ * | 1 | ID3V2PADDINGSIZE | 4096 | the padding size in bytes for an ID3v2 tag |
+ * | 2 | WRITEBLOCKSIZE | 524288 | the block size in bytes for internal file copy |
+ * | 3 | DOEVENTSMILLIS | 250 | milliseconds after which AudioGenie fires a DoEvent |
  * | 4 | MAXTEXTBUFFER | 262144 | the maximum text size in bytes |
- * | 5 | WMAPADDINGSIZE | 4096 | the padding size in bytes for a wma tag |
- * | 6 | MP4PADDINGSIZE | 4096 | the padding size in bytes for a mp4 tag |
+ * | 5 | WMAPADDINGSIZE | 4096 | the padding size in bytes for a WMA tag |
+ * | 6 | MP4PADDINGSIZE | 4096 | the padding size in bytes for an MP4 tag |
  *
  * @ingroup UNIVERSAL
  * @since 2.0.1.0
@@ -4097,13 +4097,13 @@ extern "C" void __stdcall SetConfigValueW(long key, long value)
  *
  * | Key | ID | Description |
  * |---|---|---|
- * | 0 | MPEGEXACTREAD | a non 0 value indicates the reading from all MPEG frames |
- * | 1 | ID3V2PADDINGSIZE | the padding size in bytes for an id3v2 tag |
- * | 2 | WRITEBLOCKSIZE | the blocksize in bytes for internal file copy |
- * | 3 | DOEVENTSMILLIS | millseconds after AudioGenie fires a DoEvent |
+ * | 0 | MPEGEXACTREAD | a non-zero value indicates the reading from all MPEG frames |
+ * | 1 | ID3V2PADDINGSIZE | the padding size in bytes for an ID3v2 tag |
+ * | 2 | WRITEBLOCKSIZE | the block size in bytes for internal file copy |
+ * | 3 | DOEVENTSMILLIS | milliseconds after which AudioGenie fires a DoEvent |
  * | 4 | MAXTEXTBUFFER | the maximum text size in bytes |
- * | 5 | WMAPADDINGSIZE | the padding size in bytes for a wma tag |
- * | 6 | MP4PADDINGSIZE | the padding size in bytes for a mp4 tag |
+ * | 5 | WMAPADDINGSIZE | the padding size in bytes for a WMA tag |
+ * | 6 | MP4PADDINGSIZE | the padding size in bytes for an MP4 tag |
  *
  * @ingroup UNIVERSAL
  * @since 2.0.1.0
@@ -4177,7 +4177,7 @@ extern "C" void __stdcall ID3V2SetPlayCounterW(long counter)
 
 
 /**
- * @brief shows -1, if the ID3v2 tag exists
+ * @brief returns -1 if the ID3v2 tag exists
  *
  * @ingroup ID3V2
  * @since 2.0.1.0
@@ -4232,7 +4232,7 @@ extern "C" BSTR __stdcall ID3V2GetVersionW()
  * @since 2.0.1.0
  * @par ID3v2 frame
  *   COMM
- * @param Language id of the entry, e.g. ENG for english ( must be 3 bytes long )
+ * @param Language id of the entry, e.g. ENG for English (must be 3 bytes long)
  * @param Description the description of the entry
  * @param Text the comment
  * @return -1 if frame was replaced, 0 if frame was added
@@ -4267,8 +4267,8 @@ extern "C" BSTR __stdcall ID3V2GetCommentDescriptionW(short Index)
  * @since 2.0.1.0
  * @par ID3v2 frame
  *   COMM
- * @param Index Index from 1 to comment frame count
- * @return the language id of the comment, e.g. ENG for english
+ * @param Index index from 1 to comment frame count
+ * @return the language id of the comment, e.g. ENG for English
  */
 extern "C" BSTR __stdcall ID3V2GetCommentLanguageW(short Index)
 {
@@ -4316,7 +4316,7 @@ extern "C" short __stdcall ID3V2ImportCueFileW(LPCWSTR FileName)
  * @since 2.0.1.0
  * @par ID3v2 frame
  *   USLT
- * @param Language ID of the entry, e.g. ENG for english ( must be 3 bytes long )
+ * @param Language ID of the entry, e.g. ENG for English (must be 3 bytes long)
  * @param Description the description of the entry
  * @param Text the lyric
  * @return -1 if frame was replaced, 0 if frame was added
@@ -4352,7 +4352,7 @@ extern "C" BSTR __stdcall ID3V2GetLyricDescriptionW(short Index)
  * @par ID3v2 frame
  *   USLT
  * @param Index index from 1 to lyric frame count
- * @return the language id of the lyric, e.g. ENG for english
+ * @return the language id of the lyric, e.g. ENG for English
  */
 extern "C" BSTR __stdcall ID3V2GetLyricLanguageW(short Index)
 {
@@ -4368,7 +4368,7 @@ extern "C" BSTR __stdcall ID3V2GetLyricLanguageW(short Index)
  * @since 2.0.1.0
  * @par ID3v2 frame
  *   USLT
- * @param Index Index from 1 to Lyric frame count
+ * @param Index index from 1 to Lyric frame count
  * @return the text of the lyric
  */
 extern "C" BSTR __stdcall ID3V2GetLyricW(short Index)
@@ -4445,7 +4445,7 @@ extern "C" BSTR __stdcall ID3V2GetPictureTypeTextW(short Index)
 /**
  * @brief get the mime type from a picture, e.g. "image/jpeg" or "image/bmp" or "XXX" for unknown format
  *
- * If the file was stored as a Link then this method returns then filename starting with "-->", e.g. "-->C:\test.jpg"
+ * If the file was stored as a Link then this method returns the file name starting with "-->", e.g. "-->C:\test.jpg"
  *
  * @ingroup ID3V2
  * @since 2.0.1.0
@@ -4535,7 +4535,7 @@ extern "C" short __stdcall ID3V2AddPictureFileW(LPCWSTR FileName, LPCWSTR Descri
  * @since 2.0.1.0
  * @par ID3v2 frame
  *   APIC
- * @param arr to a byte array with the picture datas
+ * @param arr to a byte array with the picture data
  * @param Length the size of the array
  * @param Description a description of the picture
  * @param PictureType type from 0 to 20, see @ref picturetypes
@@ -4554,7 +4554,7 @@ extern "C" short __stdcall ID3V2AddPictureArrayW(BYTE *arr, u32 Length, LPCWSTR 
 /**
  * @brief add an audio encryption frame
  *
- * There may be more than one 'AENC' frames in a tag, but only one with the same 'Owner identifier'.
+ * There may be more than one 'AENC' frame in a tag, but only one with the same 'Owner identifier'.
  *
  * @ingroup ID3V2
  * @since 2.0.1.0
@@ -4750,7 +4750,7 @@ extern "C" long __stdcall ID3V2GetAudioSeekPointDataW(BYTE *arr, u32 maxLen)
  * @param arr pointer to the byte array with the seller logo
  * @param maxLen the size of the array in bytes
  * @param Price
- * @param validUntil in format YYYYMMDD ( 8 chars )
+ * @param validUntil in format YYYYMMDD (8 chars)
  * @param contactUrl
  * @param receivedAs
  * @param seller
@@ -5064,7 +5064,7 @@ extern "C" short __stdcall ID3V2SetAddendumTitleW(LPCWSTR ID, LPCWSTR newTitle)
  * @par ID3v2 frame
  *   CHAP
  * @param ID the ID of the element
- * @param startTime the start time in millisecondes
+ * @param startTime the start time in milliseconds
  * @param endTime the end time in milliseconds
  * @return normally -1, 0 if ID not found or element is not a CHAP element
  */
@@ -5135,7 +5135,7 @@ extern "C" short __stdcall ID3V2GetAddendumTypeW(LPCWSTR ID)
  *
  * @ingroup ID3V2
  * @since 2.0.1.0
- * @return the text string comma based text string with Frame IDs
+ * @return a comma-separated text string with Frame IDs
  */
 extern "C" BSTR __stdcall ID3V2GetAllFrameIDsW()
 {
@@ -5256,7 +5256,7 @@ extern "C" u32 __stdcall ID3V2GetSubFrameIDW(LPCWSTR ID, short Index)
  * @since 2.0.1.0
  * @param ID the ID of the parent frame
  * @param Index the index from 1 to ID3V2GetSubFramesW
- * @return 1=normal textframe T000, 2=userdefined textframe TXXX, 3=normal URL frame W000, 4=userdefined URL frame WXXX, 5=Picture APIC, -1=ID not found
+ * @return 1=normal text frame T000, 2=user-defined text frame TXXX, 3=normal URL frame W000, 4=user-defined URL frame WXXX, 5=Picture APIC, -1=ID not found
  */
 extern "C" short __stdcall ID3V2GetSubFrameTypeW(LPCWSTR ID, short Index)
 {
@@ -5452,7 +5452,7 @@ extern "C" BSTR __stdcall ID3V2GetChildElementIDW(LPCWSTR ID, short Index)
 }
 
 /**
- * @brief set a textframe, will be replaced if exists
+ * @brief set a text frame; an existing one is replaced
  *
  * @ingroup ID3V2
  * @since 2.0.1.0
@@ -5481,7 +5481,7 @@ extern "C" short __stdcall ID3V2SetTextSubFrameW(LPCWSTR ID, u32 FrameID, LPCWST
 }
 
 /**
- * @brief set a url frame, will be replaced if exists
+ * @brief set a url frame; an existing one is replaced
  *
  * @ingroup ID3V2
  * @since 2.0.1.0
@@ -5510,7 +5510,7 @@ extern "C" short __stdcall ID3V2SetURLSubFrameW(LPCWSTR ID, u32 FrameID, LPCWSTR
 }
 
 /**
- * @brief set a picture frame, will be replaced if exists
+ * @brief set a picture frame; an existing one is replaced
  *
  * @ingroup ID3V2
  * @since 2.0.1.0
@@ -5674,7 +5674,7 @@ extern "C" short __stdcall ID3V2GetEqualisationAdjustmentBitsW(short Index)
 	return (id3frame != NULL) ? cEQUA(id3frame)->getAdjustmentBits() : -1;
 }
 /**
- * @brief get the Identificator
+ * @brief get the identifier
  *
  * @ingroup ID3V2
  * @since 2.0.1.0
@@ -5742,7 +5742,7 @@ extern "C" short __stdcall ID3V2GetEventTimingCodesTimestampFormatW()
 	return (id3frame != NULL) ? cETCO(id3frame)->getFormat() :-1;
 }
 /**
- * @brief get the event datas
+ * @brief get the event data
  *
  * @ingroup ID3V2
  * @since 2.0.1.0
@@ -5769,11 +5769,11 @@ extern "C" long __stdcall ID3V2GetEventTimingCodesDataW(BYTE *arr, u32 maxLen)
  * @since 2.0.1.0
  * @par ID3v2 frame
  *   GEOB
- * @param arr pointer to the byte array with the object datas
+ * @param arr pointer to the byte array with the object data
  * @param maxLen of the array in bytes
  * @param Mime Type of the object
  * @param FileName
- * @param Description descriptor
+ * @param Description the descriptor
  * @return -1 if frame was replaced, 0 if frame was added
  */
 extern "C" short __stdcall ID3V2AddGeneralObjectW(BYTE *arr, u32 maxLen, LPCWSTR Mime, LPCWSTR FileName, LPCWSTR Description)
@@ -5832,7 +5832,7 @@ extern "C" BSTR __stdcall ID3V2GetGeneralObjectDescriptionW(short Index)
 }
 
 /**
- * @brief get the object datas
+ * @brief get the object data
  *
  * @ingroup ID3V2
  * @since 2.0.1.0
@@ -6310,7 +6310,7 @@ extern "C" long __stdcall ID3V2GetPrivateFrameDataW(BYTE *arr, u32 maxLen, short
  * @since 2.0.1.0
  * @par ID3v2 frame
  *   RBUF
- * @param BufferSize the buffersize
+ * @param BufferSize the buffer size
  * @param EmbeddedInfoFlag 0=false 1=true
  * @param Offset offset to next tag
  * @return -1 if frame was replaced, 0 if frame was added
@@ -6783,7 +6783,7 @@ extern "C" long __stdcall ID3V2GetUniqueFileIdentifierDataW(BYTE *arr, u32 maxLe
 
 
 /**
- * @brief "USER" set a userdefined frame
+ * @brief "USER" set a user-defined frame
  *
  * There may be more than one 'USER' frame in a tag, but only one with the same Language.
  *
@@ -6791,7 +6791,7 @@ extern "C" long __stdcall ID3V2GetUniqueFileIdentifierDataW(BYTE *arr, u32 maxLe
  * @since 2.0.1.0
  * @par ID3v2 frame
  *   USER
- * @param Language ID of the entry, e.g. ENG for english ( must be 3 bytes long )
+ * @param Language ID of the entry, e.g. ENG for English (must be 3 bytes long)
  * @param Text the user frame
  * @return -1 if frame was replaced, 0 if frame was added
  */
@@ -6802,14 +6802,14 @@ extern "C" short __stdcall ID3V2AddUserFrameW(LPCWSTR Language, LPCWSTR Text)
 
 
 /**
- * @brief get the language from a userdefined frame
+ * @brief get the language from a user-defined frame
  *
  * @ingroup ID3V2
  * @since 2.0.1.0
  * @par ID3v2 frame
  *   USER
- * @param Index Index from 1 to user frame count
- * @return the language id of the user frame, e.g. ENG for english
+ * @param Index index from 1 to user frame count
+ * @return the language id of the user frame, e.g. ENG for English
  */
 extern "C" BSTR __stdcall ID3V2GetUserFrameLanguageW(short Index)
 {
@@ -6819,14 +6819,14 @@ extern "C" BSTR __stdcall ID3V2GetUserFrameLanguageW(short Index)
 
 
 /**
- * @brief get a userdefined Frame
+ * @brief get a user-defined Frame
  *
  * @ingroup ID3V2
  * @since 2.0.1.0
  * @par ID3v2 frame
  *   USER
  * @param Index index from 1 to user frame count
- * @return the userdefined text
+ * @return the user-defined text
  */
 extern "C" BSTR __stdcall ID3V2GetUserFrameW(short Index)
 {
@@ -6835,7 +6835,7 @@ extern "C" BSTR __stdcall ID3V2GetUserFrameW(short Index)
 }
 
 /**
- * @brief "TXXX" set a userdefined Text
+ * @brief "TXXX" set a user-defined Text
  *
  * There may be more than one 'TXXX' frame in each tag, but only one with the same description.
  *
@@ -6855,7 +6855,7 @@ extern "C" short __stdcall ID3V2AddUserTextW(LPCWSTR Description, LPCWSTR Text)
 
 
 /**
- * @brief get a Description from a userdefined Text
+ * @brief get a Description from a user-defined Text
  *
  * @ingroup ID3V2
  * @since 2.0.1.0
@@ -6872,14 +6872,14 @@ extern "C" BSTR __stdcall ID3V2GetUserTextDescriptionW(short Index)
 
 
 /**
- * @brief get the userdefined text
+ * @brief get the user-defined text
  *
  * @ingroup ID3V2
  * @since 2.0.1.0
  * @par ID3v2 frame
  *   TXXX
- * @param Index Index from 1 to user text frame count
- * @return the userdefined text
+ * @param Index index from 1 to user text frame count
+ * @return the user-defined text
  */
 extern "C" BSTR __stdcall ID3V2GetUserTextW(short Index)
 {
@@ -6889,7 +6889,7 @@ extern "C" BSTR __stdcall ID3V2GetUserTextW(short Index)
 
 
 /**
- * @brief "WXXX" set a userdefined url
+ * @brief "WXXX" set a user-defined url
  *
  * There may be more than one 'WXXX' frame in each tag, but only one with the same description.
  *
@@ -6908,14 +6908,14 @@ extern "C" short __stdcall ID3V2AddUserURLW(LPCWSTR Description, LPCWSTR URL)
 
 
 /**
- * @brief get the description from a userdefined url
+ * @brief get the description from a user-defined url
  *
  * @ingroup ID3V2
  * @since 2.0.1.0
  * @par ID3v2 frame
  *   WXXX
  * @param Index index from 1 to user url frame count
- * @return the description of the userdefined url
+ * @return the description of the user-defined url
  */
 extern "C" BSTR __stdcall ID3V2GetUserURLDescriptionW(short Index)
 {
@@ -6925,14 +6925,14 @@ extern "C" BSTR __stdcall ID3V2GetUserURLDescriptionW(short Index)
 
 
 /**
- * @brief get a userdefined url
+ * @brief get a user-defined url
  *
  * @ingroup ID3V2
  * @since 2.0.1.0
  * @par ID3v2 frame
  *   WXXX
  * @param Index index from 0 to User Url frame count
- * @return the userdefined url
+ * @return the user-defined url
  */
 extern "C" BSTR __stdcall ID3V2GetUserURLW(short Index)
 {
@@ -7045,7 +7045,7 @@ extern "C" BSTR __stdcall ID3V2GetSyncLyricDescriptionW(short Index)
  * @par ID3v2 frame
  *   SYLT
  * @param Index index from 1 to sync lyric frame count
- * @return the language id of the synchronized lyric, e.g. ENG for english
+ * @return the language id of the synchronized lyric, e.g. ENG for English
  */
 extern "C" BSTR __stdcall ID3V2GetSyncLyricLanguageW(short Index) 
 {
@@ -7108,7 +7108,7 @@ extern "C" short __stdcall ID3V2GetSyncLyricContentTypeW(short Index)
  * @since 2.0.1.0
  * @par ID3v2 frame
  *   SYLT
- * @param Language language of the entry, e.g. ENG for english ( must be 3 bytes long )
+ * @param Language language of the entry, e.g. ENG for English (must be 3 bytes long)
  * @param Description the description of the entry
  * @param Text multi entries separated with line break (crlf). use the following format:
  *
@@ -7158,8 +7158,8 @@ extern "C" short __stdcall ID3V2AddSyncLyricW(LPCWSTR Language, LPCWSTR Descript
  * @since 2.0.1.0
  * @par ID3v2 frame
  *   POPM
- * @param Email a personal email adress
- * @param Rating rating from 1 ( worst ) to 255 ( best ), 0=no rating
+ * @param Email a personal email address
+ * @param Rating rating from 1 (worst) to 255 (best), 0=no rating
  * @param Counter play counter
  * @return -1 if frame was replaced, 0 if frame was added
  */
@@ -7176,7 +7176,7 @@ extern "C" short __stdcall ID3V2AddPopularimeterW(LPCWSTR Email, short Rating, l
  * @par ID3v2 frame
  *   POPM
  * @param Index index from 1 to popularimeter frame count
- * @return email adress
+ * @return email address
  */
 extern "C" BSTR __stdcall ID3V2GetPopularimeterEmailW(short Index) 
 {
@@ -7268,7 +7268,7 @@ extern "C" BSTR __stdcall WAVGetDisplayTextW()
 }
 
 /**
- * @brief set the etxt of a DISPLAY chunk
+ * @brief set the text of a DISPLAY chunk
  *
  * @ingroup WAV
  * @since 2.0.3.0
@@ -7280,7 +7280,7 @@ extern "C" void __stdcall WAVSetDisplayTextW(LPCWSTR textString)
 }
 
 /**
- * @brief store the wav tag in a file
+ * @brief store the WAV tag in a file
  *
  * @ingroup WAV
  * @since 2.0.1.0
@@ -7319,7 +7319,7 @@ extern "C" short __stdcall WAVSaveChangesW()
  *
  * @ingroup WAV
  * @since 2.0.1.0
- * @param Index the Index of the entry from 0 to 26
+ * @param Index the index of the entry from 0 to 26
  * @return the text string
  */
 extern "C" BSTR __stdcall WAVGetCartChunkEntryW(short Index)
@@ -7332,7 +7332,7 @@ extern "C" BSTR __stdcall WAVGetCartChunkEntryW(short Index)
  *
  * @ingroup WAV
  * @since 2.0.1.0
- * @param Index the Index of the entry from 0 to 26
+ * @param Index the index of the entry from 0 to 26
  * @param textString the new text
  */
 extern "C" void __stdcall WAVSetCartChunkEntryW(short Index, LPCWSTR textString)
@@ -7343,13 +7343,13 @@ extern "C" void __stdcall WAVSetCartChunkEntryW(short Index, LPCWSTR textString)
 /* ----------------------------------------------------------------------------------------- */
 
 /**
- * @brief get a MP5 hash only from the audio datas and without tag informations from the last analyzed file
+ * @brief get a MD5 hash only from the audio data and without tag information from the last analyzed file
  *
  * You can use this for comparing audio files.
  *
  * @ingroup AUDIO
  * @since 2.0.1.0
- * @return MD5 Key ( 32 bytes long )
+ * @return MD5 Key (32 bytes long)
  */
 extern "C" BSTR __stdcall AUDIOGetMD5ValueW() 
 {	
@@ -7362,14 +7362,14 @@ extern "C" BSTR __stdcall AUDIOGetMD5ValueW()
 }
 
 /**
- * @brief get a MP5 hash from the complete file
+ * @brief get a MD5 hash from the complete file
  *
  * You can use this for comparing files.
  *
  * @ingroup UNIVERSAL
  * @since 2.0.1.0
  * @param FileName name of the file
- * @return MD5 Key ( 32 bytes long )
+ * @return MD5 Key (32 bytes long)
  */
 extern "C" BSTR __stdcall GetMD5ValueFromFileW(LPCWSTR FileName) 
 {	

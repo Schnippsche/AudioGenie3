@@ -138,17 +138,17 @@ Functions</h2></td></tr>
 <tr class="memitem:ga559911bbdc5c91f627b80dd822b07932" id="r_ga559911bbdc5c91f627b80dd822b07932"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#ga559911bbdc5c91f627b80dd822b07932">WMASetUserItemW</a> (LPCWSTR ItemKey, LPCWSTR textString)</td></tr>
 <tr class="memdesc:ga559911bbdc5c91f627b80dd822b07932"><td class="mdescLeft">&#160;</td><td class="mdescRight">set a user defined field  <br /></td></tr>
 <tr class="memitem:ga72260163877e2951b40576f229e59778" id="r_ga72260163877e2951b40576f229e59778"><td class="memItemLeft">BSTR&#160;</td><td class="memItemRight"><a class="el" href="#ga72260163877e2951b40576f229e59778">WMAGetItemKeysW</a> ()</td></tr>
-<tr class="memdesc:ga72260163877e2951b40576f229e59778"><td class="mdescLeft">&#160;</td><td class="mdescRight">get all field names ( comma separated )  <br /></td></tr>
+<tr class="memdesc:ga72260163877e2951b40576f229e59778"><td class="mdescLeft">&#160;</td><td class="mdescRight">get all field names (comma separated)  <br /></td></tr>
 <tr class="memitem:gab00667cd75e472fd3dc7bdfa314cd5a9" id="r_gab00667cd75e472fd3dc7bdfa314cd5a9"><td class="memItemLeft">short&#160;</td><td class="memItemRight"><a class="el" href="#gab00667cd75e472fd3dc7bdfa314cd5a9">WMADeletePictureW</a> (short Index)</td></tr>
 <tr class="memdesc:gab00667cd75e472fd3dc7bdfa314cd5a9"><td class="mdescLeft">&#160;</td><td class="mdescRight">remove a picture with WM/Picture Tag  <br /></td></tr>
 <tr class="memitem:ga193398bb37c3784e6d9b586b481bc6be" id="r_ga193398bb37c3784e6d9b586b481bc6be"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#ga193398bb37c3784e6d9b586b481bc6be">WMADeletePicturesW</a> ()</td></tr>
 <tr class="memdesc:ga193398bb37c3784e6d9b586b481bc6be"><td class="mdescLeft">&#160;</td><td class="mdescRight">remove all pictures with WM/Picture tag  <br /></td></tr>
 <tr class="memitem:ga8c8d39039afc4669812568af027d359f" id="r_ga8c8d39039afc4669812568af027d359f"><td class="memItemLeft">short&#160;</td><td class="memItemRight"><a class="el" href="#ga8c8d39039afc4669812568af027d359f">WMAIsVBRW</a> ()</td></tr>
-<tr class="memdesc:ga8c8d39039afc4669812568af027d359f"><td class="mdescLeft">&#160;</td><td class="mdescRight">shows -1, if it is variable bitrate  <br /></td></tr>
+<tr class="memdesc:ga8c8d39039afc4669812568af027d359f"><td class="mdescLeft">&#160;</td><td class="mdescRight">returns -1 if it is variable bitrate  <br /></td></tr>
 <tr class="memitem:ga4f74ed747c86c69216a987bbf125eef7" id="r_ga4f74ed747c86c69216a987bbf125eef7"><td class="memItemLeft">short&#160;</td><td class="memItemRight"><a class="el" href="#ga4f74ed747c86c69216a987bbf125eef7">WMASaveChangesToFileW</a> (LPCWSTR FileName)</td></tr>
-<tr class="memdesc:ga4f74ed747c86c69216a987bbf125eef7"><td class="mdescLeft">&#160;</td><td class="mdescRight">store the wma tag in a file  <br /></td></tr>
+<tr class="memdesc:ga4f74ed747c86c69216a987bbf125eef7"><td class="mdescLeft">&#160;</td><td class="mdescRight">store the WMA tag in a file  <br /></td></tr>
 <tr class="memitem:ga5d64abd5900bf4d34d03a13496edd7c1" id="r_ga5d64abd5900bf4d34d03a13496edd7c1"><td class="memItemLeft">short&#160;</td><td class="memItemRight"><a class="el" href="#ga5d64abd5900bf4d34d03a13496edd7c1">WMASaveChangesW</a> ()</td></tr>
-<tr class="memdesc:ga5d64abd5900bf4d34d03a13496edd7c1"><td class="mdescLeft">&#160;</td><td class="mdescRight">store the wma tag in the last analyzed file  <br /></td></tr>
+<tr class="memdesc:ga5d64abd5900bf4d34d03a13496edd7c1"><td class="mdescLeft">&#160;</td><td class="mdescRight">store the WMA tag in the last analyzed file  <br /></td></tr>
 </table>
 <a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Windows Media Audio fields and pictures. </p>
@@ -395,7 +395,7 @@ Functions</h2></td></tr>
     <tr><td class="paramname">FileName</td><td>name of the picture file </td></tr>
     <tr><td class="paramname">Description</td><td>a description of the picture </td></tr>
     <tr><td class="paramname">PictureType</td><td>type from 0 to 20, see <a class="el" href="picturetypes.html" title="Picture types">Picture types</a> </td></tr>
-    <tr><td class="paramname">Index</td><td>Index from 1 to n; if n is not present a new entry will be created </td></tr>
+    <tr><td class="paramname">Index</td><td>index from 1 to n; if n is not present a new entry will be created </td></tr>
   </table>
   </dd>
 </dl>
@@ -442,11 +442,11 @@ Functions</h2></td></tr>
 <dl class="section user"><dt>ID3v2 frame</dt><dd>WM/Picture </dd></dl>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">arr</td><td>to a byte array with the picture datas </td></tr>
+    <tr><td class="paramname">arr</td><td>to a byte array with the picture data </td></tr>
     <tr><td class="paramname">Length</td><td>the size of the array </td></tr>
     <tr><td class="paramname">Description</td><td>a description of the picture </td></tr>
     <tr><td class="paramname">PictureType</td><td>type from 0 to 20, see <a class="el" href="picturetypes.html" title="Picture types">Picture types</a> </td></tr>
-    <tr><td class="paramname">index</td><td>Index from 1 to n; if n is not present a new entry will be created </td></tr>
+    <tr><td class="paramname">index</td><td>index from 1 to n; if n is not present a new entry will be created </td></tr>
   </table>
   </dd>
 </dl>
@@ -474,11 +474,11 @@ Functions</h2></td></tr>
 <dl class="section since"><dt>Since</dt><dd>2.0.1.0 </dd></dl>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">ItemKey</td><td>userdefined key </td></tr>
+    <tr><td class="paramname">ItemKey</td><td>user-defined key </td></tr>
   </table>
   </dd>
 </dl>
-<dl class="section return"><dt>Returns</dt><dd>field userdefined item or empty if key not present </dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>field user-defined item or empty if key not present </dd></dl>
 
 </div>
 </div>
@@ -507,7 +507,7 @@ Functions</h2></td></tr>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">ItemKey</td><td>the key you want to set </td></tr>
-    <tr><td class="paramname">textString</td><td>new value for the key, empty string remove this item </td></tr>
+    <tr><td class="paramname">textString</td><td>new value for the key, an empty string removes this item </td></tr>
   </table>
   </dd>
 </dl>
@@ -529,7 +529,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>get all field names ( comma separated ) </p>
+<p>get all field names (comma separated) </p>
 <dl class="section since"><dt>Since</dt><dd>2.0.1.0 </dd></dl>
 <dl class="section return"><dt>Returns</dt><dd>fieldnames </dd></dl>
 
@@ -599,7 +599,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>shows -1, if it is variable bitrate </p>
+<p>returns -1 if it is variable bitrate </p>
 <dl class="section since"><dt>Since</dt><dd>2.0.1.0 </dd></dl>
 <dl class="section return"><dt>Returns</dt><dd>-1 if variable bitrate, otherwise 0 </dd></dl>
 
@@ -620,7 +620,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>store the wma tag in a file </p>
+<p>store the WMA tag in a file </p>
 <dl class="section since"><dt>Since</dt><dd>2.0.1.0 </dd></dl>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
@@ -647,7 +647,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>store the wma tag in the last analyzed file </p>
+<p>store the WMA tag in the last analyzed file </p>
 <dl class="section since"><dt>Since</dt><dd>2.0.1.0 </dd></dl>
 <dl class="section return"><dt>Returns</dt><dd>normally -1, 0 on error </dd></dl>
 
