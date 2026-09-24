@@ -149,8 +149,8 @@ void CID3F_APIC::decode()
 			}
 			_pictureType = _blob.GetAt(start++);
 			_description = _blob.getNextString(encodingID, start);
-			// nun Bilddaten
-			// Falls Mime --> ist , dann Bild aus Datei lesen
+			// now the picture data
+			// if the mime type is -->, read the picture from a file
 			if (_mime.Compare(_T("-->")) == 0)
 			{
 				_isLink = true;
@@ -164,7 +164,7 @@ void CID3F_APIC::decode()
 				else
 					CTools::instance().setLastError(ERR_IMAGEURL_NOT_FOUND, (LPCTSTR)_pictureLink);				
 			}
-			else // Bild aus Speicher lesen
+			else // read picture from memory
 			{
 				_isLink = false;
 				_data.AddBlob(_blob, start);
@@ -294,7 +294,7 @@ bool CID3F_APIC::setPictureFile(LPCWSTR fileName)
 	{
 		_data.FileRead(_filelength(_fileno(Stream)), Stream); 
 		fclose(Stream);
-		// MIME neu bilden
+		// rebuild the MIME type
 		if (CTools::ID3V2oldTagVersion == TAG_VERSION_2_2)
 			_mime = CTools::instance().ExtractSmallMimeFromPicture(_data.m_pData);
 		else

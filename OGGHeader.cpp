@@ -18,7 +18,7 @@
    License along with the GNU C Library; if not, see <http://www.gnu.org/licenses/> 
 */
 
-// OGGHeader.cpp: Implementierung der Klasse COGGHeader.
+// OGGHeader.cpp: implementation of class COGGHeader.
 //
 //////////////////////////////////////////////////////////////////////
 
@@ -27,7 +27,7 @@
 #include "Blob.h"
 
 //////////////////////////////////////////////////////////////////////
-// Konstruktion/Destruktion
+// Construction/Destruction
 //////////////////////////////////////////////////////////////////////
 
 COGGHeader::COGGHeader()

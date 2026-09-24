@@ -157,8 +157,8 @@ void CID3F_SYLT::decode()
 			_contenttype = _blob.GetAt(5);
 			int start = 6;
 			_description = _blob.getNextString(encodingID, start);
-			// Extrahiere Text ( Ansi oder Unicode oder UTF8 )
-			// WICHTIG: evtl BOM wird hier nicht mehr aufgeführt!!!
+			// extract text ( ANSI, Unicode or UTF8 )
+			// IMPORTANT: a BOM is no longer listed here!!!
 			// Deshalb umsetzen
 			BYTE code = (encodingID == TEXT_ENCODED_UTF16BOM) ? TEXT_ENCODED_UTF16 : encodingID;
 			int nr = 0;
@@ -188,7 +188,7 @@ void CID3F_SYLT::encode()
 		_blob.AddValue(_timestampformat);
 		_blob.AddValue(_contenttype);
 		_blob.AddEncodedString(encodingID, _description, TEXT_WITHOUT_ENCODING, TEXT_WITH_NULLBYTES);		
-		// text zerlegen und in id3 format umwandeln
+		// split the text and convert it to id3 format
 		// Textschema: "[00000000]string1\n[00000000]string2\n" usw
 		CAtlString tmp = _text;
 		CAtlString entry;

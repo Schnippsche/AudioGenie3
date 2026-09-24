@@ -75,11 +75,11 @@ void CWAVRIFFContainer::save(CBlob *blob)
 
 bool CWAVRIFFContainer::load(FILE *Stream, u32 offset, u32 size)
 {
-	// Riff Container , Aufbau zwingend:
+	// RIFF container, structure is mandatory:
 	// 4 Bytes 'RIFF'
-	// 4 Bytes länge
-	// 4 Bytes 'WAVE' als Text
-	// dann die restlichen Chunks/Subchunks
+	// 4 bytes length
+	// 4 bytes 'WAVE' as text
+	// then the remaining chunks/subchunks
 	CBlob header;
 	_fseeki64(Stream, offset, SEEK_SET);
 	header.FileRead(12, Stream);
@@ -152,9 +152,9 @@ void CWAVRIFFContainer::Remove()
 
 void CWAVRIFFContainer::addInfoChunk(u32 FrameID, CAtlString newText)
 {
-	// Suche den LIST/INFO Chunk
+	// look for the LIST/INFO chunk
 	CWAVContainer* container = getInfoChunk();
-	// Neuanlage ? Füge vor data Chunk ein
+	// create new? Insert before the data chunk
 	if (container == NULL)
 	{
 		size_t counts = _children.GetCount();
@@ -195,7 +195,7 @@ CWAVDISPChunk* CWAVRIFFContainer::getDispChunk()
 	size_t counts = _children.GetCount();
 	for (size_t i = 0; i < counts; i++)
 	{
-		// Suche nur DISP chunk mit Textinhalt
+		// only look for DISP chunks with text content
 		if (_children[i]->getID() == 'DISP')
 		{
 			CWAVDISPChunk* result = static_cast<CWAVDISPChunk*>(_children[i]);
@@ -219,9 +219,9 @@ CWAVCARTChunk* CWAVRIFFContainer::getCartChunk()
 
 CWAVCARTChunk* CWAVRIFFContainer::addCartChunk()
 {
-	// Suche den CART Chunk
+	// look for the CART chunk
 	CWAVCARTChunk* chunk = getCartChunk();
-	// Neuanlage ? Füge vor data Chunk ein
+	// create new? Insert before the data chunk
 	if (chunk == NULL)
 	{
 		size_t counts = _children.GetCount();
@@ -253,9 +253,9 @@ CWAVBEXTChunk* CWAVRIFFContainer::getBextChunk()
 
 CWAVBEXTChunk* CWAVRIFFContainer::addBextChunk()
 {
-	// Suche den CART Chunk
+	// look for the CART chunk
 	CWAVBEXTChunk* chunk = getBextChunk();
-	// Neuanlage ? Füge vor data Chunk ein
+	// create new? Insert before the data chunk
 	if (chunk == NULL)
 	{
 		size_t counts = _children.GetCount();
@@ -276,9 +276,9 @@ CWAVBEXTChunk* CWAVRIFFContainer::addBextChunk()
 
 CWAVDISPChunk* CWAVRIFFContainer::addDispChunk()
 {
-	// Suche den DISP Chunk mit Text
+	// look for the DISP chunk with text
 	CWAVDISPChunk* chunk = getDispChunk();
-	// Neuanlage ? Füge am Ende an
+	// create new? Append at the end
 	if (chunk == NULL)
 	{
 		chunk = new CWAVDISPChunk();

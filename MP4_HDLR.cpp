@@ -25,7 +25,7 @@
 CMP4_HDLR::CMP4_HDLR(void)
 {
 	setFrameID(MP4_HDLR);
-	// Initialisieren, falls neu hinzugefügt wird
+	// initialize if newly added
 	_blob.Clear();
 	_blob.AddMemory(header, sizeof(header));	
 }

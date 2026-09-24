@@ -18,7 +18,7 @@
    License along with the GNU C Library; if not, see <http://www.gnu.org/licenses/> 
 */
 
-// ID3V1TagInfo.h: Schnittstelle für die Klasse CID3V1TagInfo.
+// ID3V1TagInfo.h: interface for class CID3V1TagInfo.
 //
 //////////////////////////////////////////////////////////////////////
 
@@ -75,7 +75,7 @@ private:
 public:
 	CID3V1TagInfo();
 	virtual ~CID3V1TagInfo();
-	// Datenstruktur
+	// Data structure
 	bool _exists;
 	CAtlString Title;
 	CAtlString Artist;
@@ -84,7 +84,7 @@ public:
 	CAtlString Year;
 	BYTE Genre;
 	BYTE Track;
-	// Methoden
+	// methods
 	bool ReadFromFile(FILE *Stream);
 	bool WriteToFile(FILE *Stream);
 	void Reset();

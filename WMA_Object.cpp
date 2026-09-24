@@ -77,5 +77,5 @@ void CWMA_Object::save(CBlob *blob)
 
 void CWMA_Object::buildData()
 {
-	// Nix tun, da die Daten unverändert rausgeschrieben werden
+	// do nothing, because the data is written out unchanged
 }

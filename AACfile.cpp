@@ -26,7 +26,7 @@
 #include "resource.h"
 
 //////////////////////////////////////////////////////////////////////
-// Konstruktion/Destruktion
+// Construction/Destruction
 //////////////////////////////////////////////////////////////////////
 
 CAAC::CAAC()
@@ -240,9 +240,9 @@ bool CAAC::ReadFromFile(FILE *Source)
 	if (FHeaderTypeID == AAC_HEADER_TYPE_ADTS)
 	{
 		ReadADTS(Source);
-		return IsValid(); // ADTS sieht fast aus wie MPEG, also noch validieren
+		return IsValid(); // ADTS looks almost like MPEG, so validate further
 	}
 	ResetData();
-	return false; // Kein AAC File
+	return false; // not an AAC file
 }
 

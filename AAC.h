@@ -19,7 +19,7 @@
 */
 
 
-// AAC.h: Schnittstelle für die Klasse CAAC.
+// AAC.h: interface for class CAAC.
 //
 //////////////////////////////////////////////////////////////////////
 #pragma once

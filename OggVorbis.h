@@ -18,7 +18,7 @@
    License along with the GNU C Library; if not, see <http://www.gnu.org/licenses/> 
 */
 
-// OggVorbis.h: Schnittstelle für die Klasse COggVorbis.
+// OggVorbis.h: interface for class COggVorbis.
 //
 //////////////////////////////////////////////////////////////////////
 

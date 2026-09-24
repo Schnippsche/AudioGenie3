@@ -18,7 +18,7 @@
    License along with the GNU C Library; if not, see <http://www.gnu.org/licenses/> 
 */
 
-// Header.h: Schnittstelle für die Klasse CHeader.
+// Header.h: interface for class CHeader.
 //
 //////////////////////////////////////////////////////////////////////
 #pragma once
@@ -30,7 +30,7 @@ struct structft
 	BYTE result;
 };
 
-// Audio-Formate
+// audio formats
 enum AUDIO_FORMAT {
 	AUDIO_FORMAT_UNKNOWN=0,
 	AUDIO_FORMAT_MPEG,

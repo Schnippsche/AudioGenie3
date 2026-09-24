@@ -18,7 +18,7 @@
    License along with the GNU C Library; if not, see <http://www.gnu.org/licenses/> 
 */
 
-// Audio.cpp: Implementierung der Klasse CAudio.
+// Audio.cpp: implementation of class CAudio.
 //
 //////////////////////////////////////////////////////////////////////
 
@@ -27,7 +27,7 @@
 
 
 //////////////////////////////////////////////////////////////////////
-// Konstruktion/Destruktion
+// Construction/Destruction
 //////////////////////////////////////////////////////////////////////
 
 CAudio::CAudio()
@@ -38,7 +38,7 @@ CAudio::~CAudio()
 {
 
 }
-// Default-Implementierung
+// default implementation
 long CAudio::GetBitRate()
 {
   float Duration = GetDuration();
@@ -48,7 +48,7 @@ long CAudio::GetBitRate()
     return 0;
 }
 
-// Default-Implementierung
+// default implementation
 CAtlString CAudio::GetChannelMode()
 {
   switch (GetChannels())

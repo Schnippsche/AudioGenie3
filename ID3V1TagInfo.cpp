@@ -18,7 +18,7 @@
    License along with the GNU C Library; if not, see <http://www.gnu.org/licenses/> 
 */
 
-// ID3V1TagInfo.cpp: Implementierung der Klasse CID3V1TagInfo.
+// ID3V1TagInfo.cpp: implementation of class CID3V1TagInfo.
 //
 //////////////////////////////////////////////////////////////////////
 
@@ -29,10 +29,10 @@
 
 /*
 Blob
-0      3     evtl APE 
-3 	  3 	Kennung „TAG“ zur Kennzeichnung eines ID3v1-Blocks
+0      3     possibly APE 
+3 	  3 	identifier TAG marking an ID3v1 block
 6 	 30 	Songtitel
-36 	 30 	Künstler/Interpret
+36 	 30 	Artist/Performer
 66 	 30 	Album
 96 	  4 	Erscheinungsjahr
 100 	 30 	Beliebiger Kommentar
@@ -44,7 +44,7 @@ Blob
 
 
 //////////////////////////////////////////////////////////////////////
-// Konstruktion/Destruktion
+// Construction/Destruction
 //////////////////////////////////////////////////////////////////////
 
 CID3V1TagInfo::CID3V1TagInfo()
@@ -58,12 +58,12 @@ CID3V1TagInfo::~CID3V1TagInfo()
 	delete tmp;
 }
 
-// Liest ein Textfeld fester Laenge: die Auffuellung besteht meist aus NUL-Bytes (Leerzeichen kommen ebenfalls vor),
-// daher beim ersten NUL abschneiden und danach Leerzeichen am Ende entfernen.
+// Reads a fixed-length text field: the padding usually consists of NUL bytes (blanks occur as well),
+// so cut off at the first NUL and then remove trailing blanks.
 static CAtlString ReadFixedField(CBlob *blob, size_t pos, size_t len)
 {
 	CAtlString raw = blob->GetStringAt(pos, len);
-	CAtlString text((LPCTSTR)raw);   // stoppt beim ersten NUL
+	CAtlString text((LPCTSTR)raw);   // stops at the first NUL
 	return text.TrimRight();
 }
 
@@ -71,7 +71,7 @@ bool CID3V1TagInfo::ReadFromFile(FILE *Stream)
 {
   errno = 0;
   _exists = false;
-  // Zuerst prüfe ob TAG nicht evtl auf APETAGEX zeigt (BUG 27.08.06)
+  // first check that TAG does not point to APETAGEX (BUG 27.08.06)
   _fseeki64(Stream, -131, SEEK_END);
   tmp->FileRead(131, Stream);
   if ( (tmp->GetLength() != 131)

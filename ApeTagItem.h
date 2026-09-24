@@ -19,7 +19,7 @@
 */
 
 
-// ApeTagItem.h: Schnittstelle für die Klasse CApeTagItem.
+// ApeTagItem.h: interface for class CApeTagItem.
 //
 //////////////////////////////////////////////////////////////////////
 #pragma once

@@ -18,8 +18,8 @@
    License along with the GNU C Library; if not, see <http://www.gnu.org/licenses/> 
 */
 
-// ID3V1.cpp: Implementierung der Klasse CID3V1. ( Kein Unicode )
-// Schreibt nur ANSI
+// ID3V1.cpp: implementation of class CID3V1. ( no Unicode )
+// writes ANSI only
 //
 //////////////////////////////////////////////////////////////////////
 
@@ -33,7 +33,7 @@
 #include "share.h"
 
 //////////////////////////////////////////////////////////////////////
-// Konstruktion/Destruktion
+// Construction/Destruction
 //////////////////////////////////////////////////////////////////////
 
 CID3V1::CID3V1()
@@ -162,7 +162,7 @@ bool CID3V1::AddTag(LPCWSTR FileName)
 bool CID3V1::SaveToFile(LPCWSTR FileName)
 {
 	bool Result = OpenFile(FileName, true);
-	// Wenn exisitert, dann ersetzen
+	// replace if it exists
 	if (Result && id3v1tag.exists())
 	{
 		_fseeki64(Stream, -128, SEEK_END);

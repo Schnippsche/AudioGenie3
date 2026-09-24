@@ -18,7 +18,7 @@
    License along with the GNU C Library; if not, see <http://www.gnu.org/licenses/> 
 */
 
-// CMP4.h: Schnittstelle für die Klasse CMP4.
+// CMP4.h: interface for class CMP4.
 //
 //////////////////////////////////////////////////////////////////////
 #pragma once
@@ -31,7 +31,7 @@
 #include "atlcoll.h"
 #include "mp4_atomfactory.h"
 
-/* Anzahl der verschiedenen Boxen */
+/* number of different boxes */
 
 #define TYPE_AUDIO 1
 #define TYPE_VIDEO 2

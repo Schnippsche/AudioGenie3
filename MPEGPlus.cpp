@@ -24,7 +24,7 @@
 #include <fcntl.h>
 
 //////////////////////////////////////////////////////////////////////
-// Konstruktion/Destruktion
+// Construction/Destruction
 //////////////////////////////////////////////////////////////////////
 
 CMPEGPlus::CMPEGPlus()
@@ -61,8 +61,8 @@ bool CMPEGPlus::ReadHeader(FILE *Stream)
 
 /* -------------------------------------------------------------------------- */
 
-// Variable-Length-Integer aus einem Puffer: 7 Bit je Byte (hohes Bit = es folgt noch ein Byte), hoechstwertige Gruppe zuerst.
-// Liefert false bei Pufferende oder Ueberlauf (mehr als 9 Bytes).
+// variable-length integer from a buffer: 7 bits per byte (high bit = another byte follows), most significant group first.
+// returns false at the end of the buffer or on overflow (more than 9 bytes).
 static bool ReadVarInt(const BYTE *data, size_t length, size_t &pos, unsigned __int64 &value)
 {
   value = 0;
@@ -78,13 +78,13 @@ static bool ReadVarInt(const BYTE *data, size_t length, size_t &pos, unsigned __
   return false;
 }
 
-// Stream-Version 8: nach "MPCK" folgen Pakete: 2 Byte Kennung, Laenge als Variable-Length-Integer (einschliesslich Kennung
-// und Laengenfeld selbst), dann die Nutzdaten. "SH" (Stream Header) enthaelt Samplezahl, Samplerate und Kanaele, "EI" (Encoder
-// Info) das Profil. Sobald Audiodaten ("AP") oder das Ende ("SE") beginnen, ist der Header zu Ende.
+// Stream version 8: after "MPCK" packets follow: 2 byte key, length as variable-length integer (including key
+// and length field itself), then the payload. "SH" (stream header) contains sample count, sample rate and channels, "EI" (encoder
+// info) the profile. As soon as audio data ("AP") or the end ("SE") begins, the header is finished.
 bool CMPEGPlus::ReadHeaderSV8(FILE *Stream)
 {
   static const long SAMPLE_RATES[4] = { 44100, 48000, 37800, 32000 };
-  const size_t MAX_PACKET_PAYLOAD = 4096;   // Header-Pakete sind winzig; groessere werden uebersprungen
+  const size_t MAX_PACKET_PAYLOAD = 4096;   // header packets are tiny; larger ones are skipped
   bool haveSH = false, midSideUsed = false;
   BYTE profileIndex = 0;
 
@@ -103,7 +103,7 @@ bool CMPEGPlus::ReadHeaderSV8(FILE *Stream)
     const char *key = (const char *)head;
     if (memcmp(key, "AP", 2) == 0 || memcmp(key, "SE", 2) == 0)
       break;
-    // an den Anfang der Nutzdaten zurueck (nach den gelesenen Kopfbytes)
+    // back to the start of the payload (after the header bytes that were read)
     _fseeki64(Stream, (__int64)pos - (__int64)got, SEEK_CUR);
     if (payloadLen > MAX_PACKET_PAYLOAD || (memcmp(key, "SH", 2) != 0 && memcmp(key, "EI", 2) != 0))
     {
@@ -115,7 +115,7 @@ bool CMPEGPlus::ReadHeaderSV8(FILE *Stream)
       break;
     if (memcmp(key, "SH", 2) == 0)
     {
-      // CRC32 (4), Stream-Version (1), Samplezahl (VarInt), Anfangsstille (VarInt), 2 Byte Frequenz/Baender und Kanaele
+      // CRC32 (4), stream version (1), sample count (VarInt), beginning silence (VarInt), 2 bytes frequency/bands and channels
       size_t p = 4;
       unsigned __int64 samples = 0, silence = 0;
       if (payloadLen < 9 || payload[p++] != 8 || !ReadVarInt(payload, payloadLen, p, samples) ||
@@ -130,7 +130,7 @@ bool CMPEGPlus::ReadHeaderSV8(FILE *Stream)
       haveSH = true;
     }
     else if (payloadLen >= 1)
-      profileIndex = payload[0] >> 4;   // Profil in den oberen 7 Bit von Byte 0; Profil/8 entspricht dem Index der SV7-Profile
+      profileIndex = payload[0] >> 4;   // profile in the upper 7 bits of byte 0; profile/8 corresponds to the index of the SV7 profiles
   }
   if (!haveSH || FSampleRate <= 0 || FChannels < 1 || FChannels > 2)
     return false;
@@ -242,7 +242,7 @@ BYTE CMPEGPlus::GetProfileID()
 
 /* -------------------------------------------------------------------------- */
 
-// Profilindex (1..15): in SV7 die oberen 4 Bit von Byte 10, in SV8 das Profil des EI-Pakets geteilt durch 8
+// profile index (1..15): in SV7 the upper 4 bits of byte 10, in SV8 the profile of the EI packet divided by 8
 BYTE CMPEGPlus::ProfileFromIndex(BYTE index)
 {
   {
@@ -309,7 +309,7 @@ long CMPEGPlus::GetBitRate()
   CompressedSize = CTools::FileSize - CTools::ID3v2Size - CTools::ID3v1Size - CTools::APESize;
   if (FIsSV8)
   {
-    // SV8: Dauer exakt aus der Samplezahl, Bitrate = komprimierte Groesse * 8 / Dauer
+    // SV8: exact duration from the sample count, bit rate = compressed size * 8 / duration
     const double seconds = (FSampleRate > 0) ? (double)(FSamples - FBeginSilence) / FSampleRate : 0.0;
     return (seconds > 0.0) ? (long)(CompressedSize * 8.0 / seconds / 1000.0 + 0.5) : 0;
   }
@@ -347,7 +347,7 @@ bool CMPEGPlus::ReadFromFile(FILE *Stream)
   if (ReadHeader(Stream))
   {
     if (FIsSV8)
-      return true;   // ReadHeaderSV8 hat alle Werte gesetzt
+      return true;   // ReadHeaderSV8 has set all values
     FValid = (GetStreamVersion() > 0);
     /* Fill properties with header data */
     FSampleRate = GetSampleRate();

@@ -18,7 +18,7 @@
    License along with the GNU C Library; if not, see <http://www.gnu.org/licenses/> 
 */
 
-// ID3V1.h: Schnittstelle für die Klasse CID3V1.
+// ID3V1.h: interface for class CID3V1.
 //
 //////////////////////////////////////////////////////////////////////
 #pragma once
@@ -29,7 +29,7 @@
 
 class CID3V1
 {
-	// Konstruktion
+	// Construction
 public:
 	CID3V1();
 	~CID3V1();

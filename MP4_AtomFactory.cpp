@@ -97,7 +97,7 @@ CAtlString CMP4_AtomFactory::getText(CMP4Atom* atom)
 {
 	if (atom->_blob.GetLength() <= 16)
 		return EMPTY;
-	// 4 bytes länge
+	// 4 bytes length
 	// 4 bytes 'data' 
 	// 4 bytes version/flags = byte hex version + 24-bit hex flags
 	// (current version = 0 ; contains text flag = 0x000001)
@@ -135,7 +135,7 @@ CAtlString CMP4_AtomFactory::getText(CMP4Atom* atom)
 			else
 				result.Format(_T("%i"), (BYTE)atom->_blob.m_pData[19]);
 		}
-		else  // unbekannte Länge, was nun ?
+		else  // unknown length, what now?
 		{
 			CBlob tmp;
 			tmp.AddMemory(atom->_blob.m_pData + 16, ln);
@@ -144,7 +144,7 @@ CAtlString CMP4_AtomFactory::getText(CMP4Atom* atom)
 		return result;
 	}
 
-	// Hoppla, unbekanntes Format
+	// oops, unknown format
 	CTools::instance().setLastError(ERR_ATOM_IS_NO_TEXTCLASS);
 	return EMPTY;
 }

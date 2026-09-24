@@ -19,7 +19,7 @@
 */
 
 
-// ApeTagInfo.h: Schnittstelle für die Klasse ApeTagInfo.
+// ApeTagInfo.h: interface for class ApeTagInfo.
 //
 //////////////////////////////////////////////////////////////////////
 #pragma once
@@ -37,13 +37,13 @@ class CApeTagInfo
 public:
 	CApeTagInfo()  { Reset(); };
 	~CApeTagInfo() {};
-	// Datenstruktur
+	// Data structure
 	long Version;                                             // Tag version
 	long Size;                                                // Tag size including footer
 	long Fields;                                              // Number of fields
 	long Flags;                                               // Tag flags
 	// char Reserved[8];                                      // Reserved for later use
-	// Methoden
+	// methods
 	bool ReadFromFile(FILE *Stream);
 	//bool WriteToFile(FILE *Stream);
 	void WriteToBlob(CBlob &blob);

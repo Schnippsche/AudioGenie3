@@ -41,7 +41,7 @@ CMP4Atom* CMP4_Container::copy()
 	atom->_blob.Clear();
 	atom->_blob.AddBlob(_blob);
 	atom->_parent = _parent;
-	// Kinder auch kopieren
+	// copy the children as well
 	size_t counts = _children.GetCount();
 	for (size_t i = 0; i < counts; i++)
 	{
@@ -68,7 +68,7 @@ void CMP4_Container::replaceAtom(CMP4Atom* atom)
 	int pathLen = path.GetLength();
 	if (atomID.Left(pathLen).CompareNoCase(path) == 0)
 	{
-		// Rechter gesuchter Zweig bereits am Ende ?
+		// is the wanted right branch already at the end?
 		CAtlString node;
 		if (pathLen == 0)
 			node = atomID.Left(4);
@@ -92,14 +92,14 @@ void CMP4_Container::replaceAtom(CMP4Atom* atom)
 				return;
 			}			
 		}
-		// Nicht gefunden, falls am Ende neu anfügen
+		// not found: append at the end if necessary
 		if (isEnde)
 		{
 			_children.Add(atom);
 			atom->setParent(this);
 			return;
 		}
-		// Mitten drin, neuen Container rekursiv anlegen 
+		// somewhere in the middle, create a new container recursively 
 		u32 id = (node.GetAt(0) << 24) + (node.GetAt(1) << 16) + (node.GetAt(2) << 8) + node.GetAt(3);
 		CMP4Atom* container = CMP4_AtomFactory::instance()->createAtom(id);
 		container->setParent(getPath());
@@ -116,7 +116,7 @@ void CMP4_Container::addAtom(CMP4Atom* atom)
 	int pathLen = path.GetLength();
 	if (atomID.Left(pathLen).CompareNoCase(path) == 0)
 	{
-		// Rechter gesuchter Zweig bereits am Ende ?
+		// is the wanted right branch already at the end?
 		CAtlString node;
 		if (pathLen == 0)
 			node = atomID.Left(4);
@@ -139,7 +139,7 @@ void CMP4_Container::addAtom(CMP4Atom* atom)
 				return;
 			}
 		}
-		// Mitten drin, neuen Container rekursiv anlegen 
+		// somewhere in the middle, create a new container recursively 
 		u32 id = (node.GetAt(0) << 24) + (node.GetAt(1) << 16) + (node.GetAt(2) << 8) + node.GetAt(3);
 		CMP4Atom* container = CMP4_AtomFactory::instance()->createAtom(id);
 		container->setParent(getPath());
@@ -203,11 +203,11 @@ void CMP4_Container::load(FILE *Stream, u32 offset, u32 size)
 				return;
 			atomSize = (u32)CTools::FileSize - _offset;
 		}
-		// Ein Atom ist mindestens 8 Bytes gross und muss im Container liegen
+		// an atom is at least 8 bytes large and must lie inside the container
 		if (atomSize < 8 || (unsigned __int64)_offset + atomSize > endPos)
 			return;
 		dataSize = atomSize - 8;
-		// Schutz gegen zu tief verschachtelte Atome (Stack-Ueberlauf)
+		// protection against atoms nested too deeply (stack overflow)
 		if (CMP4_AtomFactory::instance()->ebene > 100)
 		{
 			CTools::instance().setLastError(ERR_FRAME_TOO_BIG);
@@ -259,7 +259,7 @@ bool CMP4_Container::removeAtom(CAtlString atomID)
 	CAtlString path = getPath();
 	if (path.CompareNoCase(atomID) == 0)
 	{
-		// mich selbst löschen
+		// delete myself
 		remove();
 		return true;
 	}

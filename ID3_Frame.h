@@ -48,9 +48,9 @@ public:
 	bool setData(BYTE *source, unsigned int maxLen);
 	void storeFrame(CBlob *tmp);
 	CAtlString getFrameIDString();
-	/* analysiert die Daten aus dem Blob */
+	/* analyzes the data from the blob */
 	virtual void decode() {} ;
-	/** überträgt die Daten in den Blob **/
+	/** transfers the data into the blob **/
 	virtual void encode() {} ;
 	void load(BYTE *source, long size);
 	void save(FILE *stream);

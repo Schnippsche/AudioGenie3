@@ -18,7 +18,7 @@
    License along with the GNU C Library; if not, see <http://www.gnu.org/licenses/> 
 */
 
-// ApeTagItem.cpp: Implementierung der Klasse CApeTagItem.
+// ApeTagItem.cpp: implementation of class CApeTagItem.
 //
 //////////////////////////////////////////////////////////////////////
 
@@ -28,7 +28,7 @@
 // Format:  http://web.archive.org/web/20041026140532/www.personal.uni-jena.de/~pfk/mpp/sv8/apetagitem.html
 
 //////////////////////////////////////////////////////////////////////
-// Konstruktion/Destruktion
+// Construction/Destruction
 //////////////////////////////////////////////////////////////////////
 
 CApeTagItem::CApeTagItem()
@@ -56,7 +56,7 @@ bool CApeTagItem::ReadFromFile(FILE *Stream)
   while ((keyChar = fgetc(Stream)) != EOF && keyChar != 0)
   {
     Key+= (char)keyChar;
-    if (Key.GetLength() > 255) // Keys sind kurz, alles andere ist defekt
+    if (Key.GetLength() > 255) // keys are short, anything else is corrupt
       return false;
   }
   if (keyChar == EOF)

@@ -18,7 +18,7 @@
    License along with the GNU C Library; if not, see <http://www.gnu.org/licenses/> 
 */
 
-// VorbisHeader.cpp: Implementierung der Klasse CVorbisHeader.
+// VorbisHeader.cpp: implementation of class CVorbisHeader.
 //
 //////////////////////////////////////////////////////////////////////
 
@@ -27,7 +27,7 @@
 #include "Blob.h"
 
 //////////////////////////////////////////////////////////////////////
-// Konstruktion/Destruktion
+// Construction/Destruction
 //////////////////////////////////////////////////////////////////////
 
 CVorbisHeader::CVorbisHeader()

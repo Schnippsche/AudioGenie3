@@ -50,22 +50,22 @@ CMP4Atom* CMP4_MainContainer::find(CAtlString atomID, int count)
 
 void CMP4_MainContainer::adjustPadding(u32 size)
 {
-	// Ist Padding erwünscht ? Wenn nein, dann lösche das Padding-Atom
+	// is padding wanted? If not, delete the padding atom
 	if (size <= 0)
 	{
 		this->removeAtom(L"free");
 		return;
 	}
-	// Suche Padding Atom, wenn da ist, passe es an
-	// ansonsten lege ein neues Padding Atom an
+	// look for a padding atom and adjust it if present
+	// otherwise create a new padding atom
 	CMP4Atom* atom = find(_T("free"));
 	if (atom != NULL)
 	{
 		atom->_blob.AddValue(0, size);
 		return;
 	}
-	// kein Padding da, lege neues an
-	// Suche mdat Container und lege davor das Padding
+	// no padding present, create a new one
+	// look for the mdat container and put the padding in front of it
 	size_t counts = _children.GetCount();
 	for (size_t i = 0; i < counts; i++)
 	{
@@ -91,7 +91,7 @@ void CMP4_MainContainer::save(FILE *stream)
 
 void CMP4_MainContainer::checkMetaBox()
 {
-// Prüft, ob eine Meta Box da ist, falls nicht wird eine Meta Box angelegt und eine hdlr Box hinzugefügt ( Pflicht-Box )
+// checks whether a meta box exists; if not, a meta box and an hdlr box (mandatory box) are created
 	CMP4Atom* atom;
 	if (find(_T("moov.udta.meta")) == NULL)
 	{

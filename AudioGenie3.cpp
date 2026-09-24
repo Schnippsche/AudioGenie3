@@ -18,7 +18,7 @@
    License along with the GNU C Library; if not, see <http://www.gnu.org/licenses/> 
 */
 
-// AudioGenie3.cpp : Implementierung von DLL-Exporten.
+// AudioGenie3.cpp : implementation of DLL exports.
 
 
 #include "stdafx.h"
@@ -27,7 +27,7 @@
 #include "dllmain.h"
 #include "dlldatax.h"
 
-// Wird verwendet, um festzustellen, ob die DLL von OLE entladen werden kann.
+// Used to determine whether the DLL can be unloaded by OLE.
 STDAPI DllCanUnloadNow(void)
 {
 #ifdef _MERGE_PROXYSTUB
@@ -39,7 +39,7 @@ STDAPI DllCanUnloadNow(void)
 }
 
 
-// Gibt eine Klassenfactory zurück, um ein Objekt vom angeforderten Typ zu erstellen.
+// Returns a class factory to create an object of the requested type.
 STDAPI DllGetClassObject(REFCLSID rclsid, REFIID riid, LPVOID* ppv)
 {
 #ifdef _MERGE_PROXYSTUB
@@ -50,10 +50,10 @@ STDAPI DllGetClassObject(REFCLSID rclsid, REFIID riid, LPVOID* ppv)
 }
 
 
-// DllRegisterServer - Fügt der Systemregistrierung Einträge hinzu.
+// DllRegisterServer - adds entries to the system registry.
 STDAPI DllRegisterServer(void)
 {
-    // Registriert Objekt, Typelib und alle Schnittstellen in Typelib.
+    // Registers object, type library and all interfaces in the type library.
     HRESULT hr = _AtlModule.DllRegisterServer();
 #ifdef _MERGE_PROXYSTUB
     if (FAILED(hr))
@@ -64,7 +64,7 @@ STDAPI DllRegisterServer(void)
 }
 
 
-// DllUnregisterServer - Entfernt Einträge aus der Systemregistrierung.
+// DllUnregisterServer - removes entries from the system registry.
 STDAPI DllUnregisterServer(void)
 {
 	HRESULT hr = _AtlModule.DllUnregisterServer();
@@ -79,8 +79,8 @@ STDAPI DllUnregisterServer(void)
 	return hr;
 }
 
-// DllInstall - Fügt der Systemregistrierung pro Benutzer Einträge hinzu oder entfernt sie.
-//              pro Computer.	
+// DllInstall - adds or removes per-user entries in the system registry.
+//              per computer.	
 STDAPI DllInstall(BOOL bInstall, LPCWSTR pszCmdLine)
 {
     HRESULT hr = E_FAIL;

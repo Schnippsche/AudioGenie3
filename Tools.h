@@ -97,7 +97,7 @@ static const LPCWSTR ERR_TEXT[] = {
 
 static const CAtlString MIME_LINK = _T("-->");
 
-// Oeffentliche Schnittstellen und 32 Bit Formate (WAV, MP4) begrenzen 64 Bit Werte statt sie zu verkuerzen
+// public interfaces and 32 bit formats (WAV, MP4) clamp 64 bit values instead of truncating them
 inline long toLongClamped(__int64 value)
 {
 	if (value > 0x7FFFFFFFLL)
@@ -139,8 +139,8 @@ class CTools
 {
 public:
 	static CTools &instance();
-	// Schliesst beide Dateien, prueft auf Schreibfehler und ersetzt das Original erst dann durch die neue Datei
-	// Kopiert count Bytes blockweise (count < 0: bis zum Dateiende). Liefert false bei Lese- oder Schreibfehler
+	// closes both files, checks for write errors and only then replaces the original with the new file
+	// copies count bytes block by block (count < 0: until the end of the file). Returns false on a read or write error
 	static bool copyStream(FILE *source, FILE *destination, __int64 count);
 	static bool finishRewrite(FILE *source, FILE *destination, LPCWSTR newFileName, LPCWSTR origFileName);
 	static __int64 FileSize;

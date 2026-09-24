@@ -29,7 +29,7 @@
 #include "sys/stat.h"
 #include "share.h"
 //////////////////////////////////////////////////////////////////////
-// Konstruktion/Destruktion
+// Construction/Destruction
 //////////////////////////////////////////////////////////////////////
 CAPE::CAPE()
 {
@@ -73,7 +73,7 @@ bool CAPE::SetTagItem(LPCWSTR FieldName, LPCWSTR Value)
 		item = _items[Iterator];
 		if (item->Key.CompareNoCase(FieldName) == 0)
 		{
-			// Falls Wert leer ist, lösche Schlüssel
+			// If the value is empty, delete the key
 			if (Value == 0 || wcslen(Value) == 0)
 			{
 				delete item;
@@ -214,7 +214,7 @@ bool CAPE::SaveTag(LPCWSTR FileName)
 	/* Build and write tag fields and footer to stream */
 	Data.Clear();
 	BuildFooter();
-	/* Flags auf Footer Anfang setzen */
+	/* set flags to footer start */
 	TagInfo.Flags = (0xA0 << 24);
 	TagInfo.WriteToBlob(Data);
 	Flags = 0;
@@ -229,12 +229,12 @@ bool CAPE::SaveTag(LPCWSTR FileName)
 		Data.AddValue(0);
 		Data.AddBlob(item->Value);		
 	}
-	/* Flags auf Footer Ende setzen */
+	/* set flags to footer end */
 	TagInfo.Flags = (0x80 << 24);
 	TagInfo.WriteToBlob(Data);
 	/* Add created tag to file */
 	bool result = AddToFile(FileName);
-	// ID3v1 Tag evtl berücksichtigen
+	// take an ID3v1 tag into account if present
 	if (tmpid3v1.GetSize() > 0)
 		tmpid3v1.SaveToFile(FileName);
 	return result;
@@ -263,7 +263,7 @@ bool CAPE::RemoveFromFile(LPCWSTR FileName, bool saveID3v1Tag)
 	FILE *Source;
 	if ( (Source = _wfsopen(FileName, READ_ONLY, _SH_DENYWR)) != NULL)
 	{
-		// ID3v1 Tag lesen und merken
+		// read and remember the ID3v1 tag
 		tmpid3v1.ReadFromFile(Source);
 
 		bool result = ReadFooter(Source);
@@ -272,9 +272,9 @@ bool CAPE::RemoveFromFile(LPCWSTR FileName, bool saveID3v1Tag)
 		{
 			if ( (TagInfo.Flags >> 31) != 0 )
 				TagInfo.Size+= APE_TAG_HEADER_SIZE;
-			// APE + ID3v1 Tag löschen!
+			// delete APE + ID3v1 tag!
 			result = TruncateFile(FileName, tmpid3v1.GetSize() + TagInfo.Size);
-			// ID3v1-Tag wieder speichern falls vorhanden und erwünscht
+			// write the ID3v1 tag back if it exists and is wanted
 			if (saveID3v1Tag && tmpid3v1.GetSize() > 0)
 				tmpid3v1.SaveToFile(FileName);
 			TagInfo.Reset();
@@ -297,9 +297,9 @@ bool CAPE::SaveToFile(LPCWSTR FileName)
 {
 	/* Delete old tag if exists and write new tag */
 	CTools::instance().setLastError(0);
-	// APE und ID3v1 Tag löschen
+	// delete APE and ID3v1 tag
 	bool result = RemoveFromFile(FileName, false);
-	// Tag existiert nicht ist in dem Fall kein Fehler
+	// a missing tag is not an error in this case
 	if (result == false && CTools::instance().getLastError() != ERR_TAG_NOT_EXIST)
 		return false;
 	CTools::instance().setLastError(0);

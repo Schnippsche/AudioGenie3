@@ -40,7 +40,7 @@ void CWMA_Header::Empty()
 
 __int64 CWMA_Header::loadHeaderOnly(FILE *Stream)
 {
-	// Ist das die richtige ID ?
+	// is this the right ID?
 	__int64 HeaderSize;
 	fread(&testIID, 1, 16, Stream);
 	if (!IsEqualIID(testIID, WMA_HEADER_OBJECT))

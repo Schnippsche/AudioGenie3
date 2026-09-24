@@ -36,8 +36,8 @@ void CMP4_STCO::move(long offset, FILE* Destination)
 	if (_blob.GetLength() > 8 && offset != 0)
 	{
 		u32 count = _blob.Get4B(4);
-		// entry_count stammt aus der Datei: hoechstens so viele Eintraege, wie der Atom-Inhalt wirklich enthaelt
-		// (sonst laeuft count*4+4 ueber und die Schleife dauert praktisch endlos)
+		// entry_count comes from the file: at most as many entries as the atom content really holds
+		// (otherwise count*4+4 overflows and the loop takes practically forever)
 		const u32 maxCount = (u32)((_blob.GetLength() - 8) / 4);
 		if (count > maxCount)
 			count = maxCount;
@@ -58,7 +58,7 @@ void CMP4_STCO::move(long offset, FILE* Destination)
 
 void CMP4_STCO::save(FILE *Destination)
 {
-	// Falls Quellpos und Zielpos identisch sind und gleiche Datei ist, dann mache nix
+	// if source and destination position are identical and it is the same file, do nothing
 	_position = _ftelli64(Destination);
 	CMP4Atom::save(Destination);
 }

@@ -21,7 +21,7 @@
 
 #pragma once
 
-// dllmain.h : Deklaration der Modulklasse.
+// dllmain.h : declaration of the module class.
 #include "Tools.h"
 #include "ID3_Frame.h"
 #include "id3f_apic.h"
@@ -65,7 +65,7 @@ static CMD5Tool md5Tool;
 static CHeader header;
 static CTTA tta;
 static CWavPack wavpack;
-static CAudio *audio; // Pointer auf die abgeleiteten Klassen
+static CAudio *audio; // pointers to the derived classes
 static CID3_Frame *id3frame;
 static CAtlString endung, lastFile;
 static CAtlString Title, Artist, Album, Comment, Genre, Track, Year, Composer;

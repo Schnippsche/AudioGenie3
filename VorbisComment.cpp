@@ -18,7 +18,7 @@
    License along with the GNU C Library; if not, see <http://www.gnu.org/licenses/> 
 */
 
-// VorbisComment.cpp: Implementierung der Klasse CVorbisComment.
+// VorbisComment.cpp: implementation of class CVorbisComment.
 //
 //////////////////////////////////////////////////////////////////////
 
@@ -27,7 +27,7 @@
 #include "Tools.h"
 
 //////////////////////////////////////////////////////////////////////
-// Konstruktion/Destruktion
+// Construction/Destruction
 //////////////////////////////////////////////////////////////////////
 
 CVorbisComment::CVorbisComment()
@@ -95,7 +95,7 @@ void CVorbisComment::AnalyzeVorbisComments(FILE *Stream)
 		return;
 	tmpBlob.FileRead(len, Stream);
 	VendorInfo = tmpBlob.ConvertToUnicodeString(TEXT_ENCODED_UTF8);  
-	// weiter gehts mit Anzahl der Felder
+	// continue with the number of fields
 	tmpBlob.FileRead(4, Stream);
 	if (tmpBlob.GetLength() < 4)
 		return;
@@ -106,7 +106,7 @@ void CVorbisComment::AnalyzeVorbisComments(FILE *Stream)
 	for (i = 0; i < Fields ; i++)
 	{
 		tmpBlob.FileRead(4, Stream);
-		if (tmpBlob.GetLength() < 4) // Dateiende erreicht
+		if (tmpBlob.GetLength() < 4) // end of file reached
 			return;
 		len = tmpBlob.GetR4B(0);
 		if (len < 0 || len > CTools::FileSize)
@@ -152,7 +152,7 @@ void CVorbisComment::SetUserItem(LPCWSTR key, LPCWSTR value)
 		if (item->key.CompareNoCase(key) == 0)
 		{
 			item->value = value;
-			// Falls Wert leer ist, entferne auch Schluessel
+			// if the value is empty, also remove the key
 			if (value == 0 || wcslen(value) == 0)
 			{
 				delete item;
@@ -161,7 +161,7 @@ void CVorbisComment::SetUserItem(LPCWSTR key, LPCWSTR value)
 			return ;
 		}
 	}
-	// falls Value leer ist, verlasse Prozedur
+	// if the value is empty, leave the procedure
 	if (value == 0 || wcslen(value) == 0)
 		return ;
 	item = new structField;

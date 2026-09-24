@@ -18,7 +18,7 @@
    License along with the GNU C Library; if not, see <http://www.gnu.org/licenses/> 
 */
 
-// OGGHeader.h: Schnittstelle für die Klasse COGGHeader.
+// OGGHeader.h: interface for class COGGHeader.
 //
 //////////////////////////////////////////////////////////////////////
 

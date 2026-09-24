@@ -67,7 +67,7 @@ bool CWAVContainer::load(FILE *Stream, u32 offset, u32 size)
 {
 	u32 endPos = offset + size;
 	CBlob header;
-	// Container hat 4 extra Bytes am Anfang, nehme diese als ID
+	// container has 4 extra bytes at the start, take them as the ID
 	_fseeki64(Stream, offset, SEEK_SET);
 	header.FileRead(4, Stream);
 	_chunkID = header.Get4B(0);

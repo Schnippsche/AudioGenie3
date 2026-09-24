@@ -91,7 +91,7 @@ void CWAVBEXTChunk::setASCIIText(CAtlString newText, BYTE nr)
 	size_t startPos = BEXT_CODES[nr][0];
 	size_t maxLen = BEXT_CODES[nr][1];
 	CBlob tmp;
-	// Auf 602 bytes auffüllen
+	// pad to 602 bytes
 	if (_data.GetLength() < 602)
 	{
 		_data.Clear();
@@ -111,7 +111,7 @@ void CWAVBEXTChunk::setASCIIText(CAtlString newText, BYTE nr)
 	}
 	if (nr == WAV_BEXT_CODINGHISTORY )
 	{
-		// Alle Bytes ab Pos 602 löschen
+		// delete all bytes from position 602 on
 		tmp.AddMemory(_data.m_pData, startPos);
 		if (!newText.IsEmpty())
 			tmp.AddEncodedString(TEXT_ENCODED_ANSI, newText, false, false);

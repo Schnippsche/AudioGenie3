@@ -18,7 +18,7 @@
    License along with the GNU C Library; if not, see <http://www.gnu.org/licenses/> 
 */
 
-// VorbisComment.h: Schnittstelle für die Klasse CVorbisComment.
+// VorbisComment.h: interface for class CVorbisComment.
 //
 //////////////////////////////////////////////////////////////////////
 #pragma once

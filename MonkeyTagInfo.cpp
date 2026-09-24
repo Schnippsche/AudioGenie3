@@ -18,7 +18,7 @@
    License along with the GNU C Library; if not, see <http://www.gnu.org/licenses/> 
 */
 
-// MonkeyTagInfo.cpp: Implementierung der Klasse CMonkeyTagInfo.
+// MonkeyTagInfo.cpp: implementation of class CMonkeyTagInfo.
 //
 //////////////////////////////////////////////////////////////////////
 
@@ -27,7 +27,7 @@
 #include "Blob.h"
 
 //////////////////////////////////////////////////////////////////////
-// Konstruktion/Destruktion
+// Construction/Destruction
 //////////////////////////////////////////////////////////////////////
 
 CMonkeyTagInfo::CMonkeyTagInfo()

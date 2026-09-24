@@ -41,7 +41,7 @@ CID3_FrameFactory &CID3_FrameFactory::instance()
 
 unsigned int CID3_FrameFactory::findUniqueFrameID(unsigned int oldID) 
 {
-	// Beim ersten Mal die Map füllen
+	// fill the map on first use
 	if (frameIDsMap.IsEmpty())
 	{
 		frameIDsMap.DisableAutoRehash();
@@ -68,7 +68,7 @@ unsigned int CID3_FrameFactory::findUniqueFrameID(unsigned int oldID)
 
 unsigned int CID3_FrameFactory::findFrameClassType(unsigned int oldID) 
 {
-	// Beim ersten Mal die Map füllen
+	// fill the map on first use
 	if (frameClassMap.IsEmpty())
 	{
 		frameClassMap.DisableAutoRehash();
@@ -85,11 +85,11 @@ unsigned int CID3_FrameFactory::findFrameClassType(unsigned int oldID)
 	pPair = frameClassMap.Lookup(oldID);
 	if(pPair)
 		return (pPair->m_value);
-	// Nicht gefunden, vielleicht ein unbekannter Textframe (T...)
+	// not found, maybe an unknown text frame (T...)
 	if ( ((oldID << 24 ) & 0xFF) == 'T')
 		return ID3_T000;
 
-	// nicht gefunden
+	// not found
 	return oldID;
 	/*for (int row = 0; row < anzKnownFrames; row++)
 	{

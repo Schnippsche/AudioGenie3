@@ -61,9 +61,9 @@ CMP4Atom* CMP4Atom::find(CAtlString atomID)
 	if (pfad.CompareNoCase(atomID) != 0)
 		return NULL;
 
-	// Gefunden, aber auch der richtige Index ?
-	// count wird am Anfang auf 1 bis n gesetzt
-	// dann bei jedem Treffer reduziert und wenn 0 ist, wurde der richtige Eintrag gefunden
+	// found, but is it the right index?
+	// count is set to 1 to n at the start
+	// then decremented on every hit; when it reaches 0 the right entry has been found
 
 	return (--CMP4_AtomFactory::count == 0) ? this : NULL;
 }
@@ -103,7 +103,7 @@ u32 CMP4Atom::getSize()
 void CMP4Atom::load(FILE *Stream, u32 offset, u32 size)
 {
 	offset;
-	//_fseeki64(Stream, offset, SEEK_SET); wird nicht benötigt
+	//_fseeki64(Stream, offset, SEEK_SET); not needed
 	_blob.FileRead(size, Stream);
 }
 

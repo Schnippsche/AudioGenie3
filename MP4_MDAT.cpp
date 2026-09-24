@@ -39,8 +39,8 @@ void CMP4_MDAT::load(FILE *Stream, u32 offset, u32 size)
 	offset;
 	Stream;
 	//_fseeki64(Stream, offset, SEEK_SET);
-	// Position und Länge merken aber nicht einlesen
-	// wird erst beim Speichern gelesen
+	// remember position and length but do not read the data
+	// is only read when saving
 	_position = offset - 8;
 	_size = size + 8;
 	CMP4_AtomFactory::mediaLength+= size;
@@ -55,15 +55,15 @@ u32 CMP4_MDAT::getSize()
 
 void CMP4_MDAT::save(FILE *Destination)
 {
-	// Falls Quellpos und Zielpos identisch sind und gleiche Datei ist, dann mache nix
+	// if source and destination position are identical and it is the same file, do nothing
 	__int64 newPos = _ftelli64(Destination);
 	if (newPos == (__int64)_position && _sameFile)
 	{
-		// Positioniere an das Ende des Blocks
+		// move to the end of the block
 		_fseeki64(Destination, _position + _size, SEEK_SET);	
 		return;
 	}
-	// Unterschiedliche Positionen, also kopiere von alt nach neu
+	// different positions, so copy from old to new
 	__int64 frameSize = _size;
 	long blockSize = CTools::configValues[CONFIG_ID3V2WRITEBLOCKSIZE];
 	if (!_sourcefile.IsEmpty())

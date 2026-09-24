@@ -28,7 +28,7 @@
 #include "share.h"
 #include "sys\stat.h"
 //////////////////////////////////////////////////////////////////////
-// Konstruktion/Destruktion
+// Construction/Destruction
 //////////////////////////////////////////////////////////////////////
 CLyrics::CLyrics()
 {
@@ -258,7 +258,7 @@ bool CLyrics::SaveTag(LPCWSTR FileName)
 	{
 		_fseeki64(Stream, -ID3V1_TAG_SIZE, SEEK_END);
 		Data.FileWrite(Data.GetLength(), Stream);
-		fwrite(ID3v1Tag, 1, ID3V1_TAG_SIZE, Stream); // ID3v1Tag wurde schon gefüllt
+		fwrite(ID3v1Tag, 1, ID3V1_TAG_SIZE, Stream); // the ID3v1 tag has already been filled
 		fflush(Stream);
 		fclose(Stream);
 		return true;

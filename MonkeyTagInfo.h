@@ -18,7 +18,7 @@
    License along with the GNU C Library; if not, see <http://www.gnu.org/licenses/> 
 */
 
-// MonkeyTagInfo.h: Schnittstelle für die Klasse CMonkeyTagInfo.
+// MonkeyTagInfo.h: interface for class CMonkeyTagInfo.
 //
 //////////////////////////////////////////////////////////////////////
 #pragma once

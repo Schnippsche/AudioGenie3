@@ -21,7 +21,7 @@
 #include "StdAfx.h"
 #include "WavPack.h"
 
-// Doku unter : http:\\www.wavpack.com\file_format.txt
+// documentation at: http://www.wavpack.com/file_format.txt
 
 CWavPack::CWavPack(void)
 {
@@ -95,7 +95,7 @@ long CWavPack::GetSampleRate()
 {
 	if (_flags <= 0)
 		return 0;
-	// Index 15 bedeutet "benutzerdefinierte Rate" und liegt ausserhalb der Tabelle
+	// index 15 means "user-defined rate" and lies outside the table
 	const size_t index = (size_t)((_flags & (0xfL << 23)) >> 23);
 	return (index < sizeof(sample_rates) / sizeof(sample_rates[0])) ? (long)sample_rates[index] : 0;
 }

@@ -51,14 +51,14 @@ bool CWMA_File::ReadFromFile(FILE *Stream)
 
 CAtlString CWMA_File::GetUserItem(CAtlString key)
 {
-	//Suche zuerst in normalen Content und dann erst in ExtContent
+	// look in the normal content first, then in ExtContent
 	CWMA_Object *obj = header.findObject(WMA_CONTENT_DESCRIPTION_ID);
 	if (obj != NULL)
 	{
 		CWMA_ContentDescription *cd = static_cast<CWMA_ContentDescription*>(obj);
-		// Probieren wir es mal damit
-		// Ein leerer Wert im Standard-Objekt gilt nicht als Treffer: manche Encoder (z. B. ffmpeg) legen Felder
-		// wie "Description" stattdessen im ExtContentDescription-Objekt ab.
+		// let's try this
+		// An empty value in the standard object does not count as a hit: some encoders (e.g. ffmpeg) put fields
+		// like "Description" in the ExtContentDescription object instead.
 		CAtlString value;
 		if (key.CompareNoCase(WM_TITLE) == 0 || key.CompareNoCase(WM_TITLE2) == 0)
 			value = cd->GetTitle();
@@ -74,22 +74,22 @@ CAtlString CWMA_File::GetUserItem(CAtlString key)
 			return value;
 	}
 
-	// Suche nun im ExtContentDescription Object, wenn es da ist
+	// now look in the ExtContentDescription object, if present
 	int pos = CWMA_ObjectFactory::instance().FindField(key);
-	// Beschreibung: sowohl unter "WM/Description" als auch unter "Description" ablegbar
+	// description: can be stored under "WM/Description" as well as under "Description"
 	if (pos == -1 && key.CompareNoCase(WM_DESCRIPTION) == 0)
 		pos = CWMA_ObjectFactory::instance().FindField(WM_DESCRIPTION2);
 	if (pos == -1 && key.CompareNoCase(WM_DESCRIPTION2) == 0)
 		pos = CWMA_ObjectFactory::instance().FindField(WM_DESCRIPTION);
 	if (pos != -1)
 		return CWMA_ObjectFactory::instance().GetValue(pos);
-	// Nix gefunden
+	// nothing found
 	return EMPTY;
 }
 
 void CWMA_File::SetUserItem(LPCWSTR key, LPCWSTR item)
 {
-	// Wohin schreiben, Standard oder ExtContent?	
+	// where to write, standard or ExtContent?	
 	CAtlString tmp(key);
 	int art = 0;
 	if (tmp.CompareNoCase(WM_TITLE) == 0 || tmp.CompareNoCase(WM_TITLE2) == 0)
@@ -105,7 +105,7 @@ void CWMA_File::SetUserItem(LPCWSTR key, LPCWSTR item)
 
 	if (art > 0)
 	{
-		// Schreibe Werte in ContentDescription
+		// write values into ContentDescription
 		CWMA_Object *obj = header.findObject(WMA_CONTENT_DESCRIPTION_ID);
 		CWMA_ContentDescription *cd;
 		if (obj == NULL)
@@ -128,7 +128,7 @@ void CWMA_File::SetUserItem(LPCWSTR key, LPCWSTR item)
 			return cd->SetCopyright(item);
 		}
 	}
-	// Schreibe in ExtContentDescription
+	// write into ExtContentDescription
 	CWMA_ObjectFactory::instance().SetValue(key, item);
 
 }
@@ -151,7 +151,7 @@ bool CWMA_File::SaveToFile(LPCWSTR FileName)
 	}
 	long DataPosition = CTools::ID3v2Size + oldHeaderSize;
 	CWMA_Object *obj = NULL;
-	// Rette die aktuellen Objekte, falls vorhanden
+	// save the current objects, if present
 	CWMA_MetadataLibrary *newMetas = NULL;
 	CWMA_ContentDescription *newContent = NULL;
 	CWMA_ExtContentDescription *newExtContent = NULL;
@@ -167,12 +167,12 @@ bool CWMA_File::SaveToFile(LPCWSTR FileName)
 	}
 	else
 	{
-		// Was ist, wenn ExtContent nicht exisitiert, aber neue Einträge hinzugekommen sind ?
+		// what if ExtContent does not exist, but new entries were added?
 		newExtContent = new CWMA_ExtContentDescription();
 		newExtContent->buildData();
 		if (newExtContent->getData()->GetLength() == 0)
 		{
-			// war nix neues da
+			// nothing new was there
 			delete newExtContent;
 			newExtContent = NULL;
 		}
@@ -182,14 +182,14 @@ bool CWMA_File::SaveToFile(LPCWSTR FileName)
 		CWMA_Header_Extension* he = static_cast<CWMA_Header_Extension*>(obj);
 		if ((obj = he->findObject(WMA_METADATA_LIBRARY_ID)) != NULL)
 		{
-			// Ist überhaupt was drin ?
+			// is there anything in it at all?
 			if (obj->getData()->GetLength() > 0)
 				newMetas = new CWMA_MetadataLibrary(obj->getData());
 
 		}
 		else
 		{
-			// Was ist, wenn metadata nicht existiert, aber neue Einträge hinzugekommen sind ?
+			// what if metadata does not exist, but new entries were added?
 			newMetas = new CWMA_MetadataLibrary();
 			newMetas->buildData();
 			if (newMetas->getData()->GetLength() == 0)
@@ -203,7 +203,7 @@ bool CWMA_File::SaveToFile(LPCWSTR FileName)
 	ResetData();
 	_fseeki64(Stream, CTools::ID3v2Size, SEEK_SET);
 	header.load(Stream, toSizeClamped(CTools::FileSize));
-	// Alle Paddings rausschmeissen	
+	// throw out all paddings	
 	size_t oldPadding = 0;
 	while ((obj = header.findObject(WMA_PADDING_ID)) != NULL)
 	{
@@ -226,7 +226,7 @@ bool CWMA_File::SaveToFile(LPCWSTR FileName)
 		else
 			he->deleteObject(WMA_METADATA_LIBRARY_ID);
 	}
-	// Neue Elemente ersetzen
+	// replace new elements
 	if (newContent != NULL)
 		header.replaceObject(newContent);
 	if (newExtContent != NULL)
@@ -237,11 +237,11 @@ bool CWMA_File::SaveToFile(LPCWSTR FileName)
 	header.save(&newHeader);
 	CWMA_Padding *newPadding = NULL;
 	long paddingBlockSize = CTools::configValues[CONFIG_WMAPADDINGSIZE];
-	if (newHeader.GetLength() + 26 > oldHeaderSize) // 24 Bytes brauch das Padding-Object für sich und mind. 1 Bytes Padding
+	if (newHeader.GetLength() + 26 > oldHeaderSize) // the padding object needs 24 bytes for itself and at least 1 byte of padding
 	{   
 		ATLTRACE(L"rebuild file...\n");
 		// Rebuild
-		// Padding erwünscht ?
+		// padding wanted?
 		if (blockSize > 0)
 		{
 			newPadding = new CWMA_Padding(paddingBlockSize);
@@ -278,7 +278,7 @@ bool CWMA_File::SaveToFile(LPCWSTR FileName)
 	else
 	{
 		ATLTRACE(L"rewrite file...\n");
-		// Passendes Padding einfügen
+		// insert suitable padding
 		u32 newPaddingSize = oldHeaderSize - newHeader.GetLength() - 24;
 		if (newPaddingSize > 0)
 		{
@@ -432,7 +432,7 @@ bool CWMA_File::SetPictureArray(BYTE *arr, u32 len, LPCWSTR Description, short i
 		CTools::instance().setLastError(ERR_PICTUREARRAY_TOO_SMALL);
 		return false;
 	}
-	// Neues Bild anlegen, wenn kleiner als 65500 in ExtContentDescription, sonst in MetadataLibrary
+	// create a new picture if smaller than 65500 in ExtContentDescription, otherwise in MetadataLibrary
 	CWMA_TagData *item;
 	if (len < 65500)
 		item = new CWMA_TagData(EXTCONTENT_ART);
@@ -441,7 +441,7 @@ bool CWMA_File::SetPictureArray(BYTE *arr, u32 len, LPCWSTR Description, short i
 	item->setNewPicture(arr, len, Description, (BYTE)picType);
 
 	int it = CWMA_ObjectFactory::instance().FindPicture(index);
-	if (it != -1) // Bestehendes Bild ersetzen
+	if (it != -1) // replace existing picture
 	{
 		delete CWMA_ObjectFactory::instance().tagdatas.GetAt(it);
 		CWMA_ObjectFactory::instance().tagdatas.SetAt(it, item);

@@ -29,7 +29,7 @@ class CMP4Atom
 public:
 	CMP4Atom(void);
 	CMP4Atom(unsigned int frameID);
-	virtual ~CMP4Atom(void);   // wird ueber Basiszeiger geloescht (CMP4_Container::remove)
+	virtual ~CMP4Atom(void);   // is deleted through a base pointer (CMP4_Container::remove)
 	virtual CMP4Atom* copy();
 	virtual CMP4Atom* find(CAtlString atomID);
 	void init(unsigned int frameID);

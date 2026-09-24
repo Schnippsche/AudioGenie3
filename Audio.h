@@ -19,7 +19,7 @@
 */
 
 
-// Audio.h: Schnittstelle für die Klasse CAudio.
+// Audio.h: interface for class CAudio.
 //
 //////////////////////////////////////////////////////////////////////
 #pragma once
@@ -31,7 +31,7 @@ class CAudio
 public:
 	CAudio();
 	virtual ~CAudio();
-	// Virtuelle Methoden mit default-Werten
+	// virtual methods with default values
 	virtual long GetChannels()       { return 0; };
 	virtual float GetDuration()      { return 0; };
 	virtual long GetSampleRate()     { return 0; };

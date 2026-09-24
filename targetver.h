@@ -21,26 +21,26 @@
 
 #pragma once
 
-// Die folgenden Makros definieren die mindestens erforderliche Plattform. Die mindestens erforderliche Plattform
-// ist die früheste Windows-, Internet Explorer-Version usw., die über die erforderlichen Features zur Ausführung 
-// Ihrer Anwendung verfügt. Die Makros aktivieren alle Funktionen, die auf den Plattformversionen bis 
-// einschließlich der angegebenen Version verfügbar sind.
+// The following macros define the minimum required platform. The minimum required platform
+// is the earliest version of Windows, Internet Explorer etc. that has the features required to run 
+// your application. The macros enable all features that are available on the platform versions up to 
+// and including the specified version.
 
-// Ändern Sie folgende Definitionen für Plattformen, die älter als die unten angegebenen sind.
-// Unter MSDN finden Sie die neuesten Informationen über die entsprechenden Werte für die unterschiedlichen Plattformen.
-#ifndef WINVER                          // Gibt an, dass Windows 2000 die mindestens erforderliche Plattform ist.
-#define WINVER 0x0500           // Ändern Sie den entsprechenden Wert, um auf andere Versionen von Windows abzuzielen.
+// Change the following definitions for platforms older than those specified below.
+// See MSDN for the latest information about the corresponding values for the different platforms.
+#ifndef WINVER                          // Specifies that Windows 2000 is the minimum required platform.
+#define WINVER 0x0500           // Change the corresponding value to target other versions of Windows.
 #endif
 
-#ifndef _WIN32_WINNT            // Gibt an, dass Windows 2000 die mindestens erforderliche Plattform ist.
-#define _WIN32_WINNT 0x0500     // Ändern Sie den entsprechenden Wert, um auf andere Versionen von Windows abzuzielen.
+#ifndef _WIN32_WINNT            // Specifies that Windows 2000 is the minimum required platform.
+#define _WIN32_WINNT 0x0500     // Change the corresponding value to target other versions of Windows.
 #endif
 
-#ifndef _WIN32_WINDOWS          // Gibt an, dass Windows 98 die mindestens erforderliche Plattform ist.
-#define _WIN32_WINDOWS 0x0410 // Ändern Sie den entsprechenden Wert, um auf mindestens Windows Me abzuzielen.
+#ifndef _WIN32_WINDOWS          // Specifies that Windows 98 is the minimum required platform.
+#define _WIN32_WINDOWS 0x0410 // Change the corresponding value to target at least Windows Me.
 #endif
 
-#ifndef _WIN32_IE                       // Gibt an, dass Internet Explorer 7.0 die mindestens erforderliche Plattform ist.
-#define _WIN32_IE 0x0700        // Ändern Sie den entsprechenden Wert, um auf andere Versionen von IE abzuzielen.
+#ifndef _WIN32_IE                       // Specifies that Internet Explorer 7.0 is the minimum required platform.
+#define _WIN32_IE 0x0700        // Change the corresponding value to target other versions of IE.
 #endif
 

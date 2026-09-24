@@ -1,8 +1,8 @@
-// AudioGenie3.idl : IDL-Quelle für AudioGenie3
+// AudioGenie3.idl : IDL source for AudioGenie3
 //
 
-// Diese Datei wird mit dem MIDL-Tool bearbeitet,
-// um den Quellcode für die Typbibliothek (AudioGenie3.tlb) und die Abruffunktionen zu erstellen.
+// This file is processed by the MIDL tool
+// to generate the type library (AudioGenie3.tlb) and the marshalling code.
 
 import "oaidl.idl";
 import "ocidl.idl";

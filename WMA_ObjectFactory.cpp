@@ -117,8 +117,8 @@ bool CWMA_ObjectFactory::SetValue(CAtlString FieldName, CAtlString newValue)
 	if (FieldName.GetLength() == 0)
 		return false;
 	int it = FindField(FieldName);
-	// Wenn neuer Wert leer ist und Feld bereits vorhanden, dann loesche das Feld aus der Liste
-	// ansonsten lege kein leeres Feld an
+	// if the new value is empty and the field already exists, remove the field from the list
+	// otherwise do not create an empty field
 	if (!newValue || newValue.IsEmpty())
 	{
 		if (it >= 0)
@@ -126,7 +126,7 @@ bool CWMA_ObjectFactory::SetValue(CAtlString FieldName, CAtlString newValue)
 		return true;
 	}
 	
-	// Neuer Eintrag ?
+	// new entry?
 	if (it == -1)
 		tagdatas.Add(new CWMA_TagData(FieldName, newValue));
 	else
@@ -143,7 +143,7 @@ CAtlString CWMA_ObjectFactory::GetItemKeys()
 	for (size_t Iterator = 0; Iterator < counts; Iterator++)
 	{
 		key = tagdatas.GetAt(Iterator)->getFieldName();
-		// Nur aufnehmen, wenn noch nicht im result enthalten
+		// only add if not yet contained in the result
 		if (result.Find(key) < 0)
 		{
 			if (result.GetLength() > 0)
@@ -158,7 +158,7 @@ CAtlString CWMA_ObjectFactory::GetItemKeys()
 int CWMA_ObjectFactory::FindPicture(int index)
 {
 	int dummy = index;
-	// Erniedrige bei jedem vorhandenen Bild die Variable pos
+	// decrement pos for every picture that is present
 	size_t counts = tagdatas.GetCount();
 	for (size_t Iterator = 0; Iterator < counts; Iterator++)
 	{

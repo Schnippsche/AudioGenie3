@@ -81,8 +81,8 @@ void CWMA_TagData::setNewValue(CAtlString newValue)
 	}
 	else if (Type == 3) // DWORD (32)
 	{
-		// Kann der Wert rückstandsfrei in eine Zahl konvertiert werden ?	
-		// Wenn nicht, dann speichere als Text!
+		// can the value be converted to a number without remainder?	
+		// if not, store it as text!
 		CAtlString tmp;
 		tmp.Format(_T("%d"), _wtol(newValue));
 		if (tmp.Compare(newValue) == 0)
@@ -93,8 +93,8 @@ void CWMA_TagData::setNewValue(CAtlString newValue)
 	}
 	else if (Type == 5) // WORD (16)
 	{
-		// Kann der Wert rückstandsfrei in eine Zahl konvertiert werden ?	
-		// Wenn nicht, dann speichere als Text!
+		// can the value be converted to a number without remainder?	
+		// if not, store it as text!
 		CAtlString tmp;
 		tmp.Format(_T("%d"), _wtoi(newValue));
 		if (tmp.Compare(newValue) == 0)

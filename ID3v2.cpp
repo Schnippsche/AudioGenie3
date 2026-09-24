@@ -61,7 +61,7 @@ bool CID3V2::setTargetFormatAndEncoding(BYTE newFormat, BYTE newEncoding)
 		CTools::instance().setLastError(ERR_UTF8_NOT_ALLOWED); 
 		return false;
 	}
-	// 0 = nimm default Tagformat
+	// 0 = use the default tag format
 	if (newFormat != 0)
 		CTools::ID3V2newTagVersion = newFormat;
 	CTools::ID3V2defaultEncodingID = newEncoding;	
@@ -121,9 +121,9 @@ void CID3V2::WriteHeader(CBlob *blob, long tagSize)
 	blob->AddValue(CTools::ID3V2newTagVersion);
 	blob->AddValue(0);
 	//if ((Flags & 128) == 128)
-	//	blob->AddValue(128); // Flags auf 0 setzen, kein Extended Header, kein Footer, aber Unsynchronized Flag gesetzt
+	//	blob->AddValue(128); // set flags to 0: no extended header, no footer, but unsynchronized flag set
 	//else
-	blob->AddValue(0); // Flags auf 0 setzen, kein Extended Header, kein Footer, kein Unsynchronized
+	blob->AddValue(0); // set flags to 0: no extended header, no footer, no unsynchronized
 	blob->AddS4B(tagSize); // SyncSafe Integer	
 }
 
@@ -180,7 +180,7 @@ void CID3V2::parseTags(CBlob* data)
 		}
 		if (FrameID == 0) // 4 mal 0, Paddingbereich
 			break;
-		// Falls ungültiger Frame ab nächstem Byte analysieren  
+		// if the frame is invalid, continue analyzing at the next byte  
 		if (!isValid)
 		{
 			DataPosition++;
@@ -188,7 +188,7 @@ void CID3V2::parseTags(CBlob* data)
 		else
 		{
 			ATLTRACE(_T("Size:%i "), FrameSize);
-			if ((unsigned __int64)DataPosition + headerSize + FrameSize > dataSize) // 64 Bit, damit die Pruefung nicht ueberlaeuft
+			if ((unsigned __int64)DataPosition + headerSize + FrameSize > dataSize) // 64 bit so that the check cannot overflow
 			{
 				
 				CTools::instance().setLastError(ERR_FRAME_CORRUPT, BYTE(FrameID >> 24), BYTE(FrameID >> 16), BYTE(FrameID >> 8), BYTE(FrameID), DataPosition + headerSize);
@@ -338,7 +338,7 @@ bool CID3V2::RebuildFile(LPCWSTR FileName, CBlob* data)
 		size_t got = tmp.GetLength();
 		if (got > 0 && tmp.FileWrite(got, Destination) != got)
 		{
-			ok = false; // Schreibfehler, z.B. Datentraeger voll
+			ok = false; // write error, e.g. disk full
 			break;
 		}
 		CTools::instance().doEvents();
@@ -357,13 +357,13 @@ bool CID3V2::RebuildFile(LPCWSTR FileName, CBlob* data)
 	fclose(Source);
 	if (!ok)
 	{
-		// Das Original bleibt unveraendert, nur die temporaere Datei wird entfernt
+		// the original stays unchanged, only the temporary file is removed
 		_wremove(NewFileName);
 		CTools::instance().setLastError(writeErr != 0 ? writeErr : EIO);
 		return false;
 	}
 	CTools::instance().doEventsNow();
-	/* Ersetze die alte Datei in einem Schritt durch die neue Datei */
+	/* replace the old file with the new file in one step */
 	if (!MoveFileExW(NewFileName, FileName, MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH))
 	{
 		_wremove(NewFileName);
@@ -586,7 +586,7 @@ u32 CID3V2::calcTagSize()
 CAtlString CID3V2::GetGenre()
 {
 	CAtlString genre = GetText(F_TCON);
-	// Sonderfall: Falls Zahl in Klammern, Genre aus ID3V1 TagInfo holen
+	// special case: if the number is in parentheses, get the genre from the ID3V1 tag info
 	if (genre.GetLength() == 0 || genre.GetAt(0) != '(' )
 		return genre;
 	char Buffer[4];
@@ -608,12 +608,12 @@ bool CID3V2::parseCueFile(LPCWSTR FileName)
 		CTools::instance().setLastError(errno);
 		return false;
 	}
-	// Alles in Blob einlesen
+	// read everything into the blob
 	int ln = _filelength(_fileno(Source));
 	CBlob dummy(ln + 1);
 	dummy.FileRead(ln, Source);
 	fclose(Source);
-	// Blob aufteilen in Stücke, Trenner sind 0D, 0A, EOL und Leerzeichen
+	// split the blob into pieces; separators are 0D, 0A, EOL and blanks
 	int pos = 0, start = 0;
 	CAtlArray<CAtlString> tokens;
 	dummy.AddValue(13);
@@ -624,9 +624,9 @@ bool CID3V2::parseCueFile(LPCWSTR FileName)
 	replaceFrame(toc);
 	while (pos < ln)
 	{
-		if (dummy.GetAt(pos) == '"') // Anführungszeichen
+		if (dummy.GetAt(pos) == '"') // quotation marks
 		{
-			do // Lese bis zum nächsten Anführungszeichen oder Ende der Zeile
+			do // read up to the next quotation mark or the end of the line
 			{
 				pos++;
 			}
@@ -646,8 +646,8 @@ bool CID3V2::parseCueFile(LPCWSTR FileName)
 			if (pos - start > 0)
 				tokens.Add(dummy.GetStringAt(start, pos - start));
 			start = pos + 1;
-			// Nun habe ich eine Zeile mit allen relevanten Wörtern
-			// Auswerten; falls Fehler kommt false zurück
+			// now there is a line with all relevant words
+			// evaluate; if an error occurs, false is returned
 			if (tokens.GetCount() > 1)
 			{
 				CAtlString key(tokens.GetAt(0));
@@ -655,8 +655,8 @@ bool CID3V2::parseCueFile(LPCWSTR FileName)
 				if (key.CompareNoCase(_T("INDEX")) == 0)
 				{
 					// int nr = _wtoi(tokens.GetAt(1));
-					tmp = tokens.GetAt(2); // Die Zeitangabe erfolgt in Minuten (mm), Sekunden (ss) und Frames (ff), wobei jede Sekunde in 75(!) Frames unterteilt wird.
-					// time parsen
+					tmp = tokens.GetAt(2); // the time is given in minutes (mm), seconds (ss) and frames (ff), where each second is divided into 75(!) frames.
+					// parse time
 					int p1, p2;
 					p1 = tmp.Find(':', 0);
 					p2 = tmp.Find(':', p1 + 1);
@@ -693,7 +693,7 @@ bool CID3V2::parseCueFile(LPCWSTR FileName)
 						toc->addChildElement(tmp);										
 				}				
 			}
-			// Zeile wieder zurücksetzen
+			// reset the line
 			tokens.RemoveAll();
 		}
 		pos++;

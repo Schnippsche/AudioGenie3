@@ -40,7 +40,7 @@ static const LPCWSTR READ_AND_WRITENEW(_T("w+b"));
 static const LPCWSTR APPEND(_T("ab"));
 static const LPCWSTR TILDE(_T("~"));
 
-static const int TEXT_ENCODED_ANSI = 0;     // ISO-8859-1 bzw. ANSI
+static const int TEXT_ENCODED_ANSI = 0;     // ISO-8859-1 or ANSI
 static const int TEXT_ENCODED_UTF16BOM = 1; // UTF-16 with BOM
 static const int TEXT_ENCODED_UTF16 = 2;    // UTF-16 without BOM
 static const int TEXT_ENCODED_UTF8 = 3;     // UTF-8
@@ -56,10 +56,10 @@ private:
 	size_t m_BufferSize;
 	void Free();
 	bool AllocNewBuffer(size_t nLen);
-	// Funktionen für ANSI Zeichen
+	// functions for ANSI characters
 	void AssignCopy(size_t nSrcLen, LPCSTR lpszSrcData);
 	void ConcatInPlace(size_t nSrcLen, LPCSTR lpszSrcData);
-	// Funktionen für Unicode Zeichen
+	// functions for Unicode characters
 	void AssignCopy(size_t nSrcLen, LPCWSTR lpszSrcData);
 	void ConcatInPlace(size_t nSrcLen, LPCWSTR lpszSrcData);
 	bool GrowBuffer(size_t newLen);
@@ -70,11 +70,11 @@ public:
 	CBlob(const CBlob& src);
 	virtual ~CBlob();
 	const CBlob& operator=(const CBlob& stringSrc);
-	// ANSI - Methoden
+	// ANSI methods
 	void AddString(const LPCSTR string);
-	// Unicode - Methoden
+	// Unicode methods
 	void AddString(const LPCWSTR string);
-	// Allgemeine Methoden
+	// general methods
 	void AddMemory(const void *src, size_t nLen);
 	void Add2B(int value);
 	void Add3B(int value);

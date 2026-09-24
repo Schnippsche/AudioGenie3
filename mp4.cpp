@@ -18,7 +18,7 @@
    License along with the GNU C Library; if not, see <http://www.gnu.org/licenses/> 
 */
 
-// CMP4.cpp: Implementierung der Klasse CMP4.
+// CMP4.cpp: implementation of class CMP4.
 //
 //////////////////////////////////////////////////////////////////////
 
@@ -39,7 +39,7 @@
 #include "mp4_stco.h"
 
 //////////////////////////////////////////////////////////////////////
-// Konstruktion/Destruktion
+// Construction/Destruction
 //////////////////////////////////////////////////////////////////////
 
 CMP4::CMP4()
@@ -75,7 +75,7 @@ bool CMP4::ReadFromFile(FILE *Stream)
 
 CAtlString CMP4::GetFileVersion()
 {
-	// Hole ftyp atom
+	// get the ftyp atom
 	CMP4Atom* atom = mainContainer->find(FTYP_PFAD);
 	if (atom == NULL)
 		return UNKNOWN;
@@ -140,7 +140,7 @@ bool CMP4::GetPicture(LPCWSTR file, int Index)
 		atom = cont->_children[Index - 1];
 	else
 		return false;
-	// aus Speicher in File schreiben
+	// write from memory to file
 	FILE *Stream;
 	if ( (Stream = _wfsopen(file, WRITE_ONLY, _SH_DENYWR)) != NULL)
 	{
@@ -171,7 +171,7 @@ bool CMP4::AddPictureFile(LPCWSTR FileName)
 
 bool CMP4::AddPictureArray(BYTE *arr, u32 length)
 {
-	// Die Bildart wird an den ersten 4 Bytes erkannt: kein Zeiger oder weniger Bytes ist kein Bild
+	// the picture type is recognized by the first 4 bytes: no pointer or fewer bytes is not a picture
 	if (arr == NULL || length < 4)
 	{
 		CTools::instance().setLastError(ERR_PICTUREARRAY_TOO_SMALL);
@@ -180,7 +180,7 @@ bool CMP4::AddPictureArray(BYTE *arr, u32 length)
 	mainContainer->checkMetaBox();
 	CMP4Atom* atom = mainContainer->find(COVR_PFAD);
 	CMP4_Container *cont;
-	// Noch kein Bild da, lege neuen Container an
+	// no picture yet, create a new container
 	if (atom == NULL)
 	{
 		cont = new CMP4_Container(MP4_COVR);
@@ -191,7 +191,7 @@ bool CMP4::AddPictureArray(BYTE *arr, u32 length)
 		cont = static_cast<CMP4_Container*>(atom);
 	atom = new CMP4Atom('data');
 	atom->setParent(COVR_PFAD);
-	// Bildtype rausfinden, JPEG oder png
+	// find out the picture type, JPEG or png
 	BYTE picType = 13; // JPEG = Default
 	if (arr[0] ==  0x89 && arr[1] == 0x50 && arr[2] == 0x4E && arr[3] == 0x47)
 		picType = 14;
@@ -375,7 +375,7 @@ void CMP4::SetTrack(LPCWSTR newTrack)
 		mainContainer->removeAtom(id);
 		return;
 	}
-	// Format entweder als eine Zahl oder als zwei Zahlen mit / getrennt
+	// format either as one number or as two numbers separated by /
 	CAtlString info(newTrack);
 	BYTE von = 0, bis = 0;
 	int pos = info.Find('/');
@@ -394,20 +394,20 @@ void CMP4::SetTrack(LPCWSTR newTrack)
 
 CAtlString CMP4::GetGenre()
 {
-	// Genre entweder als ©gen (Text) oder als gnre (Zahl)
-	// Suche zuerst nach Textframe
+	// genre either as ©gen (text) or as gnre (number)
+	// look for a text frame first
 	CMP4Atom* atom = mainContainer->find(TEXT_GENRE_PFAD);
 	if (atom != NULL)
 		return CMP4_AtomFactory::instance()->getText(atom);
-	// Nicht als Text vorhanden, vielleicht als Zahl ??
+	// not present as text, maybe as a number??
 	atom = mainContainer->find(ZAHL_GENRE_PFAD);
 	if (atom == NULL || atom->getDataLen() < 18)
 		return L"";
-	// Gefunden, hole Zahl und bilde text daraus
+	// found, get the number and build the text from it
 	BYTE genreID = atom->_blob.GetAt(17);
 	if (genreID > 0 && genreID <= MAX_MUSIC_GENRES)
 		return MUSIC_GENRE[genreID - 1];
-	// Zahl nicht innerhalb des Bereiches, dann einfach nur Zahl ausgeben
+	// number outside the range, just output the number
 	CAtlString ausgabe;
 	ausgabe.Format(_T("%i"), genreID);
 	return ausgabe;
@@ -415,14 +415,14 @@ CAtlString CMP4::GetGenre()
 
 void CMP4::SetGenre(LPCWSTR newgenre)
 {
-	// Erst mal alle Genre löschen
+	// first delete all genres
 	mainContainer->removeAtom(TEXT_GENRE_PFAD);
 	mainContainer->removeAtom(ZAHL_GENRE_PFAD);
 	if (newgenre == NULL || wcslen(newgenre) == 0)
 		return;
 
 	CAtlString info(newgenre);
-	// Zuerst rausfinden, ob Genre in den Standards definiert ist
+	// first find out whether the genre is defined in the standards
 	for (BYTE i = 0; i < MAX_MUSIC_GENRES; i++)
 	{
 		if (info.CompareNoCase(MUSIC_GENRE[i]) == 0)
@@ -432,21 +432,21 @@ void CMP4::SetGenre(LPCWSTR newgenre)
 			CMP4_AtomFactory::instance()->buildData(atom, 2, 0);
 			atom->_blob.AddNullByte();
 			atom->_blob.AddValue(i + 1);
-			mainContainer->replaceAtom(atom); // neues Genre setzen
+			mainContainer->replaceAtom(atom); // set new genre
 			return;
 		}
 	}
-	// Kein Standard Genre gefunden, setze Custom Genre
+	// no standard genre found, set custom genre
 	CMP4Atom* atom = new CMP4Atom(ILST_TEXT_GENRE);
 	atom->setParent(ILST_PFAD);
 	CMP4_AtomFactory::instance()->setText(atom, info);
-	mainContainer->replaceAtom(atom); // neues Genre setzen
+	mainContainer->replaceAtom(atom); // set new genre
 }
 
 long CMP4::GetChannels()
 {
 	// TODO
-	// Suche nach stsd, MP4A-Atom, falls gefunden, nehme NumberOfChannels ansonsten 2
+	// look for stsd, MP4A atom; if found, take NumberOfChannels, otherwise 2
 	CMP4Atom* atom = mainContainer->find(STSD_PFAD);
 	if (atom != NULL)
 	{
@@ -494,7 +494,7 @@ void CMP4::RemoveTag()
 
 bool CMP4::SaveToFile(LPCWSTR FileName)
 {
-	// Ermittle den Anfangsbereich der Daten
+	// determine the start of the data area
 	FILE *Source;
 	FILE *Destination;
 	CAtlString NewFileName(FileName);
@@ -504,7 +504,7 @@ bool CMP4::SaveToFile(LPCWSTR FileName)
 		CTools::instance().setLastError(errno);
 		return false;
 	}
-	// Alte Taggings sichern
+	// save old taggings
 	CMP4Atom *oldTaggings = NULL, *atom = NULL;
 	atom = mainContainer->find(ILST_PFAD);
 	if (atom != NULL)
@@ -527,7 +527,7 @@ bool CMP4::SaveToFile(LPCWSTR FileName)
 	__int64 oldMDATPosition = mdat->getPosition();
 	mdat->setSourceFile(FileName);
 	u32 sizeBefore = newData->getSize();
-	// falsche Paddings loeschen
+	// delete wrong paddings
 	atom = newData->find(_T("moov.udta.meta.free"));
 	if (atom != NULL)
 		newData->removeAtom(atom);
@@ -539,7 +539,7 @@ bool CMP4::SaveToFile(LPCWSTR FileName)
 	}
 	else
 	{	
-		// Keine Tagging daten gewünscht	
+		// no tagging data wanted	
 		newData->removeAtom(_T("moov.udta"));
 	}
 	u32 sizeAfter = newData->getSize();
@@ -570,7 +570,7 @@ bool CMP4::SaveToFile(LPCWSTR FileName)
 		/* if mdat position is different and stco is present, then adjust the stco atom */
 		CMP4_STCO* stco = cSTCO(newData->find(STCO_PFAD));
 		CMP4_MDAT* mdat = cMDAT(newData->find(MDAT_PFAD));
-		// Indizes richten
+		// adjust indices
 		if (stco != NULL && mdat != NULL && mdat->getPosition() != oldMDATPosition)
 		{
 			stco->move((long)(mdat->getPosition() - oldMDATPosition), Destination);

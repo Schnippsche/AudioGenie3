@@ -18,7 +18,7 @@
    License along with the GNU C Library; if not, see <http://www.gnu.org/licenses/> 
 */
 
-// ApeTagInfo.cpp: Implementierung der Klasse ApeTagInfo.
+// ApeTagInfo.cpp: implementation of class ApeTagInfo.
 // http://web.archive.org/web/20041010184518/www.personal.uni-jena.de/~pfk/mpp/sv8/apetag.html
 //////////////////////////////////////////////////////////////////////
 

@@ -64,7 +64,7 @@ CID3_Frame::~CID3_Frame(void)
 
 long CID3_Frame::getSize()
 {
-	// Prüfe auf Encoding
+	// check the encoding
 	if (useTextEncoding)
 	{
 		decode();
@@ -89,7 +89,7 @@ void CID3_Frame::load(BYTE* source, long size)
 		extraSize+=1;
 	_blob.AddMemory(source + extraSize, size - extraSize);
 	isDecoded = false;
-	// falls unsynchronized gesetzt ist, muss alles beim Speichern decodiert werden, da beim Speichern das unsync bit nicht mehr gesetzt ist
+	// if unsynchronized is set, everything must be decoded when saving, because the unsync bit is no longer set on save
 	mustRebuild = isUnsynchronized();	
 }
 
@@ -137,9 +137,9 @@ void CID3_Frame::storeFrame(CBlob *tmp)
 	u32 id = CID3_FrameFactory::instance().findTagForVersion(_frameID);
 	if (id != F_NONE)
 	{
-		// Ermittle die Framegrösse und berücksichtige dabei evtl. Synchronisation
+		// determine the frame size, taking synchronization into account
 		long FrameSize = getSize();
-		// Falls DataLenBit gesetzt ist, lösche das
+		// if the DataLenBit is set, remove it
 		if (isDataLenIndicator())
 			flags-=1;
 		switch (CTools::ID3V2newTagVersion)
@@ -238,46 +238,46 @@ p - Data length indicator
 
 bool CID3_Frame::isUnsynchronized()
 { 
-	if (CTools::ID3V2oldTagVersion == TAG_VERSION_2_3) // Flags wirken global auf alle Frames bei v2.3
+	if (CTools::ID3V2oldTagVersion == TAG_VERSION_2_3) // flags apply globally to all frames in v2.3
 		return ( (CTools::ID3V2Flags & 128) == 128);
-	if (CTools::ID3V2oldTagVersion == TAG_VERSION_2_4 && (CTools::ID3V2Flags & 128) == 128) // Falls Unsynchronized bei v2.4 eingeschaltet ist, prüfe die Frame flags
+	if (CTools::ID3V2oldTagVersion == TAG_VERSION_2_4 && (CTools::ID3V2Flags & 128) == 128) // if unsynchronized is switched on in v2.4, check the frame flags
 		return ((flags & 2) == 2);
-	return 0; // bei id3v2.2 gibt es keine Flags	
+	return 0; // id3v2.2 has no flags	
 };
 
 bool CID3_Frame::isReadOnly() 
 { 
-	if (CTools::ID3V2oldTagVersion == TAG_VERSION_2_3) // Flags wirken global auf alle Frames bei v2.3
+	if (CTools::ID3V2oldTagVersion == TAG_VERSION_2_3) // flags apply globally to all frames in v2.3
 		return ((flags & 8192) == 8192); 
 	if (CTools::ID3V2oldTagVersion == TAG_VERSION_2_4) 
 		return ((flags & 4096) == 4096); 
-	return 0; // bei id3v2.2 gibt es keine Flags	
+	return 0; // id3v2.2 has no flags	
 };   
 bool CID3_Frame::isGrouped() 
 { 
-	if (CTools::ID3V2oldTagVersion == TAG_VERSION_2_3) // Flags wirken global auf alle Frames bei v2.3
+	if (CTools::ID3V2oldTagVersion == TAG_VERSION_2_3) // flags apply globally to all frames in v2.3
 		return ((flags & 32) == 32); 
 	if (CTools::ID3V2oldTagVersion == TAG_VERSION_2_4) 
 		return ((flags & 64) == 64); 
-	return 0; // bei id3v2.2 gibt es keine Flags
+	return 0; // id3v2.2 has no flags
 };
 bool CID3_Frame::isCompressed() 
 { 
-	if (CTools::ID3V2oldTagVersion == TAG_VERSION_2_3) // Flags wirken global auf alle Frames bei v2.3
+	if (CTools::ID3V2oldTagVersion == TAG_VERSION_2_3) // flags apply globally to all frames in v2.3
 		return ((flags & 128) == 128); 
 	if (CTools::ID3V2oldTagVersion == TAG_VERSION_2_4) 
 		return ((flags & 8) == 8); 
-	return 0; // bei id3v2.2 gibt es keine Flags
+	return 0; // id3v2.2 has no flags
 }; 
 bool CID3_Frame::isEncrypted() 
 { 
-	if (CTools::ID3V2oldTagVersion == TAG_VERSION_2_3) // Flags wirken global auf alle Frames bei v2.3
+	if (CTools::ID3V2oldTagVersion == TAG_VERSION_2_3) // flags apply globally to all frames in v2.3
 		return ((flags & 64) == 64);
 	if (CTools::ID3V2oldTagVersion == TAG_VERSION_2_4) 
 		return ((flags & 4) == 4); 
-	return 0; // bei id3v2.2 gibt es keine Flags	
+	return 0; // id3v2.2 has no flags	
 };
-bool CID3_Frame::isDataLenIndicator() // nur bei v2.4
+bool CID3_Frame::isDataLenIndicator() // v2.4 only
 { 
 	return (CTools::ID3V2oldTagVersion == TAG_VERSION_2_4) ? ((flags & 1) == 1) : 0;	
 };

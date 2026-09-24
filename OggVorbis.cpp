@@ -28,7 +28,7 @@
 #include <share.h>
 
 //////////////////////////////////////////////////////////////////////
-// Konstruktion/Destruktion
+// Construction/Destruction
 //////////////////////////////////////////////////////////////////////
 
 COggVorbis::COggVorbis()
@@ -52,7 +52,7 @@ void COggVorbis::ReadTag(FILE *Source)
 {
 	AnalyzeVorbisComments(Source);
 	TagEndPos = _ftelli64(Source);
-	firstAudioPos = TagEndPos + 28; // 28 = geschätzter Wert
+	firstAudioPos = TagEndPos + 28; // 28 = protected value
 }
 
 /* --------------------------------------------------------------------------- */
@@ -228,12 +228,12 @@ bool COggVorbis::RebuildFile(LPCWSTR FileName)
 	tmp.FileWrite(tmp.GetLength(), Destination);
 	//Destination.Write(SPage, SPage.Segments + 27);
 	SPage.WriteToFile(Destination);
-	// Destination.CopyFrom(Tag, 0); // Alles kopieren
+	// Destination.CopyFrom(Tag, 0); // copy everything
 	Data.FileWrite(Data.GetLength(), Destination);
 	// Source.Seek(TagEndPos, soFrombeginning);
 	_fseeki64(Source, TagEndPos, SEEK_SET);
 	// Destination.CopyFrom(Source, Source.Size - TagEndPos);
-	// Rest der Datei blockweise kopieren, nicht komplett in den Speicher laden
+	// copy the rest of the file block by block, do not load it completely into memory
 	if (!CTools::copyStream(Source, Destination, CTools::FileSize - TagEndPos))
 	{
 		fclose(Destination);

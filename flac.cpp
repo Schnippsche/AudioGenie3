@@ -27,7 +27,7 @@
 #include <share.h>
 
 //////////////////////////////////////////////////////////////////////
-// Konstruktion/Destruktion
+// Construction/Destruction
 //////////////////////////////////////////////////////////////////////
 CFLAC::CFLAC()
 {
@@ -133,7 +133,7 @@ void CFLAC::ReadBlockHeader(FILE *Stream)
 	memset(tmpHdr, 0, 4);	
 	fread(tmpHdr, 1, 4, Stream);	
 	BlockHeader.lastBlock = ((tmpHdr[0] & 0x80) == 0x80);
-	// letztes Flag löschen
+	// clear last flag
 	tmpHdr[0] &= 0x7F;
 	BlockHeader.Type = tmpHdr[0];
 	BlockHeader.Size = (tmpHdr[1] << 16) + (tmpHdr[2] << 8) + tmpHdr[3];
@@ -224,8 +224,8 @@ void CFLAC::BuildFrame(bool withComment)
 	else
 		BlockComment.Clear();
 
-	// Ganzen Block neu zusammenstellen
-	// zuerst fLaC dann StreamInfo dann Comment dann Pictures dann Sonstiges
+	// reassemble the whole block
+	// first fLaC, then StreamInfo, then Comment, then Pictures, then the rest
 	Daten.Clear();
 	Daten.AddMemory(FLAC_ID, 4);
 	BuildBlockHeader((int)BlockStreamInfo.GetLength(), METADATA_BLOCK_STREAMINFO);
@@ -254,7 +254,7 @@ void CFLAC::BuildFrame(bool withComment)
 		mustRebuild = true;
 		padding = 1000;
 	}
-	// füge padding als letzten Block hinzu
+	// add padding as the last block
 	BuildBlockHeader(padding, METADATA_BLOCK_PADDING + 0x80);
 	Daten.AddMemory(tmpHdr, 4);
 	Daten.AddValue(0, padding);  
@@ -292,16 +292,16 @@ bool CFLAC::RebuildFile(LPCWSTR FileName)
 		CTools::instance().setLastError(errno);
 		return false;
 	};
-	// wenn ID3v2-Tag vorhanden, den auch noch mitschleppen
+	// if an ID3v2 tag is present, carry it along as well
 	if (CTools::ID3v2Size > 0)
 	{
 		tmp.FileRead(CTools::ID3v2Size, Source);
 		tmp.FileWrite(CTools::ID3v2Size, Destination);
 	}
-	// alten Block überspringen
+	// skip old block
 	_fseeki64(Source, oldLen, SEEK_CUR);
 	Daten.FileWrite(Daten.GetLength(), Destination);
-	// Rest der Datei blockweise kopieren, nicht komplett in den Speicher laden
+	// copy the rest of the file block by block, do not load it completely into memory
 	if (!CTools::copyStream(Source, Destination, -1))
 	{
 		fclose(Destination);
@@ -364,7 +364,7 @@ bool CFLAC::replaceCover(CFlacCover *cover)
 			return true;
 		}
 	}
-	// Neu hinzugekommen
+	// newly added
 	covers.Add(cover);
 	return false;
 }

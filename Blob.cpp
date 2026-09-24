@@ -24,10 +24,10 @@
 #include "Blob.h"
 #include "Tools.h"
 
-// Obergrenze fuer einen einzelnen Blob. Schuetzt vor Groessenangaben aus
-// manipulierten Dateien und vor Ueberlaeufen bei 32 Bit size_t.
+// upper limit for a single blob. Protects against size values from
+// manipulated files and against overflows with a 32 bit size_t.
 static const size_t BLOB_MAX_SIZE = 0x40000000; // 1 GB
-// Ab dieser Groesse wird eine angeforderte Lesegroesse gegen die Restgroesse der Datei geprueft
+// From this size on, a requested read size is checked against the remaining size of the file
 static const size_t BLOB_CHECK_FILE_LIMIT = 65536;
 
 static inline bool blobSizeOverflow(size_t current, size_t add)
@@ -35,7 +35,7 @@ static inline bool blobSizeOverflow(size_t current, size_t add)
 	return (add > BLOB_MAX_SIZE) || (current > BLOB_MAX_SIZE - add);
 }
 
-// begrenzt nLen auf die Anzahl der Bytes, die ab der aktuellen Position noch in der Datei stehen
+// limits nLen to the number of bytes that are left in the file from the current position
 static size_t limitToFileRest(size_t nLen, FILE *Stream)
 {
 	if (nLen <= BLOB_CHECK_FILE_LIMIT || Stream == NULL)
@@ -53,7 +53,7 @@ static size_t limitToFileRest(size_t nLen, FILE *Stream)
 }
 
 //////////////////////////////////////////////////////////////////////
-// Konstruktion/Destruktion
+// Construction/Destruction
 //////////////////////////////////////////////////////////////////////
 CBlob::CBlob()
 {
@@ -98,14 +98,14 @@ bool CBlob::AllocNewBuffer(size_t nLen)
 {
 	if (nLen < m_BufferSize && m_pData != NULL)
 		return true;
-	// Gebe alten Speicher frei
+	// free the old memory
 	Free();
 	if (nLen > BLOB_MAX_SIZE)
 	{
 		CTools::instance().setLastError(ERR_NOT_ENOUGH_MEMORY, nLen);
 		return false;
 	}
-	// Hole neuen Speicher + Reserve fuer Null-Bytes
+	// allocate new memory + reserve for null bytes
 	size_t newSize = (((nLen + 4) / BLOCKSIZE) + 1) * BLOCKSIZE;
 	BYTE *p = new (std::nothrow) BYTE[newSize + 8];
 	if (p == NULL)
@@ -169,13 +169,13 @@ void CBlob::ConcatInPlace(size_t nSrcLen, LPCSTR lpszSrcData)
 	m_CurrentLength += nSrcLen;
 }
 
-// nSrcLen ist hier, wie in allen Aufrufern, die Anzahl der BYTES
+// nSrcLen is the number of BYTES here, as in all callers
 void CBlob::ConcatInPlace(size_t nSrcLen, LPCWSTR lpszSrcData)
 {
 	ConcatInPlace(nSrcLen, (LPCSTR)lpszSrcData);
 }
 
-// liefert true, wenn nBytes ab nIndex im Blob liegen
+// returns true if nBytes starting at nIndex lie inside the blob
 #define BLOB_IN_RANGE(nIndex, nBytes) (m_pData != NULL && (nIndex) <= m_CurrentLength && (nBytes) <= m_CurrentLength - (nIndex))
 
 BYTE CBlob::GetAt(size_t nIndex)
@@ -402,7 +402,7 @@ bool CBlob::GrowBuffer(size_t newLen)
 		CTools::instance().setLastError(ERR_NOT_ENOUGH_MEMORY, newLen);
 		return false;
 	}
-	// wachse geometrisch (1,5-fach), damit viele kleine Anhaenge nicht quadratisch teuer werden
+	// grow geometrically (factor 1.5) so that many small appends do not become quadratically expensive
 	size_t tmpSize = (size_t((newLen + 1) / BLOCKSIZE) + 1) * BLOCKSIZE;
 	size_t bigger = m_BufferSize + m_BufferSize / 2;
 	if (bigger > tmpSize && bigger <= BLOB_MAX_SIZE + BLOCKSIZE)
@@ -439,7 +439,7 @@ void CBlob::AddString(const LPCSTR string)
 	ConcatInPlace(strlen(string), string);
 }
 
-/* Fuegt einen Unicode-String zum Blob hinzu */
+/* adds a Unicode string to the blob */
 void CBlob::AddString(const LPCWSTR string)
 {
 	if (string == NULL)
@@ -451,7 +451,7 @@ CAtlString CBlob::getNextString(BYTE encoding, int& startPos)
 {
 	if (m_CurrentLength == 0 || m_pData == NULL || startPos < 0 || (size_t)startPos > m_CurrentLength)
 		return EMPTY;
-	// Reserve am Ende des Puffers garantiert die Terminierung
+	// the reserve at the end of the buffer guarantees termination
 	m_pData[m_CurrentLength] = 0;
 	m_pData[m_CurrentLength + 1] = 0;
 
@@ -469,18 +469,18 @@ CAtlString CBlob::getNextString(BYTE encoding, int& startPos)
 			endPos++;
 		endPos++;
 	}
-	// Setze Endpos auf naechsten Wert
+	// set end position to the next value
 	if (endPos > m_CurrentLength)
 		endPos = m_CurrentLength;
 	size_t size = endPos - startPos;
-	// Groesse des Textpuffers in wchar_t
+	// size of the text buffer in wchar_t
 	size_t maxBuffer = (size_t)CTools::instance().configValues[CONFIG_MAXTEXTBUFFER];
 	CAtlString result;
 	wchar_t *po = CTools::instance().wcTextPuffer;
 	size_t n;
 	switch (encoding) // Encoding ID
 	{
-	case TEXT_ENCODED_ANSI: // ANSI bzw ISO-8859-1
+	case TEXT_ENCODED_ANSI: // ANSI or ISO-8859-1
 		if (MultiByteToWideChar(CP_ACP, 0, (const char*)(m_pData + startPos), -1, po, (int)maxBuffer) > 0)
 			result = CAtlString(po);
 		else
@@ -490,7 +490,7 @@ CAtlString CBlob::getNextString(BYTE encoding, int& startPos)
 		}
 		break;
 	case TEXT_ENCODED_UTF16BOM: // UTF-16 with BOM
-		if (size >= 2 && m_pData[startPos] == 0xFE && m_pData[startPos + 1] == 0xFF) // Big Endian, Bytes vertauschen
+		if (size >= 2 && m_pData[startPos] == 0xFE && m_pData[startPos + 1] == 0xFF) // big endian, swap bytes
 		{
 			n = 0;
 			for (size_t i = startPos + 2; i + 1 < endPos && n < maxBuffer - 1; i+=2)
@@ -534,10 +534,10 @@ CAtlString CBlob::getNextString(BYTE encoding, int& startPos)
 	return result;
 }
 
-// konvertiert aus einem BYTE-Array beliebigen Formates einen Unicode-String
-// funktioniert nur mit UNICODE-Uebersetzung
-// encoding: gibt die Kodierung an
-// rest sind Daten ( 0-terminiert )
+// converts a BYTE array of any format into a Unicode string
+// only works with a UNICODE build
+// encoding: specifies the encoding
+// rest is data ( 0-terminated )
 CAtlString CBlob::ConvertToUnicodeString( BYTE encoding)
 {
 	if (m_CurrentLength < 1)
@@ -556,13 +556,13 @@ void CBlob::AddFixedAnsiString(const CAtlString source, size_t maxLen)
 }
 
 /**
-fuegt einen String je nach Kodierung hinzu
+adds a string depending on the encoding
 **/
 void CBlob::AddEncodedString(BYTE encoding, const CAtlString source, bool withEncodingByte, bool withNullBytes)
 {
 	if (withEncodingByte)
 		AddValue(encoding);
-	// Falls String leer ist, dann fuehre keine Konvertierung durch
+	// if the string is empty, do not convert
 	if (source.GetLength() == 0)
 	{
 		if (withNullBytes)
@@ -575,14 +575,14 @@ void CBlob::AddEncodedString(BYTE encoding, const CAtlString source, bool withEn
 		return;
 	}
 
-	// Der Puffer wird nicht vorab geleert: WideCharToMultiByte liefert die genaue Laenge
+	// the buffer is not cleared beforehand: WideCharToMultiByte returns the exact length
 	int maxBuffer = CTools::instance().getConfigValue(CONFIG_MAXTEXTBUFFER);
 	char* buf = CTools::instance().cTextPuffer;
 	size_t Size;
 
 	switch (encoding) // Encoding ID
 	{
-	case TEXT_ENCODED_ANSI: // ANSI bzw ISO-8859-1
+	case TEXT_ENCODED_ANSI: // ANSI or ISO-8859-1
 		Size = WideCharToMultiByte(CP_ACP,0, source, source.GetLength(), buf, maxBuffer, 0, 0);
 		if (Size > 0)
 			ConcatInPlace(Size, buf);

@@ -18,7 +18,7 @@
    License along with the GNU C Library; if not, see <http://www.gnu.org/licenses/> 
 */
 
-// Header.cpp: Implementierung der Klasse CHeader.
+// Header.cpp: implementation of class CHeader.
 //
 //////////////////////////////////////////////////////////////////////
 
@@ -26,7 +26,7 @@
 #include "Header.h"
 
 //////////////////////////////////////////////////////////////////////
-// Konstruktion/Destruktion
+// Construction/Destruction
 //////////////////////////////////////////////////////////////////////
 
 CHeader::CHeader()
@@ -38,7 +38,7 @@ CHeader::~CHeader()
 {
 
 }
-// Dateiheader auf bekannte Datentypen prüfen
+// check the file header for known data types
 BYTE CHeader::ReadFromFile(FILE *Stream)
 {
   // _fseeki64(Stream, 0, SEEK_SET);
@@ -48,7 +48,7 @@ BYTE CHeader::ReadFromFile(FILE *Stream)
     if ( memcmp(Buf, filetypes[i].kennung, filetypes[i].laenge) == 0)
       return filetypes[i].result;
   }
-  // Noch nichts gefunden, prüfe Bytes 5 - 8
+  // nothing found yet, check bytes 5 - 8
   if (Buf[4] == 0x66 && Buf[5] == 0x74 && Buf[6] == 0x79 && Buf[7] ==  0x70)  // mp4    "ftyp"
 	  return AUDIO_FORMAT_MP4;
   return AUDIO_FORMAT_UNKNOWN;  

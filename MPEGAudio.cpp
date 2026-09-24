@@ -26,7 +26,7 @@
 #include <share.h>
 
 //////////////////////////////////////////////////////////////////////
-// Konstruktion/Destruktion
+// Construction/Destruction
 //////////////////////////////////////////////////////////////////////
 
 CMPEGAudio::CMPEGAudio()
@@ -74,13 +74,13 @@ bool CMPEGAudio::IsFrameHeader(BYTE HeaderData[])
 {
 	/* Check for valid frame header       AAAAAAAA AAABBCCD EEEEFFGH IIJJKLMM */
 	if ( ( HeaderData[0] != 0xFF)         ||  // AAAAAAAA
-		(( HeaderData[1] & 0xE0) != 0xE0) ||  // AAA00000 Header muss 111 sein
-		(( HeaderData[1] & 0x18) == 0x08) ||  // 000BB000 Version ID darf nicht 01 sein
-		(( HeaderData[1] & 0x06) == 0x00) ||  // 00000CC0 Layer darf nicht 00 sein
-		(( HeaderData[2] & 0xF0) == 0xF0) ||  // EEEE0000 Bitrate darf weder 1111
-		(( HeaderData[2] & 0xF0) == 0x00) ||  // EEEE0000 noch 0000 sein
-		(( HeaderData[2] & 0x0C) == 0x0C) ||  // 0000FF00 Sampling id darf nicht 11 sein
-		(( HeaderData[3] & 0x03) == 0x02))    // 000000MM Emphasis darf nicht 10 sein
+		(( HeaderData[1] & 0xE0) != 0xE0) ||  // AAA00000 header must be 111
+		(( HeaderData[1] & 0x18) == 0x08) ||  // 000BB000 version ID must not be 01
+		(( HeaderData[1] & 0x06) == 0x00) ||  // 00000CC0 layer must not be 00
+		(( HeaderData[2] & 0xF0) == 0xF0) ||  // EEEE0000 bit rate must be neither 1111
+		(( HeaderData[2] & 0xF0) == 0x00) ||  // EEEE0000 must still be 0000
+		(( HeaderData[2] & 0x0C) == 0x0C) ||  // 0000FF00 sampling id must not be 11
+		(( HeaderData[3] & 0x03) == 0x02))    // 000000MM emphasis must not be 10
 		return false;
 	else
 		return true;
@@ -545,7 +545,7 @@ bool CMPEGAudio::ReadFromFile(FILE *Stream)
 	Transferred = (long)fread(Data, 1, DATASIZE, Stream);
 	if (Transferred < 0)
 		Transferred = 0;
-	memset(Data + Transferred, 0, sizeof(Data) - Transferred); // keine Reste des letzten Blocks auswerten
+	memset(Data + Transferred, 0, sizeof(Data) - Transferred); // do not evaluate remains of the last block
 	result = FindFrame();
 	firstAudioPos = Frame.FramePosition;
 	CTools::firstMpegAudioPos = firstAudioPos; 
@@ -559,7 +559,7 @@ bool CMPEGAudio::ReadFromFile(FILE *Stream)
 		Transferred = (long)fread(Data, 1, DATASIZE, Stream);
 	if (Transferred < 0)
 		Transferred = 0;
-	memset(Data + Transferred, 0, sizeof(Data) - Transferred); // keine Reste des letzten Blocks auswerten
+	memset(Data + Transferred, 0, sizeof(Data) - Transferred); // do not evaluate remains of the last block
 		result = FindFrame();
 		firstAudioPos = Frame.FramePosition;
 	}
@@ -571,7 +571,7 @@ bool CMPEGAudio::ReadFromFile(FILE *Stream)
 		{
 			vendorValues.Clear();
 			if (_fseeki64(Stream, -DATASIZE - CTools::ID3v1Size - CTools::LyricsSize, SEEK_END) != 0)
-				_fseeki64(Stream, 0, SEEK_SET); // Datei kleiner als der Suchbereich
+				_fseeki64(Stream, 0, SEEK_SET); // file is smaller than the search range
 			vendorValues.FileRead(DATASIZE, Stream);
 		}
 		GetInternEncoder();
@@ -618,7 +618,7 @@ bool CMPEGAudio::SetBit(LPCWSTR FileName, int HdrPos, BYTE BitPos, bool neu)
 			fclose(Stream);
 			return false;
 		}
-		// an StartPosition steht der Header
+		// the header is at StartPosition
 		_fseeki64(Stream, Frame.FramePosition, SEEK_SET);
 		fread(HeaderData, 1, 4, Stream);
 		if (neu)
@@ -648,7 +648,7 @@ bool CMPEGAudio::IsValid()
 
 void CMPEGAudio::ReadAllFrames(FILE *Stream)
 {
-	// an StartPosition steht der Header
+	// the header is at StartPosition
 	BYTE HeaderData[4];
 	long FrameLength, Count = 0, Lost = 0;
 	__int64 StartPos = Frame.FramePosition;

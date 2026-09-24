@@ -67,7 +67,7 @@ void CWMA_ExtContentDescription::buildData()
 	if (_mustBuild)
 	{
 		_data.Clear();
-		// Suche alle Objekte
+		// look for all objects
 		CWMA_TagData *item;
 		int anzahl = 0;
 		size_t counts = CWMA_ObjectFactory::instance().tagdatas.GetCount();

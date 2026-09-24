@@ -47,7 +47,7 @@ BYTE CTools::ID3V2Flags = 0;
 
 CTools::CTools(void)
 {
-	// Folgende Initialisierung findet nur einmal statt!
+	// the following initialization happens only once!
 	oldTickCount = 0;
 	logFile.Empty();
 	log = NULL;
@@ -87,7 +87,7 @@ void CTools::reset()
 void CTools::doEvents()
 {
 	DWORD ticks = GetTickCount();
-	if ((DWORD)(ticks - oldTickCount) < (DWORD)CTools::configValues[CONFIG_DOEVENTSMILLIS]) // nur alle eventMillis Millisekunden
+	if ((DWORD)(ticks - oldTickCount) < (DWORD)CTools::configValues[CONFIG_DOEVENTSMILLIS]) // only every eventMillis milliseconds
 		return;
 	oldTickCount = ticks;
 	doEventsNow();
@@ -137,12 +137,12 @@ bool CTools::copyStream(FILE *source, FILE *destination, __int64 count)
 		tmp.FileRead(want, source);
 		size_t got = tmp.GetLength();
 		if (got > 0 && tmp.FileWrite(got, destination) != got)
-			return false; // Schreibfehler
+			return false; // write error
 		instance().doEvents();
 		if (count > 0)
 			count -= (__int64)got;
 		if (got < want)
-			return (count < 0) ? (ferror(source) == 0) : false; // Dateiende (bei count > 0: Quelle zu kurz)
+			return (count < 0) ? (ferror(source) == 0) : false; // end of file (with count > 0: source too short)
 	}
 	return true;
 }
@@ -173,13 +173,13 @@ bool CTools::finishRewrite(FILE *source, FILE *destination, LPCWSTR newFileName,
 	}
 	if (!ok)
 	{
-		// Das Original bleibt unveraendert, nur die temporaere Datei wird entfernt
+		// the original stays unchanged, only the temporary file is removed
 		_wremove(newFileName);
 		instance().setLastError(err != 0 ? err : EIO);
 		return false;
 	}
 	instance().doEventsNow();
-	// Ersetze die alte Datei in einem Schritt durch die neue Datei
+	// replace the old file with the new file in one step
 	if (!MoveFileExW(newFileName, origFileName, MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH))
 	{
 		_wremove(newFileName);
@@ -303,7 +303,7 @@ void CTools::setConfigValue(long key, long value)
 		{
 			delete [] newWc;
 			delete [] newC;
-			return; // behalte die alten Puffer
+			return; // keep the old buffers
 		}
 		delete [] wcTextPuffer;
 		delete [] cTextPuffer;
@@ -313,7 +313,7 @@ void CTools::setConfigValue(long key, long value)
 	}
 	else if (key >= 0 && key < MAX_CONFIG_VALUES)
 	{
-		// Blockgroesse muss > 0 sein, sonst laufen die Kopierschleifen endlos
+		// block size must be > 0, otherwise the copy loops run forever
 		if (key == CONFIG_ID3V2WRITEBLOCKSIZE)
 		{
 			if (value < 4096)

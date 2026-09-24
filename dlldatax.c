@@ -19,12 +19,12 @@
 */
 
 
-#ifdef _MERGE_PROXYSTUB // Proxy-Stub-DLL zusammenführen
+#ifdef _MERGE_PROXYSTUB // merge proxy/stub DLL
 
 #define REGISTER_PROXY_DLL //DllRegisterServer usw.
 
-#define _WIN32_WINNT 0x0500	//für WinNT 4.0 oder Win95 mit DCOM
-#define USE_STUBLESS_PROXY	//nur mit dem MIDL-Schalter "/Oicf" definiert
+#define _WIN32_WINNT 0x0500	// for WinNT 4.0 or Win95 with DCOM
+#define USE_STUBLESS_PROXY	// only defined with the MIDL switch "/Oicf"
 
 #pragma comment(lib, "rpcns4.lib")
 #pragma comment(lib, "rpcrt4.lib")

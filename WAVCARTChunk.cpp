@@ -96,7 +96,7 @@ void CWAVCARTChunk::setASCIIText(CAtlString newText, BYTE nr)
 	size_t startPos = CART_CODES[nr][0];
 	size_t maxLen = CART_CODES[nr][1];
 	CBlob tmp;
-	// Auf 2048 bytes auffüllen
+	// pad to 2048 bytes
 	if (_data.GetLength() < 2048)
 	{
 		_data.Clear();
@@ -127,7 +127,7 @@ void CWAVCARTChunk::setASCIIText(CAtlString newText, BYTE nr)
 	}
 	if (nr == WAV_CART_TAGTEXT)
 	{
-		// Alle Bytes ab Pos 2048 löschen
+		// delete all bytes from position 2048 on
 		tmp.AddMemory(_data.m_pData, 2048);
 		if (!newText.IsEmpty())
 			tmp.AddEncodedString(TEXT_ENCODED_ANSI, newText, false, false);

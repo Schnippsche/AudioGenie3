@@ -1,6 +1,6 @@
-// stdafx.h : Includedatei für Standardsystem-Includedateien
-// oder häufig verwendete projektspezifische Includedateien,
-// die nur in unregelmäßigen Abständen geändert werden.
+// stdafx.h : include file for standard system include files,
+// or frequently used project-specific include files
+// that are changed only infrequently.
 //
 
 #pragma once
@@ -11,9 +11,9 @@
 #include <tchar.h>
 
 
-#define _ATL_CSTRING_EXPLICIT_CONSTRUCTORS      // Einige CString-Konstruktoren sind explizit.
+#define _ATL_CSTRING_EXPLICIT_CONSTRUCTORS      // some CString constructors are explicit.
 
 #include <atlbase.h>
 #include <atlstr.h>
 
-// TODO: Hier auf zusätzliche Header, die das Programm erfordert, verweisen.
+// TODO: reference additional headers that the program requires here.

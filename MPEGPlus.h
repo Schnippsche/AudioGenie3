@@ -18,7 +18,7 @@
    License along with the GNU C Library; if not, see <http://www.gnu.org/licenses/> 
 */
 
-// MPEGPlus.h: Schnittstelle für die Klasse CMPEGPlus.
+// MPEGPlus.h: interface for class CMPEGPlus.
 //
 //////////////////////////////////////////////////////////////////////
 #pragma once
@@ -29,7 +29,7 @@
 /* Used with ChannelModeID property */
 #define MPP_CM_STEREO  1                                // Index for stereo mode
 #define MPP_CM_JOINT_STEREO 2                     // Index for joint-stereo mode
-#define MPP_CM_MONO 3                             // Index for mono (nur SV8 kann Mono)
+#define MPP_CM_MONO 3                             // Index for mono (SV8 only)
 
 /* Used with ProfileID property */
 #define MPP_PROFILE_UNKNOWN 0                                   /* Unknown profile */
@@ -72,7 +72,7 @@ private:
 	int  FBitRate;
 	BYTE FStreamVersion;
 	BYTE FProfileID;
-	// Stream-Version 8 ('MPCK'): paketbasierter Header, Werte kommen aus dem SH-Paket
+	// Stream version 8 ('MPCK'): packet-based header, values come from the SH packet
 	bool FIsSV8;
 	long FChannels;
 	__int64 FSamples;

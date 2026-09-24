@@ -52,7 +52,7 @@ CFlacCover::CFlacCover(void)
 
 CFlacCover::CFlacCover(CBlob *tmpData)
 {
-	// Alle Laengenangaben stammen aus der Datei und duerfen den Block nicht verlassen
+	// all length values come from the file and must not leave the block
 	const size_t total = tmpData->GetLength();
 	auto clampLen = [total](size_t pos, long value) -> size_t {
 		const size_t avail = (pos < total) ? total - pos : 0;
@@ -78,7 +78,7 @@ CFlacCover::CFlacCover(CBlob *tmpData)
 	data.Clear();
 	start+=20;
 	ln = clampLen(start, tmpData->Get4B(start - 4)); //picture length
-	// Falls Mime --> ist , dann Bild aus Datei lesen
+	// if the mime type is -->, read the picture from a file
 	if (_mime.Compare(_T("-->")) == 0)
 	{
 		_isLink = true;
@@ -175,7 +175,7 @@ bool CFlacCover::setPictureFile(LPCWSTR fileName)
 	{
 		data.FileRead(_filelength(_fileno(Stream)), Stream); 
 		fclose(Stream);
-		// MIME neu bilden
+		// rebuild the MIME type
 		_mime = CTools::instance().ExtractMimeFromPicture(data.m_pData);
 		calcInfos();
 		return true;
@@ -212,7 +212,7 @@ void CFlacCover::calcInfos()
 	height = 0;
 	colordepth = 24;
 	colornumbers = 0;
-	// ermittle aus Bild die Grösse und Color depth
+	// determine width, height and color depth from the picture
 	if (data.GetLength() > 4)
 	{
 		int format = CTools::instance().CalcMimeFromPicture(data.m_pData);

@@ -110,7 +110,7 @@ CID3_Frame* CID3F_Chapter::findFrame(u32 ID, int index)
 
 void CID3F_Chapter::convertBlobToFrames()
 {
-	// konvertiert die Daten aus _data in CID3_Frames
+	// converts the data from _data into CID3_Frames
 	if (_data.GetLength() == 0)
 		return;
 	size_t start = 0;
@@ -127,7 +127,7 @@ void CID3F_Chapter::convertBlobToFrames()
 			frameSize = (u32)_data.Get4B(start + 4);
 		flags = _data.Get2B(start + 8);
 		start+=10;
-		// Sicherheitsabfrage auf Grösse des Frames
+		// safety check on the size of the frame
 		if (frameSize > (u32)CTools::ID3v2Size)
 		{
 			CTools::instance().setLastError(ERR_CHAPTER_FRAME_CORRUPT);

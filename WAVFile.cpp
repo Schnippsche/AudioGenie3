@@ -31,7 +31,7 @@
 #include "WAVDISPChunk.h"
 
 //////////////////////////////////////////////////////////////////////
-// Konstruktion/Destruktion
+// Construction/Destruction
 //////////////////////////////////////////////////////////////////////
 
 CWAVFile::CWAVFile()
@@ -396,7 +396,7 @@ long CWAVFile::GetBitRate()
 
 bool CWAVFile::IsValid()
 { 
-	// Valid ist, wenn  data Tag vorhanden ist
+	// valid if a data tag is present
 	return (mainContainer->find('data') != NULL);
 }
 
@@ -515,7 +515,7 @@ void CWAVFile::setBextText(BYTE nr, CAtlString newText)
 void CWAVFile::setTextFrame(u32 FrameID, CAtlString newText)
 {
 	CWAVChunk *chunk =  mainContainer->find(FrameID);
-	if (chunk != NULL) //Replace ist einfach
+	if (chunk != NULL) //replace is simple
 	{	
 		chunk->getData()->Clear();
 		if (!newText.IsEmpty())
@@ -556,7 +556,7 @@ CAtlString CWAVFile::getINFOChunkIDs()
 
 bool CWAVFile::SaveToFile(LPCWSTR FileName)
 {
-	// Ermittle den Anfangsbereich der Daten
+	// determine the start of the data area
 	FILE *Source;
 	FILE *Destination;
 	CAtlString NewFileName(FileName);
