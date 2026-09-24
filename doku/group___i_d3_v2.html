@@ -174,7 +174,7 @@ Functions</h2></td></tr>
 <tr class="memitem:ga1e4d69e60296ccc59e63ae28cecf684a" id="r_ga1e4d69e60296ccc59e63ae28cecf684a"><td class="memItemLeft">BSTR&#160;</td><td class="memItemRight"><a class="el" href="#ga1e4d69e60296ccc59e63ae28cecf684a">ID3V2GetPictureTypeTextW</a> (short Index)</td></tr>
 <tr class="memdesc:ga1e4d69e60296ccc59e63ae28cecf684a"><td class="mdescLeft">&#160;</td><td class="mdescRight">get the picture type from a picture  <br /></td></tr>
 <tr class="memitem:ga72d836fe50a4d68e7c12fb086509fd19" id="r_ga72d836fe50a4d68e7c12fb086509fd19"><td class="memItemLeft">BSTR&#160;</td><td class="memItemRight"><a class="el" href="#ga72d836fe50a4d68e7c12fb086509fd19">ID3V2GetPictureMimeW</a> (short Index)</td></tr>
-<tr class="memdesc:ga72d836fe50a4d68e7c12fb086509fd19"><td class="mdescLeft">&#160;</td><td class="mdescRight">get the mime type from a picture, e.g. "image/jpeg" or "image/bmp" or "XXX" for unknown format&lt;br&gt;If the file was stored as a Link then this method returns then filename starting with "--&gt;", e.g. "--&gt;C:\test.jpg"  <br /></td></tr>
+<tr class="memdesc:ga72d836fe50a4d68e7c12fb086509fd19"><td class="mdescLeft">&#160;</td><td class="mdescRight">get the mime type from a picture, e.g. "image/jpeg" or "image/bmp" or "XXX" for unknown format  <br /></td></tr>
 <tr class="memitem:ga50885ccc0cde374e9b8cd46c708d556f" id="r_ga50885ccc0cde374e9b8cd46c708d556f"><td class="memItemLeft">short&#160;</td><td class="memItemRight"><a class="el" href="#ga50885ccc0cde374e9b8cd46c708d556f">ID3V2GetPictureFileW</a> (LPCWSTR FileName, short Index)</td></tr>
 <tr class="memdesc:ga50885ccc0cde374e9b8cd46c708d556f"><td class="mdescLeft">&#160;</td><td class="mdescRight">get a picture from the tag and store it in the specified file  <br /></td></tr>
 <tr class="memitem:gabfca7cf7bb46fd32f950852929272cd9" id="r_gabfca7cf7bb46fd32f950852929272cd9"><td class="memItemLeft">long&#160;</td><td class="memItemRight"><a class="el" href="#gabfca7cf7bb46fd32f950852929272cd9">ID3V2GetPictureArrayW</a> (BYTE *arr, u32 maxLen, short Index)</td></tr>
@@ -288,8 +288,7 @@ Functions</h2></td></tr>
 <tr class="memitem:ga7bf74babf1c1c41c8066dcdb2fdcec93" id="r_ga7bf74babf1c1c41c8066dcdb2fdcec93"><td class="memItemLeft">short&#160;</td><td class="memItemRight"><a class="el" href="#ga7bf74babf1c1c41c8066dcdb2fdcec93">ID3V2DeleteSubFrameW</a> (LPCWSTR ID, u32 FrameID)</td></tr>
 <tr class="memdesc:ga7bf74babf1c1c41c8066dcdb2fdcec93"><td class="mdescLeft">&#160;</td><td class="mdescRight">deletes a subframe  <br /></td></tr>
 <tr class="memitem:ga04e96a7fd939e91f85477c4e06463dea" id="r_ga04e96a7fd939e91f85477c4e06463dea"><td class="memItemLeft">short&#160;</td><td class="memItemRight"><a class="el" href="#ga04e96a7fd939e91f85477c4e06463dea">ID3V2AddEncryptionW</a> (BYTE *arr, u32 maxLen, LPCWSTR URL, short Symbol)</td></tr>
-<tr class="memdesc:ga04e96a7fd939e91f85477c4e06463dea"><td class="mdescLeft">&#160;</td><td class="mdescRight">ENCR add an encryption frame<br  />
-There may be more than one 'ENCR' frame in each tag, but only one with the same symbol and owner identifier.  <br /></td></tr>
+<tr class="memdesc:ga04e96a7fd939e91f85477c4e06463dea"><td class="mdescLeft">&#160;</td><td class="mdescRight">ENCR add an encryption frame There may be more than one 'ENCR' frame in each tag, but only one with the same symbol and owner identifier.  <br /></td></tr>
 <tr class="memitem:gaa9b8f9ffddd8c8f8b081cacfdbecb880" id="r_gaa9b8f9ffddd8c8f8b081cacfdbecb880"><td class="memItemLeft">short&#160;</td><td class="memItemRight"><a class="el" href="#gaa9b8f9ffddd8c8f8b081cacfdbecb880">ID3V2GetEncryptionSymbolW</a> (short Index)</td></tr>
 <tr class="memdesc:gaa9b8f9ffddd8c8f8b081cacfdbecb880"><td class="mdescLeft">&#160;</td><td class="mdescRight">get the Method Symbol  <br /></td></tr>
 <tr class="memitem:ga3755abd7cabf3ebd631117b97d7baa8c" id="r_ga3755abd7cabf3ebd631117b97d7baa8c"><td class="memItemLeft">BSTR&#160;</td><td class="memItemRight"><a class="el" href="#ga3755abd7cabf3ebd631117b97d7baa8c">ID3V2GetEncryptionURLW</a> (short Index)</td></tr>
@@ -1261,28 +1260,7 @@ There may be more than one 'ENCR' frame in each tag, but only one with the same 
   </table>
   </dd>
 </dl>
-<dl class="section return"><dt>Returns</dt><dd>picture type from 0 to 20 <br  />
-00 = Other<br  />
-01 = 32*32 pixels file icon<br  />
-02 = Other file icon<br  />
-03 = Cover front<br  />
-04 = Cover back<br  />
-05 = Leaflet page<br  />
-06 = Media ( label side of CD )<br  />
-07 = Lead artist/solist<br  />
-08 = Artist/Performer<br  />
-09 = Conductor<br  />
-10 = Band/Orchestra<br  />
-11 = Composer<br  />
-12 = Lyricist/text writer<br  />
-13 = Recording Location<br  />
-14 = During recording<br  />
-15 = During performance<br  />
-16 = Movie/video screen capture<br  />
-17 = A bright coloured fish<br  />
-18 = Illustration<br  />
-19 = Band/artist logotype<br  />
-20 = Publisher/Studio logotype </dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>picture type from 0 to 20, see <a class="el" href="picturetypes.html" title="Picture types">Picture types</a> </dd></dl>
 
 </div>
 </div>
@@ -1329,7 +1307,8 @@ There may be more than one 'ENCR' frame in each tag, but only one with the same 
       </table>
 </div><div class="memdoc">
 
-<p>get the mime type from a picture, e.g. "image/jpeg" or "image/bmp" or "XXX" for unknown format&lt;br&gt;If the file was stored as a Link then this method returns then filename starting with "--&gt;", e.g. "--&gt;C:\test.jpg" </p>
+<p>get the mime type from a picture, e.g. "image/jpeg" or "image/bmp" or "XXX" for unknown format </p>
+<p>If the file was stored as a Link then this method returns then filename starting with "--&gt;", e.g. "--&gt;C:\test.jpg"</p>
 <dl class="section since"><dt>Since</dt><dd>2.0.1.0 </dd></dl>
 <dl class="section user"><dt>ID3v2 frame</dt><dd>APIC </dd></dl>
 <dl class="params"><dt>Parameters</dt><dd>
@@ -1451,36 +1430,16 @@ There may be more than one 'ENCR' frame in each tag, but only one with the same 
   <table class="params">
     <tr><td class="paramname">FileName</td><td>name of the picture file </td></tr>
     <tr><td class="paramname">Description</td><td>a description of the picture </td></tr>
-    <tr><td class="paramname">PictureType</td><td>type from 0 to 20 <br  />
-00 = Other<br  />
-01 = 32*32 pixels file icon<br  />
-02 = Other file icon<br  />
-03 = Cover front<br  />
-04 = Cover back<br  />
-05 = Leaflet page<br  />
-06 = Media ( label side of CD )<br  />
-07 = Lead artist/solist<br  />
-08 = Artist/Performer<br  />
-09 = Conductor<br  />
-10 = Band/Orchestra<br  />
-11 = Composer<br  />
-12 = Lyricist/text writer<br  />
-13 = Recording Location<br  />
-14 = During recording<br  />
-15 = During performance<br  />
-16 = Movie/video screen capture<br  />
-17 = A bright coloured fish<br  />
-18 = Illustration<br  />
-19 = Band/artist logotype<br  />
-20 = Publisher/Studio logotype </td></tr>
-    <tr><td class="paramname">asLink</td><td>shows how the picture will be stored<br  />
-<br  />
--1 = only a link to the image will be stored<br  />
-0 = the image data will be stored </td></tr>
+    <tr><td class="paramname">PictureType</td><td>type from 0 to 20, see <a class="el" href="picturetypes.html" title="Picture types">Picture types</a> </td></tr>
+    <tr><td class="paramname">asLink</td><td>shows how the picture will be stored</td></tr>
   </table>
   </dd>
 </dl>
-<dl class="section return"><dt>Returns</dt><dd>normally -1, 0 on error </dd></dl>
+<ul>
+<li>-1 = only a link to the image will be stored</li>
+<li>0 = the image data will be stored <dl class="section return"><dt>Returns</dt><dd>normally -1, 0 on error </dd></dl>
+</li>
+</ul>
 
 </div>
 </div>
@@ -1522,28 +1481,7 @@ There may be more than one 'ENCR' frame in each tag, but only one with the same 
     <tr><td class="paramname">arr</td><td>to a byte array with the picture datas </td></tr>
     <tr><td class="paramname">Length</td><td>the size of the array </td></tr>
     <tr><td class="paramname">Description</td><td>a description of the picture </td></tr>
-    <tr><td class="paramname">PictureType</td><td>type from 0 to 20 <br  />
-00 = Other<br  />
-01 = 32*32 pixels file icon<br  />
-02 = Other file icon<br  />
-03 = Cover front<br  />
-04 = Cover back<br  />
-05 = Leaflet page<br  />
-06 = Media ( label side of CD )<br  />
-07 = Lead artist/solist<br  />
-08 = Artist/Performer<br  />
-09 = Conductor<br  />
-10 = Band/Orchestra<br  />
-11 = Composer<br  />
-12 = Lyricist/text writer<br  />
-13 = Recording Location<br  />
-14 = During recording<br  />
-15 = During performance<br  />
-16 = Movie/video screen capture<br  />
-17 = A bright coloured fish<br  />
-18 = Illustration<br  />
-19 = Band/artist logotype<br  />
-20 = Publisher/Studio logotype </td></tr>
+    <tr><td class="paramname">PictureType</td><td>type from 0 to 20, see <a class="el" href="picturetypes.html" title="Picture types">Picture types</a> </td></tr>
   </table>
   </dd>
 </dl>
@@ -2949,28 +2887,7 @@ There may be more than one 'ENCR' frame in each tag, but only one with the same 
   </table>
   </dd>
 </dl>
-<dl class="section return"><dt>Returns</dt><dd>picture type from 0 to 20 <br  />
-00 = Other<br  />
-01 = 32*32 pixels file icon<br  />
-02 = Other file icon<br  />
-03 = Cover front<br  />
-04 = Cover back<br  />
-05 = Leaflet page<br  />
-06 = Media ( label side of CD )<br  />
-07 = Lead artist/solist<br  />
-08 = Artist/Performer<br  />
-09 = Conductor<br  />
-10 = Band/Orchestra<br  />
-11 = Composer<br  />
-12 = Lyricist/text writer<br  />
-13 = Recording Location<br  />
-14 = During recording<br  />
-15 = During performance<br  />
-16 = Movie/video screen capture<br  />
-17 = A bright coloured fish<br  />
-18 = Illustration<br  />
-19 = Band/artist logotype<br  />
-20 = Publisher/Studio logotype </dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>picture type from 0 to 20, see <a class="el" href="picturetypes.html" title="Picture types">Picture types</a> </dd></dl>
 
 </div>
 </div>
@@ -3229,28 +3146,7 @@ There may be more than one 'ENCR' frame in each tag, but only one with the same 
     <tr><td class="paramname">maxLen</td><td>maximum size of the array in bytes </td></tr>
     <tr><td class="paramname">ID</td><td>the ID of the parent frame </td></tr>
     <tr><td class="paramname">Description</td><td>the description of the image </td></tr>
-    <tr><td class="paramname">PictureType</td><td>type from 0 to 20 <br  />
-00 = Other<br  />
-01 = 32*32 pixels file icon<br  />
-02 = Other file icon<br  />
-03 = Cover front<br  />
-04 = Cover back<br  />
-05 = Leaflet page<br  />
-06 = Media ( label side of CD )<br  />
-07 = Lead artist/solist<br  />
-08 = Artist/Performer<br  />
-09 = Conductor<br  />
-10 = Band/Orchestra<br  />
-11 = Composer<br  />
-12 = Lyricist/text writer<br  />
-13 = Recording Location<br  />
-14 = During recording<br  />
-15 = During performance<br  />
-16 = Movie/video screen capture<br  />
-17 = A bright coloured fish<br  />
-18 = Illustration<br  />
-19 = Band/artist logotype<br  />
-20 = Publisher/Studio logotype </td></tr>
+    <tr><td class="paramname">PictureType</td><td>type from 0 to 20, see <a class="el" href="picturetypes.html" title="Picture types">Picture types</a> </td></tr>
   </table>
   </dd>
 </dl>
@@ -3319,8 +3215,7 @@ There may be more than one 'ENCR' frame in each tag, but only one with the same 
       </table>
 </div><div class="memdoc">
 
-<p>ENCR add an encryption frame<br  />
-There may be more than one 'ENCR' frame in each tag, but only one with the same symbol and owner identifier. </p>
+<p>ENCR add an encryption frame There may be more than one 'ENCR' frame in each tag, but only one with the same symbol and owner identifier. </p>
 <dl class="section since"><dt>Since</dt><dd>2.0.1.0 </dd></dl>
 <dl class="section user"><dt>ID3v2 frame</dt><dd>ENCR </dd></dl>
 <dl class="params"><dt>Parameters</dt><dd>
@@ -3625,8 +3520,7 @@ There may be more than one 'ENCR' frame in each tag, but only one with the same 
 </div><div class="memdoc">
 
 <p>ETCO add an event timing code frame. </p>
-<p><br  />
-There may only be one 'ETCO' frame in each tag.</p>
+<p>There may only be one 'ETCO' frame in each tag.</p>
 <dl class="section since"><dt>Since</dt><dd>2.0.1.0 </dd></dl>
 <dl class="section user"><dt>ID3v2 frame</dt><dd>ETCO </dd></dl>
 <dl class="params"><dt>Parameters</dt><dd>
@@ -6050,19 +5944,15 @@ There may only be one 'ETCO' frame in each tag.</p>
   </table>
   </dd>
 </dl>
-<dl class="section return"><dt>Returns</dt><dd>return value with the following meaning:<br  />
-<br  />
-<table width="280" class="tablelayout">
-<tr>
-<th width="22%">value</th><th width="78%">description</th></tr>
-<tr>
-<td width="22%">-1</td><td width="78%">invalid entry</td></tr>
-<tr>
-<td width="22%">1</td><td width="78%">mpeg frames as unit</td></tr>
-<tr>
-<td width="22%">2</td><td width="78%">milliseconds as unit</td></tr>
-</table>
-</dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>return value with the following meaning: </dd></dl>
+<dl class="retval"><dt>Return values</dt><dd>
+  <table class="retval">
+    <tr><td class="paramname">-1</td><td>invalid entry </td></tr>
+    <tr><td class="paramname">1</td><td>mpeg frames as unit </td></tr>
+    <tr><td class="paramname">2</td><td>milliseconds as unit </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -6090,33 +5980,22 @@ There may only be one 'ETCO' frame in each tag.</p>
   </table>
   </dd>
 </dl>
-<dl class="section return"><dt>Returns</dt><dd>return value with the following meaning:<br  />
-<br  />
-<table width="280" class="tablelayout">
-<tr>
-<th width="22%">value</th><th width="78%">description</th></tr>
-<tr>
-<td width="22%">-1</td><td width="78%">invalid entry</td></tr>
-<tr>
-<td width="22%">0</td><td width="78%">other</td></tr>
-<tr>
-<td width="22%">1</td><td width="78%">lyrics</td></tr>
-<tr>
-<td width="22%">2</td><td width="78%">text transcription</td></tr>
-<tr>
-<td width="22%">3</td><td width="78%">movement/part name</td></tr>
-<tr>
-<td width="22%">4</td><td width="78%">events</td></tr>
-<tr>
-<td width="22%">5</td><td width="78%">chord</td></tr>
-<tr>
-<td width="22%">6</td><td width="78%">trivia/'pop up' information</td></tr>
-<tr>
-<td width="22%">7</td><td width="78%">URLs to webpages</td></tr>
-<tr>
-<td width="22%">8</td><td width="78%">URL to images</td></tr>
-</table>
-</dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>return value with the following meaning: </dd></dl>
+<dl class="retval"><dt>Return values</dt><dd>
+  <table class="retval">
+    <tr><td class="paramname">-1</td><td>invalid entry </td></tr>
+    <tr><td class="paramname">0</td><td>other </td></tr>
+    <tr><td class="paramname">1</td><td>lyrics </td></tr>
+    <tr><td class="paramname">2</td><td>text transcription </td></tr>
+    <tr><td class="paramname">3</td><td>movement/part name </td></tr>
+    <tr><td class="paramname">4</td><td>events </td></tr>
+    <tr><td class="paramname">5</td><td>chord </td></tr>
+    <tr><td class="paramname">6</td><td>trivia/'pop up' information </td></tr>
+    <tr><td class="paramname">7</td><td>URLs to webpages </td></tr>
+    <tr><td class="paramname">8</td><td>URL to images </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -6162,37 +6041,42 @@ There may only be one 'ETCO' frame in each tag.</p>
   <table class="params">
     <tr><td class="paramname">Language</td><td>language of the entry, e.g. ENG for english ( must be 3 bytes long ) </td></tr>
     <tr><td class="paramname">Description</td><td>the description of the entry </td></tr>
-    <tr><td class="paramname">Text</td><td>multi entries separated with line break (crlf). use the following format:<br  />
-<br  />
-[xxxxxxxx]entry1<br  />
-[xxxxxxxx]entry2 etc.<br  />
-<br  />
-xxxxxxxx = formatted absolute time stamp 8 digits<br  />
-entry = any text entry<br  />
-<br  />
-Example:<br  />
-[00000010]Strang<br  />
-[00000020]ers<br  />
-[00000080]in </td></tr>
-    <tr><td class="paramname">ContentType</td><td>set the content type. Possible values are:<br  />
-<br  />
-0 = other<br  />
-1 = lyrics<br  />
-2 = text transcription<br  />
-3 = movement/part name<br  />
-4 = events<br  />
-5 = chord<br  />
-6 = trivia/'pop up' information<br  />
-7 = URLs to webpages<br  />
-8 = URL to images </td></tr>
-    <tr><td class="paramname">TimeStampFormat</td><td>set the timestamp format units<br  />
-<br  />
-1 = using mpeg frames as unit<br  />
-2 = using milliseconds as unit </td></tr>
+    <tr><td class="paramname">Text</td><td>multi entries separated with line break (crlf). use the following format:</td></tr>
   </table>
   </dd>
 </dl>
-<dl class="section return"><dt>Returns</dt><dd>-1 if frame was replaced, 0 if frame was added </dd></dl>
+<pre class="fragment">* [xxxxxxxx]entry1
+* [xxxxxxxx]entry2 etc.
+* </pre><p>xxxxxxxx = formatted absolute time stamp 8 digits entry = any text entry</p>
+<p>Example: </p><pre class="fragment">* [00000010]Strang
+* [00000020]ers
+* [00000080]in
+* </pre> <dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">ContentType</td><td>set the content type. Possible values are:</td></tr>
+  </table>
+  </dd>
+</dl>
+<ul>
+<li>0 = other</li>
+<li>1 = lyrics</li>
+<li>2 = text transcription</li>
+<li>3 = movement/part name</li>
+<li>4 = events</li>
+<li>5 = chord</li>
+<li>6 = trivia/'pop up' information</li>
+<li>7 = URLs to webpages</li>
+<li>8 = URL to images <dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">TimeStampFormat</td><td>set the timestamp format units</td></tr>
+  </table>
+  </dd>
+</dl>
+</li>
+<li>1 = using mpeg frames as unit</li>
+<li>2 = using milliseconds as unit <dl class="section return"><dt>Returns</dt><dd>-1 if frame was replaced, 0 if frame was added </dd></dl>
+</li>
+</ul>
 
 </div>
 </div>

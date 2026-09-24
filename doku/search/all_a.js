@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['vorbis_0',['Ogg Vorbis',['../group___o_g_g.html',1,'']]]
+  ['universal_20functions_0',['Universal functions',['../group___u_n_i_v_e_r_s_a_l.html',1,'']]]
 ];

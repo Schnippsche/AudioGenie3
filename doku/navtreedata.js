@@ -25,6 +25,7 @@
 var NAVTREE =
 [
   [ "AudioGenie3", "index.html", [
+    [ "Picture types", "picturetypes.html", null ],
     [ "Topics", "topics.html", "topics" ]
   ] ]
 ];

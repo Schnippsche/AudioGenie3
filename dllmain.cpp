@@ -134,12 +134,26 @@ void ClearAllTags()
 /**
  * @brief read an audio-file and all known tags
  *
- * the tags will be reading in this way:<br />files with format WMA, MP4, FLAC and OGG uses their own fields. All other formats have this rules:<br />at first id3v2 tag, if not exist then ape tag, if not exist then id3v1 tag and at least lyrics tag.
+ * the tags will be reading in this way:
+ * files with format WMA, MP4, FLAC and OGG uses their own fields. All other formats have this rules:
+ * at first id3v2 tag, if not exist then ape tag, if not exist then id3v1 tag and at least lyrics tag.
  *
  * @ingroup AUDIO
  * @since 2.0.1.0
  * @param FileName name of the file
- * @return return value from 0 to 10 with the following meaning:<br /><br /><table width="220" class="tablelayout"><tr><th width="22%">Value</th><th width="78%">Description</th></tr><tr><td width="22%">0</td><td width="78%">unknown Format</td></tr><tr><td width="22%">1</td><td width="78%">MP3</td></tr><tr><td width="22%">2</td><td width="78%">WMA</td></tr><tr><td width="22%">3</td><td width="78%">MONKEY</td></tr><tr><td width="22%">4</td><td width="78%">FLAC</td></tr><tr><td width="22%">5</td><td width="78%">WAV</td></tr><tr><td width="22%">6</td><td width="78%">OGG VORBIS</td></tr><tr><td width="22%">7</td><td width="78%">MPP</td></tr><tr><td width="22%">8</td><td width="78%">AAC</td></tr><tr><td width="22%">9</td><td width="78%">MP4/M4A</td></tr><tr><td width="22%">10</td><td width="78%">TTA</td></tr><tr><td width="22%">11</td><td width="78%">wavpack</td></tr></table>
+ * @return return value from 0 to 11 with the following meaning:
+ * @retval 0 unknown Format
+ * @retval 1 MP3
+ * @retval 2 WMA
+ * @retval 3 MONKEY
+ * @retval 4 FLAC
+ * @retval 5 WAV
+ * @retval 6 OGG VORBIS
+ * @retval 7 MPP
+ * @retval 8 AAC
+ * @retval 9 MP4/M4A
+ * @retval 10 TTA
+ * @retval 11 wavpack
  */
 extern "C" long __stdcall AUDIOAnalyzeFileW(LPCWSTR FileName)
 {
@@ -409,7 +423,19 @@ ende:
 /**
  * @brief store the changes in a file, depending on format of the destination file:
  *
- * <table width="90%" class="tablelayout"><tr><th width="15%">audio format</th><th width="80%">changes saved as</th></tr><tr><td>MP3</td><td>ID3V2-Tag</td></tr><tr><td>WMA</td><td>WMA Fields</td></tr><tr><td>MONKEY</td><td>APE-Tag</td></tr><tr><td>FLAC</td><td>Vorbis Comment</td></tr><tr><td>WAV</td><td>wav chunk</td></tr><tr><td>OGG</td><td>Vorbis Comment</td></tr><tr><td>MPP</td><td>ID3V2-Tag</td></tr><tr><td>AAC</td><td>APE-Tag (an existing ID3V2-Tag is left unchanged and takes precedence when reading)</td></tr><tr><td>MP4</td><td>mp4 atoms</td></tr><tr><td>WavPack</td><td>APE-Tag</td></tr><tr><td>TTA</td><td>ID3V2-Tag</td></tr></table>
+ * | audio format | changes saved as |
+ * |---|---|
+ * | MP3 | ID3V2-Tag |
+ * | WMA | WMA Fields |
+ * | MONKEY | APE-Tag |
+ * | FLAC | Vorbis Comment |
+ * | WAV | wav chunk |
+ * | OGG | Vorbis Comment |
+ * | MPP | ID3V2-Tag |
+ * | AAC | APE-Tag (an existing ID3V2-Tag is left unchanged and takes precedence when reading) |
+ * | MP4 | mp4 atoms |
+ * | WavPack | APE-Tag |
+ * | TTA | ID3V2-Tag |
  *
  * @ingroup AUDIO
  * @since 2.0.1.0
@@ -536,7 +562,19 @@ extern "C" short __stdcall AUDIOSaveChangesToFileW(LPCWSTR FileName)
 /**
  * @brief store the changes in the last analyzed file, depending on format of the destination file:
  *
- * <table width="90%" class="tablelayout"><tr><th width="15%">audio format</th><th width="80%">changes saved as</th></tr><tr><td>MP3</td><td>ID3V2-Tag</td></tr><tr><td>WMA</td><td>WMA Fields</td></tr><tr><td>MONKEY</td><td>APE-Tag</td></tr><tr><td>FLAC</td><td>Vorbis Comment</td></tr><tr><td>WAV</td><td>wav chunk</td></tr><tr><td>OGG</td><td>Vorbis Comment</td></tr><tr><td>MPP</td><td>ID3V2-Tag</td></tr><tr><td>AAC</td><td>APE-Tag (an existing ID3V2-Tag is left unchanged and takes precedence when reading)</td></tr><tr><td>MP4</td><td>mp4 atoms</td></tr><tr><td>WavPack</td><td>APE-Tag</td></tr><tr><td>TTA</td><td>ID3V2-Tag</td></tr></table>
+ * | audio format | changes saved as |
+ * |---|---|
+ * | MP3 | ID3V2-Tag |
+ * | WMA | WMA Fields |
+ * | MONKEY | APE-Tag |
+ * | FLAC | Vorbis Comment |
+ * | WAV | wav chunk |
+ * | OGG | Vorbis Comment |
+ * | MPP | ID3V2-Tag |
+ * | AAC | APE-Tag (an existing ID3V2-Tag is left unchanged and takes precedence when reading) |
+ * | MP4 | mp4 atoms |
+ * | WavPack | APE-Tag |
+ * | TTA | ID3V2-Tag |
  *
  * @ingroup AUDIO
  * @since 2.0.1.0
@@ -1047,7 +1085,7 @@ extern "C" void __stdcall FLACSetVendorW(LPCWSTR textString)
 /**
  * @brief get a user defined field
  *
- * use the method <a href="FLACGetItemKeysW.html">FLACGetItemKeysW</a> for a list of all existing keys.
+ * use the method FLACGetItemKeysW for a list of all existing keys.
  *
  * @ingroup FLAC
  * @since 2.0.1.0
@@ -1062,7 +1100,7 @@ extern "C" BSTR __stdcall FLACGetUserItemW(LPCWSTR ItemKey)
 /**
  * @brief set a user defined field
  *
- * use the method <a href="FLACGetItemKeysW.html">FLACGetItemKeysW</a> for a list of all existing keys.
+ * use the method FLACGetItemKeysW for a list of all existing keys.
  *
  * @ingroup FLAC
  * @since 2.0.1.0
@@ -1094,8 +1132,11 @@ extern "C" BSTR __stdcall FLACGetItemKeysW()
  * @since 2.0.2.0
  * @param FileName name of the picture file
  * @param Description a description of the picture
- * @param PictureType type from 0 to 20 <br />00 = Other<br />01 = 32*32 pixels file icon<br />02 = Other file icon<br />03 = Cover front<br />04 = Cover back<br />05 = Leaflet page<br />06 = Media ( label side of CD )<br />07 = Lead artist/solist<br />08 = Artist/Performer<br />09 = Conductor<br />10 = Band/Orchestra<br />11 = Composer<br />12 = Lyricist/text writer<br />13 = Recording Location<br />14 = During recording<br />15 = During performance<br />16 = Movie/video screen capture<br />17 = A bright coloured fish<br />18 = Illustration<br />19 = Band/artist logotype<br />20 = Publisher/Studio logotype
- * @param asLink shows how the picture will be stored<br /><br />-1 = only a link to the image will be stored<br />0 = the image data will be stored
+ * @param PictureType type from 0 to 20, see @ref picturetypes
+ * @param asLink shows how the picture will be stored
+ *
+ * - -1 = only a link to the image will be stored
+ * - 0 = the image data will be stored
  * @return normally -1, 0 on error
  */
 extern "C" short __stdcall FLACAddPictureFileW(LPCWSTR FileName, LPCWSTR Description, short PictureType, short asLink)
@@ -1120,7 +1161,7 @@ extern "C" short __stdcall FLACAddPictureFileW(LPCWSTR FileName, LPCWSTR Descrip
  * @param arr pointer to a byte array with the picture datas
  * @param Length the size of the array
  * @param Description a description of the picture
- * @param PictureType picture type from 0 to 20 <br />00 = Other<br />01 = 32*32 pixels file icon<br />02 = Other file icon<br />03 = Cover front<br />04 = Cover back<br />05 = Leaflet page<br />06 = Media ( label side of CD )<br />07 = Lead artist/solist<br />08 = Artist/Performer<br />09 = Conductor<br />10 = Band/Orchestra<br />11 = Composer<br />12 = Lyricist/text writer<br />13 = Recording Location<br />14 = During recording<br />15 = During performance<br />16 = Movie/video screen capture<br />17 = A bright coloured fish<br />18 = Illustration<br />19 = Band/artist logotype<br />20 = Publisher/Studio logotype
+ * @param PictureType picture type from 0 to 20, see @ref picturetypes
  * @return -1 if frame was replaced, 0 if frame was added
  */
 extern "C" short __stdcall FLACAddPictureArrayW(BYTE *arr, u32 Length, LPCWSTR Description, short PictureType)
@@ -1147,7 +1188,7 @@ extern "C" void __stdcall FLACDeletePicturesW()
  *
  * @ingroup FLAC
  * @since 2.0.2.0
- * @param Index index from 1 to <a href="FLACGetPictureCountW.html">FLACGetPictureCountW</a>
+ * @param Index index from 1 to FLACGetPictureCountW
  * @return normally -1, 0 on error or picture not present
  */
 extern "C" short __stdcall FLACDeletePictureW(short Index) 
@@ -1161,7 +1202,7 @@ extern "C" short __stdcall FLACDeletePictureW(short Index)
  *
  * @ingroup FLAC
  * @since 2.0.2.0
- * @param Index index from 1 <a href="FLACGetPictureCountW.html">FLACGetPictureCountW</a>
+ * @param Index index from 1 FLACGetPictureCountW
  * @return the description of the picture
  */
 extern "C" BSTR __stdcall FLACGetPictureDescriptionW(short Index) 
@@ -1175,7 +1216,7 @@ extern "C" BSTR __stdcall FLACGetPictureDescriptionW(short Index)
  *
  * @ingroup FLAC
  * @since 2.0.2.0
- * @param Index index from 1 to <a href="FLACGetPictureCountW.html">FLACGetPictureCountW</a>
+ * @param Index index from 1 to FLACGetPictureCountW
  * @return the size of the picture in bytes
  */
 extern "C" long __stdcall FLACGetPictureSizeW(short Index) 
@@ -1189,8 +1230,8 @@ extern "C" long __stdcall FLACGetPictureSizeW(short Index)
  *
  * @ingroup FLAC
  * @since 2.0.2.0
- * @param Index index from 1 to <a href="FLACGetPictureCountW.html">FLACGetPictureCountW</a>
- * @return picture type from 0 to 20 <br />00 = Other<br />01 = 32*32 pixels file icon<br />02 = Other file icon<br />03 = Cover front<br />04 = Cover back<br />05 = Leaflet page<br />06 = Media ( label side of CD )<br />07 = Lead artist/solist<br />08 = Artist/Performer<br />09 = Conductor<br />10 = Band/Orchestra<br />11 = Composer<br />12 = Lyricist/text writer<br />13 = Recording Location<br />14 = During recording<br />15 = During performance<br />16 = Movie/video screen capture<br />17 = A bright coloured fish<br />18 = Illustration<br />19 = Band/artist logotype<br />20 = Publisher/Studio logotype
+ * @param Index index from 1 to FLACGetPictureCountW
+ * @return picture type from 0 to 20, see @ref picturetypes
  */
 extern "C" short __stdcall FLACGetPictureTypeW(short Index) 
 {
@@ -1205,7 +1246,7 @@ extern "C" short __stdcall FLACGetPictureTypeW(short Index)
  *
  * @ingroup FLAC
  * @since 2.0.2.0
- * @param Index index from 1 to<a href="FLACGetPictureCountW.html">FLACGetPictureCountW</a>
+ * @param Index index from 1 toFLACGetPictureCountW
  * @return picture type as text
  */
 extern "C" BSTR __stdcall FLACGetPictureTypeTextW(short Index) 
@@ -1216,11 +1257,13 @@ extern "C" BSTR __stdcall FLACGetPictureTypeTextW(short Index)
 
 
 /**
- * @brief get the mime type from a picture, e.g. "image/jpeg" or "image/bmp" or "XXX" for unknown format<br\>If the file was stored as a Link then this method returns then filename starting with "-->", e.g. "-->C:\test.jpg"
+ * @brief get the mime type from a picture, e.g. "image/jpeg" or "image/bmp" or "XXX" for unknown format
+ *
+ * If the file was stored as a Link then this method returns then filename starting with "-->", e.g. "-->C:\test.jpg"
  *
  * @ingroup FLAC
  * @since 2.0.2.0
- * @param Index index from 1 to <a href="FLACGetPictureCountW.html">FLACGetPictureCountW</a>
+ * @param Index index from 1 to FLACGetPictureCountW
  * @return the mime type of the picture
  */
 extern "C" BSTR __stdcall FLACGetPictureMimeW(short Index) 
@@ -1249,7 +1292,7 @@ extern "C" short __stdcall FLACGetPictureCountW()
  * @ingroup FLAC
  * @since 2.0.2.0
  * @param FileName Name of the file where the picture will be stored
- * @param Index index from 1 to <a href="FLACGetPictureCountW.html">FLACGetPictureCountW</a>
+ * @param Index index from 1 to FLACGetPictureCountW
  * @return normally -1, 0 on error or index not present
  */
 extern "C" short __stdcall FLACGetPictureFileW(LPCWSTR FileName, short Index) 
@@ -1265,7 +1308,7 @@ extern "C" short __stdcall FLACGetPictureFileW(LPCWSTR FileName, short Index)
  * @since 2.0.2.0
  * @param arr to a Byte array
  * @param maxLen maximum size of the byte array
- * @param Index index from 1 to <a href="FLACGetPictureCountW.html">FLACGetPictureCountW</a>
+ * @param Index index from 1 to FLACGetPictureCountW
  * @return the real length of the array in bytes or -1 if error
  */
 extern "C" long __stdcall FLACGetPictureArrayW(BYTE *arr, u32 maxLen, short Index)
@@ -1542,7 +1585,7 @@ extern "C" void __stdcall MP4SetTrackW(LPCWSTR textString)
  * @ingroup MP4
  * @since 2.0.1.0
  * @param FileName name of the file
- * @param Index index from 1 to <a href="MP4GetPictureCountW.html">MP4GetPictureCountW</a>
+ * @param Index index from 1 to MP4GetPictureCountW
  * @return 0 on error, otherwise -1
  */
 extern "C" short __stdcall MP4GetPictureFileW(LPCWSTR FileName, short Index)
@@ -1557,7 +1600,7 @@ extern "C" short __stdcall MP4GetPictureFileW(LPCWSTR FileName, short Index)
  * @since 2.0.1.0
  * @param arr to a Byte array
  * @param maxLen maximum size of the byte array
- * @param Index index from 1 to <a href="MP4GetPictureCountW.html">MP4GetPictureCountW</a>
+ * @param Index index from 1 to MP4GetPictureCountW
  * @return the real length of the array in bytes or -1 if error
  */
 extern "C" long __stdcall MP4GetPictureArrayW(BYTE *arr, u32 maxLen, short Index)
@@ -1571,7 +1614,7 @@ extern "C" long __stdcall MP4GetPictureArrayW(BYTE *arr, u32 maxLen, short Index
  *
  * @ingroup MP4
  * @since 2.0.1.0
- * @param Index index from 1 to <a href="MP4GetPictureCountW.html">MP4GetPictureCountW</a>
+ * @param Index index from 1 to MP4GetPictureCountW
  * @return the mime type of the picture
  */
 extern "C" BSTR __stdcall MP4GetPictureMimeW(short Index) 
@@ -1636,7 +1679,7 @@ extern "C" void __stdcall MP4DeletePicturesW()
  *
  * @ingroup MP4
  * @since 2.0.1.0
- * @param Index index from 1 to <a href="MP4GetPictureCountW.html">MP4GetPictureCountW</a>
+ * @param Index index from 1 to MP4GetPictureCountW
  * @return normally -1, 0 on error or picture not present
  */
 extern "C" short __stdcall MP4DeletePictureW(short Index) 
@@ -2556,7 +2599,17 @@ extern "C" BSTR __stdcall WAVGetFormatW()
  *
  * @ingroup WAV
  * @since 2.0.1.0
- * @return format number with the following meaning<br /><br /><table width="280" class="tablelayout"><tr><th width="22%">id</th><th width="78%">format</th></tr><tr><td width="22%">0</td><td width="78%">unknown</td></tr><tr><td width="22%">1</td><td width="78%">PCM/uncompressed</td></tr><tr><td width="22%">2</td><td width="78%">Microsoft ADPCM</td></tr><tr><td width="22%">6</td><td width="78%">ITU G.711 a-law</td></tr><tr><td width="22%">7</td><td width="78%">ITU G.711 µ-law</td></tr><tr><td width="22%">17</td><td width="78%">IMA ADPCM</td></tr><tr><td width="22%">20</td><td width="78%">ITU G.723 ADPCM ( Yamaha)</td></tr><tr><td width="22%">49</td><td width="78%">GSM 6.10</td></tr><tr><td width="22%">64</td><td width="78%">ITU G.721 ADPCM</td></tr><tr><td width="22%">80</td><td width="78%">MPEG</td></tr></table>
+ * @return format number with the following meaning
+ * @retval 0 unknown
+ * @retval 1 PCM/uncompressed
+ * @retval 2 Microsoft ADPCM
+ * @retval 6 ITU G.711 a-law
+ * @retval 7 ITU G.711 µ-law
+ * @retval 17 IMA ADPCM
+ * @retval 20 ITU G.723 ADPCM ( Yamaha)
+ * @retval 49 GSM 6.10
+ * @retval 64 ITU G.721 ADPCM
+ * @retval 80 MPEG
  */
 extern "C" short __stdcall WAVGetFormatIDW() 
 {
@@ -2597,7 +2650,7 @@ extern "C" BSTR __stdcall GetAudioGenieVersionW()
  * @par ID3v2 frame
  *   WM/Picture
  * @param FileName Name of the file where the picture will be stored
- * @param Index index from 1 to <a href="WMAGetPictureCountW.html">WMAGetPictureCountW</a>
+ * @param Index index from 1 to WMAGetPictureCountW
  * @return normally -1, 0 on error or index not present
  */
 extern "C" short __stdcall WMAGetPictureFileW(LPCWSTR FileName, short Index) 
@@ -2614,7 +2667,7 @@ extern "C" short __stdcall WMAGetPictureFileW(LPCWSTR FileName, short Index)
  *   WM/PICTURE
  * @param arr to a Byte array
  * @param maxLen maximum size of the byte array
- * @param Index index from 1 to <a href="WMAGetPictureCountW.html">WMAGetPictureCountW</a>
+ * @param Index index from 1 to WMAGetPictureCountW
  * @return the real length of the array in bytes or -1 if error
  */
 extern "C" long __stdcall WMAGetPictureArrayW(BYTE *arr, u32 maxLen, short Index)
@@ -2629,7 +2682,7 @@ extern "C" long __stdcall WMAGetPictureArrayW(BYTE *arr, u32 maxLen, short Index
  * @since 2.0.1.0
  * @par ID3v2 frame
  *   WM/Picture
- * @param Index index from 1 to <a href="WMAGetPictureCountW.html">WMAGetPictureCountW</a>
+ * @param Index index from 1 to WMAGetPictureCountW
  * @return the description of the picture
  */
 extern "C" BSTR __stdcall WMAGetPictureDescriptionW(short Index) 
@@ -2644,7 +2697,7 @@ extern "C" BSTR __stdcall WMAGetPictureDescriptionW(short Index)
  * @since 2.0.1.0
  * @par ID3v2 frame
  *   WM/Picture
- * @param Index index from 1 to <a href="WMAGetPictureCountW.html">WMAGetPictureCountW</a>
+ * @param Index index from 1 to WMAGetPictureCountW
  * @return the mime type of the picture
  */
 extern "C" BSTR __stdcall WMAGetPictureMimeW(short Index) 
@@ -2672,8 +2725,8 @@ extern "C" long __stdcall WMAGetPictureSizeW(short Index)
  * @since 2.0.1.0
  * @par ID3v2 frame
  *   WM/Picture
- * @param Index index from 1 to <a href="WMAGetPictureCountW.html">WMAGetPictureCountW</a>
- * @return picture type from 0 to 20 <br />00 = Other<br />01 = 32*32 pixels file icon<br />02 = Other file icon<br />03 = Cover front<br />04 = Cover back<br />05 = Leaflet page<br />06 = Media ( label side of CD )<br />07 = Lead artist/solist<br />08 = Artist/Performer<br />09 = Conductor<br />10 = Band/Orchestra<br />11 = Composer<br />12 = Lyricist/text writer<br />13 = Recording Location<br />14 = During recording<br />15 = During performance<br />16 = Movie/video screen capture<br />17 = A bright coloured fish<br />18 = Illustration<br />19 = Band/artist logotype<br />20 = Publisher/Studio logotype
+ * @param Index index from 1 to WMAGetPictureCountW
+ * @return picture type from 0 to 20, see @ref picturetypes
  */
 extern "C" short __stdcall WMAGetPictureTypeW(short Index) 
 {
@@ -2703,7 +2756,7 @@ extern "C" short __stdcall WMAGetPictureCountW()
  *   WM/Picture
  * @param FileName name of the picture file
  * @param Description a description of the picture
- * @param PictureType type from 0 to 20 <br />00 = Other<br />01 = 32*32 pixels file icon<br />02 = Other file icon<br />03 = Cover front<br />04 = Cover back<br />05 = Leaflet page<br />06 = Media ( label side of CD )<br />07 = Lead artist/solist<br />08 = Artist/Performer<br />09 = Conductor<br />10 = Band/Orchestra<br />11 = Composer<br />12 = Lyricist/text writer<br />13 = Recording Location<br />14 = During recording<br />15 = During performance<br />16 = Movie/video screen capture<br />17 = A bright coloured fish<br />18 = Illustration<br />19 = Band/artist logotype<br />20 = Publisher/Studio logotype
+ * @param PictureType type from 0 to 20, see @ref picturetypes
  * @param Index Index from 1 to n; if n is not present a new entry will be created
  * @return normally -1, 0 on error
  */
@@ -2722,7 +2775,7 @@ extern "C" short __stdcall WMAAddPictureFileW(LPCWSTR FileName, LPCWSTR Descript
  * @param arr to a byte array with the picture datas
  * @param Length the size of the array
  * @param Description a description of the picture
- * @param PictureType type from 0 to 20 <br />00 = Other<br />01 = 32*32 pixels file icon<br />02 = Other file icon<br />03 = Cover front<br />04 = Cover back<br />05 = Leaflet page<br />06 = Media ( label side of CD )<br />07 = Lead artist/solist<br />08 = Artist/Performer<br />09 = Conductor<br />10 = Band/Orchestra<br />11 = Composer<br />12 = Lyricist/text writer<br />13 = Recording Location<br />14 = During recording<br />15 = During performance<br />16 = Movie/video screen capture<br />17 = A bright coloured fish<br />18 = Illustration<br />19 = Band/artist logotype<br />20 = Publisher/Studio logotype
+ * @param PictureType type from 0 to 20, see @ref picturetypes
  * @param index Index from 1 to n; if n is not present a new entry will be created
  * @return -1 if frame was replaced, 0 if frame was added
  */
@@ -2735,7 +2788,7 @@ extern "C" short __stdcall WMAAddPictureArrayW(BYTE *arr, u32 Length, LPCWSTR De
 /**
  * @brief get a user defined field
  *
- * use the method <a href="WMAGetItemKeysW.html">WMAGetItemKeysW</a> for a list of all existing keys.
+ * use the method WMAGetItemKeysW for a list of all existing keys.
  *
  * @ingroup WMA
  * @since 2.0.1.0
@@ -2750,7 +2803,7 @@ extern "C" BSTR __stdcall WMAGetUserItemW(LPCWSTR ItemKey)
 /**
  * @brief set a user defined field
  *
- * use the method <a href="WMAGetItemKeysW.html">WMAGetItemKeysW</a> for a list of all existing keys.
+ * use the method WMAGetItemKeysW for a list of all existing keys.
  *
  * @ingroup WMA
  * @since 2.0.1.0
@@ -2781,7 +2834,7 @@ extern "C" BSTR __stdcall WMAGetItemKeysW()
  * @since 2.0.1.0
  * @par ID3v2 frame
  *   WM/Picture
- * @param Index index from 1 to <a href="WMAGetPictureCountW.html">WMAGetPictureCountW</a>
+ * @param Index index from 1 to WMAGetPictureCountW
  * @return normally -1, 0 on error or picture not present
  */
 extern "C" short __stdcall WMADeletePictureW(short Index) 
@@ -3416,7 +3469,7 @@ extern "C" void __stdcall ID3V1SetGenreIDW(short nNewValue)
 }
 
 /**
- * @brief get a genre for a specific number ( 0 to <a href="ID3V1GetGenresW.html">ID3V1GetGenresW</a> - 1 )
+ * @brief get a genre for a specific number ( 0 to ID3V1GetGenresW - 1 )
  *
  * @ingroup ID3V1
  * @since 2.0.1.0
@@ -4016,7 +4069,17 @@ extern "C" short __stdcall ID3V2GetEncodingW(u32 FrameID)
 /**
  * @brief set a configuration value.
  *
- * The following keys are currently supported: <br /><br /><table class="tablelayout"><tr><th>Key</th><th>ID</th><th>Defaultvalue</th><th>Description</th></tr><tr><td>0</td><td>MPEGEXACTREAD</td><td>0</td><td>a non 0 value activates the reading from all MPEG frames<br />replaces SetMPEGAnalyzeAllFrames</td></tr><tr><td>1</td><td>ID3V2PADDINGSIZE</td><td>4096</td><td>the padding size in bytes for an id3v2 tag</td></tr><tr><td>2</td><td>WRITEBLOCKSIZE</td><td>524288</td><td>the blocksize in bytes for internal file copy</td></tr><tr><td>3</td><td>DOEVENTSMILLIS </td><td>250</td><td>millseconds, after that AudioGenie fires a DoEvent</td></tr><tr><td>4</td><td>MAXTEXTBUFFER</td><td>262144</td><td>the maximum text size in bytes</td></tr><tr><td>5</td><td>WMAPADDINGSIZE</td><td>4096</td><td>the padding size in bytes for a wma tag</td></tr><tr><td>6</td><td>MP4PADDINGSIZE</td><td>4096</td><td>the padding size in bytes for a mp4 tag</td></tr></table>
+ * The following keys are currently supported:
+ *
+ * | Key | ID | Defaultvalue | Description |
+ * |---|---|---|---|
+ * | 0 | MPEGEXACTREAD | 0 | a non 0 value activates the reading from all MPEG frames; replaces SetMPEGAnalyzeAllFrames |
+ * | 1 | ID3V2PADDINGSIZE | 4096 | the padding size in bytes for an id3v2 tag |
+ * | 2 | WRITEBLOCKSIZE | 524288 | the blocksize in bytes for internal file copy |
+ * | 3 | DOEVENTSMILLIS | 250 | millseconds, after that AudioGenie fires a DoEvent |
+ * | 4 | MAXTEXTBUFFER | 262144 | the maximum text size in bytes |
+ * | 5 | WMAPADDINGSIZE | 4096 | the padding size in bytes for a wma tag |
+ * | 6 | MP4PADDINGSIZE | 4096 | the padding size in bytes for a mp4 tag |
  *
  * @ingroup UNIVERSAL
  * @since 2.0.1.0
@@ -4030,7 +4093,17 @@ extern "C" void __stdcall SetConfigValueW(long key, long value)
 /**
  * @brief get a config value,
  *
- * The following keys are currently supported: <br /><br /><table class="tablelayout"><tr><th>Key</th><th>ID</th><th>Description</th></tr><tr><td>0</td><td>MPEGEXACTREAD</td><td>a non 0 value indicates the reading from all MPEG frames</td></tr><tr><td>1</td><td>ID3V2PADDINGSIZE</td><td>the padding size in bytes for an id3v2 tag</td></tr><tr><td>2</td><td>WRITEBLOCKSIZE</td><td>the blocksize in bytes for internal file copy</td></tr><tr><td>3</td><td>DOEVENTSMILLIS </td><td>millseconds after AudioGenie fires a DoEvent</td></tr><tr><td>4</td><td>MAXTEXTBUFFER</td><td>the maximum text size in bytes</td></tr><tr><td>5</td><td>WMAPADDINGSIZE</td><td>the padding size in bytes for a wma tag</td></tr><tr><td>6</td><td>MP4PADDINGSIZE</td><td>the padding size in bytes for a mp4 tag</td></tr></table>
+ * The following keys are currently supported:
+ *
+ * | Key | ID | Description |
+ * |---|---|---|
+ * | 0 | MPEGEXACTREAD | a non 0 value indicates the reading from all MPEG frames |
+ * | 1 | ID3V2PADDINGSIZE | the padding size in bytes for an id3v2 tag |
+ * | 2 | WRITEBLOCKSIZE | the blocksize in bytes for internal file copy |
+ * | 3 | DOEVENTSMILLIS | millseconds after AudioGenie fires a DoEvent |
+ * | 4 | MAXTEXTBUFFER | the maximum text size in bytes |
+ * | 5 | WMAPADDINGSIZE | the padding size in bytes for a wma tag |
+ * | 6 | MP4PADDINGSIZE | the padding size in bytes for a mp4 tag |
  *
  * @ingroup UNIVERSAL
  * @since 2.0.1.0
@@ -4344,7 +4417,7 @@ extern "C" long __stdcall ID3V2GetPictureSizeW(short Index)
  * @par ID3v2 frame
  *   APIC
  * @param Index index from 1 to picture frame count
- * @return picture type from 0 to 20 <br />00 = Other<br />01 = 32*32 pixels file icon<br />02 = Other file icon<br />03 = Cover front<br />04 = Cover back<br />05 = Leaflet page<br />06 = Media ( label side of CD )<br />07 = Lead artist/solist<br />08 = Artist/Performer<br />09 = Conductor<br />10 = Band/Orchestra<br />11 = Composer<br />12 = Lyricist/text writer<br />13 = Recording Location<br />14 = During recording<br />15 = During performance<br />16 = Movie/video screen capture<br />17 = A bright coloured fish<br />18 = Illustration<br />19 = Band/artist logotype<br />20 = Publisher/Studio logotype
+ * @return picture type from 0 to 20, see @ref picturetypes
  */
 extern "C" short __stdcall ID3V2GetPictureTypeW(short Index) 
 {
@@ -4370,7 +4443,9 @@ extern "C" BSTR __stdcall ID3V2GetPictureTypeTextW(short Index)
 
 
 /**
- * @brief get the mime type from a picture, e.g. "image/jpeg" or "image/bmp" or "XXX" for unknown format<br\>If the file was stored as a Link then this method returns then filename starting with "-->", e.g. "-->C:\test.jpg"
+ * @brief get the mime type from a picture, e.g. "image/jpeg" or "image/bmp" or "XXX" for unknown format
+ *
+ * If the file was stored as a Link then this method returns then filename starting with "-->", e.g. "-->C:\test.jpg"
  *
  * @ingroup ID3V2
  * @since 2.0.1.0
@@ -4432,8 +4507,11 @@ extern "C" long __stdcall ID3V2GetPictureArrayW(BYTE *arr, u32 maxLen, short Ind
  *   APIC
  * @param FileName name of the picture file
  * @param Description a description of the picture
- * @param PictureType type from 0 to 20 <br />00 = Other<br />01 = 32*32 pixels file icon<br />02 = Other file icon<br />03 = Cover front<br />04 = Cover back<br />05 = Leaflet page<br />06 = Media ( label side of CD )<br />07 = Lead artist/solist<br />08 = Artist/Performer<br />09 = Conductor<br />10 = Band/Orchestra<br />11 = Composer<br />12 = Lyricist/text writer<br />13 = Recording Location<br />14 = During recording<br />15 = During performance<br />16 = Movie/video screen capture<br />17 = A bright coloured fish<br />18 = Illustration<br />19 = Band/artist logotype<br />20 = Publisher/Studio logotype
- * @param asLink shows how the picture will be stored<br /><br />-1 = only a link to the image will be stored<br />0 = the image data will be stored
+ * @param PictureType type from 0 to 20, see @ref picturetypes
+ * @param asLink shows how the picture will be stored
+ *
+ * - -1 = only a link to the image will be stored
+ * - 0 = the image data will be stored
  * @return normally -1, 0 on error
  */
 extern "C" short __stdcall ID3V2AddPictureFileW(LPCWSTR FileName, LPCWSTR Description, short PictureType, short asLink)
@@ -4460,7 +4538,7 @@ extern "C" short __stdcall ID3V2AddPictureFileW(LPCWSTR FileName, LPCWSTR Descri
  * @param arr to a byte array with the picture datas
  * @param Length the size of the array
  * @param Description a description of the picture
- * @param PictureType type from 0 to 20 <br />00 = Other<br />01 = 32*32 pixels file icon<br />02 = Other file icon<br />03 = Cover front<br />04 = Cover back<br />05 = Leaflet page<br />06 = Media ( label side of CD )<br />07 = Lead artist/solist<br />08 = Artist/Performer<br />09 = Conductor<br />10 = Band/Orchestra<br />11 = Composer<br />12 = Lyricist/text writer<br />13 = Recording Location<br />14 = During recording<br />15 = During performance<br />16 = Movie/video screen capture<br />17 = A bright coloured fish<br />18 = Illustration<br />19 = Band/artist logotype<br />20 = Publisher/Studio logotype
+ * @param PictureType type from 0 to 20, see @ref picturetypes
  * @return -1 if frame was replaced, 0 if frame was added
  */
 extern "C" short __stdcall ID3V2AddPictureArrayW(BYTE *arr, u32 Length, LPCWSTR Description, short PictureType)
@@ -5251,7 +5329,7 @@ extern "C" long __stdcall ID3V2GetSubFrameImageW(BYTE *arr, u32 maxLen, LPCWSTR 
  * @since 2.0.1.0
  * @param ID the ID of the parent frame
  * @param Index the index from 1 to ID3V2GetSubFramesW
- * @return picture type from 0 to 20 <br />00 = Other<br />01 = 32*32 pixels file icon<br />02 = Other file icon<br />03 = Cover front<br />04 = Cover back<br />05 = Leaflet page<br />06 = Media ( label side of CD )<br />07 = Lead artist/solist<br />08 = Artist/Performer<br />09 = Conductor<br />10 = Band/Orchestra<br />11 = Composer<br />12 = Lyricist/text writer<br />13 = Recording Location<br />14 = During recording<br />15 = During performance<br />16 = Movie/video screen capture<br />17 = A bright coloured fish<br />18 = Illustration<br />19 = Band/artist logotype<br />20 = Publisher/Studio logotype
+ * @return picture type from 0 to 20, see @ref picturetypes
  */
 extern "C" short __stdcall ID3V2GetSubFrameImageTypeW(LPCWSTR ID, short Index)
 {
@@ -5440,7 +5518,7 @@ extern "C" short __stdcall ID3V2SetURLSubFrameW(LPCWSTR ID, u32 FrameID, LPCWSTR
  * @param maxLen maximum size of the array in bytes
  * @param ID the ID of the parent frame
  * @param Description the description of the image
- * @param PictureType type from 0 to 20 <br />00 = Other<br />01 = 32*32 pixels file icon<br />02 = Other file icon<br />03 = Cover front<br />04 = Cover back<br />05 = Leaflet page<br />06 = Media ( label side of CD )<br />07 = Lead artist/solist<br />08 = Artist/Performer<br />09 = Conductor<br />10 = Band/Orchestra<br />11 = Composer<br />12 = Lyricist/text writer<br />13 = Recording Location<br />14 = During recording<br />15 = During performance<br />16 = Movie/video screen capture<br />17 = A bright coloured fish<br />18 = Illustration<br />19 = Band/artist logotype<br />20 = Publisher/Studio logotype
+ * @param PictureType type from 0 to 20, see @ref picturetypes
  * @return normally -1, 0 on error
  */
 extern "C" short __stdcall ID3V2SetImageSubFrameW(BYTE *arr, u32 maxLen, LPCWSTR ID, LPCWSTR Description, short PictureType)
@@ -5474,7 +5552,8 @@ extern "C" short __stdcall ID3V2DeleteSubFrameW(LPCWSTR ID, u32 FrameID)
 
 // ENCR
 /**
- * @brief ENCR add an encryption frame<br />There may be more than one 'ENCR' frame in each tag, but only one with the same symbol and owner identifier.
+ * @brief ENCR add an encryption frame
+ * There may be more than one 'ENCR' frame in each tag, but only one with the same symbol and owner identifier.
  *
  * @ingroup ID3V2
  * @since 2.0.1.0
@@ -5631,7 +5710,7 @@ extern "C" long __stdcall ID3V2GetEqualisationDataW(BYTE *arr, u32 maxLen, short
 /**
  * @brief ETCO add an event timing code frame
  *
- * <br />There may only be one 'ETCO' frame in each tag.
+ * There may only be one 'ETCO' frame in each tag.
  *
  * @ingroup ID3V2
  * @since 2.0.1.0
@@ -6982,7 +7061,10 @@ extern "C" BSTR __stdcall ID3V2GetSyncLyricLanguageW(short Index)
  * @par ID3v2 frame
  *   SYLT
  * @param Index index from 1 to sync lyric frame count
- * @return return value with the following meaning:<br /><br /><table width="280" class="tablelayout"><tr><th width="22%">value</th><th width="78%">description</th></tr><tr><td width="22%">-1</td><td width="78%">invalid entry</td></tr><tr><td width="22%">1</td><td width="78%">mpeg frames as unit</td></tr><tr><td width="22%">2</td><td width="78%">milliseconds as unit</td></tr></table>
+ * @return return value with the following meaning:
+ * @retval -1 invalid entry
+ * @retval 1 mpeg frames as unit
+ * @retval 2 milliseconds as unit
  */
 extern "C" short __stdcall ID3V2GetSyncLyricTimeFormatW(short Index) 
 {
@@ -6998,7 +7080,17 @@ extern "C" short __stdcall ID3V2GetSyncLyricTimeFormatW(short Index)
  * @par ID3v2 frame
  *   SYLT
  * @param Index index from 1 to sync lyrics frame count
- * @return return value with the following meaning:<br /><br /><table width="280" class="tablelayout"><tr><th width="22%">value</th><th width="78%">description</th></tr><tr><td width="22%">-1</td><td width="78%">invalid entry</td></tr><tr><td width="22%">0</td><td width="78%">other</td></tr><tr><td width="22%">1</td><td width="78%">lyrics</td></tr><tr><td width="22%">2</td><td width="78%">text transcription</td></tr><tr><td width="22%">3</td><td width="78%">movement/part name</td></tr><tr><td width="22%">4</td><td width="78%">events</td></tr><tr><td width="22%">5</td><td width="78%">chord</td></tr><tr><td width="22%">6</td><td width="78%">trivia/'pop up' information</td></tr><tr><td width="22%">7</td><td width="78%">URLs to webpages</td></tr><tr><td width="22%">8</td><td width="78%">URL to images</td></tr></table>
+ * @return return value with the following meaning:
+ * @retval -1 invalid entry
+ * @retval 0 other
+ * @retval 1 lyrics
+ * @retval 2 text transcription
+ * @retval 3 movement/part name
+ * @retval 4 events
+ * @retval 5 chord
+ * @retval 6 trivia/'pop up' information
+ * @retval 7 URLs to webpages
+ * @retval 8 URL to images
  */
 extern "C" short __stdcall ID3V2GetSyncLyricContentTypeW(short Index) 
 {
@@ -7018,9 +7110,37 @@ extern "C" short __stdcall ID3V2GetSyncLyricContentTypeW(short Index)
  *   SYLT
  * @param Language language of the entry, e.g. ENG for english ( must be 3 bytes long )
  * @param Description the description of the entry
- * @param Text multi entries separated with line break (crlf). use the following format:<br /><br />[xxxxxxxx]entry1<br />[xxxxxxxx]entry2 etc.<br /><br />xxxxxxxx = formatted absolute time stamp 8 digits<br />entry = any text entry<br /><br />Example:<br />[00000010]Strang<br />[00000020]ers<br />[00000080]in
- * @param ContentType set the content type. Possible values are:<br /><br />0 = other<br />1 = lyrics<br />2 = text transcription<br />3 = movement/part name<br />4 = events<br />5 = chord<br />6 = trivia/'pop up' information<br />7 = URLs to webpages<br />8 = URL to images
- * @param TimeStampFormat set the timestamp format units<br /><br />1 = using mpeg frames as unit<br />2 = using milliseconds as unit
+ * @param Text multi entries separated with line break (crlf). use the following format:
+ *
+ * @verbatim
+ * [xxxxxxxx]entry1
+ * [xxxxxxxx]entry2 etc.
+ * @endverbatim
+ *
+ * xxxxxxxx = formatted absolute time stamp 8 digits
+ * entry = any text entry
+ *
+ * Example:
+ * @verbatim
+ * [00000010]Strang
+ * [00000020]ers
+ * [00000080]in
+ * @endverbatim
+ * @param ContentType set the content type. Possible values are:
+ *
+ * - 0 = other
+ * - 1 = lyrics
+ * - 2 = text transcription
+ * - 3 = movement/part name
+ * - 4 = events
+ * - 5 = chord
+ * - 6 = trivia/'pop up' information
+ * - 7 = URLs to webpages
+ * - 8 = URL to images
+ * @param TimeStampFormat set the timestamp format units
+ *
+ * - 1 = using mpeg frames as unit
+ * - 2 = using milliseconds as unit
  * @return -1 if frame was replaced, 0 if frame was added
  */
 extern "C" short __stdcall ID3V2AddSyncLyricW(LPCWSTR Language, LPCWSTR Description, LPCWSTR Text, short ContentType, short TimeStampFormat)

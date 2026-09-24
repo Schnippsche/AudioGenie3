@@ -1,4 +1,6 @@
 var searchData=
 [
-  ['tag_0',['tag',['../group___a_p_e.html',1,'APE tag'],['../group___i_d3_v1.html',1,'ID3v1 tag'],['../group___i_d3_v2.html',1,'ID3v2 tag'],['../group___l_y_r_i_c_s.html',1,'Lyrics3 tag']]]
+  ['s_20audio_0',['Monkey&apos;s Audio',['../group___m_o_n_k_e_y.html',1,'']]],
+  ['setconfigvaluew_1',['SetConfigValueW',['../group___u_n_i_v_e_r_s_a_l.html#ga2f1f5b7ad32bc447043b8121c77d2ca0',1,'dllmain.cpp']]],
+  ['setlogfilew_2',['SetLogFileW',['../group___u_n_i_v_e_r_s_a_l.html#gae2a9f1a38fbcdb187267d9a37d171770',1,'dllmain.cpp']]]
 ];

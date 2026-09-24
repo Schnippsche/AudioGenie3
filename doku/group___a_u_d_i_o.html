@@ -199,9 +199,7 @@ Functions</h2></td></tr>
 </div><div class="memdoc">
 
 <p>read an audio-file and all known tags </p>
-<p>the tags will be reading in this way:<br  />
-files with format WMA, MP4, FLAC and OGG uses their own fields. All other formats have this rules:<br  />
-at first id3v2 tag, if not exist then ape tag, if not exist then id3v1 tag and at least lyrics tag.</p>
+<p>the tags will be reading in this way: files with format WMA, MP4, FLAC and OGG uses their own fields. All other formats have this rules: at first id3v2 tag, if not exist then ape tag, if not exist then id3v1 tag and at least lyrics tag.</p>
 <dl class="section since"><dt>Since</dt><dd>2.0.1.0 </dd></dl>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
@@ -209,37 +207,24 @@ at first id3v2 tag, if not exist then ape tag, if not exist then id3v1 tag and a
   </table>
   </dd>
 </dl>
-<dl class="section return"><dt>Returns</dt><dd>return value from 0 to 10 with the following meaning:<br  />
-<br  />
-<table width="220" class="tablelayout">
-<tr>
-<th width="22%">Value</th><th width="78%">Description</th></tr>
-<tr>
-<td width="22%">0</td><td width="78%">unknown Format</td></tr>
-<tr>
-<td width="22%">1</td><td width="78%">MP3</td></tr>
-<tr>
-<td width="22%">2</td><td width="78%">WMA</td></tr>
-<tr>
-<td width="22%">3</td><td width="78%">MONKEY</td></tr>
-<tr>
-<td width="22%">4</td><td width="78%">FLAC</td></tr>
-<tr>
-<td width="22%">5</td><td width="78%">WAV</td></tr>
-<tr>
-<td width="22%">6</td><td width="78%">OGG VORBIS</td></tr>
-<tr>
-<td width="22%">7</td><td width="78%">MPP</td></tr>
-<tr>
-<td width="22%">8</td><td width="78%">AAC</td></tr>
-<tr>
-<td width="22%">9</td><td width="78%">MP4/M4A</td></tr>
-<tr>
-<td width="22%">10</td><td width="78%">TTA</td></tr>
-<tr>
-<td width="22%">11</td><td width="78%">wavpack</td></tr>
-</table>
-</dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>return value from 0 to 11 with the following meaning: </dd></dl>
+<dl class="retval"><dt>Return values</dt><dd>
+  <table class="retval">
+    <tr><td class="paramname">0</td><td>unknown Format </td></tr>
+    <tr><td class="paramname">1</td><td>MP3 </td></tr>
+    <tr><td class="paramname">2</td><td>WMA </td></tr>
+    <tr><td class="paramname">3</td><td>MONKEY </td></tr>
+    <tr><td class="paramname">4</td><td>FLAC </td></tr>
+    <tr><td class="paramname">5</td><td>WAV </td></tr>
+    <tr><td class="paramname">6</td><td>OGG VORBIS </td></tr>
+    <tr><td class="paramname">7</td><td>MPP </td></tr>
+    <tr><td class="paramname">8</td><td>AAC </td></tr>
+    <tr><td class="paramname">9</td><td>MP4/M4A </td></tr>
+    <tr><td class="paramname">10</td><td>TTA </td></tr>
+    <tr><td class="paramname">11</td><td>wavpack </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -259,31 +244,31 @@ at first id3v2 tag, if not exist then ape tag, if not exist then id3v1 tag and a
 </div><div class="memdoc">
 
 <p>store the changes in a file, depending on format of the destination file: </p>
-<table width="90%" class="tablelayout">
-<tr>
-<th width="15%">audio format</th><th width="80%">changes saved as</th></tr>
-<tr>
-<td>MP3</td><td>ID3V2-Tag</td></tr>
-<tr>
-<td>WMA</td><td>WMA Fields</td></tr>
-<tr>
-<td>MONKEY</td><td>APE-Tag</td></tr>
-<tr>
-<td>FLAC</td><td>Vorbis Comment</td></tr>
-<tr>
-<td>WAV</td><td>wav chunk</td></tr>
-<tr>
-<td>OGG</td><td>Vorbis Comment</td></tr>
-<tr>
-<td>MPP</td><td>ID3V2-Tag</td></tr>
-<tr>
-<td>AAC</td><td>APE-Tag (an existing ID3V2-Tag is left unchanged and takes precedence when reading)</td></tr>
-<tr>
-<td>MP4</td><td>mp4 atoms</td></tr>
-<tr>
-<td>WavPack</td><td>APE-Tag</td></tr>
-<tr>
-<td>TTA</td><td>ID3V2-Tag</td></tr>
+<table class="markdownTable">
+<tr class="markdownTableHead">
+<th class="markdownTableHeadNone">audio format  </th><th class="markdownTableHeadNone">changes saved as  </th></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone">MP3  </td><td class="markdownTableBodyNone">ID3V2-Tag  </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone">WMA  </td><td class="markdownTableBodyNone">WMA Fields  </td></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone">MONKEY  </td><td class="markdownTableBodyNone">APE-Tag  </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone">FLAC  </td><td class="markdownTableBodyNone">Vorbis Comment  </td></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone">WAV  </td><td class="markdownTableBodyNone">wav chunk  </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone">OGG  </td><td class="markdownTableBodyNone">Vorbis Comment  </td></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone">MPP  </td><td class="markdownTableBodyNone">ID3V2-Tag  </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone">AAC  </td><td class="markdownTableBodyNone">APE-Tag (an existing ID3V2-Tag is left unchanged and takes precedence when reading)  </td></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone">MP4  </td><td class="markdownTableBodyNone">mp4 atoms  </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone">WavPack  </td><td class="markdownTableBodyNone">APE-Tag  </td></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone">TTA  </td><td class="markdownTableBodyNone">ID3V2-Tag  </td></tr>
 </table>
 <dl class="section since"><dt>Since</dt><dd>2.0.1.0 </dd></dl>
 <dl class="params"><dt>Parameters</dt><dd>
@@ -312,31 +297,31 @@ at first id3v2 tag, if not exist then ape tag, if not exist then id3v1 tag and a
 </div><div class="memdoc">
 
 <p>store the changes in the last analyzed file, depending on format of the destination file: </p>
-<table width="90%" class="tablelayout">
-<tr>
-<th width="15%">audio format</th><th width="80%">changes saved as</th></tr>
-<tr>
-<td>MP3</td><td>ID3V2-Tag</td></tr>
-<tr>
-<td>WMA</td><td>WMA Fields</td></tr>
-<tr>
-<td>MONKEY</td><td>APE-Tag</td></tr>
-<tr>
-<td>FLAC</td><td>Vorbis Comment</td></tr>
-<tr>
-<td>WAV</td><td>wav chunk</td></tr>
-<tr>
-<td>OGG</td><td>Vorbis Comment</td></tr>
-<tr>
-<td>MPP</td><td>ID3V2-Tag</td></tr>
-<tr>
-<td>AAC</td><td>APE-Tag (an existing ID3V2-Tag is left unchanged and takes precedence when reading)</td></tr>
-<tr>
-<td>MP4</td><td>mp4 atoms</td></tr>
-<tr>
-<td>WavPack</td><td>APE-Tag</td></tr>
-<tr>
-<td>TTA</td><td>ID3V2-Tag</td></tr>
+<table class="markdownTable">
+<tr class="markdownTableHead">
+<th class="markdownTableHeadNone">audio format  </th><th class="markdownTableHeadNone">changes saved as  </th></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone">MP3  </td><td class="markdownTableBodyNone">ID3V2-Tag  </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone">WMA  </td><td class="markdownTableBodyNone">WMA Fields  </td></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone">MONKEY  </td><td class="markdownTableBodyNone">APE-Tag  </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone">FLAC  </td><td class="markdownTableBodyNone">Vorbis Comment  </td></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone">WAV  </td><td class="markdownTableBodyNone">wav chunk  </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone">OGG  </td><td class="markdownTableBodyNone">Vorbis Comment  </td></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone">MPP  </td><td class="markdownTableBodyNone">ID3V2-Tag  </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone">AAC  </td><td class="markdownTableBodyNone">APE-Tag (an existing ID3V2-Tag is left unchanged and takes precedence when reading)  </td></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone">MP4  </td><td class="markdownTableBodyNone">mp4 atoms  </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone">WavPack  </td><td class="markdownTableBodyNone">APE-Tag  </td></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone">TTA  </td><td class="markdownTableBodyNone">ID3V2-Tag  </td></tr>
 </table>
 <dl class="section since"><dt>Since</dt><dd>2.0.1.0 </dd></dl>
 <dl class="section return"><dt>Returns</dt><dd>0 on error, otherwise -1 </dd></dl>

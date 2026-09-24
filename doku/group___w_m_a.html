@@ -178,7 +178,7 @@ Functions</h2></td></tr>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">FileName</td><td>Name of the file where the picture will be stored </td></tr>
-    <tr><td class="paramname">Index</td><td>index from 1 to <a href="WMAGetPictureCountW.html">WMAGetPictureCountW</a> </td></tr>
+    <tr><td class="paramname">Index</td><td>index from 1 to WMAGetPictureCountW </td></tr>
   </table>
   </dd>
 </dl>
@@ -217,7 +217,7 @@ Functions</h2></td></tr>
   <table class="params">
     <tr><td class="paramname">arr</td><td>to a Byte array </td></tr>
     <tr><td class="paramname">maxLen</td><td>maximum size of the byte array </td></tr>
-    <tr><td class="paramname">Index</td><td>index from 1 to <a href="WMAGetPictureCountW.html">WMAGetPictureCountW</a> </td></tr>
+    <tr><td class="paramname">Index</td><td>index from 1 to WMAGetPictureCountW </td></tr>
   </table>
   </dd>
 </dl>
@@ -245,7 +245,7 @@ Functions</h2></td></tr>
 <dl class="section user"><dt>ID3v2 frame</dt><dd>WM/Picture </dd></dl>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">Index</td><td>index from 1 to <a href="WMAGetPictureCountW.html">WMAGetPictureCountW</a> </td></tr>
+    <tr><td class="paramname">Index</td><td>index from 1 to WMAGetPictureCountW </td></tr>
   </table>
   </dd>
 </dl>
@@ -273,7 +273,7 @@ Functions</h2></td></tr>
 <dl class="section user"><dt>ID3v2 frame</dt><dd>WM/Picture </dd></dl>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">Index</td><td>index from 1 to <a href="WMAGetPictureCountW.html">WMAGetPictureCountW</a> </td></tr>
+    <tr><td class="paramname">Index</td><td>index from 1 to WMAGetPictureCountW </td></tr>
   </table>
   </dd>
 </dl>
@@ -328,32 +328,11 @@ Functions</h2></td></tr>
 <dl class="section user"><dt>ID3v2 frame</dt><dd>WM/Picture </dd></dl>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">Index</td><td>index from 1 to <a href="WMAGetPictureCountW.html">WMAGetPictureCountW</a> </td></tr>
+    <tr><td class="paramname">Index</td><td>index from 1 to WMAGetPictureCountW </td></tr>
   </table>
   </dd>
 </dl>
-<dl class="section return"><dt>Returns</dt><dd>picture type from 0 to 20 <br  />
-00 = Other<br  />
-01 = 32*32 pixels file icon<br  />
-02 = Other file icon<br  />
-03 = Cover front<br  />
-04 = Cover back<br  />
-05 = Leaflet page<br  />
-06 = Media ( label side of CD )<br  />
-07 = Lead artist/solist<br  />
-08 = Artist/Performer<br  />
-09 = Conductor<br  />
-10 = Band/Orchestra<br  />
-11 = Composer<br  />
-12 = Lyricist/text writer<br  />
-13 = Recording Location<br  />
-14 = During recording<br  />
-15 = During performance<br  />
-16 = Movie/video screen capture<br  />
-17 = A bright coloured fish<br  />
-18 = Illustration<br  />
-19 = Band/artist logotype<br  />
-20 = Publisher/Studio logotype </dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>picture type from 0 to 20, see <a class="el" href="picturetypes.html" title="Picture types">Picture types</a> </dd></dl>
 
 </div>
 </div>
@@ -415,28 +394,7 @@ Functions</h2></td></tr>
   <table class="params">
     <tr><td class="paramname">FileName</td><td>name of the picture file </td></tr>
     <tr><td class="paramname">Description</td><td>a description of the picture </td></tr>
-    <tr><td class="paramname">PictureType</td><td>type from 0 to 20 <br  />
-00 = Other<br  />
-01 = 32*32 pixels file icon<br  />
-02 = Other file icon<br  />
-03 = Cover front<br  />
-04 = Cover back<br  />
-05 = Leaflet page<br  />
-06 = Media ( label side of CD )<br  />
-07 = Lead artist/solist<br  />
-08 = Artist/Performer<br  />
-09 = Conductor<br  />
-10 = Band/Orchestra<br  />
-11 = Composer<br  />
-12 = Lyricist/text writer<br  />
-13 = Recording Location<br  />
-14 = During recording<br  />
-15 = During performance<br  />
-16 = Movie/video screen capture<br  />
-17 = A bright coloured fish<br  />
-18 = Illustration<br  />
-19 = Band/artist logotype<br  />
-20 = Publisher/Studio logotype </td></tr>
+    <tr><td class="paramname">PictureType</td><td>type from 0 to 20, see <a class="el" href="picturetypes.html" title="Picture types">Picture types</a> </td></tr>
     <tr><td class="paramname">Index</td><td>Index from 1 to n; if n is not present a new entry will be created </td></tr>
   </table>
   </dd>
@@ -487,28 +445,7 @@ Functions</h2></td></tr>
     <tr><td class="paramname">arr</td><td>to a byte array with the picture datas </td></tr>
     <tr><td class="paramname">Length</td><td>the size of the array </td></tr>
     <tr><td class="paramname">Description</td><td>a description of the picture </td></tr>
-    <tr><td class="paramname">PictureType</td><td>type from 0 to 20 <br  />
-00 = Other<br  />
-01 = 32*32 pixels file icon<br  />
-02 = Other file icon<br  />
-03 = Cover front<br  />
-04 = Cover back<br  />
-05 = Leaflet page<br  />
-06 = Media ( label side of CD )<br  />
-07 = Lead artist/solist<br  />
-08 = Artist/Performer<br  />
-09 = Conductor<br  />
-10 = Band/Orchestra<br  />
-11 = Composer<br  />
-12 = Lyricist/text writer<br  />
-13 = Recording Location<br  />
-14 = During recording<br  />
-15 = During performance<br  />
-16 = Movie/video screen capture<br  />
-17 = A bright coloured fish<br  />
-18 = Illustration<br  />
-19 = Band/artist logotype<br  />
-20 = Publisher/Studio logotype </td></tr>
+    <tr><td class="paramname">PictureType</td><td>type from 0 to 20, see <a class="el" href="picturetypes.html" title="Picture types">Picture types</a> </td></tr>
     <tr><td class="paramname">index</td><td>Index from 1 to n; if n is not present a new entry will be created </td></tr>
   </table>
   </dd>
@@ -533,7 +470,7 @@ Functions</h2></td></tr>
 </div><div class="memdoc">
 
 <p>get a user defined field </p>
-<p>use the method <a href="WMAGetItemKeysW.html">WMAGetItemKeysW</a> for a list of all existing keys.</p>
+<p>use the method WMAGetItemKeysW for a list of all existing keys.</p>
 <dl class="section since"><dt>Since</dt><dd>2.0.1.0 </dd></dl>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
@@ -565,7 +502,7 @@ Functions</h2></td></tr>
 </div><div class="memdoc">
 
 <p>set a user defined field </p>
-<p>use the method <a href="WMAGetItemKeysW.html">WMAGetItemKeysW</a> for a list of all existing keys.</p>
+<p>use the method WMAGetItemKeysW for a list of all existing keys.</p>
 <dl class="section since"><dt>Since</dt><dd>2.0.1.0 </dd></dl>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
@@ -618,7 +555,7 @@ Functions</h2></td></tr>
 <dl class="section user"><dt>ID3v2 frame</dt><dd>WM/Picture </dd></dl>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">Index</td><td>index from 1 to <a href="WMAGetPictureCountW.html">WMAGetPictureCountW</a> </td></tr>
+    <tr><td class="paramname">Index</td><td>index from 1 to WMAGetPictureCountW </td></tr>
   </table>
   </dd>
 </dl>
