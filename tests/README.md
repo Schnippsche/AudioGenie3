@@ -19,6 +19,8 @@ Voraussetzung: `Release\AudioGenie3.dll/.lib` (Win32) bzw. `x64\Release\...` sin
 | `test_mpeg.cpp` | MP3-Analyse, ID3v2-Round-Trip, `AUDIOSetTitleW`, Tag entfernen |
 | `test_robustness.cpp` | fehlende/leere/abgeschnittene/beschaedigte Dateien (synthetisch) |
 | `test_formats.cpp` | alle Formate aus `fixtures/`: Eckdaten, Tags lesen/schreiben, Cover, kaputte Dateien, Fuzzing echter Dateien |
+| `test_id3v2.cpp`, `test_id3v2_frames.cpp` | ID3v2-API: Round-Trips je Frame-Typ ueber v2.2/2.3/2.4 und die Kodierungen ISO-8859-1/UTF-16/UTF-16BE/UTF-8 (Text, URL, Kommentar, Lyrics, Bilder, Kapitel, Binaer- und Zahlenframes) |
+| `test_fuzz_write.cpp` | Fuzzing der Schreibpfade: zufaellige Operationsfolgen (Tags, Bilder, Frames, Speichern) auf Fixture-Kopien und auf beschaedigten Kopien; Haenger-Waechter |
 | `contract/check_wrappers.py` | Signaturen von C++, C#, VB.NET, Delphi, VB6 gegen `dllmain.cpp` |
 
 Hinweise zur API (aus dem Code): `AUDIOSaveChangesW` schreibt die abstrakten Felder (Titel, Interpret ...)
@@ -64,3 +66,14 @@ Diese Verhaeltnisse sind gewollt und in den Tests so festgehalten; sie nicht als
   `ID3V2SaveChangesW` verwenden. `ID3V2RemoveTagW` wirkt sofort auf die Datei.
 - **Einzelthread-DLL mit globalem Zustand:** Erst `AUDIOAnalyzeFileW`, dann arbeiten alle anderen Funktionen auf dem
   gemerkten Zustand. Die Tests analysieren deshalb vor jedem Zugriff die betroffene Datei neu.
+
+## Fuzzing und Haenger
+
+- `AG3_FUZZ_ROUNDS=N` vervielfacht die Durchlaeufe der Fuzz-Tests (`[fuzz]`, `[robust]`); Standard 1. Fuer lange Laeufe z. B. 20.
+- Fuzz-Dateien behalten ihre Endung: MP3 und AAC werden nur damit erkannt (Endung als Vorfilter, siehe oben).
+- Jeder Bearbeitungszyklus in `test_fuzz_write.cpp` steht unter einem Waechter: dauert er laenger als 30 s, wird die Eingabe als
+  `%TEMP%\ag3tests\hang_input.<ext>` gesichert und der Prozess mit Exitcode 99 beendet. `AG3_FUZZ_TRACE=1` protokolliert
+  die Schritte nach `%TEMP%\ag3tests\trace.log`.
+- `mustFinishWithin` (test_formats.cpp) macht dasselbe fuer einzelne Aufrufe (Exitcode 98).
+- Bisher gefundener Haenger (behoben): `stco`-Atom mit ueberlangem `entry_count` liess `AUDIOSaveChangesW` bei M4A praktisch endlos
+  laufen (`MP4_STCO.cpp`); Regression `broken/mp4_stco_count_overflow.m4a`.
