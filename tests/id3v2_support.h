@@ -1,4 +1,4 @@
-// Gemeinsame Hilfen fuer die ID3v2-Tests (Session, Blob, fetch).
+// Shared helpers for the ID3v2 tests (Session, Blob, fetch).
 #pragma once
 #include "catch2/catch_amalgamated.hpp"
 #include "support.h"
@@ -19,10 +19,10 @@ inline const Cfg kAllCfgs[] = {
 inline const Cfg kV24 = { 3, 3, "v2.4 UTF-8" };
 inline const Cfg kV23 = { 2, 1, "v2.3 UTF-16" };
 
-inline const std::wstring kLatin1 = L"Grüße äöü éè Test";       // in ISO-8859-1 darstellbar
-inline const std::wstring kUnicode = L"Grüße € 日本語 Ж";           // nur mit UTF-Kodierungen
+inline const std::wstring kLatin1 = L"Grüße äöü éè Test";       // representable in ISO-8859-1
+inline const std::wstring kUnicode = L"Grüße € 日本語 Ж";           // UTF encodings only
 
-// Frischer MP3-Testfall mit gesetztem Format/Kodierung.
+// Fresh MP3 test case with format/encoding set.
 struct Session {
     fs::path path;
     Cfg cfg;
@@ -32,7 +32,7 @@ struct Session {
         REQUIRE(AUDIOAnalyzeFileW(path.c_str()) == MPEG);
         REQUIRE(ID3V2SetFormatAndEncodingW(c.format, c.enc) != 0);
     }
-    // speichern und neu einlesen; prueft die Tag-Version in der Datei
+    // save and read again; checks the tag version in the file
     void reload()
     {
         REQUIRE(ID3V2SaveChangesW() != 0);

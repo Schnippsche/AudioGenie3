@@ -1,5 +1,5 @@
-// Sonderfaelle: Dateinamen (Unicode, Sonderzeichen, Endungen, lange Pfade), Dateiattribute und Sperren,
-// ungueltige Pfade, sehr grosse (sparse) Dateien.
+// Special cases: file names (Unicode, special characters, extensions, long paths), file attributes and locks,
+// invalid paths, very large (sparse) files.
 #include "catch2/catch_amalgamated.hpp"
 #include "support.h"
 #include "../Wrapper/C C++/audiogenie3.h"
@@ -14,7 +14,7 @@ namespace {
 
 fs::path fixture(const char* rel) { return fs::path(AG3_FIXTURES_DIR) / rel; }
 
-// frisches, leeres Unterverzeichnis von %TEMP%/ag3tests
+// fresh, empty subdirectory of %TEMP%/ag3tests
 fs::path freshDir(const std::wstring& name)
 {
     fs::path d = tempDir() / name;
@@ -37,7 +37,7 @@ const Sample kSamples[] = {
     { "ape/tagged.ape", MONKEY }, { "mpc/sv7_tagged_ape.mpc", MPEGPLUS }, { "mpc/sv8_tagged_ape.mpc", MPEGPLUS },
 };
 
-// analysieren, Titel aendern, speichern, neu lesen
+// analyze, change title, save, read again
 void roundTrip(const fs::path& p, AudioFormatID fmt)
 {
     REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == fmt);
@@ -51,16 +51,16 @@ void roundTrip(const fs::path& p, AudioFormatID fmt)
 
 }  // namespace
 
-// ============================================================ Dateinamen
+// ============================================================ File names
 
-TEST_CASE("Dateinamen: Umlaute, CJK, Kyrillisch, Emoji, Leerzeichen und Sonderzeichen", "[special][names]")
+TEST_CASE("File names: umlauts, CJK, Cyrillic, emoji, blanks and special characters", "[special][names]")
 {
-    const fs::path dir = freshDir(L"namen_\u00e4\u00f6\u00fc \u65e5\u672c");   // auch das Verzeichnis ist Unicode
+    const fs::path dir = freshDir(L"namen_\u00e4\u00f6\u00fc \u65e5\u672c");   // the directory is Unicode as well
     const wchar_t* stems[] = {
         L"Gr\u00fc\u00dfe \u00e4\u00f6\u00fc \u00df",
         L"\u65e5\u672c\u8a9e\u306e\u30d5\u30a1\u30a4\u30eb",
         L"\u0444\u0430\u0439\u043b \u043a\u0438\u0440\u0438\u043b\u043b\u0438\u0446\u0430",
-        L"emoji \U0001F3B5 test",                       // ausserhalb der BMP (Surrogatpaar)
+        L"emoji \U0001F3B5 test",                       // outside the BMP (surrogate pair)
         L"mehrere.punkte.im.namen",
         L"Sonder #%&;,'=+[]{}() $~!@",
         L"a",
@@ -78,7 +78,7 @@ TEST_CASE("Dateinamen: Umlaute, CJK, Kyrillisch, Emoji, Leerzeichen und Sonderze
     }
 }
 
-TEST_CASE("Dateiendung in Grossbuchstaben und gemischt", "[special][names]")
+TEST_CASE("File extension in upper case and mixed case", "[special][names]")
 {
     const fs::path dir = freshDir(L"endungen");
     for (const wchar_t* ext : { L".MP3", L".Mp3", L".mP3" }) {
@@ -95,20 +95,20 @@ TEST_CASE("Dateiendung in Grossbuchstaben und gemischt", "[special][names]")
             REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == AAC);
         }
     }
-    SECTION("Endung nur mit Punkt / ohne Endung: MP3-Inhalt wird nicht erkannt (Endung ist Vorfilter), Formate mit Signatur schon") {
+    SECTION("Extension only a dot / no extension: MP3 content is not recognized (the extension is a pre-filter), formats with a signature are") {
         copyTo(fixture("mp3/tagged.mp3"), dir / L"ohne_endung");
         CHECK(AUDIOAnalyzeFileW((dir / L"ohne_endung").c_str()) == UNKNOWN);
         copyTo(fixture("flac/tagged.flac"), dir / L"flac_ohne_endung");
         CHECK(AUDIOAnalyzeFileW((dir / L"flac_ohne_endung").c_str()) == FLAC);
         copyTo(fixture("flac/tagged.flac"), dir / L"flac.mp3");
-        CHECK(AUDIOAnalyzeFileW((dir / L"flac.mp3").c_str()) == FLAC);   // Inhalt zaehlt, nicht die Endung
+        CHECK(AUDIOAnalyzeFileW((dir / L"flac.mp3").c_str()) == FLAC);   // the content counts, not the extension
     }
 }
 
-// ============================================================ Lange Pfade
+// ============================================================ Long paths
 
 namespace {
-// \\?\-Pfad mit Verzeichniskette, dessen Gesamtlaenge 'target' Zeichen erreicht
+// \\?\ path with a chain of directories whose total length reaches 'target' characters
 fs::path longPath(const std::wstring& root, size_t target, const std::wstring& fileName)
 {
     std::wstring p = L"\\\\?\\" + root;
@@ -118,20 +118,20 @@ fs::path longPath(const std::wstring& root, size_t target, const std::wstring& f
 }
 }  // namespace
 
-TEST_CASE("Lange Pfade: Grenzbereich um MAX_PATH (260) und weit darueber (\\\\?\\-Praefix)", "[special][longpath]")
+TEST_CASE("Long paths: around MAX_PATH (260) and far beyond (\\\\?\\ prefix)", "[special][longpath]")
 {
     const fs::path base = freshDir(L"lang");
     for (size_t target : { 240u, 259u, 300u, 600u, 1500u }) {
-        DYNAMIC_SECTION("Gesamtlaenge ca. " << target << " Zeichen") {
+        DYNAMIC_SECTION("total length approx. " << target << " characters") {
             const fs::path p = longPath(base.wstring(), target, L"lied.mp3");
             std::error_code ec;
             fs::create_directories(p.parent_path(), ec);
-            if (ec) SKIP("Verzeichnis nicht anlegbar: " << ec.message());
+            if (ec) SKIP("directory cannot be created: " << ec.message());
             copyTo(fixture("mp3/tagged.mp3"), p);
-            // getrennt von roundTrip: bei langen Pfaden ist entscheidend, dass nichts abstuerzt und ein Fehler sauber gemeldet wird
+            // separate from roundTrip: for long paths it matters that nothing crashes and an error is reported cleanly
             const long fmt = AUDIOAnalyzeFileW(p.c_str());
-            INFO("Pfadlaenge " << p.wstring().size());
-            REQUIRE(fmt == MPEG);                       // mit \?\-Praefix funktionieren Pfade bis mindestens 1500 Zeichen
+            INFO("path length " << p.wstring().size());
+            REQUIRE(fmt == MPEG);                       // with the \\?\ prefix paths work up to at least 1500 characters
             AUDIOSetTitleW(L"Lang");
             CHECK(AUDIOSaveChangesW() != 0);
             REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
@@ -142,17 +142,17 @@ TEST_CASE("Lange Pfade: Grenzbereich um MAX_PATH (260) und weit darueber (\\\\?\
     }
 }
 
-// ============================ Regressionen aus dem Missbrauchstest
+// ============================ Regressions from the misuse test
 
-TEST_CASE("Nach fehlgeschlagener Analyse darf Speichern die vorher analysierte Datei nicht veraendern", "[special][regression]")
+TEST_CASE("After a failed analysis, saving must not change the previously analyzed file", "[special][regression]")
 {
-    const fs::path p = tempDir() / "vorher.mp3";
+    const fs::path p = tempDir() / "before.mp3";
     copyTo(fixture("mp3/tagged.mp3"), p);
     const Bytes original = readFile(p);
     REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
-    CHECK(AUDIOAnalyzeFileW(L"Z:\\gibt\\es\\nicht.mp3") == UNKNOWN);   // leert die Felder, oeffnet aber keine Datei
+    CHECK(AUDIOAnalyzeFileW(L"Z:\\gibt\\es\\nicht.mp3") == UNKNOWN);   // clears the fields, but opens no file
     AUDIOSetTitleW(L"Anderer Titel");
-    CHECK(AUDIOSaveChangesW() == 0);                                       // frueher: schrieb die leeren Felder in die alte Datei
+    CHECK(AUDIOSaveChangesW() == 0);                                       // formerly: wrote the empty fields into the old file
     CHECK(AUDIOGetLastFileW() != nullptr);
     CHECK(take(AUDIOGetLastFileW()) == L"");
     CHECK(readFile(p) == original);
@@ -160,23 +160,23 @@ TEST_CASE("Nach fehlgeschlagener Analyse darf Speichern die vorher analysierte D
     CHECK(take(AUDIOGetTitleW()) == L"Testtitel");
 }
 
-TEST_CASE("Kapitel-ID als Elternelement (kein CTOC), NULL-/Kurz-Bildarrays fuehren nicht zum Absturz", "[special][regression]")
+TEST_CASE("Chapter ID as parent element (not a CTOC), NULL/short picture arrays do not crash", "[special][regression]")
 {
     const fs::path p = tempDir() / "regress.mp3";
     copyTo(fixture("mp3/id3v24_comm.mp3"), p);
     REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
     REQUIRE(ID3V2AddChapterW(L"chp", L"Kapitel", L"", 0, 1000) == 0);
-    CHECK(ID3V2AddChildElementW(L"chp", L"x") == 0);        // Kapitel hat keine Unterelemente (frueher: Absturz durch falschen Cast)
+    CHECK(ID3V2AddChildElementW(L"chp", L"x") == 0);        // a chapter has no child elements (formerly: crash due to a wrong cast)
     CHECK(ID3V2DeleteChildElementW(L"chp", L"x") == 0);
     CHECK(ID3V2AddChildElementW(L"", L"x") == 0);
     BYTE tiny[3] = { 1, 2, 3 };
-    CHECK(MP4AddPictureArrayW(nullptr, 0) == 0);            // frueher: Absturz beim Lesen von arr[0]
+    CHECK(MP4AddPictureArrayW(nullptr, 0) == 0);            // formerly: crash when reading arr[0]
     CHECK(MP4AddPictureArrayW(tiny, 3) == 0);
 }
 
-// ================================= Ungueltige Pfade und Nicht-Dateien
+// ================================= Invalid paths and non-files
 
-TEST_CASE("Ungueltige Pfade: NULL, leer, Verzeichnis, Platzhalter, Laufwerk, sehr lang", "[special][invalid]")
+TEST_CASE("Invalid paths: NULL, empty, directory, wildcards, drive, very long", "[special][invalid]")
 {
     CHECK(AUDIOAnalyzeFileW(nullptr) == UNKNOWN);
     CHECK(AUDIOAnalyzeFileW(L"") == UNKNOWN);
@@ -187,16 +187,16 @@ TEST_CASE("Ungueltige Pfade: NULL, leer, Verzeichnis, Platzhalter, Laufwerk, seh
     CHECK(AUDIOAnalyzeFileW(L"\\\\gibt.es.nicht.example\\share\\x.mp3") == UNKNOWN);
     CHECK(AUDIOAnalyzeFileW(L"NUL") == UNKNOWN);
     CHECK(AUDIOAnalyzeFileW(L"CON.mp3") == UNKNOWN);
-    CHECK(AUDIOAnalyzeFileW(tempDir().c_str()) == UNKNOWN);            // Verzeichnis
+    CHECK(AUDIOAnalyzeFileW(tempDir().c_str()) == UNKNOWN);            // directory
     CHECK(AUDIOAnalyzeFileW(L"C:\\") == UNKNOWN);
-    CHECK(AUDIOAnalyzeFileW(std::wstring(100000, L'x').c_str()) == UNKNOWN);   // 100 000 Zeichen
+    CHECK(AUDIOAnalyzeFileW(std::wstring(100000, L'x').c_str()) == UNKNOWN);   // 100,000 characters
     CHECK(AUDIOAnalyzeFileW((std::wstring(50000, L'x') + L".mp3").c_str()) == UNKNOWN);
 
-    // nach lauter Fehlern funktioniert die naechste gueltige Analyse
+    // after many errors the next valid analysis works
     REQUIRE(AUDIOAnalyzeFileW(fixture("mp3/tagged.mp3").c_str()) == MPEG);
     CHECK(take(AUDIOGetTitleW()) == L"Testtitel");
 
-    // Speichern ohne vorherige gueltige Analyse
+    // saving without a preceding valid analysis
     AUDIOAnalyzeFileW(L"Z:\\gibt\\es\\nicht.mp3");
     CHECK(AUDIOSaveChangesW() == 0);
     CHECK(AUDIOSaveChangesToFileW(nullptr) == 0);
@@ -204,7 +204,7 @@ TEST_CASE("Ungueltige Pfade: NULL, leer, Verzeichnis, Platzhalter, Laufwerk, seh
     CHECK(AUDIOSaveChangesToFileW(L"Z:\\gibt\\es\\nicht.mp3") == 0);
 }
 
-TEST_CASE("Leere und winzige Dateien mit jeder Endung", "[special][invalid]")
+TEST_CASE("Empty and tiny files with every extension", "[special][invalid]")
 {
     const fs::path dir = freshDir(L"winzig");
     for (const wchar_t* ext : { L".mp3", L".aac", L".flac", L".ogg", L".m4a", L".wma", L".wav", L".wv", L".tta", L".ape", L".mpc" }) {
@@ -215,7 +215,7 @@ TEST_CASE("Leere und winzige Dateien mit jeder Endung", "[special][invalid]")
             writeTemp("winzig_tmp", b);
             fs::copy_file(tempDir() / "winzig_tmp", p, fs::copy_options::overwrite_existing);
             const long fmt = AUDIOAnalyzeFileW(p.c_str());
-            INFO("Endung " << fs::path(ext).string() << ", Groesse " << size);
+            INFO("extension " << fs::path(ext).string() << ", size " << size);
             CHECK(fmt == UNKNOWN);
             AUDIOGetDurationW(); take(AUDIOGetTitleW());
             AUDIOSetTitleW(L"x");
@@ -224,7 +224,7 @@ TEST_CASE("Leere und winzige Dateien mit jeder Endung", "[special][invalid]")
     }
 }
 
-// ========================================= Schreibschutz und Sperren
+// ========================================= Read-only files and locks
 
 namespace {
 bool setReadOnly(const fs::path& p, bool ro)
@@ -235,7 +235,7 @@ bool setReadOnly(const fs::path& p, bool ro)
 }
 }  // namespace
 
-TEST_CASE("Schreibgeschuetzte Dateien: Lesen geht, Speichern schlaegt sauber fehl und aendert nichts", "[special][readonly]")
+TEST_CASE("Read-only files: reading works, saving fails cleanly and changes nothing", "[special][readonly]")
 {
     const fs::path dir = freshDir(L"readonly");
     for (const Sample& s : kSamples) {
@@ -250,9 +250,9 @@ TEST_CASE("Schreibgeschuetzte Dateien: Lesen geht, Speichern schlaegt sauber feh
             AUDIOSetTitleW(L"Darf nicht geschrieben werden");
             CHECK(AUDIOSaveChangesW() == 0);
             CHECK(AUDIOGetLastErrorNumberW() != 0);
-            CHECK(readFile(p) == original);            // Datei unveraendert
+            CHECK(readFile(p) == original);            // file unchanged
 
-            // Attribut entfernt: dasselbe Speichern klappt jetzt
+            // attribute removed: the same save works now
             REQUIRE(setReadOnly(p, false));
             REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == s.format);
             AUDIOSetTitleW(L"Jetzt schon");
@@ -263,7 +263,7 @@ TEST_CASE("Schreibgeschuetzte Dateien: Lesen geht, Speichern schlaegt sauber feh
     }
 }
 
-TEST_CASE("Gesperrte Dateien: Lesesperre erlaubt Lesen, Schreiben scheitert; exklusive Sperre verhindert schon das Lesen", "[special][lock]")
+TEST_CASE("Locked files: a read lock allows reading, writing fails; an exclusive lock already prevents reading", "[special][lock]")
 {
     const fs::path dir = freshDir(L"lock");
     for (const Sample& s : { kSamples[0], kSamples[1], kSamples[3], kSamples[4] }) {
@@ -272,7 +272,7 @@ TEST_CASE("Gesperrte Dateien: Lesesperre erlaubt Lesen, Schreiben scheitert; exk
             copyTo(fixture(s.rel), p);
             const Bytes original = readFile(p);
 
-            SECTION("andere Anwendung liest (Lesezugriff, Teilen nur zum Lesen)") {
+            SECTION("another application reads (read access, sharing for reading only)") {
                 HANDLE h = CreateFileW(p.c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, 0, nullptr);
                 REQUIRE(h != INVALID_HANDLE_VALUE);
                 CHECK(AUDIOAnalyzeFileW(p.c_str()) == s.format);
@@ -287,18 +287,18 @@ TEST_CASE("Gesperrte Dateien: Lesesperre erlaubt Lesen, Schreiben scheitert; exk
                 CHECK(AUDIOAnalyzeFileW(p.c_str()) == UNKNOWN);
                 CHECK(AUDIOGetLastErrorNumberW() != 0);
                 CloseHandle(h);
-                CHECK(AUDIOAnalyzeFileW(p.c_str()) == s.format);     // nach dem Freigeben geht es wieder
+                CHECK(AUDIOAnalyzeFileW(p.c_str()) == s.format);     // works again after the lock is released
             }
         }
     }
 }
 
-// ================================================ Grosse (sparse) Dateien
+// ================================================ Large (sparse) files
 
 namespace {
 
-// Legt eine sparse-Datei an: 'head' am Anfang, 'tail' am Ende, dazwischen ungespeicherte Nullen. Liefert false, wenn das
-// Dateisystem keine Sparse-Dateien kann.
+// Creates a sparse file: 'head' at the start, 'tail' at the end, unstored zeros in between. Returns false if the
+// file system does not support sparse files.
 bool makeSparse(const fs::path& p, const Bytes& head, uint64_t totalSize, const Bytes& tail = {})
 {
     HANDLE h = CreateFileW(p.c_str(), GENERIC_READ | GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
@@ -319,7 +319,7 @@ bool makeSparse(const fs::path& p, const Bytes& head, uint64_t totalSize, const 
 struct Wav {
     static Bytes header(uint32_t dataSize, int sampleRate, int channels)
     {
-        Bytes b = makeWav(sampleRate, channels, 0.0);        // 44-Byte-Header ohne Daten
+        Bytes b = makeWav(sampleRate, channels, 0.0);        // 44-byte header without data
         auto put32 = [&](size_t off, uint32_t v) { for (int i = 0; i < 4; i++) b[off + i] = static_cast<uint8_t>(v >> (8 * i)); };
         put32(4, 36 + dataSize);
         put32(40, dataSize);
@@ -329,11 +329,11 @@ struct Wav {
 
 }  // namespace
 
-TEST_CASE("Grosse Dateien: 3 GB WAV (sparse) - Dauer ohne 32-Bit-Ueberlauf", "[special][large]")
+TEST_CASE("Large files: 3 GB WAV (sparse) - duration without 32-bit overflow", "[special][large]")
 {
     const fs::path p = tempDir() / "gross3gb.wav";
     const uint64_t dataSize = 3ull * 1024 * 1024 * 1024;                    // 3 GiB PCM = 3 * 2^30 / 176400 s
-    if (!makeSparse(p, Wav::header(static_cast<uint32_t>(dataSize), 44100, 2), 44 + dataSize)) SKIP("Sparse-Dateien nicht moeglich");
+    if (!makeSparse(p, Wav::header(static_cast<uint32_t>(dataSize), 44100, 2), 44 + dataSize)) SKIP("sparse files not possible");
     REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == WAV);
     CHECK(AUDIOGetSampleRateW() == 44100);
     CHECK(AUDIOGetChannelsW() == 2);
@@ -343,7 +343,7 @@ TEST_CASE("Grosse Dateien: 3 GB WAV (sparse) - Dauer ohne 32-Bit-Ueberlauf", "[s
     fs::remove(p, ec);
 }
 
-TEST_CASE("Grosse Dateien: 3 GB MP3 (sparse) mit ID3v1-Tag am Ende", "[special][large]")
+TEST_CASE("Large files: 3 GB MP3 (sparse) with an ID3v1 tag at the end", "[special][large]")
 {
     const fs::path p = tempDir() / "gross3gb.mp3";
     const Bytes head = makeMp3(50);
@@ -351,40 +351,40 @@ TEST_CASE("Grosse Dateien: 3 GB MP3 (sparse) mit ID3v1-Tag am Ende", "[special][
     std::memcpy(tail.data(), "TAG", 3);
     std::memcpy(tail.data() + 3, "Grosser Titel", 13);
     const uint64_t total = 3ull * 1024 * 1024 * 1024;
-    if (!makeSparse(p, head, total, tail)) SKIP("Sparse-Dateien nicht moeglich");
+    if (!makeSparse(p, head, total, tail)) SKIP("sparse files not possible");
     REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
     CHECK(AUDIOGetSampleRateW() == 44100);
     CHECK(take(ID3V1GetTitleW()) == L"Grosser Titel");
     AUDIOGetDurationW(); AUDIOGetBitrateW();
-    CHECK(AUDIOGetFileSizeW() == 2147483647);      // AUDIOGetFileSizeW liefert ein long: ab 2 GiB wird auf LONG_MAX begrenzt
+    CHECK(AUDIOGetFileSizeW() == 2147483647);      // AUDIOGetFileSizeW returns a long: from 2 GiB on it is clamped to LONG_MAX
     std::error_code ec;
     fs::remove(p, ec);
 }
 
-TEST_CASE("Grosse Dateien: 5 GB FLAC und WavPack (sparse) - Kopf lesen", "[special][large]")
+TEST_CASE("Large files: 5 GB FLAC and WavPack (sparse) - read the head", "[special][large]")
 {
     const uint64_t total = 5ull * 1024 * 1024 * 1024;
-    SECTION("FLAC: STREAMINFO steht am Anfang") {
+    SECTION("FLAC: STREAMINFO is at the start") {
         Bytes flac = readFile(fixture("flac/no_tags.flac"));
         REQUIRE(flac.size() > 1000);
-        flac.resize(1000);                                                       // Kopf mit STREAMINFO und Metadaten genuegt
+        flac.resize(1000);                                                       // head with STREAMINFO and metadata is enough
         const fs::path p = tempDir() / "gross5gb.flac";
-        if (!makeSparse(p, flac, total)) SKIP("Sparse-Dateien nicht moeglich");
+        if (!makeSparse(p, flac, total)) SKIP("sparse files not possible");
         CHECK(AUDIOAnalyzeFileW(p.c_str()) == FLAC);
         CHECK(AUDIOGetSampleRateW() == 44100);
         std::error_code ec;
         fs::remove(p, ec);
     }
-    SECTION("APE-Tag am Ende einer 5-GB-Datei wird gefunden") {
+    SECTION("APE tag at the end of a 5 GB file is found") {
         Bytes head = readFile(fixture("wv/no_tags.wv"));
         head.resize(2000);
         const Bytes tag = readFile(fixture("wv/tagged.wv"));
         const size_t pos = std::string(tag.begin(), tag.end()).rfind("APETAGEX");   // Footer
         REQUIRE(pos != std::string::npos);
         const fs::path p = tempDir() / "gross5gb.wv";
-        // Footer allein reicht nicht; ganze Tag-Region (letzte 400 Byte) uebernehmen
+        // the footer alone is not enough; take over the whole tag region (last 400 bytes)
         Bytes tail(tag.end() - 400, tag.end());
-        if (!makeSparse(p, head, total, tail)) SKIP("Sparse-Dateien nicht moeglich");
+        if (!makeSparse(p, head, total, tail)) SKIP("sparse files not possible");
         const long fmt = AUDIOAnalyzeFileW(p.c_str());
         INFO("Format " << fmt);
         CHECK(fmt == WAVPACK);

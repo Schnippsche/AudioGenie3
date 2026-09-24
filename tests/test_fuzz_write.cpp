@@ -1,6 +1,6 @@
-// Fuzzing der Schreibpfade: beschaedigte Kopien aller Fixtures analysieren und danach Tags/Bilder/Frames aendern,
-// speichern und erneut lesen. Erwartung: kein Absturz (unter ASan: kein Speicherfehler).
-// Anzahl der Durchlaeufe: Umgebungsvariable AG3_FUZZ_ROUNDS (Standard 1).
+// Fuzzing of the write paths: analyze damaged copies of all fixtures and then change tags/pictures/frames,
+// save and read again. Expectation: no crash (under ASan: no memory error).
+// Number of iterations: environment variable AG3_FUZZ_ROUNDS (default 1).
 #include "catch2/catch_amalgamated.hpp"
 #include "support.h"
 #include "../Wrapper/C C++/audiogenie3.h"
@@ -34,7 +34,7 @@ int rounds()
     return env ? std::max(1, std::atoi(env)) : 1;
 }
 
-// alle Audio-Fixtures (rekursiv), auch die unter broken/
+// all audio fixtures (recursively), including those under broken/
 std::vector<fs::path> allFixtures()
 {
     static const std::set<std::string> ext = { ".mp3", ".wav", ".flac", ".ogg", ".m4a", ".wma", ".wv", ".tta", ".aac", ".ape", ".mpc" };
@@ -50,8 +50,8 @@ std::vector<fs::path> allFixtures()
     return out;
 }
 
-// Ablaufprotokoll fuer die Suche nach Haengern: AG3_FUZZ_TRACE=1 schreibt jeden Schritt nach %TEMP%/ag3tests/trace.log
-// und legt vor jedem Zyklus eine Kopie der Eingabe als last_cycle_input.<ext> ab.
+// Trace for the search for hangs: AG3_FUZZ_TRACE=1 writes every step to %TEMP%/ag3tests/trace.log
+// and stores a copy of the input as last_cycle_input.<ext> before each cycle.
 void trace(const char* step)
 {
     if (!std::getenv("AG3_FUZZ_TRACE")) return;
@@ -80,8 +80,8 @@ const wchar_t* pickText(Rng& r)
     return texts[r.below(sizeof(texts) / sizeof(texts[0]))];
 }
 
-// Waechter gegen Haenger: dauert ein einzelner Bearbeitungszyklus laenger als 30 s, wird die Eingabedatei gesichert
-// (%TEMP%/ag3tests/hang_input.<ext>), eine Meldung ausgegeben und der Prozess mit Exitcode 99 beendet, statt minutenlang zu warten.
+// Watchdog against hangs: if a single edit cycle takes longer than 30 s, the input file is saved
+// (%TEMP%/ag3tests/hang_input.<ext>), a message is printed and the process ends with exit code 99 instead of waiting for minutes.
 struct Watchdog {
     static std::mutex& mtx() { static std::mutex m; return m; }
     static std::chrono::steady_clock::time_point& started() { static std::chrono::steady_clock::time_point t; return t; }
@@ -97,7 +97,7 @@ struct Watchdog {
                     if (!active()) continue;
                     std::lock_guard<std::mutex> g(mtx());
                     if (std::chrono::steady_clock::now() - started() < std::chrono::seconds(30)) continue;
-                    fprintf(stderr, "\nHAENGER: Zyklus laeuft seit >30 s auf %s (Kopie der Eingabe: %s/ag3tests/hang_input.*), Abbruch\n",
+                    fprintf(stderr, "\nHANG: cycle has been running for >30 s on %s (copy of the input: %s/ag3tests/hang_input.*), aborting\n",
                         current().c_str(), tempDir().parent_path().string().c_str());
                     fflush(stderr);
                     std::error_code ec;
@@ -121,7 +121,7 @@ struct Watchdog {
     ~Watchdog() { active() = false; }
 };
 
-// Aenderungen ueber die formatunabhaengige API
+// changes via the format-independent API
 void abstractEdits(Rng& r)
 {
     AUDIOSetTitleW(pickText(r));
@@ -134,7 +134,7 @@ void abstractEdits(Rng& r)
     AUDIOSetComposerW(pickText(r));
 }
 
-// formatspezifische Schreiboperationen; liefert nichts, es zaehlt nur das Ueberleben
+// format-specific write operations; returns nothing, only survival counts
 void formatEdits(long fmt, Rng& r)
 {
     const std::wstring cover = coverPath().wstring();
@@ -188,10 +188,10 @@ void formatEdits(long fmt, Rng& r)
     }
 }
 
-// Analyse -> Aenderungen -> Speichern -> Neu einlesen -> alle Getter
+// analyze -> changes -> save -> read again -> all getters
 void editCycle(const fs::path& file, Rng& r)
 {
-    // die Eingabe immer sichern (klein), damit der Waechter sie bei einem Haenger ablegen kann
+    // always save the input (small) so that the watchdog can store it in case of a hang
     fs::copy_file(file, tempDir() / ("last_cycle_input" + file.extension().string()), fs::copy_options::overwrite_existing);
     Watchdog wd(file);
     trace(("--- Zyklus " + file.filename().string() + " seed=" + std::to_string(r.seed)).c_str());
@@ -216,15 +216,15 @@ void editCycle(const fs::path& file, Rng& r)
 
 fs::path tempWithExt(const char* stem, const fs::path& like, const Bytes& data)
 {
-    return writeTemp(std::string(stem) + like.extension().string(), data);   // Endung erhalten: MP3/AAC werden nur damit erkannt
+    return writeTemp(std::string(stem) + like.extension().string(), data);   // keep the extension: MP3/AAC are only recognized with it
 }
 
 }  // namespace
 
-TEST_CASE("Fuzz: Schreibpfade auf unveraenderten Fixture-Kopien (zufaellige Operationsfolgen)", "[fuzz][write]")
+TEST_CASE("Fuzz: write paths on unchanged fixture copies (random operation sequences)", "[fuzz][write]")
 {
     const auto files = allFixtures();
-    if (files.empty()) SKIP("keine Fixtures gefunden");
+    if (files.empty()) SKIP("no fixtures found");
     Rng r{ 20240924u };
     for (const fs::path& f : files) {
         DYNAMIC_SECTION(fs::relative(f, AG3_FIXTURES_DIR).generic_string()) {
@@ -232,17 +232,17 @@ TEST_CASE("Fuzz: Schreibpfade auf unveraenderten Fixture-Kopien (zufaellige Oper
             for (int i = 0; i < 6 * rounds(); i++) {
                 const fs::path p = tempWithExt("wfuzz_ok", f, orig);
                 editCycle(p, r);
-                editCycle(p, r);   // zweiter Durchlauf auf dem bereits veraenderten File
+                editCycle(p, r);   // second pass on the already changed file
             }
-            SUCCEED("kein Absturz");
+            SUCCEED("no crash");
         }
     }
 }
 
-TEST_CASE("Fuzz: Schreibpfade auf beschaedigten Fixture-Kopien", "[fuzz][write]")
+TEST_CASE("Fuzz: write paths on damaged fixture copies", "[fuzz][write]")
 {
     const auto files = allFixtures();
-    if (files.empty()) SKIP("keine Fixtures gefunden");
+    if (files.empty()) SKIP("no fixtures found");
     Rng r{ 4711u };
     for (const fs::path& f : files) {
         DYNAMIC_SECTION(fs::relative(f, AG3_FIXTURES_DIR).generic_string()) {
@@ -253,14 +253,14 @@ TEST_CASE("Fuzz: Schreibpfade auf beschaedigten Fixture-Kopien", "[fuzz][write]"
                 Bytes b = orig;
                 switch (r.below(4)) {
                 case 0: for (int k = 0; k < 3; k++) b[r.below(head)] = static_cast<uint8_t>(r.next()); break;          // Kopfbereich
-                case 1: for (int k = 0; k < 3; k++) b[b.size() - 1 - r.below(std::min<size_t>(b.size(), 512))] = static_cast<uint8_t>(r.next()); break;  // Dateiende (APE/ID3v1)
-                case 2: b.resize(r.below(b.size())); break;                                                              // abgeschnitten
+                case 1: for (int k = 0; k < 3; k++) b[b.size() - 1 - r.below(std::min<size_t>(b.size(), 512))] = static_cast<uint8_t>(r.next()); break;  // end of file (APE/ID3v1)
+                case 2: b.resize(r.below(b.size())); break;                                                              // truncated
                 default: b[r.below(b.size())] = static_cast<uint8_t>(r.next()); b[r.below(head)] ^= 0xFF; break;         // verstreut
                 }
                 const fs::path p = tempWithExt("wfuzz_bad", f, b);
                 editCycle(p, r);
             }
-            SUCCEED("kein Absturz");
+            SUCCEED("no crash");
         }
     }
 }

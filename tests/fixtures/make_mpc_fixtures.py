@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
 """Musepack-Fixtures.
 
-* SV8 (aktuelles Format, 'MPCK'): erzeugt mpcenc 1.30 (siehe generate.bat) - hier nur umbenannt/vorhanden.
-* SV7 ('MP+' + 0x07): echte Dateien erzeugt mppenc 1.16 (siehe generate.bat). Zusaetzlich werden *synthetische* SV7-Dateien gebaut:
-  ein 24-Byte-Header mit bekannten Werten (Frames, Samplerate, Profil, Stereo/Joint) und Dummy-Frames. Sie pruefen das
-  Header-Parsing der DLL, keine echte Audio-Dekodierung. Optional mit APEv2- oder ID3v2-Tag.
+* SV8 (current format, 'MPCK'): created by mpcenc 1.30 (see generate.bat) - only renamed/present here.
+* SV7 ('MP+' + 0x07): real files are created by mppenc 1.16 (see generate.bat). In addition, *synthetic* SV7 files are built:
+  a 24-byte header with known values (frames, sample rate, profile, stereo/joint) and dummy frames. They test the
+  header parsing of the DLL, not real audio decoding. Optionally with an APEv2 or ID3v2 tag.
 
 Aufruf: python make_mpc_fixtures.py   (im Ordner tests/fixtures)
 """
 import struct
 from pathlib import Path
 
-from make_id3_fixtures import tag as id3_tag   # ID3v2-Tag mit Standardfeldern (Titel, Interpret, ..., COMM)
+from make_id3_fixtures import tag as id3_tag   # ID3v2 tag with standard fields (title, artist, ..., COMM)
 
 HERE = Path(__file__).resolve().parent
 
@@ -31,7 +31,7 @@ def sv7_header(frames, sample_rate, profile, joint):
 
 
 def ape_tag(items):
-    """APEv2-Tag mit Header und Footer; items = [(Schluessel, Text)]."""
+    """APEv2 tag with header and footer; items = [(key, text)]."""
     body = b''
     for key, value in items:
         v = value.encode('utf-8')
@@ -47,12 +47,12 @@ STD_ITEMS = [('Title', 'Testtitel'), ('Artist', 'Testkuenstler'), ('Album', 'Tes
 
 
 def payload(frames):
-    return bytes((i * 31) & 0xFF for i in range(frames * 8))   # Dummy-Daten, keine echten MPC-Frames
+    return bytes((i * 31) & 0xFF for i in range(frames * 8))   # dummy data, no real MPC frames
 
 
 def write(name, data):
     (HERE / 'mpc' / name).write_bytes(data)
-    print('erzeugt: mpc/' + name)
+    print('created: mpc/' + name)
 
 
 if __name__ == '__main__':
@@ -64,12 +64,12 @@ if __name__ == '__main__':
     write('sv7_synthetic_insane_32k.mpc', sv7_header(50, 32000, 'insane', joint=False) + payload(50))
     write('sv7_synthetic_tagged_ape.mpc', base + ape_tag(STD_ITEMS))
     write('sv7_synthetic_tagged_id3v2.mpc', id3_tag(3, 'TYER', '2024') + base)
-    # SV7 echt: aus der von mppenc 1.16 erzeugten Datei (siehe generate.bat) mit angehaengtem APEv2- bzw. vorangestelltem ID3v2-Tag
+    # SV7 real: from the file created by mppenc 1.16 (see generate.bat) with an appended APEv2 or a prepended ID3v2 tag
     sv7 = HERE / 'mpc' / 'sv7_standard.mpc'
     if sv7.exists():
         write('sv7_tagged_ape.mpc', sv7.read_bytes() + ape_tag(STD_ITEMS))
         write('sv7_tagged_id3v2.mpc', id3_tag(3, 'TYER', '2024') + sv7.read_bytes())
-    # SV8: aus der von mpcenc erzeugten Datei (siehe generate.bat) mit angehaengtem APEv2-Tag
+    # SV8: from the file created by mpcenc (see generate.bat) with an appended APEv2 tag
     sv8 = HERE / 'mpc' / 'sv8_standard.mpc'
     if sv8.exists():
         write('sv8_tagged_ape.mpc', sv8.read_bytes() + ape_tag(STD_ITEMS))

@@ -1,118 +1,122 @@
 # AudioGenie3 Tests
 
-Tests laufen gegen die gebaute DLL ueber deren C-Schnittstelle (Catch2 v3, Amalgamation in `third_party/`).
-Testdateien werden im Test erzeugt (WAV, MP3-Frames aus Stille) – es sind keine Fixtures im Repo.
+The tests run against the built DLL through its C interface (Catch2 v3, amalgamation in `third_party/`).
+Some test files are generated inside the tests (WAV, MP3 frames from silence); the audio fixtures for all formats are in `fixtures/`.
 
 ```
-tests\run.bat            # x86 und x64: Wrapper-Vertragspruefung + Catch2-Tests
-tests\run.bat x64        # nur x64
-tests\run.bat x64 "[wav]"   # nur Tests mit Tag [wav]
+tests\run.bat            # x86 and x64: wrapper contract check + Catch2 tests
+tests\run.bat x64        # x64 only
+tests\run.bat x64 "[wav]"   # only tests with the tag [wav]
 ```
 
-Voraussetzung: `Release\AudioGenie3.dll/.lib` (Win32) bzw. `x64\Release\...` sind gebaut
+Prerequisite: `Release\AudioGenie3.dll/.lib` (Win32) and `x64\Release\...` are built
 (`MSBuild AudioGenie3.vcxproj /p:Configuration=Release /p:Platform=Win32|x64`).
 
-| Datei | Inhalt |
+| File | Content |
 |---|---|
-| `test_exports.cpp` | alle Exporte der `.def` sind in der DLL aufloesbar |
-| `test_wav.cpp` | WAV-Analyse, LIST/INFO-Round-Trip, PCM-Daten unveraendert |
-| `test_mpeg.cpp` | MP3-Analyse, ID3v2-Round-Trip, `AUDIOSetTitleW`, Tag entfernen |
-| `test_robustness.cpp` | fehlende/leere/abgeschnittene/beschaedigte Dateien (synthetisch) |
-| `test_formats.cpp` | alle Formate aus `fixtures/`: Eckdaten, Tags lesen/schreiben, Cover, kaputte Dateien, Fuzzing echter Dateien |
-| `test_id3v2.cpp`, `test_id3v2_frames.cpp` | ID3v2-API: Round-Trips je Frame-Typ ueber v2.2/2.3/2.4 und die Kodierungen ISO-8859-1/UTF-16/UTF-16BE/UTF-8 (Text, URL, Kommentar, Lyrics, Bilder, Kapitel, Binaer- und Zahlenframes) |
-| `test_special.cpp` | Sonderfaelle: Unicode-/Sonderzeichen-Dateinamen, Endungen in Gross/Klein, lange Pfade (bis 1500 Zeichen mit `\?\`), ungueltige Pfade, winzige Dateien, Schreibschutz und Sperren, sparse-Dateien von 3 und 5 GB |
-| `test_api_misuse.cpp` | jede exportierte Funktion mit zufaelligen, teils ungueltigen Argumenten (NULL, riesige Strings, Index 0/-1/32767, fremde Frame-IDs) auf einer Datei je Format; Aufrufliste `misuse_calls.inc` wird von `gen_misuse.py` aus dem Header erzeugt |
-| `test_fuzz_write.cpp` | Fuzzing der Schreibpfade: zufaellige Operationsfolgen (Tags, Bilder, Frames, Speichern) auf Fixture-Kopien und auf beschaedigten Kopien; Haenger-Waechter |
-| `contract/check_wrappers.py` | Signaturen von C++, C#, VB.NET, Delphi, VB6 gegen `dllmain.cpp` |
+| `test_exports.cpp` | all exports of the `.def` can be resolved in the DLL |
+| `test_wav.cpp` | WAV analysis, LIST/INFO round trip, PCM data unchanged |
+| `test_mpeg.cpp` | MP3 analysis, ID3v2 round trip, `AUDIOSetTitleW`, remove tag |
+| `test_robustness.cpp` | missing/empty/truncated/damaged files (synthetic) |
+| `test_formats.cpp` | all formats from `fixtures/`: basic data, read/write tags, cover, broken files, fuzzing of real files |
+| `test_id3v2.cpp`, `test_id3v2_frames.cpp` | ID3v2 API: round trips per frame type across v2.2/2.3/2.4 and the encodings ISO-8859-1/UTF-16/UTF-16BE/UTF-8 (text, URL, comment, lyrics, pictures, chapters, binary and numeric frames) |
+| `test_special.cpp` | special cases: Unicode/special-character file names, upper/lower case extensions, long paths (up to 1500 characters with `\\?\`), invalid paths, tiny files, read-only files and locks, sparse files of 3 and 5 GB |
+| `test_api_misuse.cpp` | every exported function with random, partly invalid arguments (NULL, huge strings, index 0/-1/32767, foreign frame IDs) on one file per format; the call list `misuse_calls.inc` is generated from the header by `gen_misuse.py` |
+| `test_fuzz_write.cpp` | fuzzing of the write paths: random operation sequences (tags, pictures, frames, saving) on fixture copies and on damaged copies; hang watchdog |
+| `contract/check_wrappers.py` | signatures of C++, C#, VB.NET, Delphi, VB6 against `dllmain.cpp` |
 
-Hinweise zur API (aus dem Code): `AUDIOSaveChangesW` schreibt die abstrakten Felder (Titel, Interpret ...)
-und ueberschreibt dabei ID3v2-Frames; fuer Frame-Tests `ID3V2SaveChangesW` nehmen.
-`ID3V2RemoveTagW` wirkt sofort auf die Datei.
+Notes on the API (from the code): `AUDIOSaveChangesW` writes the abstract fields (title, artist ...)
+and thereby overwrites ID3v2 frames; use `ID3V2SaveChangesW` for frame tests.
+`ID3V2RemoveTagW` takes effect on the file immediately.
 
-## Encoder-Eigenheiten (`kQuirks`)
+The test data values (`Testtitel`, `Testkuenstler`, `Kommentar` ...) are deliberately kept as they are: they are written into the fixtures
+by `fixtures/generate.bat` and `fixtures/make_*.py` and read back by the tests.
 
-Die frueheren "Lese-Luecken" (Jahr `TDRC`, Vorbis `DESCRIPTION`, APE `date`, WMA `Description`/`date`, WAV `IPRT`) sind in der DLL behoben
-(Fallbacks beim Lesen, siehe Commit). Uebrig ist eine Eigenheit von ffmpeg, keine DLL-Luecke: ffmpeg schreibt den Kommentar in ID3v2-Tags als
-`TXXX:comment` statt als `COMM`-Frame, die DLL liest `COMM`. Diese Faelle stehen in `kQuirks` (Kommentar erwartet leer); fuer echte
-`COMM`-Frames erzeugt `fixtures/make_id3_fixtures.py` von Hand gebaute ID3v2.3-/2.4-Tags (`mp3/id3v23_comm.mp3`, `mp3/id3v24_comm.mp3`,
+## Encoder quirks (`kQuirks`)
+
+The earlier "read gaps" (year `TDRC`, Vorbis `DESCRIPTION`, APE `date`, WMA `Description`/`date`, WAV `IPRT`) are fixed in the DLL
+(fallbacks when reading, see the commit). What remains is a quirk of ffmpeg, not a DLL gap: ffmpeg writes the comment in ID3v2 tags as
+`TXXX:comment` instead of a `COMM` frame, while the DLL reads `COMM`. These cases are listed in `kQuirks` (comment expected to be empty); for real
+`COMM` frames `fixtures/make_id3_fixtures.py` builds ID3v2.3/2.4 tags by hand (`mp3/id3v23_comm.mp3`, `mp3/id3v24_comm.mp3`,
 `aac/adts_id3v24_comm.aac`).
 
 ## AddressSanitizer (`run_asan.bat`)
 
-`tests\run_asan.bat [x64|x86] [Catch2-Argumente]` baut die DLL (nach `build-asan\<arch>\`, die normalen Builds bleiben
-unberuehrt, COM-Registrierung abgeschaltet) **und** die Tests mit `/fsanitize=address` und fuehrt sie aus. Ein Speicherfehler
-bricht mit Stacktrace samt Zeile ab. Laengerer Fuzz-Lauf: `set AG3_FUZZ_ROUNDS=40` (Standard 1).
+`tests\run_asan.bat [x64|x86] [Catch2 arguments]` builds the DLL (into `build-asan\<arch>\`, the normal builds stay
+untouched, COM registration is switched off) **and** the tests with `/fsanitize=address` and runs them. A memory error
+aborts with a stack trace including the line. Longer fuzz run: `set AG3_FUZZ_ROUNDS=40` (default 1).
 
-Per ASan gefundene und behobene Fehler (Regressionsdateien in `fixtures/broken/`, Test `[asan-regression]`):
+Errors found by ASan and fixed (regression files in `fixtures/broken/`, test `[asan-regression]`):
 
-| Befund | Ort | Regression |
+| Finding | Location | Regression |
 |---|---|---|
-| FLAC: PICTURE-Block las `ln` Bytes ohne Pruefung der Blocklaenge (heap-buffer-overflow) | `FlacCover.cpp` | `broken/flac_cover_length_overflow.flac` |
-| WavPack: Sample-Rate-Index 15 ausserhalb der Tabelle (global-buffer-overflow) | `WavPack.cpp` `GetSampleRate` | `broken/wavpack_samplerate_index.wv` |
-| `CMP4Atom` ohne virtuellen Destruktor (`delete` ueber Basiszeiger) | `MP4Atom.h` | jede M4A-Datei (zweite Analyse) |
+| FLAC: PICTURE block read `ln` bytes without checking the block length (heap-buffer-overflow) | `FlacCover.cpp` | `broken/flac_cover_length_overflow.flac` |
+| WavPack: sample rate index 15 outside the table (global-buffer-overflow) | `WavPack.cpp` `GetSampleRate` | `broken/wavpack_samplerate_index.wv` |
+| `CMP4Atom` without a virtual destructor (`delete` through a base pointer) | `MP4Atom.h` | every M4A file (second analysis) |
 
-Hinweis: Am Ende eines Testlaufs setzt ein Catch2-Listener (`support.cpp`) die DLL zurueck. Ohne das bricht der Prozess unter ASan
-beim Beenden ab (0xC0000409), wenn zuletzt eine OGG-/FLAC-Datei analysiert wurde: die statischen Objekte der DLL geben ihren Speicher
-erst nach dem Abbau der ASan-Laufzeit frei. Das ist ein Artefakt der Kombination aus statischer CRT und ASan, kein Fehler im Code.
+Note: at the end of a test run a Catch2 listener (`support.cpp`) resets the DLL. Without it the process aborts under ASan
+on exit (0xC0000409) if an OGG/FLAC file was analyzed last: the static objects of the DLL only release their memory
+after the ASan runtime has been torn down. This is an artifact of the combination of static CRT and ASan, not an error in the code.
 
-## Bewusste Designentscheidungen (keine Fehler)
+## Deliberate design decisions (not errors)
 
-Diese Verhaeltnisse sind gewollt und in den Tests so festgehalten; sie nicht als Befund melden.
+These conditions are intended and recorded in the tests as such; do not report them as findings.
 
-- **Erkennung: Endung nur als Vorfilter (Performance).** Die meisten Formate werden am Dateiinhalt erkannt (Signaturen in
-  `Header.h`), auch bei falscher Endung (z. B. MP4 mit Endung `.aac` wird als M4A erkannt). Nur bei den "Wackelkandidaten"
-  ohne eindeutigen Header wird die Endung vorab geprueft (`dllmain.cpp`, `AUDIOAnalyzeFileW`): **AAC** (`.aac`) und
-  **MPEG-Audio** (`.mp3`, `.mp2`, `.mp1`, `.msf`, `.mp3~`). Eine MP3-Datei mit anderer Endung wird deshalb nicht erkannt.
-- **`AUDIOSaveChangesW` schreibt je nach Format unterschiedlich** (Tabelle in der Doku): AAC, WavPack und MONKEY als APE-Tag,
-  MP3/MPC/TTA als ID3v2. Ein vorhandener ID3v2-Tag am Dateianfang einer AAC-Datei bleibt dabei unveraendert und hat beim Lesen
-  Vorrang (Test "AAC mit vorhandenem ID3v2-Tag ...").
-- **`AUDIOSaveChangesW` ueberschreibt ID3v2-Frames** aus den abstrakten Feldern (Titel, Interpret ...); fuer Frame-Tests
-  `ID3V2SaveChangesW` verwenden. `ID3V2RemoveTagW` wirkt sofort auf die Datei.
-- **Einzelthread-DLL mit globalem Zustand:** Erst `AUDIOAnalyzeFileW`, dann arbeiten alle anderen Funktionen auf dem
-  gemerkten Zustand. Die Tests analysieren deshalb vor jedem Zugriff die betroffene Datei neu.
+- **Detection: the extension is only a pre-filter (performance).** Most formats are recognized by the file content (signatures in
+  `Header.h`), even with a wrong extension (e.g. MP4 with the extension `.aac` is recognized as M4A). Only for the "uncertain candidates"
+  without an unambiguous header is the extension checked first (`dllmain.cpp`, `AUDIOAnalyzeFileW`): **AAC** (`.aac`) and
+  **MPEG audio** (`.mp3`, `.mp2`, `.mp1`, `.msf`, `.mp3~`). An MP3 file with another extension is therefore not recognized.
+- **`AUDIOSaveChangesW` writes differently depending on the format** (table in the documentation): AAC, WavPack and MONKEY as APE tag,
+  MP3/MPC/TTA as ID3v2. An existing ID3v2 tag at the start of an AAC file stays unchanged and takes precedence when reading
+  (test "AAC with an existing ID3v2 tag ...").
+- **`AUDIOSaveChangesW` overwrites ID3v2 frames** from the abstract fields (title, artist ...); use `ID3V2SaveChangesW`
+  for frame tests. `ID3V2RemoveTagW` takes effect on the file immediately.
+- **Single-threaded DLL with global state:** first `AUDIOAnalyzeFileW`, then all other functions work on the remembered
+  state. The tests therefore analyze the affected file again before each access.
 
-## Fuzzing und Haenger
+## Fuzzing and hangs
 
-- `AG3_FUZZ_ROUNDS=N` vervielfacht die Durchlaeufe der Fuzz-Tests (`[fuzz]`, `[robust]`); Standard 1. Fuer lange Laeufe z. B. 20.
-- Fuzz-Dateien behalten ihre Endung: MP3 und AAC werden nur damit erkannt (Endung als Vorfilter, siehe oben).
-- Jeder Bearbeitungszyklus in `test_fuzz_write.cpp` steht unter einem Waechter: dauert er laenger als 30 s, wird die Eingabe als
-  `%TEMP%\ag3tests\hang_input.<ext>` gesichert und der Prozess mit Exitcode 99 beendet. `AG3_FUZZ_TRACE=1` protokolliert
-  die Schritte nach `%TEMP%\ag3tests\trace.log`.
-- `mustFinishWithin` (test_formats.cpp) macht dasselbe fuer einzelne Aufrufe (Exitcode 98).
-- Bisher gefundener Haenger (behoben): `stco`-Atom mit ueberlangem `entry_count` liess `AUDIOSaveChangesW` bei M4A praktisch endlos
-  laufen (`MP4_STCO.cpp`); Regression `broken/mp4_stco_count_overflow.m4a`.
+- `AG3_FUZZ_ROUNDS=N` multiplies the iterations of the fuzz tests (`[fuzz]`, `[robust]`); default 1. For long runs e.g. 20.
+- Fuzz files keep their extension: MP3 and AAC are only recognized with it (extension as pre-filter, see above).
+- Every edit cycle in `test_fuzz_write.cpp` is guarded by a watchdog: if it takes longer than 30 s, the input is saved as
+  `%TEMP%\ag3tests\hang_input.<ext>` and the process ends with exit code 99. `AG3_FUZZ_TRACE=1` logs the steps
+  to `%TEMP%\ag3tests\trace.log`.
+- `mustFinishWithin` (test_formats.cpp) does the same for single calls (exit code 98).
+- Hang found so far (fixed): a `stco` atom with an oversized `entry_count` made `AUDIOSaveChangesW` run practically forever on M4A
+  (`MP4_STCO.cpp`); regression `broken/mp4_stco_count_overflow.m4a`.
 
 ## Musepack
 
-- **SV7** (`MP+`): echte Dateien von `mppenc.exe` 1.16 (Pfad ueber `MPPENC`, Standard `D:\Entwicklung\Musepack7\mppenc.exe`): alle fuenf Profile,
-  44,1/48/32 kHz, Stream-Version 7 (`0x07`) und 7.1 (`0x17`); Dauer und Samplerate stimmen mit ffprobe ueberein. SV7 kennt kein Mono
-  (Mono-Eingang wird als Stereo kodiert). Zusaetzlich baut `fixtures/make_mpc_fixtures.py` *synthetische* SV7-Header (bekannte Werte,
-  Dummy-Frames) und haengt APEv2-/ID3v2-Tags an echte Dateien.
-- **SV8** (`MPCK`): `generate.bat` erzeugt echte Dateien mit `mpcenc.exe` 1.30 (Pfad ueber `MPCENC`, Standard
-  `D:\Entwicklung\Musepack\64bit\mpcenc.exe`). Die DLL liest SV8 (Paket-Parser fuer SH/EI in `MPEGPlus.cpp`): Samplerate,
-  Kanaele inkl. Mono, Dauer aus der Samplezahl, Profil, Bitrate.
+- **SV7** (`MP+`): real files from `mppenc.exe` 1.16 (path via `MPPENC`, default `D:\Entwicklung\Musepack7\mppenc.exe`): all five profiles,
+  44.1/48/32 kHz, stream version 7 (`0x07`) and 7.1 (`0x17`); duration and sample rate match ffprobe. SV7 has no mono
+  (a mono input is encoded as stereo). In addition `fixtures/make_mpc_fixtures.py` builds *synthetic* SV7 headers (known values,
+  dummy frames) and appends APEv2/ID3v2 tags to real files.
+- **SV8** (`MPCK`): `generate.bat` creates real files with `mpcenc.exe` 1.30 (path via `MPCENC`, default
+  `D:\Entwicklung\Musepack\64bit\mpcenc.exe`). The DLL reads SV8 (packet parser for SH/EI in `MPEGPlus.cpp`): sample rate,
+  channels including mono, duration from the sample count, profile, bit rate.
 
-## Sonderfaelle: was gilt
+## Special cases: what applies
 
-- **Pfade:** Unicode (Umlaute, CJK, Kyrillisch, Emoji), Sonderzeichen und mehrere Punkte im Namen funktionieren. Lange Pfade funktionieren mit
-  dem Praefix `\?\` (getestet bis 1500 Zeichen), ohne Praefix gilt die Windows-Grenze von 260 Zeichen.
-- **Endung:** wird bei MP3/AAC als Vorfilter geprueft, auch in Gross-/Mischschreibung (`.MP3`, `.Aac`).
-- **Schreibschutz/Sperren:** Lesen geht, `AUDIOSaveChangesW` liefert 0 und laesst die Datei unveraendert; eine exklusive Sperre verhindert schon
-  das Lesen (Format 0).
-- **Grosse Dateien:** Analyse funktioniert bei 3 GB (WAV, MP3 mit ID3v1 am Ende) und 5 GB (FLAC, WavPack mit APE-Tag am Ende);
-  `AUDIOGetFileSizeW` liefert ein `long` und wird ab 2 GiB auf 2147483647 begrenzt (Absicht).
-- **`AUDIOSaveChangesW` nach fehlgeschlagener Analyse:** schreibt nichts (frueher: die geleerten Felder in die vorher analysierte Datei).
-- `AG3_MISUSE_TRACE=1` protokolliert jeden Aufruf des Missbrauchstests nach `%TEMP%/ag3tests/misuse_trace.log` (letzte Zeile = Absturzursache),
-  `AG3_MISUSE_SKIP=Fn1,Fn2` laesst Funktionen aus, `AG3_FUZZ_ROUNDS` erhoeht die Aufrufe je Funktion (Standard 30).
+- **Paths:** Unicode (umlauts, CJK, Cyrillic, emoji), special characters and several dots in the name work. Long paths work with
+  the prefix `\\?\` (tested up to 1500 characters); without the prefix the Windows limit of 260 characters applies.
+- **Extension:** checked as a pre-filter for MP3/AAC, also in upper and mixed case (`.MP3`, `.Aac`).
+- **Read-only/locks:** reading works, `AUDIOSaveChangesW` returns 0 and leaves the file unchanged; an exclusive lock already prevents
+  reading (format 0).
+- **Large files:** analysis works with 3 GB (WAV, MP3 with ID3v1 at the end) and 5 GB (FLAC, WavPack with APE tag at the end);
+  `AUDIOGetFileSizeW` returns a `long` and is clamped to 2147483647 from 2 GiB on (intended).
+- **`AUDIOSaveChangesW` after a failed analysis:** writes nothing (formerly: the emptied fields into the previously analyzed file).
+- `AG3_MISUSE_TRACE=1` logs every call of the misuse test to `%TEMP%/ag3tests/misuse_trace.log` (last line = crash cause),
+  `AG3_MISUSE_SKIP=Fn1,Fn2` skips functions, `AG3_FUZZ_ROUNDS` increases the calls per function (default 30).
 
-## Kodierung und Zeilenenden
+## Encoding and line endings
 
-`.editorconfig` legt die Kodierung je Bereich fest: DLL-Quellcode, Wrapper und Beispielprojekte sind Windows-1252 (`latin1`; VB6 und aeltere
-Delphi-Versionen erwarten ANSI, die HTML-Doku ist ISO-8859-1), Tests und Skripte UTF-8 (`tests/run.bat` kompiliert mit `/utf-8`).
-`.gitattributes` speichert Text mit LF im Repository und checkt Windows-Quellen und Batch-Dateien mit CRLF aus. String-Literale in den
-DLL-Quellen sind ASCII; Umlaute stehen nur in Kommentaren.
+`.editorconfig` defines the encoding per area: DLL source code, wrappers and example projects are Windows-1252 (`latin1`; VB6 and older
+Delphi versions expect ANSI), tests and scripts UTF-8 (`tests/run.bat` compiles with `/utf-8`). The generated Doxygen documentation
+is UTF-8. `.gitattributes` stores text with LF in the repository and checks out Windows sources and batch files with CRLF.
+String literals in the DLL sources are ASCII; comments in all sources are English (the only non-ASCII characters are the
+`(c)` symbol in the MP4 atom names and a name in the MD5 copyright).
 
-## API-Dokumentation (Doxygen)
+## API documentation (Doxygen)
 
-Die API-Dokumentation steht als Doxygen-Kommentare in `dllmain.cpp` (nur Englisch, Gruppen in `doxygen_groups.dox`). Neu erzeugen:
-`doxygen Doxyfile` (Ausgabe nach `doku/`, Warnungen nach `doku/doxygen-warnings.txt`). `doku/` ist generiert und nicht von Hand zu aendern.
+The API documentation is in Doxygen comments in `dllmain.cpp` (English only, groups in `doxygen_groups.dox`). Regenerate it with:
+`doxygen Doxyfile` (output to `doku/`, warnings to `doku/doxygen-warnings.txt`). `doku/` is generated and must not be edited by hand.

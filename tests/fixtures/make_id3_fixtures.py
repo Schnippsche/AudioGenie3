@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Erzeugt MP3-/AAC-Fixtures mit von Hand gebauten ID3v2-Tags (unabhaengig von ffmpeg und von der DLL).
+"""Creates MP3/AAC fixtures with hand-built ID3v2 tags (independent of ffmpeg and of the DLL).
 
-ffmpeg schreibt den Kommentar als TXXX:comment; hier wird ein echter COMM-Frame verwendet, und das Jahr steht wie in
-der jeweiligen Tag-Version ueblich in TYER (v2.3) bzw. als Zeitstempel in TDRC (v2.4).
+ffmpeg writes the comment as TXXX:comment; here a real COMM frame is used, and the year is stored as usual for the
+respective tag version in TYER (v2.3) or as a timestamp in TDRC (v2.4).
 
-Aufruf: python make_id3_fixtures.py   (im Ordner tests/fixtures; Audio stammt aus mp3/no_tags_cbr.mp3 und aac/adts_sample-1.aac)
+Usage: python make_id3_fixtures.py   (in the folder tests/fixtures; the audio comes from mp3/no_tags_cbr.mp3 and aac/adts_sample-1.aac)
 """
 import struct
 from pathlib import Path
@@ -43,10 +43,10 @@ def tag(version, year_id, year_value):
 def build(name, audio_file, version, year_id, year_value):
     src = HERE / audio_file
     if not src.exists():
-        print('uebersprungen (Quelle fehlt):', name)
+        print('skipped (source missing):', name)
         return
     (HERE / name).write_bytes(tag(version, year_id, year_value) + src.read_bytes())
-    print('erzeugt:', name)
+    print('created:', name)
 
 
 if __name__ == '__main__':

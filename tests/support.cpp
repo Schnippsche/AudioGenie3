@@ -31,7 +31,7 @@ Bytes makeMp3(int frames)
 {
     Bytes b;
     for (int i = 0; i < frames; i++) {
-        const uint8_t header[4] = { 0xFF, 0xFB, 0x90, 0x00 };  // MPEG1 L3, 128k, 44.1k, kein Padding, Stereo
+        const uint8_t header[4] = { 0xFF, 0xFB, 0x90, 0x00 };  // MPEG1 L3, 128k, 44.1k, no padding, stereo
         b.insert(b.end(), header, header + 4);
         b.resize(b.size() + 417 - 4, 0);
     }
@@ -74,8 +74,8 @@ size_t id3v2TotalSize(const Bytes& f)
 
 }  // namespace ag3test
 
-// Am Ende eines Testlaufs den Zustand der DLL zuruecksetzen (Analyse einer nicht vorhandenen Datei ruft ClearAllTags auf),
-// damit beim Beenden des Prozesses keine grossen Objekte mehr in den globalen Tag-Objekten der DLL haengen.
+// At the end of a test run reset the state of the DLL (analyzing a non-existing file calls ClearAllTags),
+// so that no large objects are left in the global tag objects of the DLL when the process exits.
 namespace {
 struct ResetDllListener : Catch::EventListenerBase {
     using Catch::EventListenerBase::EventListenerBase;

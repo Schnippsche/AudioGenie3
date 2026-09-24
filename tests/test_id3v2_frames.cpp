@@ -1,4 +1,4 @@
-// ID3v2-API, Teil 2: Binaer-, Zahlen- und Strukturframes (Round-Trips).
+// ID3v2 API, part 2: binary, numeric and structure frames (round trips).
 #include "id3v2_support.h"
 
 using namespace ag3test;
@@ -15,7 +15,7 @@ Bytes fetch2(long (__stdcall *fn)(BYTE*, u32))
 
 // ============================================================ Binaerframes
 
-TEST_CASE("ID3v2: Private Frames (PRIV)", "[id3v2][binary]")
+TEST_CASE("ID3v2: private frames (PRIV)", "[id3v2][binary]")
 {
     for (const Cfg& cfg : { kV23, kV24 }) {
         DYNAMIC_SECTION(cfg.name) {
@@ -34,7 +34,7 @@ TEST_CASE("ID3v2: Private Frames (PRIV)", "[id3v2][binary]")
     }
 }
 
-TEST_CASE("ID3v2: Eindeutige Datei-ID (UFID)", "[id3v2][binary]")
+TEST_CASE("ID3v2: unique file identifier (UFID)", "[id3v2][binary]")
 {
     for (const Cfg& cfg : { kV23, kV24 }) {
         DYNAMIC_SECTION(cfg.name) {
@@ -49,7 +49,7 @@ TEST_CASE("ID3v2: Eindeutige Datei-ID (UFID)", "[id3v2][binary]")
     }
 }
 
-TEST_CASE("ID3v2: Allgemeines Objekt (GEOB)", "[id3v2][binary]")
+TEST_CASE("ID3v2: general encapsulated object (GEOB)", "[id3v2][binary]")
 {
     for (const Cfg& cfg : { kV23, kV24 }) {
         DYNAMIC_SECTION(cfg.name) {
@@ -66,7 +66,7 @@ TEST_CASE("ID3v2: Allgemeines Objekt (GEOB)", "[id3v2][binary]")
     }
 }
 
-TEST_CASE("ID3v2: Gruppen-ID (GRID), Verschluesselung (ENCR), Signatur (SIGN, nur v2.4)", "[id3v2][binary]")
+TEST_CASE("ID3v2: group identification (GRID), encryption (ENCR), signature (SIGN, v2.4 only)", "[id3v2][binary]")
 {
     for (const Cfg& cfg : { kV23, kV24 }) {
         DYNAMIC_SECTION(cfg.name) {
@@ -89,13 +89,13 @@ TEST_CASE("ID3v2: Gruppen-ID (GRID), Verschluesselung (ENCR), Signatur (SIGN, nu
                 CHECK(ID3V2GetSignatureFrameGroupSymbolW(1) == 0x83);
                 CHECK(fetch(ID3V2GetSignatureFrameDataW, 1) == sg.data);
             } else {
-                CHECK(ID3V2GetFrameCountW(ID3F_SIGN) == 0);   // SIGN gibt es erst ab v2.4 und wird in v2.3 verworfen
+                CHECK(ID3V2GetFrameCountW(ID3F_SIGN) == 0);   // SIGN exists only from v2.4 on and is dropped in v2.3
             }
         }
     }
 }
 
-TEST_CASE("ID3v2: Audio-Verschluesselung (AENC) und Musik-CD-ID (MCDI)", "[id3v2][binary]")
+TEST_CASE("ID3v2: audio encryption (AENC) and music CD identifier (MCDI)", "[id3v2][binary]")
 {
     for (const Cfg& cfg : { kV23, kV24 }) {
         DYNAMIC_SECTION(cfg.name) {
@@ -115,7 +115,7 @@ TEST_CASE("ID3v2: Audio-Verschluesselung (AENC) und Musik-CD-ID (MCDI)", "[id3v2
     }
 }
 
-TEST_CASE("ID3v2: Ereigniszeiten (ETCO) und Tempo (SYTC)", "[id3v2][binary]")
+TEST_CASE("ID3v2: event timing codes (ETCO) and tempo (SYTC)", "[id3v2][binary]")
 {
     for (const Cfg& cfg : { kV23, kV24 }) {
         DYNAMIC_SECTION(cfg.name) {
@@ -134,22 +134,22 @@ TEST_CASE("ID3v2: Ereigniszeiten (ETCO) und Tempo (SYTC)", "[id3v2][binary]")
     }
 }
 
-TEST_CASE("ID3v2: Lautstaerkeanpassung (RVAD) und Entzerrung (EQUA) in v2.3", "[id3v2][binary]")
+TEST_CASE("ID3v2: volume adjustment (RVAD) and equalisation (EQUA) in v2.3", "[id3v2][binary]")
 {
-    // Die API erzeugt die v2.3-Frames RVAD und EQUA (siehe Doku von ID3V2AddRelativeVolumeAdjustmentW/AddEqualisationW).
+    // The API creates the v2.3 frames RVAD and EQUA (see the documentation of ID3V2AddRelativeVolumeAdjustmentW/AddEqualisationW).
     Session s(kV23);
     Blob rv(18), eq(24);
     CHECK(ID3V2AddRelativeVolumeAdjustmentW(rv.ptr(), rv.len(), L"track") == 0);
     CHECK(ID3V2AddEqualisationW(eq.ptr(), eq.len(), 1, L"eqid") == 0);
     s.reload();
-    // Bezeichner und Interpolationsmethode gibt es erst in RVA2/EQU2 (v2.4); RVAD/EQUA speichern nur die Daten.
+    // Identifier and interpolation method exist only in RVA2/EQU2 (v2.4); RVAD/EQUA store only the data.
     REQUIRE(ID3V2GetFrameCountW(ID3F_RVAD) == 1);
     CHECK(fetch(ID3V2GetRelativeVolumeAdjustmentDataW, 1) == rv.data);
     REQUIRE(ID3V2GetFrameCountW(ID3F_EQUA) == 1);
     CHECK(fetch(ID3V2GetEqualisationDataW, 1) == eq.data);
 }
 
-TEST_CASE("ID3v2: Lautstaerkeanpassung und Entzerrung in v2.4 (RVA2/EQU2 mit Bezeichner)", "[id3v2][binary]")
+TEST_CASE("ID3v2: volume adjustment and equalisation in v2.4 (RVA2/EQU2 with identifier)", "[id3v2][binary]")
 {
     Session s(kV24);
     Blob rv(18), eq(24);
@@ -158,12 +158,12 @@ TEST_CASE("ID3v2: Lautstaerkeanpassung und Entzerrung in v2.4 (RVA2/EQU2 mit Bez
     s.reload();
     const std::wstring wids = take(ID3V2GetAllFrameIDsW());
     const std::string ids(wids.begin(), wids.end());
-    INFO("Frame-IDs nach dem Speichern: " << ids);
+    INFO("frame IDs after saving: " << ids);
     const int volume = ID3V2GetFrameCountW(ID3F_RVAD) + ID3V2GetFrameCountW(ID3F_RVA2);
     const int equal = ID3V2GetFrameCountW(ID3F_EQUA) + ID3V2GetFrameCountW(ID3F_EQU2);
     CHECK(volume == 1);
     CHECK(equal == 1);
-    // In v2.4 werden die Frames als RVA2/EQU2 geschrieben und tragen Bezeichner und Interpolationsmethode.
+    // In v2.4 the frames are written as RVA2/EQU2 and carry an identifier and interpolation method.
     CHECK(take(ID3V2GetRelativeVolumeAdjustmentIdentifierW(1)) == L"track");
     CHECK(fetch(ID3V2GetRelativeVolumeAdjustmentDataW, 1) == rv.data);
     CHECK(take(ID3V2GetEqualisationIdentificationW(1)) == L"eqid");
@@ -173,7 +173,7 @@ TEST_CASE("ID3v2: Lautstaerkeanpassung und Entzerrung in v2.4 (RVA2/EQU2 mit Bez
 
 // ============================================================ Zahlen-Frames
 
-TEST_CASE("ID3v2: Puffergroesse (RBUF), Positionssynchronisation (POSS), Nachhall (RVRB)", "[id3v2][numeric]")
+TEST_CASE("ID3v2: buffer size (RBUF), position synchronisation (POSS), reverb (RVRB)", "[id3v2][numeric]")
 {
     for (const Cfg& cfg : { kV23, kV24 }) {
         DYNAMIC_SECTION(cfg.name) {
@@ -201,7 +201,7 @@ TEST_CASE("ID3v2: Puffergroesse (RBUF), Positionssynchronisation (POSS), Nachhal
     }
 }
 
-TEST_CASE("ID3v2: MPEG-Positionstabelle (MLLT)", "[id3v2][numeric]")
+TEST_CASE("ID3v2: MPEG location lookup table (MLLT)", "[id3v2][numeric]")
 {
     for (const Cfg& cfg : { kV23, kV24 }) {
         DYNAMIC_SECTION(cfg.name) {
@@ -220,7 +220,7 @@ TEST_CASE("ID3v2: MPEG-Positionstabelle (MLLT)", "[id3v2][numeric]")
     }
 }
 
-TEST_CASE("ID3v2: Seek-Offset (SEEK) und Audio-Suchpunkte (ASPI), nur v2.4", "[id3v2][numeric]")
+TEST_CASE("ID3v2: seek offset (SEEK) and audio seek points (ASPI), v2.4 only", "[id3v2][numeric]")
 {
     Session s(kV24);
     Blob pts(16);
@@ -236,9 +236,9 @@ TEST_CASE("ID3v2: Seek-Offset (SEEK) und Audio-Suchpunkte (ASPI), nur v2.4", "[i
     CHECK(fetch2(ID3V2GetAudioSeekPointDataW) == pts.data);
 }
 
-// ====================================== Eigentum, Kommerz, Verknuepfung
+// ====================================== Ownership, commercial, linked information
 
-TEST_CASE("ID3v2: Eigentum (OWNE), Kommerz (COMR), Verknuepfung (LINK)", "[id3v2][text]")
+TEST_CASE("ID3v2: ownership (OWNE), commercial (COMR), linked information (LINK)", "[id3v2][text]")
 {
     for (const Cfg& cfg : { kV23, kV24 }) {
         DYNAMIC_SECTION(cfg.name) {
@@ -267,9 +267,9 @@ TEST_CASE("ID3v2: Eigentum (OWNE), Kommerz (COMR), Verknuepfung (LINK)", "[id3v2
     }
 }
 
-// ================================================== Synchronisierte Lyrics
+// ================================================== Synchronised lyrics
 
-TEST_CASE("ID3v2: Synchronisierte Lyrics (SYLT)", "[id3v2][lyrics]")
+TEST_CASE("ID3v2: synchronised lyrics (SYLT)", "[id3v2][lyrics]")
 {
     for (const Cfg& cfg : { kV23, kV24 }) {
         DYNAMIC_SECTION(cfg.name) {
@@ -281,15 +281,15 @@ TEST_CASE("ID3v2: Synchronisierte Lyrics (SYLT)", "[id3v2][lyrics]")
             CHECK(take(ID3V2GetSyncLyricDescriptionW(1)) == L"Karaoke");
             CHECK(ID3V2GetSyncLyricContentTypeW(1) == 1);
             CHECK(ID3V2GetSyncLyricTimeFormatW(1) == 2);
-            // Eintraege sind mit CRLF getrennt, nach dem letzten Eintrag folgt ein einzelnes LF (so liefert es die DLL)
+            // entries are separated by CRLF, after the last entry a single LF follows (this is what the DLL returns)
             CHECK(take(ID3V2GetSyncLyricW(1)) == L"[00000010]Zeile eins\r\n[00000050]Zeile zwei\n");
         }
     }
 }
 
-// ==================================================== Kapitel und Inhaltsverzeichnis
+// ==================================================== Chapters and table of contents
 
-TEST_CASE("ID3v2: Kapitel (CHAP) und Inhaltsverzeichnis (CTOC)", "[id3v2][chapters]")
+TEST_CASE("ID3v2: chapters (CHAP) and table of contents (CTOC)", "[id3v2][chapters]")
 {
     Session s(kV24);
     CHECK(ID3V2AddTableOfContentW(L"toc1", L"Inhalt", L"Beschreibung des Inhalts", 1) == 0);
@@ -322,7 +322,7 @@ TEST_CASE("ID3v2: Kapitel (CHAP) und Inhaltsverzeichnis (CTOC)", "[id3v2][chapte
     CHECK(take(ID3V2GetAddendumTitleW(L"chp1")) == L"Neuer Titel");
     CHECK(ID3V2GetTOCIsOrderedW(L"toc1") == 0);
 
-    // loeschen
+    // delete
     CHECK(ID3V2DeleteChildElementW(L"toc1", L"chp2") != 0);
     CHECK(ID3V2DeleteAddendumW(L"chp2") != 0);
     s.reload();
@@ -330,7 +330,7 @@ TEST_CASE("ID3v2: Kapitel (CHAP) und Inhaltsverzeichnis (CTOC)", "[id3v2][chapte
     CHECK(ID3V2GetChildElementsW(L"toc1") == 1);
 }
 
-TEST_CASE("ID3v2: Unterframes in Kapiteln (Text, URL, Bild)", "[id3v2][chapters]")
+TEST_CASE("ID3v2: subframes in chapters (text, URL, picture)", "[id3v2][chapters]")
 {
     Session s(kV24);
     Blob img(80);

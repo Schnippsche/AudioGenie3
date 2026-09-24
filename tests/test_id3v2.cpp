@@ -1,5 +1,5 @@
-// ID3v2-API: Round-Trips je Frame-Typ ueber Tag-Version (2.2/2.3/2.4) und Textkodierung.
-// Tests auf synthetischen MP3-Daten (support.cpp), keine Fixture-Dateien noetig.
+// ID3v2 API: round trips per frame type across tag version (2.2/2.3/2.4) and text encoding.
+// Tests on synthetic MP3 data (support.cpp), no fixture files needed.
 #include "id3v2_support.h"
 
 using namespace ag3test;
@@ -9,7 +9,7 @@ namespace fs = std::filesystem;
 
 // =============================================================== Textframes
 
-TEST_CASE("ID3v2: Textframe setzen/lesen ueber alle Versionen und Kodierungen", "[id3v2][text]")
+TEST_CASE("ID3v2: set/read text frame across all versions and encodings", "[id3v2][text]")
 {
     for (const Cfg& cfg : kAllCfgs) {
         DYNAMIC_SECTION(cfg.name) {
@@ -32,7 +32,7 @@ TEST_CASE("ID3v2: Textframe setzen/lesen ueber alle Versionen und Kodierungen", 
     }
 }
 
-TEST_CASE("ID3v2: Jahr (TYER in v2.3, TDRC in v2.4) und Genre", "[id3v2][text]")
+TEST_CASE("ID3v2: year (TYER in v2.3, TDRC in v2.4) and genre", "[id3v2][text]")
 {
     SECTION("v2.3: TYER") {
         Session s(kV23);
@@ -53,17 +53,17 @@ TEST_CASE("ID3v2: Jahr (TYER in v2.3, TDRC in v2.4) und Genre", "[id3v2][text]")
         CHECK(take(ID3V2GetGenreW()) == L"Rock");
         CHECK(take(AUDIOGetGenreW()) == L"Rock");
     }
-    SECTION("v2.4: TYER ist dort kein gueltiges Frame und wird beim Schreiben verworfen") {
+    SECTION("v2.4: TYER is not a valid frame there and is dropped when writing") {
         Session s(kV24);
         ID3V2SetTextFrameW(ID3F_TYER, L"1999");
         ID3V2SetTextFrameW(ID3F_TIT2, L"Titel");
         s.reload();
-        INFO("Frame-IDs: " << Catch::StringMaker<std::string>::convert([&] { auto w = take(ID3V2GetAllFrameIDsW()); return std::string(w.begin(), w.end()); }()));
+        INFO("frame IDs: " << Catch::StringMaker<std::string>::convert([&] { auto w = take(ID3V2GetAllFrameIDsW()); return std::string(w.begin(), w.end()); }()));
         CHECK(take(ID3V2GetTextFrameW(ID3F_TYER)) == L"");
     }
 }
 
-TEST_CASE("ID3v2: leerer Text loescht das Frame", "[id3v2][text]")
+TEST_CASE("ID3v2: empty text deletes the frame", "[id3v2][text]")
 {
     Session s(kV24);
     ID3V2SetTextFrameW(ID3F_TIT2, L"Titel");
@@ -77,7 +77,7 @@ TEST_CASE("ID3v2: leerer Text loescht das Frame", "[id3v2][text]")
     CHECK(take(ID3V2GetTextFrameW(ID3F_TPE1)) == L"Interpret");
 }
 
-TEST_CASE("ID3v2: sehr langer Text und Sonderzeichen", "[id3v2][text]")
+TEST_CASE("ID3v2: very long text and special characters", "[id3v2][text]")
 {
     for (const Cfg& cfg : { kV23, kV24 }) {
         DYNAMIC_SECTION(cfg.name) {
@@ -95,13 +95,13 @@ TEST_CASE("ID3v2: sehr langer Text und Sonderzeichen", "[id3v2][text]")
 
 // ============================================================ URL-Frames
 
-TEST_CASE("ID3v2: URL-Frames (WOAR) und benutzerdefinierte URL (WXXX)", "[id3v2][url]")
+TEST_CASE("ID3v2: URL frames (WOAR) and user-defined URL (WXXX)", "[id3v2][url]")
 {
     for (const Cfg& cfg : kAllCfgs) {
         DYNAMIC_SECTION(cfg.name) {
             Session s(cfg);
             ID3V2SetURLFrameW(ID3F_WOAR, L"http://www.example.com/kuenstler");
-            REQUIRE(ID3V2AddUserURLW(L"Beschreibung", L"http://www.example.com/x?a=1&b=2") == 0);   // 0 = neuer Eintrag
+            REQUIRE(ID3V2AddUserURLW(L"Beschreibung", L"http://www.example.com/x?a=1&b=2") == 0);   // 0 = new entry
             REQUIRE(ID3V2AddUserURLW(L"Zweite", L"http://www.example.com/zwei") == 0);
             s.reload();
             CHECK(take(ID3V2GetURLFrameW(ID3F_WOAR)) == L"http://www.example.com/kuenstler");
@@ -114,9 +114,9 @@ TEST_CASE("ID3v2: URL-Frames (WOAR) und benutzerdefinierte URL (WXXX)", "[id3v2]
     }
 }
 
-// ===================================================== Kommentar, Lyrics, User
+// ===================================================== Comment, lyrics, user
 
-TEST_CASE("ID3v2: Kommentare (COMM) mehrfach mit Sprache und Beschreibung", "[id3v2][comment]")
+TEST_CASE("ID3v2: comments (COMM), several with language and description", "[id3v2][comment]")
 {
     for (const Cfg& cfg : kAllCfgs) {
         DYNAMIC_SECTION(cfg.name) {
@@ -124,10 +124,10 @@ TEST_CASE("ID3v2: Kommentare (COMM) mehrfach mit Sprache und Beschreibung", "[id
             const std::wstring& text = (cfg.enc == 0) ? kLatin1 : kUnicode;
             CHECK(ID3V2AddCommentW(L"eng", L"", text.c_str()) == 0);
             CHECK(ID3V2AddCommentW(L"deu", L"Anmerkung", L"zweiter Kommentar") == 0);
-            CHECK(ID3V2AddCommentW(L"eng", L"", L"ersetzt den ersten") == -1);          // gleiche Sprache+Beschreibung -> ersetzt
+            CHECK(ID3V2AddCommentW(L"eng", L"", L"ersetzt den ersten") == -1);          // same language+description -> replaced
             s.reload();
             REQUIRE(ID3V2GetFrameCountW(ID3F_COMM) == 2);
-            // Reihenfolge nicht festgelegt: nach Sprache zuordnen
+            // order is not defined: match by language
             for (short i = 1; i <= 2; i++) {
                 const std::wstring lang = take(ID3V2GetCommentLanguageW(i));
                 if (lang == L"eng") {
@@ -139,13 +139,13 @@ TEST_CASE("ID3v2: Kommentare (COMM) mehrfach mit Sprache und Beschreibung", "[id
                     CHECK(take(ID3V2GetCommentDescriptionW(i)) == L"Anmerkung");
                 }
             }
-            // abstraktes Feld liefert den ersten COMM
+            // the abstract field returns the first COMM
             CHECK(!take(AUDIOGetCommentW()).empty());
         }
     }
 }
 
-TEST_CASE("ID3v2: Lyrics (USLT)", "[id3v2][lyrics]")
+TEST_CASE("ID3v2: unsynchronised lyrics (USLT)", "[id3v2][lyrics]")
 {
     for (const Cfg& cfg : kAllCfgs) {
         DYNAMIC_SECTION(cfg.name) {
@@ -161,7 +161,7 @@ TEST_CASE("ID3v2: Lyrics (USLT)", "[id3v2][lyrics]")
     }
 }
 
-TEST_CASE("ID3v2: benutzerdefinierter Text (TXXX)", "[id3v2][text]")
+TEST_CASE("ID3v2: user-defined text (TXXX)", "[id3v2][text]")
 {
     for (const Cfg& cfg : kAllCfgs) {
         DYNAMIC_SECTION(cfg.name) {
@@ -184,7 +184,7 @@ TEST_CASE("ID3v2: benutzerdefinierter Text (TXXX)", "[id3v2][text]")
     }
 }
 
-TEST_CASE("ID3v2: Nutzungsbedingungen (USER)", "[id3v2][text]")
+TEST_CASE("ID3v2: terms of use (USER)", "[id3v2][text]")
 {
     for (const Cfg& cfg : { kV23, kV24 }) {
         DYNAMIC_SECTION(cfg.name) {
@@ -198,7 +198,7 @@ TEST_CASE("ID3v2: Nutzungsbedingungen (USER)", "[id3v2][text]")
     }
 }
 
-TEST_CASE("ID3v2: Play Counter (PCNT) und Popularimeter (POPM)", "[id3v2][counter]")
+TEST_CASE("ID3v2: play counter (PCNT) and popularimeter (POPM)", "[id3v2][counter]")
 {
     for (const Cfg& cfg : kAllCfgs) {
         DYNAMIC_SECTION(cfg.name) {
@@ -218,9 +218,9 @@ TEST_CASE("ID3v2: Play Counter (PCNT) und Popularimeter (POPM)", "[id3v2][counte
     }
 }
 
-// ============================================================ Frames loeschen
+// ============================================================ Delete frames
 
-TEST_CASE("ID3v2: Frames einzeln und alle loeschen, Tag entfernen", "[id3v2][delete]")
+TEST_CASE("ID3v2: delete frames individually and all, remove tag", "[id3v2][delete]")
 {
     Session s(kV24);
     ID3V2AddCommentW(L"eng", L"a", L"eins");
@@ -232,7 +232,7 @@ TEST_CASE("ID3v2: Frames einzeln und alle loeschen, Tag entfernen", "[id3v2][del
 
     CHECK(ID3V2DeleteSelectedFrameW(ID3F_COMM, 2) != 0);
     CHECK(ID3V2GetFrameCountW(ID3F_COMM) == 2);
-    CHECK(ID3V2DeleteSelectedFrameW(ID3F_COMM, 9) == 0);     // Index ausserhalb: nicht gefunden
+    CHECK(ID3V2DeleteSelectedFrameW(ID3F_COMM, 9) == 0);     // index out of range: not found
     s.reload();
     CHECK(ID3V2GetFrameCountW(ID3F_COMM) == 2);
 
@@ -249,7 +249,7 @@ TEST_CASE("ID3v2: Frames einzeln und alle loeschen, Tag entfernen", "[id3v2][del
     CHECK(ID3V2ExistsW() == 0);
 }
 
-TEST_CASE("ID3v2: Tag-Version und Groesse", "[id3v2][version]")
+TEST_CASE("ID3v2: tag version and size", "[id3v2][version]")
 {
     for (const Cfg& cfg : kAllCfgs) {
         DYNAMIC_SECTION(cfg.name) {
@@ -259,7 +259,7 @@ TEST_CASE("ID3v2: Tag-Version und Groesse", "[id3v2][version]")
             CHECK(ID3V2ExistsW() != 0);
             const std::wstring ver = take(ID3V2GetVersionW());
             const wchar_t* expect = cfg.format == 1 ? L"2.2" : cfg.format == 2 ? L"2.3" : L"2.4";
-            INFO("Version laut DLL: " << Catch::StringMaker<std::string>::convert(std::string(ver.begin(), ver.end())));
+            INFO("version according to the DLL: " << Catch::StringMaker<std::string>::convert(std::string(ver.begin(), ver.end())));
             CHECK(ver.find(expect) != std::wstring::npos);
             CHECK(ID3V2GetSizeW() > 0);
             CHECK(static_cast<size_t>(ID3V2GetSizeW()) <= readFile(s.path).size());
@@ -267,7 +267,7 @@ TEST_CASE("ID3v2: Tag-Version und Groesse", "[id3v2][version]")
     }
 }
 
-TEST_CASE("ID3v2: Audiodaten bleiben bei jedem Format/jeder Kodierung unveraendert", "[id3v2][roundtrip]")
+TEST_CASE("ID3v2: audio data stays unchanged for every format/encoding", "[id3v2][roundtrip]")
 {
     const Bytes audio = makeMp3(40);
     for (const Cfg& cfg : kAllCfgs) {
@@ -284,21 +284,21 @@ TEST_CASE("ID3v2: Audiodaten bleiben bei jedem Format/jeder Kodierung unveraende
     }
 }
 
-// ============================================== Jahr: TYER (v2.2/2.3) und TDRC (v2.4)
+// ============================================== Year: TYER (v2.2/2.3) and TDRC (v2.4)
 
-TEST_CASE("Jahr: v2.4-Tag (TDRC-Zeitstempel) lesen und beim Speichern nicht verlieren", "[id3v2][year]")
+TEST_CASE("Year: read a v2.4 tag (TDRC timestamp) and do not lose it when saving", "[id3v2][year]")
 {
     const fs::path src = fs::path(AG3_FIXTURES_DIR) / "mp3/id3v24_comm.mp3";
-    if (!fs::exists(src)) SKIP("Fixture fehlt");
+    if (!fs::exists(src)) SKIP("fixture missing");
     fs::path p = tempDir() / "year_v24.mp3";
     fs::copy_file(src, p, fs::copy_options::overwrite_existing);
 
-    SECTION("Lesen: aus dem Zeitstempel 2024-05-01 wird das Jahr 2024") {
+    SECTION("Reading: the timestamp 2024-05-01 becomes the year 2024") {
         REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
         CHECK(take(ID3V2GetTextFrameW(ID3F_TDRC)) == L"2024-05-01");
         CHECK(take(AUDIOGetYearW()) == L"2024");
     }
-    SECTION("AUDIOSaveChangesW ohne Aenderung: der Tag wird als v2.3 geschrieben (Standard), das Jahr bleibt erhalten (TYER)") {
+    SECTION("AUDIOSaveChangesW without changes: the tag is written as v2.3 (default), the year is kept (TYER)") {
         REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
         REQUIRE(AUDIOSaveChangesW() != 0);
         const Bytes b = readFile(p);
@@ -307,7 +307,7 @@ TEST_CASE("Jahr: v2.4-Tag (TDRC-Zeitstempel) lesen und beim Speichern nicht verl
         CHECK(take(ID3V2GetTextFrameW(ID3F_TYER)) == L"2024");
         CHECK(take(AUDIOGetYearW()) == L"2024");
     }
-    SECTION("Zielversion v2.4: das neue Jahr steht in TDRC") {
+    SECTION("Target version v2.4: the new year is in TDRC") {
         REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
         REQUIRE(ID3V2SetFormatAndEncodingW(3, 3) != 0);
         AUDIOSetYearW(L"1999");
@@ -317,5 +317,5 @@ TEST_CASE("Jahr: v2.4-Tag (TDRC-Zeitstempel) lesen und beim Speichern nicht verl
         CHECK(take(ID3V2GetTextFrameW(ID3F_TDRC)) == L"1999");
         CHECK(take(AUDIOGetYearW()) == L"1999");
     }
-    ID3V2SetFormatAndEncodingW(2, 0);   // Standard (v2.3) fuer die folgenden Tests wiederherstellen
+    ID3V2SetFormatAndEncodingW(2, 0);   // restore the default (v2.3) for the following tests
 }

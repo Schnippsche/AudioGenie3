@@ -24,7 +24,7 @@ tests/out/
 .claude/
 graphify-out/
 
-# Alt-Artefakte in den Beispielprojekten
+# Legacy artifacts in the example projects
 bin/
 obj/
 *.log

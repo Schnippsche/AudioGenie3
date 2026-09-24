@@ -1,16 +1,18 @@
-# Testdateien
+# Test files
 
-Ein Unterordner pro Format; kaputte oder abgeschnittene Dateien in `broken/`.
+One subfolder per format; broken or truncated files in `broken/`.
 
-- Klein halten (wenige Sekunden, moeglichst < 200 KB): jede Datei bleibt in der Git-Historie.
-- Nur Dateien ablegen, die weitergegeben werden duerfen.
-- Sprechende Namen, z. B. `stereo_44k_tagged.flac`, `no_tags.m4a`, `with_cover.mp3`.
-- Sinnvolle Varianten je Format: ohne Tags, mit Tags, mit Cover, Mono/Stereo.
+- Keep them small (a few seconds, preferably < 200 KB): every file stays in the Git history.
+- Only add files that may be redistributed.
+- Use descriptive names, e.g. `stereo_44k_tagged.flac`, `no_tags.m4a`, `with_cover.mp3`.
+- Useful variants per format: without tags, with tags, with cover, mono/stereo.
 
-Die `.gitkeep`-Dateien koennen entfernt werden, sobald ein Ordner Dateien enthaelt.
+The `.gitkeep` files can be removed as soon as a folder contains files.
 
-## Erzeugen
+## Creating them
 
-`generate.bat` erzeugt alle ffmpeg-faehigen Dateien reproduzierbar (1 s Sinuston, bitexact) inklusive
-abgeschnittener Varianten in `broken/`. Nicht damit erzeugbar: APE (`mac.exe`) und MPC (`mpcenc.exe`) –
-diese Dateien von Hand in `ape\` bzw. `mpc\` ablegen.
+`generate.bat` creates all files reproducibly (1 s sine tone, bitexact) including truncated variants in `broken/`:
+ffmpeg for MP3/WAV/FLAC/OGG/M4A/WMA/WavPack/TTA/AAC, `mac.exe` (Monkey's Audio) for APE, `mppenc.exe`/`mpcenc.exe` for Musepack
+SV7/SV8, and the Python scripts `make_id3_fixtures.py` and `make_mpc_fixtures.py` for hand-built tags and synthetic SV7 headers.
+Missing tools are skipped with a note. The OGG files cannot be reproduced bit-identically (ffmpeg randomizes the stream serial number),
+so only regenerate them when necessary. The originals of the long AAC samples are kept unversioned in `tests/fixtures_local/`.

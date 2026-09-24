@@ -4,7 +4,7 @@
 
 using namespace ag3test;
 
-TEST_CASE("WAV: Analyse liefert Format und Eckdaten", "[wav]")
+TEST_CASE("WAV: analysis returns format and basic data", "[wav]")
 {
     auto p = writeTemp("sine_stereo.wav", makeWav(44100, 2, 1.0));
     REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == WAV);
@@ -13,7 +13,7 @@ TEST_CASE("WAV: Analyse liefert Format und Eckdaten", "[wav]")
     CHECK(AUDIOGetDurationW() == Catch::Approx(1.0).margin(0.01));
 }
 
-TEST_CASE("WAV: Mono und andere Samplerate", "[wav]")
+TEST_CASE("WAV: mono and another sample rate", "[wav]")
 {
     auto p = writeTemp("sine_mono.wav", makeWav(22050, 1, 2.0));
     REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == WAV);
@@ -22,7 +22,7 @@ TEST_CASE("WAV: Mono und andere Samplerate", "[wav]")
     CHECK(AUDIOGetDurationW() == Catch::Approx(2.0).margin(0.01));
 }
 
-TEST_CASE("WAV: LIST/INFO-Tag Round-Trip, Audiodaten bleiben unveraendert", "[wav][roundtrip]")
+TEST_CASE("WAV: LIST/INFO tag round trip, audio data stays unchanged", "[wav][roundtrip]")
 {
     const Bytes original = makeWav(44100, 2, 0.5);
     auto p = writeTemp("wav_tag.wav", original);
@@ -37,7 +37,7 @@ TEST_CASE("WAV: LIST/INFO-Tag Round-Trip, Audiodaten bleiben unveraendert", "[wa
     CHECK(take(WAVGetTextFrameW(WAV_IART)) == L"Testkuenstler");
     CHECK(AUDIOGetDurationW() == Catch::Approx(0.5).margin(0.01));
 
-    // PCM-Daten (Chunk 'data' ohne Header) muessen byteweise gleich bleiben.
+    // PCM data (chunk 'data' without header) must stay byte-for-byte identical.
     const Bytes after = readFile(p);
     const size_t dataStart = 44;
     REQUIRE(after.size() > original.size());

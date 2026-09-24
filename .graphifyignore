@@ -1,4 +1,4 @@
-# graphify: nur Quellcode und Tests, keine generierte Doku, keine Audio-Fixtures, kein Drittanbieter-Code
+# graphify: source code and tests only, no generated documentation, no audio fixtures, no third-party code
 doku/
 tests/fixtures/
 tests/fixtures_local/

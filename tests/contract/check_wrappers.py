@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""Vertragspruefung: Signaturen der Wrapper (C/C++, C#, VB.NET, Delphi, VB6) gegen die
-extern "C"-Funktionen in dllmain.cpp.  Exitcode 1 bei Abweichungen.
+"""Contract check: signatures of the wrappers (C/C++, C#, VB.NET, Delphi, VB6) against the
+extern "C" functions in dllmain.cpp.  Exit code 1 on deviations.
 
 Aufruf:  python tests/contract/check_wrappers.py
 """
@@ -21,7 +21,7 @@ def split_params(s):
     return [] if s in ("", "void") else [x.strip() for x in s.split(",")]
 
 
-# Normalisierte Typklassen: i16, i32, f32, u8, ptr (Zeiger/Puffer), wstr (LPCWSTR), bstr, void
+# Normalized type classes: i16, i32, f32, u8, ptr (pointer/buffer), wstr (LPCWSTR), bstr, void
 DLL_TYPES = {"short": "i16", "long": "i32", "u32": "i32", "LPCWSTR": "wstr", "BSTR": "bstr",
              "BYTE *": "ptr", "BYTE": "u8", "float": "f32", "void": "void"}
 ENUMS = {"ID3V2FRAMES": "i32", "MP4FRAMES": "i32", "WAVFRAMES": "i32", "PictureType": "i16"}
@@ -66,7 +66,7 @@ def parse_cs():
             toks.append(m2.get(p.split()[0], "?" + p.split()[0]))
         rt = m2.get(r, "?" + r)
         if rt == "wstr":
-            rt = "bstr" if "UnmanagedType.BStr" in attrs else "wstr(ohne BStr-Marshalling)"
+            rt = "bstr" if "UnmanagedType.BStr" in attrs else "wstr(without BStr marshalling)"
         out[n] = (rt, toks)
     return out
 
@@ -88,7 +88,7 @@ def parse_vb():
         r = (r or "").replace("[", "").replace("]", "")
         rt = "void" if kind == "Sub" else m2.get(r, "?" + r)
         if rt == "wstr":
-            rt = "bstr" if ret_attr and "BStr" in ret_attr else "wstr(ohne BStr-Marshalling)"
+            rt = "bstr" if ret_attr and "BStr" in ret_attr else "wstr(without BStr marshalling)"
         out[n] = (rt, toks)
     return out
 
@@ -124,7 +124,7 @@ def parse_vb6():
     return out
 
 
-# Bekannte, harmlose Abweichungen (Stack-/Registerbelegung identisch, Wert passt in 16 Bit / wird ignoriert).
+# Known, harmless deviations (identical stack/register usage, value fits into 16 bits / is ignored).
 HARMLOS_RET = {"AUDIOAnalyzeFileW", "MP4DeletePictureW"}
 
 
@@ -136,7 +136,7 @@ def compatible(wrapper_lang, w, d, is_ret):
     if wrapper_lang == "vb6" and is_ret and w == "bstr" and d == "bstr":
         return True
     if wrapper_lang == "delphi" and is_ret and w == "wstr" and d == "bstr":
-        return True                      # PWideChar-Rueckgabe; ConvertString gibt den BSTR frei
+        return True                      # PWideChar return value; ConvertString frees the BSTR
     if not is_ret and {w, d} <= {"wstr", "bstr"}:
         return True                      # WideString/BSTR als Parameter = LPCWSTR
     return False
@@ -146,26 +146,26 @@ def main():
     dll = parse_dll()
     parsers = {"cpp": parse_cpp, "cs": parse_cs, "vbnet": parse_vb, "delphi": parse_delphi, "vb6": parse_vb6}
     problems = 0
-    print(f"{len(dll)} Exporte in dllmain.cpp")
+    print(f"{len(dll)} exports in dllmain.cpp")
     for lang, fn in parsers.items():
         decl = fn()
         issues = []
         for n in sorted(dll):
             if n not in decl:
-                issues.append(f"{n}: fehlt")
+                issues.append(f"{n}: missing")
                 continue
             (dr, dp), (wr, wp) = dll[n], decl[n]
             if n not in HARMLOS_RET and not compatible(lang, wr, dr, True):
-                issues.append(f"{n}: Rueckgabe {wr} statt {dr}")
+                issues.append(f"{n}: return type {wr} instead of {dr}")
             if len(wp) != len(dp):
-                issues.append(f"{n}: {len(wp)} statt {len(dp)} Parameter")
+                issues.append(f"{n}: {len(wp)} instead of {len(dp)} parameters")
                 continue
             for i, (a, b) in enumerate(zip(wp, dp)):
                 if not compatible(lang, a, b, False):
-                    issues.append(f"{n}: Parameter {i + 1} {a} statt {b}")
+                    issues.append(f"{n}: parameter {i + 1} {a} instead of {b}")
         extra = sorted(set(decl) - set(dll))
-        issues += [f"{n}: nicht in der DLL" for n in extra]
-        print(f"  {lang:7s} {len(decl):4d} Deklarationen, {len(issues)} Abweichungen")
+        issues += [f"{n}: not in the DLL" for n in extra]
+        print(f"  {lang:7s} {len(decl):4d} declarations, {len(issues)} deviations")
         for i in issues:
             print("     -", i)
         problems += len(issues)

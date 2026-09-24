@@ -1,7 +1,7 @@
-# Zeilenenden: Text wird im Repository mit LF gespeichert und unter Windows als CRLF ausgecheckt.
+# Line endings: text is stored with LF in the repository and checked out as CRLF on Windows.
 * text=auto
 
-# Windows-Quellen und Batch-Dateien immer mit CRLF auschecken (VB6-Dateien, Batch und Visual Studio verlangen das)
+# Always check out Windows sources and batch files with CRLF (VB6 files, batch and Visual Studio require it)
 *.cpp  text eol=crlf
 *.h    text eol=crlf
 *.c    text eol=crlf
@@ -20,7 +20,7 @@
 *.filters text eol=crlf
 *.slnx text eol=crlf
 
-# Skripte und Doku: LF
+# Scripts and documentation: LF
 *.py   text eol=lf
 *.md   text eol=lf
 
@@ -48,5 +48,5 @@
 *.aac binary
 *.bin binary
 
-# Generierte Doxygen-Doku: unveraendert speichern, in Diffs als generiert markieren
+# Generated Doxygen documentation: store unchanged, mark as generated in diffs
 doku/** -text linguist-generated

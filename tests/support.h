@@ -1,5 +1,5 @@
-// Hilfsfunktionen fuer die AudioGenie3-Tests: synthetische Testdateien,
-// temporaere Dateien und BSTR-Handling. Keine Fixture-Dateien im Repo noetig.
+// Helper functions for the AudioGenie3 tests: synthetic test files,
+// temporary files and BSTR handling. No fixture files needed in the repo.
 #pragma once
 #ifndef NOMINMAX
 #define NOMINMAX
@@ -21,15 +21,15 @@ Bytes makeWav(int sampleRate, int channels, double seconds);
 // MPEG-1 Layer 3, 128 kbit/s, 44,1 kHz, Stereo, Stille: 'frames' Frames a 417 Byte.
 Bytes makeMp3(int frames);
 
-// Eigenes Verzeichnis unter %TEMP%, wird bei Bedarf angelegt.
+// Own directory under %TEMP%, created on demand.
 std::filesystem::path tempDir();
 std::filesystem::path writeTemp(const std::string& name, const Bytes& data);
 Bytes readFile(const std::filesystem::path& p);
 
-// Uebernimmt einen von der DLL gelieferten BSTR (gibt ihn frei).
+// Takes over a BSTR returned by the DLL (frees it).
 std::wstring take(BSTR b);
 
-// Groesse des ID3v2-Tags am Dateianfang inkl. 10-Byte-Header, 0 wenn keiner.
+// Size of the ID3v2 tag at the start of the file including the 10-byte header, 0 if there is none.
 size_t id3v2TotalSize(const Bytes& file);
 
 }  // namespace ag3test

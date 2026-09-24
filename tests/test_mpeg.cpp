@@ -4,7 +4,7 @@
 
 using namespace ag3test;
 
-TEST_CASE("MPEG: Analyse liefert Format und Eckdaten", "[mpeg]")
+TEST_CASE("MPEG: analysis returns format and basic data", "[mpeg]")
 {
     auto p = writeTemp("silence.mp3", makeMp3(100));   // 100 Frames * 26,12 ms
     REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
@@ -14,7 +14,7 @@ TEST_CASE("MPEG: Analyse liefert Format und Eckdaten", "[mpeg]")
     CHECK(AUDIOGetDurationW() == Catch::Approx(2.612).margin(0.05));
 }
 
-TEST_CASE("MPEG: ID3v2 Round-Trip, Audiodaten bleiben unveraendert", "[mpeg][id3v2][roundtrip]")
+TEST_CASE("MPEG: ID3v2 round trip, audio data stays unchanged", "[mpeg][id3v2][roundtrip]")
 {
     const Bytes audio = makeMp3(50);
     auto p = writeTemp("id3_tag.mp3", audio);
@@ -33,11 +33,11 @@ TEST_CASE("MPEG: ID3v2 Round-Trip, Audiodaten bleiben unveraendert", "[mpeg][id3
     const size_t tag = id3v2TotalSize(after);
     REQUIRE(tag > 10);
     REQUIRE(after.size() >= tag + audio.size());
-    // Die Frames stehen nach dem Tag; ein eventuell angehaengter ID3v1-Tag (128 Byte) ist erlaubt.
+    // The frames follow the tag; an appended ID3v1 tag (128 bytes) is allowed.
     CHECK(std::equal(audio.begin(), audio.end(), after.begin() + tag));
 }
 
-TEST_CASE("MPEG: AUDIOSetTitleW + AUDIOSaveChangesW schreibt ID3v2 (TIT2)", "[mpeg][id3v2][roundtrip]")
+TEST_CASE("MPEG: AUDIOSetTitleW + AUDIOSaveChangesW writes ID3v2 (TIT2)", "[mpeg][id3v2][roundtrip]")
 {
     auto p = writeTemp("audio_title.mp3", makeMp3(50));
     REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
@@ -49,7 +49,7 @@ TEST_CASE("MPEG: AUDIOSetTitleW + AUDIOSaveChangesW schreibt ID3v2 (TIT2)", "[mp
     CHECK(take(ID3V2GetTextFrameW(ID3F_TIT2)) == L"Abstrakter Titel");
 }
 
-TEST_CASE("MPEG: ID3V2RemoveTagW entfernt den Tag sofort aus der Datei", "[mpeg][id3v2]")
+TEST_CASE("MPEG: ID3V2RemoveTagW removes the tag from the file immediately", "[mpeg][id3v2]")
 {
     const Bytes audio = makeMp3(50);
     auto p = writeTemp("id3_remove.mp3", audio);
@@ -59,7 +59,7 @@ TEST_CASE("MPEG: ID3V2RemoveTagW entfernt den Tag sofort aus der Datei", "[mpeg]
     REQUIRE(id3v2TotalSize(readFile(p)) > 0);
 
     REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
-    REQUIRE(ID3V2RemoveTagW() != 0);   // wirkt sofort, kein Save noetig
+    REQUIRE(ID3V2RemoveTagW() != 0);   // takes effect immediately, no save needed
 
     const Bytes after = readFile(p);
     CHECK(id3v2TotalSize(after) == 0);

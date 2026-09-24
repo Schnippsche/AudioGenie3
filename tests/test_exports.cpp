@@ -1,10 +1,10 @@
-// Vertrag: jeder in der .def deklarierte Export muss in der DLL aufloesbar sein.
+// Contract: every export declared in the .def must be resolvable in the DLL.
 #include "catch2/catch_amalgamated.hpp"
 #include "support.h"
 #include <fstream>
 #include <regex>
 
-TEST_CASE("Alle Exporte der .def sind in der DLL vorhanden", "[exports]")
+TEST_CASE("All exports of the .def are present in the DLL", "[exports]")
 {
     HMODULE h = LoadLibraryW(L"AudioGenie3.dll");
     REQUIRE(h != nullptr);
