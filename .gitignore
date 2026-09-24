@@ -1,0 +1,31 @@
+# Visual Studio / Build-Ausgaben
+.vs/
+ipch/
+Debug/
+Release/
+x64/
+*.obj
+*.pdb
+*.ilk
+*.iobj
+*.ipdb
+*.tlog/
+*.suo
+*.user
+*.aps
+*.VC.db
+*.VC.opendb
+_UpgradeReport_Files/
+
+# Test-Ausgaben
+tests/out/
+
+# Claude Code / graphify
+.claude/
+graphify-out/
+
+# Alt-Artefakte in den Beispielprojekten
+bin/
+obj/
+*.log
+_UpgradeReport.htm
