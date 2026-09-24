@@ -152,7 +152,7 @@ bool CWMA_TagData::load(FILE *Stream, size_t maxLen)
 	}
 	else 
 	{
-		ATLASSERT(_T("Ungültige TagData Art!"));
+		ATLASSERT(_T("Ungueltige TagData Art!"));
 		return false;
 	}
 	return true;

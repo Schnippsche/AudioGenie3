@@ -104,3 +104,10 @@ Diese Verhaeltnisse sind gewollt und in den Tests so festgehalten; sie nicht als
 - **`AUDIOSaveChangesW` nach fehlgeschlagener Analyse:** schreibt nichts (frueher: die geleerten Felder in die vorher analysierte Datei).
 - `AG3_MISUSE_TRACE=1` protokolliert jeden Aufruf des Missbrauchstests nach `%TEMP%/ag3tests/misuse_trace.log` (letzte Zeile = Absturzursache),
   `AG3_MISUSE_SKIP=Fn1,Fn2` laesst Funktionen aus, `AG3_FUZZ_ROUNDS` erhoeht die Aufrufe je Funktion (Standard 30).
+
+## Kodierung und Zeilenenden
+
+`.editorconfig` legt die Kodierung je Bereich fest: DLL-Quellcode, Wrapper und Beispielprojekte sind Windows-1252 (`latin1`; VB6 und aeltere
+Delphi-Versionen erwarten ANSI, die HTML-Doku ist ISO-8859-1), Tests und Skripte UTF-8 (`tests/run.bat` kompiliert mit `/utf-8`).
+`.gitattributes` speichert Text mit LF im Repository und checkt Windows-Quellen und Batch-Dateien mit CRLF aus. String-Literale in den
+DLL-Quellen sind ASCII; Umlaute stehen nur in Kommentaren.

@@ -5607,7 +5607,7 @@ extern "C" short __stdcall ID3V2DeleteChildElementW(LPCWSTR ParentTocID, LPCWSTR
 */
 extern "C" short __stdcall ID3V2DeleteAddendumW(LPCWSTR ID)
 {
-	ATLTRACE(_T("lösche %s\n"), ID);
+	ATLTRACE(_T("loesche %s\n"), ID);
 	CID3_Frame *delFrame = id3v2.findFrame(getValidPointer(ID));
 	if (delFrame == NULL)
 		return-b2s(false);
@@ -5620,7 +5620,7 @@ extern "C" short __stdcall ID3V2DeleteAddendumW(LPCWSTR ID)
 		CID3F_CTOC *toc = cCTOC(chap);
 		for (u16 i = toc->getNumberOfEntries(); i > 0; i--)
 		{
-			ATLTRACE(_T(" rekursiv lösche %s\n"), toc->getChildElementID(i));
+			ATLTRACE(_T(" rekursiv loesche %s\n"), toc->getChildElementID(i));
 			ID3V2DeleteAddendumW(toc->getChildElementID(i));
 		}
 	}

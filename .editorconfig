@@ -1,0 +1,34 @@
+# Kodierungen je Bereich (siehe tests/README.md). Editoren und Visual Studio speichern damit nicht versehentlich um.
+root = true
+
+[*]
+charset = latin1
+insert_final_newline = false
+trim_trailing_whitespace = false
+
+# DLL-Quellcode, Wrapper und Beispielprojekte: Windows-1252 (VB6 und aeltere Delphi-Versionen erwarten ANSI);
+# die generierte HTML-Doku ist ISO-8859-1. Zeilenenden: CRLF.
+[*.{cpp,h,c,def,idl,rc,rgs,bas,cls,frm,vbp,vb,cs,pas,html,htm}]
+charset = latin1
+end_of_line = crlf
+
+[*.{vcxproj,filters,vspscc,slnx,sln}]
+charset = utf-8-bom
+end_of_line = crlf
+
+# Tests, Skripte und Dokumentation: UTF-8 ohne BOM (tests/run.bat compiliert mit /utf-8)
+[tests/**]
+charset = utf-8
+end_of_line = crlf
+
+[*.{py,md,json,yml}]
+charset = utf-8
+end_of_line = lf
+
+[tests/**.{py,md}]
+charset = utf-8
+end_of_line = lf
+
+[*.bat]
+charset = utf-8
+end_of_line = crlf
