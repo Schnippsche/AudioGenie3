@@ -79,7 +79,7 @@ bool CID3V1TagInfo::ReadFromFile(FILE *Stream)
 	  || (tmp->GetAt(3) != 'T' || tmp->GetAt(4) != 'A' || tmp->GetAt(5) != 'G') )
 	  return false;
   
-  /*  Alt
+  /*  old version
   CAtlString st = tmp->GetStringAt(6, 124);
   Title = st.Mid(0, 30).TrimRight();
   Artist = st.Mid(30, 30).TrimRight();

@@ -156,9 +156,9 @@ Functions</h2></td></tr>
 <tr class="memitem:ga394e11f9719c042014c92db1023a0c79" id="r_ga394e11f9719c042014c92db1023a0c79"><td class="memItemLeft">BSTR&#160;</td><td class="memItemRight"><a class="el" href="#ga394e11f9719c042014c92db1023a0c79">ID3V1GetVersionW</a> ()</td></tr>
 <tr class="memdesc:ga394e11f9719c042014c92db1023a0c79"><td class="mdescLeft">&#160;</td><td class="mdescRight">get the version of the id3v1 tag  <br /></td></tr>
 <tr class="memitem:gac3b2489145d29ba49198de1ff6ecad76" id="r_gac3b2489145d29ba49198de1ff6ecad76"><td class="memItemLeft">short&#160;</td><td class="memItemRight"><a class="el" href="#gac3b2489145d29ba49198de1ff6ecad76">ID3V1RemoveTagFromFileW</a> (LPCWSTR FileName)</td></tr>
-<tr class="memdesc:gac3b2489145d29ba49198de1ff6ecad76"><td class="mdescLeft">&#160;</td><td class="mdescRight">remove the ID3v1 tag from a file. Attention: This function removes the tag immediately!  <br /></td></tr>
+<tr class="memdesc:gac3b2489145d29ba49198de1ff6ecad76"><td class="mdescLeft">&#160;</td><td class="mdescRight">remove the ID3v1 tag from a file. Attention: This function removes the tag immediately! An existing Lyrics tag is removed as well.  <br /></td></tr>
 <tr class="memitem:ga7c1e5e2105323599591730b8d4464541" id="r_ga7c1e5e2105323599591730b8d4464541"><td class="memItemLeft">short&#160;</td><td class="memItemRight"><a class="el" href="#ga7c1e5e2105323599591730b8d4464541">ID3V1RemoveTagW</a> ()</td></tr>
-<tr class="memdesc:ga7c1e5e2105323599591730b8d4464541"><td class="mdescLeft">&#160;</td><td class="mdescRight">remove the ID3v1 tag from the last analyzed file. Attention: This function removes the tag immediately!  <br /></td></tr>
+<tr class="memdesc:ga7c1e5e2105323599591730b8d4464541"><td class="mdescLeft">&#160;</td><td class="mdescRight">remove the ID3v1 tag from the last analyzed file. Attention: This function removes the tag immediately! An existing Lyrics tag is removed as well.  <br /></td></tr>
 <tr class="memitem:gaed20d49b8fe3a716626178a5e374d7f7" id="r_gaed20d49b8fe3a716626178a5e374d7f7"><td class="memItemLeft">short&#160;</td><td class="memItemRight"><a class="el" href="#gaed20d49b8fe3a716626178a5e374d7f7">ID3V1SaveChangesToFileW</a> (LPCWSTR FileName)</td></tr>
 <tr class="memdesc:gaed20d49b8fe3a716626178a5e374d7f7"><td class="mdescLeft">&#160;</td><td class="mdescRight">stores the ID3v1 tag into a file  <br /></td></tr>
 <tr class="memitem:ga12715da1ec27a20607453d9bd94f94a1" id="r_ga12715da1ec27a20607453d9bd94f94a1"><td class="memItemLeft">short&#160;</td><td class="memItemRight"><a class="el" href="#ga12715da1ec27a20607453d9bd94f94a1">ID3V1SaveChangesW</a> ()</td></tr>
@@ -648,7 +648,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>remove the ID3v1 tag from a file. Attention: This function removes the tag immediately! </p>
+<p>remove the ID3v1 tag from a file. Attention: This function removes the tag immediately! An existing Lyrics tag is removed as well. </p>
 <dl class="section since"><dt>Since</dt><dd>2.0.1.0 </dd></dl>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
@@ -675,7 +675,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>remove the ID3v1 tag from the last analyzed file. Attention: This function removes the tag immediately! </p>
+<p>remove the ID3v1 tag from the last analyzed file. Attention: This function removes the tag immediately! An existing Lyrics tag is removed as well. </p>
 <dl class="section since"><dt>Since</dt><dd>2.0.1.0 </dd></dl>
 <dl class="section return"><dt>Returns</dt><dd>-1 if removed, 0 on error </dd></dl>
 

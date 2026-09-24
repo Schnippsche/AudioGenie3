@@ -307,14 +307,14 @@ void CMP4::SetItuneText(CAtlString frame, CAtlString newText)
 	}
 	mainContainer->checkMetaBox();
 	CMP4Atom* atom = mainContainer->find(suchPfad);
-	if (atom == NULL) // Neuanlage
+	if (atom == NULL) // create new
 	{
 		atom = new CMP4Atom('----');
 		atom->setParent(ILST_PFAD);
 		CMP4_AtomFactory::instance()->setItuneText(atom, frame, newText);
 		mainContainer->addAtom(atom);
 	}
-	else // Ersetzen
+	else // replace
 	{
 		CMP4_AtomFactory::instance()->setItuneText(atom, frame, newText);
 	}
@@ -581,7 +581,7 @@ bool CMP4::SaveToFile(LPCWSTR FileName)
 	}
 	CTools::instance().writeDebug(_T("Rewrite mp4 tag")); 
 	mdat->setSameFile(false);
-	// Passe Padding an
+	// adjust padding
 	errno = 0;
 	newData->adjustPadding(sizeBefore - sizeAfter);
 	_fseeki64(Source, CTools::ID3v2Size, SEEK_SET);

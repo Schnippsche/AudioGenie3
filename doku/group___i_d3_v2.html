@@ -188,7 +188,7 @@ Functions</h2></td></tr>
 <tr class="memitem:ga1212ea2e44af81d3f92af22e870f28c2" id="r_ga1212ea2e44af81d3f92af22e870f28c2"><td class="memItemLeft">long&#160;</td><td class="memItemRight"><a class="el" href="#ga1212ea2e44af81d3f92af22e870f28c2">ID3V2GetAudioEncryptionDataW</a> (BYTE *arr, u32 maxLen, short Index)</td></tr>
 <tr class="memdesc:ga1212ea2e44af81d3f92af22e870f28c2"><td class="mdescLeft">&#160;</td><td class="mdescRight">get the encryption info  <br /></td></tr>
 <tr class="memitem:ga5726746d75b4b870542405062722bc84" id="r_ga5726746d75b4b870542405062722bc84"><td class="memItemLeft">BSTR&#160;</td><td class="memItemRight"><a class="el" href="#ga5726746d75b4b870542405062722bc84">ID3V2GetAudioEncryptionURLW</a> (short Index)</td></tr>
-<tr class="memdesc:ga5726746d75b4b870542405062722bc84"><td class="mdescLeft">&#160;</td><td class="mdescRight">get the url containing an email address  <br /></td></tr>
+<tr class="memdesc:ga5726746d75b4b870542405062722bc84"><td class="mdescLeft">&#160;</td><td class="mdescRight">get the owner identifier (an URL or email address)  <br /></td></tr>
 <tr class="memitem:ga226c50f09d1d94413b5f853698d47d1c" id="r_ga226c50f09d1d94413b5f853698d47d1c"><td class="memItemLeft">short&#160;</td><td class="memItemRight"><a class="el" href="#ga226c50f09d1d94413b5f853698d47d1c">ID3V2GetAudioEncryptionPreviewStartW</a> (short Index)</td></tr>
 <tr class="memdesc:ga226c50f09d1d94413b5f853698d47d1c"><td class="mdescLeft">&#160;</td><td class="mdescRight">get the preview start frame  <br /></td></tr>
 <tr class="memitem:ga93950129f71837a74982a20565619e07" id="r_ga93950129f71837a74982a20565619e07"><td class="memItemLeft">short&#160;</td><td class="memItemRight"><a class="el" href="#ga93950129f71837a74982a20565619e07">ID3V2GetAudioEncryptionPreviewLengthW</a> (short Index)</td></tr>
@@ -196,9 +196,9 @@ Functions</h2></td></tr>
 <tr class="memitem:gae7f9ff9f42f63cb1a31160dc44de9b4f" id="r_gae7f9ff9f42f63cb1a31160dc44de9b4f"><td class="memItemLeft">short&#160;</td><td class="memItemRight"><a class="el" href="#gae7f9ff9f42f63cb1a31160dc44de9b4f">ID3V2AddAudioSeekPointW</a> (BYTE *arr, u32 maxLen, long start, long length, short numbers, BYTE BitsPerPoint)</td></tr>
 <tr class="memdesc:gae7f9ff9f42f63cb1a31160dc44de9b4f"><td class="mdescLeft">&#160;</td><td class="mdescRight">add an audio seek point  <br /></td></tr>
 <tr class="memitem:ga413e5ae0c78ce6b52b7f20d2f222aa52" id="r_ga413e5ae0c78ce6b52b7f20d2f222aa52"><td class="memItemLeft">long&#160;</td><td class="memItemRight"><a class="el" href="#ga413e5ae0c78ce6b52b7f20d2f222aa52">ID3V2GetAudioSeekPointStartW</a> ()</td></tr>
-<tr class="memdesc:ga413e5ae0c78ce6b52b7f20d2f222aa52"><td class="mdescLeft">&#160;</td><td class="mdescRight">Indexed data start.  <br /></td></tr>
+<tr class="memdesc:ga413e5ae0c78ce6b52b7f20d2f222aa52"><td class="mdescLeft">&#160;</td><td class="mdescRight">get the start of the indexed data  <br /></td></tr>
 <tr class="memitem:ga5207654cce2ec3e149d9468e9afac97d" id="r_ga5207654cce2ec3e149d9468e9afac97d"><td class="memItemLeft">long&#160;</td><td class="memItemRight"><a class="el" href="#ga5207654cce2ec3e149d9468e9afac97d">ID3V2GetAudioSeekPointLengthW</a> ()</td></tr>
-<tr class="memdesc:ga5207654cce2ec3e149d9468e9afac97d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Indexed data length.  <br /></td></tr>
+<tr class="memdesc:ga5207654cce2ec3e149d9468e9afac97d"><td class="mdescLeft">&#160;</td><td class="mdescRight">get the length of the indexed data  <br /></td></tr>
 <tr class="memitem:ga4380593703fbfddbe16ccf5c840f9fa0" id="r_ga4380593703fbfddbe16ccf5c840f9fa0"><td class="memItemLeft">long&#160;</td><td class="memItemRight"><a class="el" href="#ga4380593703fbfddbe16ccf5c840f9fa0">ID3V2GetAudioSeekPointNumberW</a> ()</td></tr>
 <tr class="memdesc:ga4380593703fbfddbe16ccf5c840f9fa0"><td class="mdescLeft">&#160;</td><td class="mdescRight">get the number of index points  <br /></td></tr>
 <tr class="memitem:ga8993ab6a110257caf7db83f9564f3047" id="r_ga8993ab6a110257caf7db83f9564f3047"><td class="memItemLeft">long&#160;</td><td class="memItemRight"><a class="el" href="#ga8993ab6a110257caf7db83f9564f3047">ID3V2GetAudioSeekPointBitsPerIndexpointW</a> ()</td></tr>
@@ -246,7 +246,7 @@ Functions</h2></td></tr>
 <tr class="memitem:ga113fc0f76ccbeabcb8bc1c44c891c96c" id="r_ga113fc0f76ccbeabcb8bc1c44c891c96c"><td class="memItemLeft">short&#160;</td><td class="memItemRight"><a class="el" href="#ga113fc0f76ccbeabcb8bc1c44c891c96c">ID3V2GetAddendumTypeW</a> (LPCWSTR ID)</td></tr>
 <tr class="memdesc:ga113fc0f76ccbeabcb8bc1c44c891c96c"><td class="mdescLeft">&#160;</td><td class="mdescRight">get the type of the element  <br /></td></tr>
 <tr class="memitem:gab6309574cd19d68c4e8a55a88a6f6a73" id="r_gab6309574cd19d68c4e8a55a88a6f6a73"><td class="memItemLeft">BSTR&#160;</td><td class="memItemRight"><a class="el" href="#gab6309574cd19d68c4e8a55a88a6f6a73">ID3V2GetAllFrameIDsW</a> ()</td></tr>
-<tr class="memdesc:gab6309574cd19d68c4e8a55a88a6f6a73"><td class="mdescLeft">&#160;</td><td class="mdescRight">get a comma based List of all unique frame ids  <br /></td></tr>
+<tr class="memdesc:gab6309574cd19d68c4e8a55a88a6f6a73"><td class="mdescLeft">&#160;</td><td class="mdescRight">get a comma-separated list of all unique frame ids  <br /></td></tr>
 <tr class="memitem:ga0d852bc9e146296518a698f65d23ae61" id="r_ga0d852bc9e146296518a698f65d23ae61"><td class="memItemLeft">u32&#160;</td><td class="memItemRight"><a class="el" href="#ga0d852bc9e146296518a698f65d23ae61">ID3V2GetChapterStartTimeW</a> (LPCWSTR ID)</td></tr>
 <tr class="memdesc:ga0d852bc9e146296518a698f65d23ae61"><td class="mdescLeft">&#160;</td><td class="mdescRight">get the start time of a CHAP element in milliseconds  <br /></td></tr>
 <tr class="memitem:gad581cc32217065454db47019e98f67c6" id="r_gad581cc32217065454db47019e98f67c6"><td class="memItemLeft">u32&#160;</td><td class="memItemRight"><a class="el" href="#gad581cc32217065454db47019e98f67c6">ID3V2GetChapterEndTimeW</a> (LPCWSTR ID)</td></tr>
@@ -276,15 +276,15 @@ Functions</h2></td></tr>
 <tr class="memitem:ga3f998597efe3aae57292068fbdb83777" id="r_ga3f998597efe3aae57292068fbdb83777"><td class="memItemLeft">BSTR&#160;</td><td class="memItemRight"><a class="el" href="#ga3f998597efe3aae57292068fbdb83777">ID3V2GetTOCRootIDW</a> ()</td></tr>
 <tr class="memdesc:ga3f998597efe3aae57292068fbdb83777"><td class="mdescLeft">&#160;</td><td class="mdescRight">get the ID of the root CTOC element  <br /></td></tr>
 <tr class="memitem:ga266d2fdc2b6fe3640d87b8993077aba9" id="r_ga266d2fdc2b6fe3640d87b8993077aba9"><td class="memItemLeft">short&#160;</td><td class="memItemRight"><a class="el" href="#ga266d2fdc2b6fe3640d87b8993077aba9">ID3V2GetChildElementsW</a> (LPCWSTR ID)</td></tr>
-<tr class="memdesc:ga266d2fdc2b6fe3640d87b8993077aba9"><td class="mdescLeft">&#160;</td><td class="mdescRight">get the count of the child elements from a CTOC or CHAP element  <br /></td></tr>
+<tr class="memdesc:ga266d2fdc2b6fe3640d87b8993077aba9"><td class="mdescLeft">&#160;</td><td class="mdescRight">get the count of the child elements from a CTOC element  <br /></td></tr>
 <tr class="memitem:ga9af77b9ee63cf8151ffa98d3c4e846eb" id="r_ga9af77b9ee63cf8151ffa98d3c4e846eb"><td class="memItemLeft">BSTR&#160;</td><td class="memItemRight"><a class="el" href="#ga9af77b9ee63cf8151ffa98d3c4e846eb">ID3V2GetChildElementIDW</a> (LPCWSTR ID, short Index)</td></tr>
 <tr class="memdesc:ga9af77b9ee63cf8151ffa98d3c4e846eb"><td class="mdescLeft">&#160;</td><td class="mdescRight">get the ID of a child element  <br /></td></tr>
 <tr class="memitem:ga969dcab5bc2dbddcbeb0eb3bb1b37738" id="r_ga969dcab5bc2dbddcbeb0eb3bb1b37738"><td class="memItemLeft">short&#160;</td><td class="memItemRight"><a class="el" href="#ga969dcab5bc2dbddcbeb0eb3bb1b37738">ID3V2SetTextSubFrameW</a> (LPCWSTR ID, u32 FrameID, LPCWSTR textString, LPCWSTR description)</td></tr>
-<tr class="memdesc:ga969dcab5bc2dbddcbeb0eb3bb1b37738"><td class="mdescLeft">&#160;</td><td class="mdescRight">set a text frame; an existing one is replaced  <br /></td></tr>
+<tr class="memdesc:ga969dcab5bc2dbddcbeb0eb3bb1b37738"><td class="mdescLeft">&#160;</td><td class="mdescRight">set a text subframe; an empty text removes the subframe  <br /></td></tr>
 <tr class="memitem:ga2324e4ab5ce9018cafa845c3e7e90fd7" id="r_ga2324e4ab5ce9018cafa845c3e7e90fd7"><td class="memItemLeft">short&#160;</td><td class="memItemRight"><a class="el" href="#ga2324e4ab5ce9018cafa845c3e7e90fd7">ID3V2SetURLSubFrameW</a> (LPCWSTR ID, u32 FrameID, LPCWSTR urlString, LPCWSTR description)</td></tr>
-<tr class="memdesc:ga2324e4ab5ce9018cafa845c3e7e90fd7"><td class="mdescLeft">&#160;</td><td class="mdescRight">set a url frame; an existing one is replaced  <br /></td></tr>
+<tr class="memdesc:ga2324e4ab5ce9018cafa845c3e7e90fd7"><td class="mdescLeft">&#160;</td><td class="mdescRight">set a URL subframe; an empty URL removes the subframe  <br /></td></tr>
 <tr class="memitem:gadd7210f76da6c26266e356fbcdbd9233" id="r_gadd7210f76da6c26266e356fbcdbd9233"><td class="memItemLeft">short&#160;</td><td class="memItemRight"><a class="el" href="#gadd7210f76da6c26266e356fbcdbd9233">ID3V2SetImageSubFrameW</a> (BYTE *arr, u32 maxLen, LPCWSTR ID, LPCWSTR Description, short PictureType)</td></tr>
-<tr class="memdesc:gadd7210f76da6c26266e356fbcdbd9233"><td class="mdescLeft">&#160;</td><td class="mdescRight">set a picture frame; an existing one is replaced  <br /></td></tr>
+<tr class="memdesc:gadd7210f76da6c26266e356fbcdbd9233"><td class="mdescLeft">&#160;</td><td class="mdescRight">add a picture subframe  <br /></td></tr>
 <tr class="memitem:ga7bf74babf1c1c41c8066dcdb2fdcec93" id="r_ga7bf74babf1c1c41c8066dcdb2fdcec93"><td class="memItemLeft">short&#160;</td><td class="memItemRight"><a class="el" href="#ga7bf74babf1c1c41c8066dcdb2fdcec93">ID3V2DeleteSubFrameW</a> (LPCWSTR ID, u32 FrameID)</td></tr>
 <tr class="memdesc:ga7bf74babf1c1c41c8066dcdb2fdcec93"><td class="mdescLeft">&#160;</td><td class="mdescRight">deletes a subframe  <br /></td></tr>
 <tr class="memitem:ga04e96a7fd939e91f85477c4e06463dea" id="r_ga04e96a7fd939e91f85477c4e06463dea"><td class="memItemLeft">short&#160;</td><td class="memItemRight"><a class="el" href="#ga04e96a7fd939e91f85477c4e06463dea">ID3V2AddEncryptionW</a> (BYTE *arr, u32 maxLen, LPCWSTR URL, short Symbol)</td></tr>
@@ -530,7 +530,7 @@ Functions</h2></td></tr>
 </div><div class="memdoc">
 
 <p>set the text entry of a frame </p>
-<dl class="section since"><dt>Since</dt><dd>2.0.1.0 </dd></dl>
+<dl class="section since"><dt>Since</dt><dd>2.0.1.0 An empty text removes the frame.</dd></dl>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">FrameID</td><td>the ID of the frame </td></tr>
@@ -588,7 +588,7 @@ Functions</h2></td></tr>
 </div><div class="memdoc">
 
 <p>set the text of an url frame </p>
-<dl class="section since"><dt>Since</dt><dd>2.0.1.0 </dd></dl>
+<dl class="section since"><dt>Since</dt><dd>2.0.1.0 An empty text removes the frame.</dd></dl>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">FrameID</td><td>the ID of the frame </td></tr>
@@ -901,7 +901,7 @@ Functions</h2></td></tr>
 
 <p>get the ID3v2 version number </p>
 <dl class="section since"><dt>Since</dt><dd>2.0.1.0 </dd></dl>
-<dl class="section return"><dt>Returns</dt><dd>the version number </dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>"2.2", "2.3" or "2.4", empty if there is no ID3v2 tag </dd></dl>
 
 </div>
 </div>
@@ -1531,9 +1531,9 @@ Functions</h2></td></tr>
   <table class="params">
     <tr><td class="paramname">arr</td><td>pointer to the byte array </td></tr>
     <tr><td class="paramname">maxLen</td><td>of the array in bytes </td></tr>
-    <tr><td class="paramname">URL</td><td>identifier </td></tr>
-    <tr><td class="paramname">PreviewStart</td><td></td></tr>
-    <tr><td class="paramname">PreviewLength</td><td></td></tr>
+    <tr><td class="paramname">URL</td><td>owner identifier (an URL or email address) </td></tr>
+    <tr><td class="paramname">PreviewStart</td><td>start of the unencrypted preview, in MPEG frames </td></tr>
+    <tr><td class="paramname">PreviewLength</td><td>length of the unencrypted preview, in MPEG frames </td></tr>
   </table>
   </dd>
 </dl>
@@ -1595,7 +1595,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>get the url containing an email address </p>
+<p>get the owner identifier (an URL or email address) </p>
 <dl class="section since"><dt>Since</dt><dd>2.0.1.0 </dd></dl>
 <dl class="section user"><dt>ID3v2 frame</dt><dd>AENC </dd></dl>
 <dl class="params"><dt>Parameters</dt><dd>
@@ -1709,12 +1709,12 @@ Functions</h2></td></tr>
 <dl class="section user"><dt>ID3v2 frame</dt><dd>ASPI </dd></dl>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">arr</td><td>pointer to the byte array with the encryption data </td></tr>
+    <tr><td class="paramname">arr</td><td>pointer to the byte array with the index points </td></tr>
     <tr><td class="paramname">maxLen</td><td>of the array in bytes </td></tr>
-    <tr><td class="paramname">start</td><td></td></tr>
-    <tr><td class="paramname">length</td><td></td></tr>
-    <tr><td class="paramname">numbers</td><td></td></tr>
-    <tr><td class="paramname">BitsPerPoint</td><td></td></tr>
+    <tr><td class="paramname">start</td><td>start of the indexed data (byte offset) </td></tr>
+    <tr><td class="paramname">length</td><td>length of the indexed data in bytes </td></tr>
+    <tr><td class="paramname">numbers</td><td>number of index points </td></tr>
+    <tr><td class="paramname">BitsPerPoint</td><td>bits per index point (8 or 16) </td></tr>
   </table>
   </dd>
 </dl>
@@ -1737,7 +1737,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>Indexed data start. </p>
+<p>get the start of the indexed data </p>
 <dl class="section since"><dt>Since</dt><dd>2.0.1.0 </dd></dl>
 <dl class="section user"><dt>ID3v2 frame</dt><dd>ASPI </dd></dl>
 <dl class="section return"><dt>Returns</dt><dd>value or -1 if error </dd></dl>
@@ -1759,7 +1759,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>Indexed data length. </p>
+<p>get the length of the indexed data </p>
 <dl class="section since"><dt>Since</dt><dd>2.0.1.0 </dd></dl>
 <dl class="section user"><dt>ID3v2 frame</dt><dd>ASPI </dd></dl>
 <dl class="section return"><dt>Returns</dt><dd>value or -1 if error </dd></dl>
@@ -1806,7 +1806,7 @@ Functions</h2></td></tr>
 <p>get the bits per index point </p>
 <dl class="section since"><dt>Since</dt><dd>2.0.1.0 </dd></dl>
 <dl class="section user"><dt>ID3v2 frame</dt><dd>ASPI </dd></dl>
-<dl class="section return"><dt>Returns</dt><dd>value or -1 if error </dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>value or 0 if the frame does not exist </dd></dl>
 
 </div>
 </div>
@@ -1900,12 +1900,12 @@ Functions</h2></td></tr>
   <table class="params">
     <tr><td class="paramname">arr</td><td>pointer to the byte array with the seller logo </td></tr>
     <tr><td class="paramname">maxLen</td><td>the size of the array in bytes </td></tr>
-    <tr><td class="paramname">Price</td><td></td></tr>
+    <tr><td class="paramname">Price</td><td>price, e.g. "EUR9.99" (currency code followed by the amount) </td></tr>
     <tr><td class="paramname">validUntil</td><td>in format YYYYMMDD (8 chars) </td></tr>
-    <tr><td class="paramname">contactUrl</td><td></td></tr>
-    <tr><td class="paramname">receivedAs</td><td></td></tr>
-    <tr><td class="paramname">seller</td><td></td></tr>
-    <tr><td class="paramname">description</td><td></td></tr>
+    <tr><td class="paramname">contactUrl</td><td>URL for contacting the seller </td></tr>
+    <tr><td class="paramname">receivedAs</td><td>how the audio is delivered, 0 to 8 (see ID3V2GetCommercialFrameReceivedAsW) </td></tr>
+    <tr><td class="paramname">seller</td><td>name of the seller </td></tr>
+    <tr><td class="paramname">description</td><td>short description of the product </td></tr>
   </table>
   </dd>
 </dl>
@@ -2187,11 +2187,11 @@ Functions</h2></td></tr>
     <tr><td class="paramname">ID</td><td>the unique id of the element </td></tr>
     <tr><td class="paramname">Title</td><td>the title of the element </td></tr>
     <tr><td class="paramname">Description</td><td>the description of the element </td></tr>
-    <tr><td class="paramname">isOrdered</td><td>0 if child elements are ordered or -1 if child elements are not ordered </td></tr>
+    <tr><td class="paramname">isOrdered</td><td>non-zero (e.g. -1) if the child elements are ordered, 0 if they are not ordered </td></tr>
   </table>
   </dd>
 </dl>
-<dl class="section return"><dt>Returns</dt><dd>-1 if chapter was replaced, otherwise 0 </dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>-1 if the frame was replaced, 0 if it was added </dd></dl>
 
 </div>
 </div>
@@ -2243,7 +2243,7 @@ Functions</h2></td></tr>
   </table>
   </dd>
 </dl>
-<dl class="section return"><dt>Returns</dt><dd>-1 if chapter was replaced, otherwise 0 </dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>-1 if the frame was replaced, 0 if it was added </dd></dl>
 
 </div>
 </div>
@@ -2270,12 +2270,12 @@ Functions</h2></td></tr>
 <dl class="section since"><dt>Since</dt><dd>2.0.1.0 </dd></dl>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">ParentTocID</td><td></td></tr>
-    <tr><td class="paramname">ChildID</td><td></td></tr>
+    <tr><td class="paramname">ParentTocID</td><td>the ID of the parent CTOC element </td></tr>
+    <tr><td class="paramname">ChildID</td><td>the ID of the child element (CHAP or CTOC) </td></tr>
   </table>
   </dd>
 </dl>
-<dl class="section return"><dt>Returns</dt><dd>normally -1, 0 on error </dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>normally -1, 0 if the parent was not found or is not a CTOC element </dd></dl>
 
 </div>
 </div>
@@ -2307,7 +2307,7 @@ Functions</h2></td></tr>
   </table>
   </dd>
 </dl>
-<dl class="section return"><dt>Returns</dt><dd>normally -1, 0 if id not found </dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>normally -1, 0 if the parent was not found or is not a CTOC element </dd></dl>
 
 </div>
 </div>
@@ -2537,7 +2537,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>get a comma based List of all unique frame ids </p>
+<p>get a comma-separated list of all unique frame ids </p>
 <dl class="section since"><dt>Since</dt><dd>2.0.1.0 </dd></dl>
 <dl class="section return"><dt>Returns</dt><dd>a comma-separated text string with Frame IDs </dd></dl>
 
@@ -2623,7 +2623,7 @@ Functions</h2></td></tr>
   </table>
   </dd>
 </dl>
-<dl class="section return"><dt>Returns</dt><dd>0=not sorted, -1=sorted </dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>-1 if the child elements are ordered, otherwise 0 (also if the ID was not found or is not a CTOC element) </dd></dl>
 
 </div>
 </div>
@@ -2652,7 +2652,7 @@ Functions</h2></td></tr>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">ID</td><td>the ID of the CTOC element </td></tr>
-    <tr><td class="paramname">status</td><td>the new status, 0=ordered -1=not ordered </td></tr>
+    <tr><td class="paramname">status</td><td>non-zero (e.g. -1) if the child elements are ordered, 0 if they are not ordered </td></tr>
   </table>
   </dd>
 </dl>
@@ -2887,7 +2887,7 @@ Functions</h2></td></tr>
   </table>
   </dd>
 </dl>
-<dl class="section return"><dt>Returns</dt><dd>picture type from 0 to 20, see <a class="el" href="picturetypes.html" title="Picture types">Picture types</a> </dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>picture type from 0 to 20, see <a class="el" href="picturetypes.html" title="Picture types">Picture types</a>; -2 if the subframe is not a picture, 0 if the parent frame was not found </dd></dl>
 
 </div>
 </div>
@@ -2953,7 +2953,7 @@ Functions</h2></td></tr>
 <p>get the ID of the root CTOC element </p>
 <dl class="section since"><dt>Since</dt><dd>2.0.1.0 </dd></dl>
 <dl class="section user"><dt>ID3v2 frame</dt><dd>CTOC </dd></dl>
-<dl class="section return"><dt>Returns</dt><dd>the id of the rrot CTOC element </dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>the ID of the root CTOC element </dd></dl>
 
 </div>
 </div>
@@ -2972,7 +2972,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>get the count of the child elements from a CTOC or CHAP element </p>
+<p>get the count of the child elements from a CTOC element </p>
 <dl class="section since"><dt>Since</dt><dd>2.0.1.0 </dd></dl>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
@@ -2980,7 +2980,7 @@ Functions</h2></td></tr>
   </table>
   </dd>
 </dl>
-<dl class="section return"><dt>Returns</dt><dd>count of the elements or -1 </dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>count of the elements, -1 if the ID was not found or is not a CTOC element </dd></dl>
 
 </div>
 </div>
@@ -3045,7 +3045,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>set a text frame; an existing one is replaced </p>
+<p>set a text subframe; an empty text removes the subframe </p>
 <dl class="section since"><dt>Since</dt><dd>2.0.1.0 </dd></dl>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
@@ -3089,7 +3089,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>set a url frame; an existing one is replaced </p>
+<p>set a URL subframe; an empty URL removes the subframe </p>
 <dl class="section since"><dt>Since</dt><dd>2.0.1.0 </dd></dl>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
@@ -3138,7 +3138,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>set a picture frame; an existing one is replaced </p>
+<p>add a picture subframe </p>
 <dl class="section since"><dt>Since</dt><dd>2.0.1.0 </dd></dl>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
@@ -3222,7 +3222,7 @@ Functions</h2></td></tr>
   <table class="params">
     <tr><td class="paramname">arr</td><td>pointer to the byte array with the encryption data </td></tr>
     <tr><td class="paramname">maxLen</td><td>maximum size of the array in bytes </td></tr>
-    <tr><td class="paramname">URL</td><td>Identifier </td></tr>
+    <tr><td class="paramname">URL</td><td>owner identifier </td></tr>
     <tr><td class="paramname">Symbol</td><td>Method symbol </td></tr>
   </table>
   </dd>
@@ -3364,7 +3364,7 @@ Functions</h2></td></tr>
     <tr><td class="paramname">arr</td><td>pointer to the byte array with the equalization data </td></tr>
     <tr><td class="paramname">maxLen</td><td>of the array in bytes </td></tr>
     <tr><td class="paramname">Interpolationmethod</td><td>0=Band (no interpolation) 1=Linear </td></tr>
-    <tr><td class="paramname">Identification</td><td></td></tr>
+    <tr><td class="paramname">Identification</td><td>identification string of the equalization </td></tr>
   </table>
   </dd>
 </dl>
@@ -3633,7 +3633,7 @@ Functions</h2></td></tr>
     <tr><td class="paramname">arr</td><td>pointer to the byte array with the object data </td></tr>
     <tr><td class="paramname">maxLen</td><td>of the array in bytes </td></tr>
     <tr><td class="paramname">Mime</td><td>Type of the object </td></tr>
-    <tr><td class="paramname">FileName</td><td></td></tr>
+    <tr><td class="paramname">FileName</td><td>file name of the object </td></tr>
     <tr><td class="paramname">Description</td><td>the descriptor </td></tr>
   </table>
   </dd>
@@ -3801,8 +3801,8 @@ Functions</h2></td></tr>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">arr</td><td>pointer to the byte array </td></tr>
-    <tr><td class="paramname">length</td><td>of the array in bytes </td></tr>
-    <tr><td class="paramname">Url</td><td>identifier </td></tr>
+    <tr><td class="paramname">length</td><td>size of the array in bytes </td></tr>
+    <tr><td class="paramname">Url</td><td>owner identifier </td></tr>
     <tr><td class="paramname">symbol</td><td>symbol in the range 128 - 240 </td></tr>
   </table>
   </dd>
@@ -4520,7 +4520,7 @@ Functions</h2></td></tr>
   <table class="params">
     <tr><td class="paramname">arr</td><td>pointer to the byte array </td></tr>
     <tr><td class="paramname">length</td><td>size of array in bytes </td></tr>
-    <tr><td class="paramname">URL</td><td>identifier </td></tr>
+    <tr><td class="paramname">URL</td><td>owner identifier </td></tr>
   </table>
   </dd>
 </dl>
@@ -4873,16 +4873,16 @@ Functions</h2></td></tr>
 <dl class="section user"><dt>ID3v2 frame</dt><dd>RVRB </dd></dl>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">reverbLeft</td><td></td></tr>
-    <tr><td class="paramname">reverbRight</td><td></td></tr>
-    <tr><td class="paramname">bouncesLeft</td><td></td></tr>
-    <tr><td class="paramname">bouncesRight</td><td></td></tr>
-    <tr><td class="paramname">feedbackLeftToLeft</td><td></td></tr>
-    <tr><td class="paramname">feedbackLeftToRight</td><td></td></tr>
-    <tr><td class="paramname">feedbackRightToRight</td><td></td></tr>
-    <tr><td class="paramname">feedbackRightToLeft</td><td></td></tr>
-    <tr><td class="paramname">premixLeftToRight</td><td></td></tr>
-    <tr><td class="paramname">premixRightToLeft</td><td></td></tr>
+    <tr><td class="paramname">reverbLeft</td><td>reverb left in milliseconds </td></tr>
+    <tr><td class="paramname">reverbRight</td><td>reverb right in milliseconds </td></tr>
+    <tr><td class="paramname">bouncesLeft</td><td>reverb bounces left </td></tr>
+    <tr><td class="paramname">bouncesRight</td><td>reverb bounces right </td></tr>
+    <tr><td class="paramname">feedbackLeftToLeft</td><td>reverb feedback left to left </td></tr>
+    <tr><td class="paramname">feedbackLeftToRight</td><td>reverb feedback left to right </td></tr>
+    <tr><td class="paramname">feedbackRightToRight</td><td>reverb feedback right to right </td></tr>
+    <tr><td class="paramname">feedbackRightToLeft</td><td>reverb feedback right to left </td></tr>
+    <tr><td class="paramname">premixLeftToRight</td><td>premix left to right </td></tr>
+    <tr><td class="paramname">premixRightToLeft</td><td>premix right to left </td></tr>
   </table>
   </dd>
 </dl>
@@ -5732,7 +5732,7 @@ Functions</h2></td></tr>
 <dl class="section user"><dt>ID3v2 frame</dt><dd>WXXX </dd></dl>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">Index</td><td>index from 0 to User Url frame count </td></tr>
+    <tr><td class="paramname">Index</td><td>index from 1 to user URL frame count </td></tr>
   </table>
   </dd>
 </dl>
@@ -5947,7 +5947,7 @@ Functions</h2></td></tr>
 <dl class="section return"><dt>Returns</dt><dd>return value with the following meaning: </dd></dl>
 <dl class="retval"><dt>Return values</dt><dd>
   <table class="retval">
-    <tr><td class="paramname">-1</td><td>invalid entry </td></tr>
+    <tr><td class="paramname">0</td><td>entry not found </td></tr>
     <tr><td class="paramname">1</td><td>mpeg frames as unit </td></tr>
     <tr><td class="paramname">2</td><td>milliseconds as unit </td></tr>
   </table>
@@ -5983,8 +5983,7 @@ Functions</h2></td></tr>
 <dl class="section return"><dt>Returns</dt><dd>return value with the following meaning: </dd></dl>
 <dl class="retval"><dt>Return values</dt><dd>
   <table class="retval">
-    <tr><td class="paramname">-1</td><td>invalid entry </td></tr>
-    <tr><td class="paramname">0</td><td>other </td></tr>
+    <tr><td class="paramname">0</td><td>other (also returned if the entry was not found) </td></tr>
     <tr><td class="paramname">1</td><td>lyrics </td></tr>
     <tr><td class="paramname">2</td><td>text transcription </td></tr>
     <tr><td class="paramname">3</td><td>movement/part name </td></tr>

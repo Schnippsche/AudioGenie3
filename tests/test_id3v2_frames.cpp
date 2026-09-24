@@ -228,6 +228,7 @@ TEST_CASE("ID3v2: seek offset (SEEK) and audio seek points (ASPI), v2.4 only", "
     CHECK(ID3V2AddAudioSeekPointW(pts.ptr(), pts.len(), 100, 5000, 8, 16) == 0);
     s.reload();
     CHECK(ID3V2GetSeekOffsetW() == 2048);
+    CHECK(ID3V2AddSeekOffsetW(4096) == -1);   // replaces the existing frame
     REQUIRE(ID3V2GetFrameCountW(ID3F_ASPI) == 1);
     CHECK(ID3V2GetAudioSeekPointStartW() == 100);
     CHECK(ID3V2GetAudioSeekPointLengthW() == 5000);

@@ -120,11 +120,11 @@ Functions</h2></td></tr>
 <tr class="memitem:ga2f1f5b7ad32bc447043b8121c77d2ca0" id="r_ga2f1f5b7ad32bc447043b8121c77d2ca0"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#ga2f1f5b7ad32bc447043b8121c77d2ca0">SetConfigValueW</a> (long key, long value)</td></tr>
 <tr class="memdesc:ga2f1f5b7ad32bc447043b8121c77d2ca0"><td class="mdescLeft">&#160;</td><td class="mdescRight">set a configuration value.  <br /></td></tr>
 <tr class="memitem:gaf0aa8116b5ae43db05e11676358f2d08" id="r_gaf0aa8116b5ae43db05e11676358f2d08"><td class="memItemLeft">long&#160;</td><td class="memItemRight"><a class="el" href="#gaf0aa8116b5ae43db05e11676358f2d08">GetConfigValueW</a> (long key)</td></tr>
-<tr class="memdesc:gaf0aa8116b5ae43db05e11676358f2d08"><td class="mdescLeft">&#160;</td><td class="mdescRight">get a config value,  <br /></td></tr>
+<tr class="memdesc:gaf0aa8116b5ae43db05e11676358f2d08"><td class="mdescLeft">&#160;</td><td class="mdescRight">get a configuration value.  <br /></td></tr>
 <tr class="memitem:gae2a9f1a38fbcdb187267d9a37d171770" id="r_gae2a9f1a38fbcdb187267d9a37d171770"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#gae2a9f1a38fbcdb187267d9a37d171770">SetLogFileW</a> (LPCWSTR fileName)</td></tr>
 <tr class="memdesc:gae2a9f1a38fbcdb187267d9a37d171770"><td class="mdescLeft">&#160;</td><td class="mdescRight">set a file name for audiogenie logging  <br /></td></tr>
 <tr class="memitem:ga815aa8a5937c519aa57387f5446ca592" id="r_ga815aa8a5937c519aa57387f5446ca592"><td class="memItemLeft">BSTR&#160;</td><td class="memItemRight"><a class="el" href="#ga815aa8a5937c519aa57387f5446ca592">GetMD5ValueFromFileW</a> (LPCWSTR FileName)</td></tr>
-<tr class="memdesc:ga815aa8a5937c519aa57387f5446ca592"><td class="mdescLeft">&#160;</td><td class="mdescRight">get a MD5 hash from the complete file  <br /></td></tr>
+<tr class="memdesc:ga815aa8a5937c519aa57387f5446ca592"><td class="mdescLeft">&#160;</td><td class="mdescRight">get an MD5 hash from the complete file  <br /></td></tr>
 </table>
 <a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Library-wide helpers such as version, MD5 and configuration. </p>
@@ -175,7 +175,7 @@ Functions</h2></td></tr>
 <tr class="markdownTableHead">
 <th class="markdownTableHeadNone">Key  </th><th class="markdownTableHeadNone">ID  </th><th class="markdownTableHeadNone">Defaultvalue  </th><th class="markdownTableHeadNone">Description  </th></tr>
 <tr class="markdownTableRowOdd">
-<td class="markdownTableBodyNone">0  </td><td class="markdownTableBodyNone">MPEGEXACTREAD  </td><td class="markdownTableBodyNone">0  </td><td class="markdownTableBodyNone">a non-zero value activates the reading from all MPEG frames; replaces SetMPEGAnalyzeAllFrames  </td></tr>
+<td class="markdownTableBodyNone">0  </td><td class="markdownTableBodyNone">MPEGEXACTREAD  </td><td class="markdownTableBodyNone">0  </td><td class="markdownTableBodyNone">a non-zero value activates reading all MPEG frames; replaces SetMPEGAnalyzeAllFrames  </td></tr>
 <tr class="markdownTableRowEven">
 <td class="markdownTableBodyNone">1  </td><td class="markdownTableBodyNone">ID3V2PADDINGSIZE  </td><td class="markdownTableBodyNone">4096  </td><td class="markdownTableBodyNone">the padding size in bytes for an ID3v2 tag  </td></tr>
 <tr class="markdownTableRowOdd">
@@ -192,7 +192,7 @@ Functions</h2></td></tr>
 <dl class="section since"><dt>Since</dt><dd>2.0.1.0 </dd></dl>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">key</td><td>the specific key. </td></tr>
+    <tr><td class="paramname">key</td><td>the configuration key (see the table) </td></tr>
     <tr><td class="paramname">value</td><td>the new value </td></tr>
   </table>
   </dd>
@@ -215,13 +215,13 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>get a config value, </p>
+<p>get a configuration value. </p>
 <p>The following keys are currently supported:</p>
 <table class="markdownTable">
 <tr class="markdownTableHead">
 <th class="markdownTableHeadNone">Key  </th><th class="markdownTableHeadNone">ID  </th><th class="markdownTableHeadNone">Description  </th></tr>
 <tr class="markdownTableRowOdd">
-<td class="markdownTableBodyNone">0  </td><td class="markdownTableBodyNone">MPEGEXACTREAD  </td><td class="markdownTableBodyNone">a non-zero value indicates the reading from all MPEG frames  </td></tr>
+<td class="markdownTableBodyNone">0  </td><td class="markdownTableBodyNone">MPEGEXACTREAD  </td><td class="markdownTableBodyNone">a non-zero value means that all MPEG frames are read  </td></tr>
 <tr class="markdownTableRowEven">
 <td class="markdownTableBodyNone">1  </td><td class="markdownTableBodyNone">ID3V2PADDINGSIZE  </td><td class="markdownTableBodyNone">the padding size in bytes for an ID3v2 tag  </td></tr>
 <tr class="markdownTableRowOdd">
@@ -238,7 +238,7 @@ Functions</h2></td></tr>
 <dl class="section since"><dt>Since</dt><dd>2.0.1.0 </dd></dl>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">key</td><td>the configuration key </td></tr>
+    <tr><td class="paramname">key</td><td>the configuration key (see SetConfigValueW) </td></tr>
   </table>
   </dd>
 </dl>
@@ -287,7 +287,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>get a MD5 hash from the complete file </p>
+<p>get an MD5 hash from the complete file </p>
 <p>You can use this for comparing files.</p>
 <dl class="section since"><dt>Since</dt><dd>2.0.1.0 </dd></dl>
 <dl class="params"><dt>Parameters</dt><dd>
@@ -296,7 +296,7 @@ Functions</h2></td></tr>
   </table>
   </dd>
 </dl>
-<dl class="section return"><dt>Returns</dt><dd>MD5 Key (32 bytes long) </dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>MD5 hash as 32 hexadecimal characters </dd></dl>
 
 </div>
 </div>

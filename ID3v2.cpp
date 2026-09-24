@@ -178,7 +178,7 @@ void CID3V2::parseTags(CBlob* data)
 
 			isValid = ( ALLOWED[data->GetAt(DataPosition)] && ALLOWED[data->GetAt(DataPosition+1)] && ALLOWED[data->GetAt(DataPosition+2)] && ALLOWED[data->GetAt(DataPosition+3)] );			
 		}
-		if (FrameID == 0) // 4 mal 0, Paddingbereich
+		if (FrameID == 0) // 4 zero bytes: padding area
 			break;
 		// if the frame is invalid, continue analyzing at the next byte  
 		if (!isValid)
@@ -320,7 +320,7 @@ bool CID3V2::RebuildFile(LPCWSTR FileName, CBlob* data)
 	/* Copy data blocks */
 	if (_fseeki64(Source, FrameOldSize, SEEK_SET) != 0)
 	{
-		CTools::instance().writeError(L"ID3V2 fseek(%i) fehlgeschlagen, breche Speichern ab", FrameOldSize);
+		CTools::instance().writeError(L"ID3V2 fseek(%i) failed, aborting save", FrameOldSize);
 		ok = false;
 	}
 	if (ok && data != NULL)

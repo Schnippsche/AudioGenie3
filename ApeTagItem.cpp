@@ -47,10 +47,10 @@ bool CApeTagItem::ReadFromFile(FILE *Stream)
   CBlob tmp;
   tmp.FileRead(8, Stream);
   Flags = 0;
-  Size = (long)tmp.GetR4B(0);   // Tag size including footer
+  Size = (long)tmp.GetR4B(0);   // size of the item value in bytes
   if (Size < 0 || ((__int64)_ftelli64(Stream) + Size + CTools::ID3v1Size) > (__int64)CTools::FileSize )
 	  return false;
-  Flags = (long)tmp.GetR4B(4);  // Tag flags
+  Flags = (long)tmp.GetR4B(4);  // item flags
   Key.Empty();
   int keyChar;
   while ((keyChar = fgetc(Stream)) != EOF && keyChar != 0)
@@ -69,8 +69,8 @@ bool CApeTagItem::WriteToFile(FILE *Stream)
 {
   errno = 0;
   CBlob tmp;
-  tmp.AddR4B(Size);        // Tag size including footer
-  tmp.AddR4B(Flags);       // Tag flags
+  tmp.AddR4B(Size);        // size of the item value in bytes
+  tmp.AddR4B(Flags);       // item flags
   tmp.FileWrite(8, Stream);
   return (errno == 0);
 }

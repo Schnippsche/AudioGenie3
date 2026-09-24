@@ -51,13 +51,13 @@ enum AUDIO_FORMAT {
 
 static const structft filetypes[MAX_FILETYPES] = { 
 	{ 0x30, 0x26, 0xB2, 0x75,  4, AUDIO_FORMAT_WMA       },  // wma   48, 38, 178, 117
-	{ 0x49, 0x44, 0x33, 0x00,  3, AUDIO_FORMAT_ID3V2     },  // id3    "id3"
+	{ 0x49, 0x44, 0x33, 0x00,  3, AUDIO_FORMAT_ID3V2     },  // id3    "ID3"
 	{ 0x52, 0x49, 0x46, 0x46,  4, AUDIO_FORMAT_WAV       },  // wav    "RIFF"
 	{ 0x66, 0x4C, 0x61, 0x43,  4, AUDIO_FORMAT_FLAC      },  // flac   "fLaC"
 	{ 0x4F, 0x67, 0x67, 0x53,  4, AUDIO_FORMAT_OGGVORBIS },  // ogg    "OggS"
 	{ 0x4D, 0x41, 0x43, 0x20,  4, AUDIO_FORMAT_MONKEY    },  // monkey "MAC "
-	{ 0x4D, 0x50, 0x2B, 0x00,  3, AUDIO_FORMAT_MPP       },  // mpp    "MP+"  (Stream-Version 4-7)
-	{ 0x4D, 0x50, 0x43, 0x4B,  4, AUDIO_FORMAT_MPP       },  // mpp    "MPCK" (Stream-Version 8)
+	{ 0x4D, 0x50, 0x2B, 0x00,  3, AUDIO_FORMAT_MPP       },  // mpp    "MP+"  (stream versions 4-7)
+	{ 0x4D, 0x50, 0x43, 0x4B,  4, AUDIO_FORMAT_MPP       },  // mpp    "MPCK" (stream version 8)
 	{ 0x41, 0x44, 0x49, 0x46,  4, AUDIO_FORMAT_AAC       },  // aac    "ADIF" 
 	{ 0x54, 0x54, 0x41, 0x31,  4, AUDIO_FORMAT_TTA       },  // tta    "TTA1" 
 	{ 0x54, 0x54, 0x41, 0x32,  4, AUDIO_FORMAT_TTA       },  // tta    "TTA2" 

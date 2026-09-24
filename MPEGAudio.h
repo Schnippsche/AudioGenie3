@@ -122,7 +122,7 @@ static const LPCWSTR MPEG_EMPHASIS[] =
 #define MPEG_ENCODER_SHINE    6                                      /* Shine */
 #define MPEG_ENCODER_QDESIGN  7                                    /* QDesign */
 
-/* Enocders */
+/* Encoders */
 static const LPCWSTR MPEG_ENCODER[] = {
 	UNKNOWN, _T("Xing"),_T("FhG"),_T("LAME"),
 	_T("Blade"), _T("GoGo"),_T("Shine"),_T("QDesign") };
@@ -189,7 +189,7 @@ private:
 	float secPerFrame;
 	VBRData FVBR;
 	tagFrameData Frame;
-	/* internal Funcions */
+	/* internal functions */
 	long Get4B(BYTE v[]);
 	bool IsFrameHeader(BYTE HeaderData[] );
 	WORD GetCoefficient();

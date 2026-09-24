@@ -48,7 +48,7 @@ void CMP4_SOUN::load(FILE *Stream, u32 offset, u32 size)
 	_blob.FileRead(size, Stream);
 	if (_blob.GetLength() >= 20)
 	{
-		version = _blob.Get2B(0); // Normalerweise Version 0
+		version = _blob.Get2B(0); // usually version 0
 		revision = _blob.Get2B(2);
 		vendor = _blob.Get4B(4);
 		channels = _blob.Get2B(8);

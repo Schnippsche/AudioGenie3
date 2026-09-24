@@ -109,7 +109,7 @@ void CTools::setLastError(int error, ...)
 	lastError = error;
 	if (error == 0)
 		return;
-	if (error > 200 && error < 250 && (size_t)(error - 201) < _countof(ERR_TEXT)) // Benutzerdefinierter Fehlertext
+	if (error > 200 && error < 250 && (size_t)(error - 201) < _countof(ERR_TEXT)) // user-defined error text
 	{
 		va_list vlist;
 		va_start(vlist, error);
@@ -117,7 +117,7 @@ void CTools::setLastError(int error, ...)
 		lastErrorText = wcTextPuffer;
 		va_end(vlist);
 	}
-	else // Systemfehler
+	else // system error
 	{
 		_wcserror_s(wcTextPuffer, 16000, lastError);  
 	}
@@ -292,7 +292,7 @@ void CTools::setConfigValue(long key, long value)
 {
 	if (key == CONFIG_MAXTEXTBUFFER)
 	{
-		if (value > 0x1000000l)  // max. 16 M Zeichen
+		if (value > 0x1000000l)  // max. 16 M characters
 			value = 0x1000000l;
 		int newValue = ((int)value / 2) * 2;
 		if (newValue < 32768)

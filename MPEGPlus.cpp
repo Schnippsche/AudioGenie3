@@ -314,8 +314,8 @@ long CMPEGPlus::GetBitRate()
     return (seconds > 0.0) ? (long)(CompressedSize * 8.0 / seconds / 1000.0 + 0.5) : 0;
   }
   if (FBitRate == 0 && FFrameCount > 0)
-    return (long) (CompressedSize / 144l * (FSampleRate/1000l) / FFrameCount); // Neu ab V2.3.2
-    /* ALT: return (long) (CompressedSize * 8l * (FSampleRate/1000l) / FFrameCount / 1152l); ALTE Berechnung */
+    return (long) (CompressedSize / 144l * (FSampleRate/1000l) / FFrameCount); // new since V2.3.2
+    /* OLD: return (long) (CompressedSize * 8l * (FSampleRate/1000l) / FFrameCount / 1152l); old calculation */
   return FBitRate;
 }
 

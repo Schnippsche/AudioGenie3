@@ -54,7 +54,7 @@ public:
 	void SetArtist(LPCWSTR newArtist)   { id3v1tag.Artist = newArtist; };
 	void SetAlbum(LPCWSTR newAlbum)     { id3v1tag.Album = newAlbum; };
 	void SetComment(LPCWSTR newComment) { id3v1tag.Comment = newComment; };
-	// Allgemein
+	// general
 	int GetGenreID()            { return id3v1tag.Genre;   };
 	int NumberOfGenres()        { return MAX_MUSIC_GENRES; };
 	CAtlString GetGenreItem(int i);

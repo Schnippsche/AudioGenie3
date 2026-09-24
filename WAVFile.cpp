@@ -522,7 +522,7 @@ void CWAVFile::setTextFrame(u32 FrameID, CAtlString newText)
 			chunk->getData()->AddEncodedString(TEXT_ENCODED_ANSI, newText, false, true);
 		return;
 	}
-	// Neuanlage
+	// create new
 	if (!newText.IsEmpty())
 		mainContainer->addInfoChunk(FrameID, newText);
 }

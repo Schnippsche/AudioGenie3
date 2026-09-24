@@ -214,7 +214,7 @@ bool COggVorbis::RebuildFile(LPCWSTR FileName)
 	}
 
 	/* Create file streams */
-	// Read and Write permissons MUSS!
+	// read and write permissions are required!
 	NewFileName+=TILDE;
 	if ( (Destination = _wfsopen(NewFileName, READ_AND_WRITENEW, _SH_DENYWR)) == NULL)
 	{

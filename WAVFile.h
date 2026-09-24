@@ -33,7 +33,7 @@
 enum WAV_FRAMETYPES {
 	WAV_IARL='IARL', // ArchivalLocation
 	WAV_IART='IART', // Artist
-	WAV_ICMS='ICMS', // Comissioned
+	WAV_ICMS='ICMS', // Commissioned
 	WAV_ICMT='ICMT', // Comment
 	WAV_ICOP='ICOP', // Copyright
 	WAV_ICRD='ICRD', // CreationDate

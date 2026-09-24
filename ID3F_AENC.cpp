@@ -23,7 +23,6 @@
 #include "StdAfx.h"
 #include "ID3F_AENC.h"
 #include "id3_framefactory.h"
-// Fertig
 /* 
 This frame indicates if the actual audio stream is encrypted, and by
 whom. Since standardisation of such encryption scheme is beyond this

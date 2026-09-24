@@ -116,7 +116,7 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('group___m_p4.h
 <tr class="heading"><td colspan="2"><h2 id="header-func-members" class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
 <tr class="memitem:ga030536775633a34d7226adea7a32844c" id="r_ga030536775633a34d7226adea7a32844c"><td class="memItemLeft">BSTR&#160;</td><td class="memItemRight"><a class="el" href="#ga030536775633a34d7226adea7a32844c">MP4GetAllFrameIDsW</a> ()</td></tr>
-<tr class="memdesc:ga030536775633a34d7226adea7a32844c"><td class="mdescLeft">&#160;</td><td class="mdescRight">get a comma based List of all unique frame ids  <br /></td></tr>
+<tr class="memdesc:ga030536775633a34d7226adea7a32844c"><td class="mdescLeft">&#160;</td><td class="mdescRight">get a comma-separated list of all unique frame ids  <br /></td></tr>
 <tr class="memitem:ga47007aeabe5c732a11bdb8db9027a081" id="r_ga47007aeabe5c732a11bdb8db9027a081"><td class="memItemLeft">BSTR&#160;</td><td class="memItemRight"><a class="el" href="#ga47007aeabe5c732a11bdb8db9027a081">MP4GetTextFrameW</a> (u32 FrameID)</td></tr>
 <tr class="memdesc:ga47007aeabe5c732a11bdb8db9027a081"><td class="mdescLeft">&#160;</td><td class="mdescRight">get the text entry of an MP4 ILST text frame  <br /></td></tr>
 <tr class="memitem:ga8deb6af40c4960a8d5676e5d5f618b1b" id="r_ga8deb6af40c4960a8d5676e5d5f618b1b"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#ga8deb6af40c4960a8d5676e5d5f618b1b">MP4SetTextFrameW</a> (u32 FrameID, LPCWSTR textString)</td></tr>
@@ -154,11 +154,11 @@ Functions</h2></td></tr>
 <tr class="memitem:gaf38903d37c657c8262d3c23cc7198b64" id="r_gaf38903d37c657c8262d3c23cc7198b64"><td class="memItemLeft">short&#160;</td><td class="memItemRight"><a class="el" href="#gaf38903d37c657c8262d3c23cc7198b64">MP4DeletePictureW</a> (short Index)</td></tr>
 <tr class="memdesc:gaf38903d37c657c8262d3c23cc7198b64"><td class="mdescLeft">&#160;</td><td class="mdescRight">remove a picture  <br /></td></tr>
 <tr class="memitem:gabb6d0f98c2b26c77943656a5b4f9f11b" id="r_gabb6d0f98c2b26c77943656a5b4f9f11b"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#gabb6d0f98c2b26c77943656a5b4f9f11b">MP4DeleteEntriesW</a> ()</td></tr>
-<tr class="memdesc:gabb6d0f98c2b26c77943656a5b4f9f11b"><td class="mdescLeft">&#160;</td><td class="mdescRight">deletes all user-defined entries like title, pictures etc.  <br /></td></tr>
+<tr class="memdesc:gabb6d0f98c2b26c77943656a5b4f9f11b"><td class="mdescLeft">&#160;</td><td class="mdescRight">remove all entries of the MP4 tag (title, pictures etc.) from memory; the file is changed with the next save  <br /></td></tr>
 <tr class="memitem:ga10121b58156bb2d5e57a17555628266e" id="r_ga10121b58156bb2d5e57a17555628266e"><td class="memItemLeft">short&#160;</td><td class="memItemRight"><a class="el" href="#ga10121b58156bb2d5e57a17555628266e">MP4SaveChangesToFileW</a> (LPCWSTR FileName)</td></tr>
 <tr class="memdesc:ga10121b58156bb2d5e57a17555628266e"><td class="mdescLeft">&#160;</td><td class="mdescRight">store the MP4 changes in a file  <br /></td></tr>
 <tr class="memitem:gaf2f2039850b756790a41afd26ba34106" id="r_gaf2f2039850b756790a41afd26ba34106"><td class="memItemLeft">short&#160;</td><td class="memItemRight"><a class="el" href="#gaf2f2039850b756790a41afd26ba34106">MP4SaveChangesW</a> ()</td></tr>
-<tr class="memdesc:gaf2f2039850b756790a41afd26ba34106"><td class="mdescLeft">&#160;</td><td class="mdescRight">store the MP4 in the last analyzed file  <br /></td></tr>
+<tr class="memdesc:gaf2f2039850b756790a41afd26ba34106"><td class="mdescLeft">&#160;</td><td class="mdescRight">store the MP4 changes in the last analyzed file  <br /></td></tr>
 </table>
 <a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>MP4 metadata (ilst atoms, pictures, iTunes frames). </p>
@@ -178,7 +178,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>get a comma based List of all unique frame ids </p>
+<p>get a comma-separated list of all unique frame ids </p>
 <dl class="section since"><dt>Since</dt><dd>2.0.1.0 </dd></dl>
 <dl class="section return"><dt>Returns</dt><dd>a comma-separated text string with Frame IDs </dd></dl>
 
@@ -552,7 +552,7 @@ Functions</h2></td></tr>
 <dl class="section since"><dt>Since</dt><dd>2.0.2.0 </dd></dl>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">Index</td><td>index from 1 to picture frame count </td></tr>
+    <tr><td class="paramname">Index</td><td>index from 1 to MP4GetPictureCountW </td></tr>
   </table>
   </dd>
 </dl>
@@ -681,7 +681,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>deletes all user-defined entries like title, pictures etc. </p>
+<p>remove all entries of the MP4 tag (title, pictures etc.) from memory; the file is changed with the next save </p>
 <dl class="section since"><dt>Since</dt><dd>2.0.1.0 </dd></dl>
 
 </div>
@@ -728,7 +728,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>store the MP4 in the last analyzed file </p>
+<p>store the MP4 changes in the last analyzed file </p>
 <dl class="section since"><dt>Since</dt><dd>2.0.1.0 </dd></dl>
 <dl class="section return"><dt>Returns</dt><dd>normally -1, 0 on error </dd></dl>
 

@@ -253,7 +253,7 @@ CWAVBEXTChunk* CWAVRIFFContainer::getBextChunk()
 
 CWAVBEXTChunk* CWAVRIFFContainer::addBextChunk()
 {
-	// look for the CART chunk
+	// look for the BEXT chunk
 	CWAVBEXTChunk* chunk = getBextChunk();
 	// create new? Insert before the data chunk
 	if (chunk == NULL)

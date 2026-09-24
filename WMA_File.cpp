@@ -56,7 +56,7 @@ CAtlString CWMA_File::GetUserItem(CAtlString key)
 	if (obj != NULL)
 	{
 		CWMA_ContentDescription *cd = static_cast<CWMA_ContentDescription*>(obj);
-		// let's try this
+		// standard fields are stored in the ContentDescription object
 		// An empty value in the standard object does not count as a hit: some encoders (e.g. ffmpeg) put fields
 		// like "Description" in the ExtContentDescription object instead.
 		CAtlString value;

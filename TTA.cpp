@@ -21,7 +21,7 @@
 #include "StdAfx.h"
 #include "TTA.h"
 
-// Dokumentation of the True Audio: http:\\en.true-audio.com 
+// documentation of True Audio: http://en.true-audio.com 
 
 
 CTTA::CTTA(void)

@@ -110,8 +110,7 @@ void CWAVCARTChunk::setASCIIText(CAtlString newText, BYTE nr)
 	}
 	if (nr >= WAV_CART_POSTTIMER0 && nr <= WAV_CART_POSTTIMER7)
 	{   // 4 bytes Identifier 
-		// :
-		// Zahl
+		// ':' followed by a number
 		if (newText.GetLength() >  4 && newText.GetAt(4) == ':')
 		{
 			tmp.AddValue((BYTE)newText.GetAt(0));

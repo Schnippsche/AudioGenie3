@@ -77,8 +77,8 @@ bool CMPEGAudio::IsFrameHeader(BYTE HeaderData[])
 		(( HeaderData[1] & 0xE0) != 0xE0) ||  // AAA00000 header must be 111
 		(( HeaderData[1] & 0x18) == 0x08) ||  // 000BB000 version ID must not be 01
 		(( HeaderData[1] & 0x06) == 0x00) ||  // 00000CC0 layer must not be 00
-		(( HeaderData[2] & 0xF0) == 0xF0) ||  // EEEE0000 bit rate must be neither 1111
-		(( HeaderData[2] & 0xF0) == 0x00) ||  // EEEE0000 must still be 0000
+		(( HeaderData[2] & 0xF0) == 0xF0) ||  // EEEE0000 bit rate must not be 1111 (bad)
+		(( HeaderData[2] & 0xF0) == 0x00) ||  // EEEE0000 bit rate must not be 0000 (free format is not supported)
 		(( HeaderData[2] & 0x0C) == 0x0C) ||  // 0000FF00 sampling id must not be 11
 		(( HeaderData[3] & 0x03) == 0x02))    // 000000MM emphasis must not be 10
 		return false;
@@ -205,7 +205,7 @@ void CMPEGAudio::GetXingInfo(long Index, BYTE Data[])
 	FVBR.Frames = Get4B(Data + Index + 8);
 	FVBR.Bytes = Get4B(Data + Index + 12);
 	FVBR.Scale = Data[Index + 119];
-	/*{ Vendor ID can be not present */
+	/*{ Vendor ID may not be present */
 	memcpy(&FVBR.VendorID, &Data[Index + 120], 8);
 }
 
