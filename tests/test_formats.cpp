@@ -70,6 +70,9 @@ const Fixture kFixtures[] = {
     // Roher ADTS-Strom: Dauer wird aus Dateigroesse und Bitrate geschaetzt, daher grosse Toleranz;
     // beim Schreiben eines ID3v2-Tags aendert sich die Schaetzung (Tag zaehlt mit).
     { "aac/no_tags.aac",      AAC,       44100, 2, 1.06,  0.1,  false, false },
+    // Roher ADTS-Strom aus den realen Samples (generate.bat); Dauer aus Dateigroesse und Bitrate geschaetzt.
+    { "aac/adts_sample-1.aac",     AAC,  44100, 2, 5.06,  0.2,  false, false },
+    { "aac/adts_id3_sample-2.aac", AAC,  44100, 2, 5.06,  0.2,  true,  false },
     // Reale MP4-Dateien (AAC-LC, 320 kbit) mit der Endung .aac, auf 5 s gekuerzt (Originale: testsixtures_localac).
     // Dauer laut DLL 5,062 s, ffprobe meldet 5,015 s (Encoder-Priming).
     { "aac/sample-1.aac",     MP4M4A,    44100, 2, 5.05,  0.1,  false, true  },
@@ -94,6 +97,8 @@ const Gap kGaps[] = {
     { "wv/tagged.wv",       Year,    "APE-Feld 'date' statt 'Year'" },
     { "tta/tagged.tta",     Year,    "APE-Feld 'date' statt 'Year'" },
     { "wav/tagged.wav",     Track,   "INFO-Feld ITRK wird nicht als Track geliefert" },
+    { "aac/adts_id3_sample-2.aac", Year,    "ID3v2.4-Frame TDRC wird nicht gelesen (nur TYER aus v2.3)" },
+    { "aac/adts_id3_sample-2.aac", Comment, "COMM-Frame aus ffmpeg wird nicht als Kommentar geliefert" },
 };
 
 bool isGap(const char* file, Field f)
@@ -101,6 +106,11 @@ bool isGap(const char* file, Field f)
     for (const Gap& g : kGaps) if (!strcmp(g.file, file) && g.field == f) return true;
     return false;
 }
+
+// Fixtures, bei denen das Schreiben ueber AUDIOSaveChangesW nicht wie dokumentiert wirkt (siehe Test [gaps] unten).
+// AAC: laut Doku wird ein ID3v2-Tag geschrieben, der Code (dllmain.cpp, AUDIO_FORMAT_AAC) haengt aber einen APE-Tag an;
+// ein bereits vorhandener ID3v2-Tag am Dateianfang bleibt beim Lesen vorrangig und ueberdeckt die Aenderung.
+bool skipWriteTests(const char* file) { return !strcmp(file, "aac/adts_id3_sample-2.aac"); }
 
 fs::path fixturePath(const char* rel) { return fs::path(AG3_FIXTURES_DIR) / rel; }
 
@@ -156,10 +166,23 @@ TEST_CASE("Formate: bekannte Luecken beim Lesen", "[formats][gaps][!shouldfail]"
     }
 }
 
+TEST_CASE("AAC mit vorhandenem ID3v2-Tag: Schreiben aendert den gelesenen Tag", "[formats][gaps][!shouldfail]")
+{
+    // Erwartet fehlschlagend: AUDIOSaveChangesW schreibt bei AAC einen APE-Tag (Doku: ID3v2). Ist ein ID3v2-Tag
+    // vorhanden, liest AUDIOAnalyzeFileW weiter diesen und zeigt die alten Werte; die Datei waechst um den APE-Tag.
+    const fs::path p = copyToTemp("aac/adts_id3_sample-2.aac");
+    REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == AAC);
+    AUDIOSetTitleW(L"Neuer Titel");
+    REQUIRE(AUDIOSaveChangesW() != 0);
+    REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == AAC);
+    CHECK(getField(Title) == L"Neuer Titel");
+}
+
 TEST_CASE("Formate: Tags schreiben (Round-Trip), Audiodaten bleiben unveraendert", "[formats][tags][roundtrip]")
 {
     const std::wstring title = L"Neuer Titel äöü €";
     for (const Fixture& fx : kFixtures) {
+        if (skipWriteTests(fx.file)) continue;
         DYNAMIC_SECTION(fx.file) {
             if (!fs::exists(fixturePath(fx.file))) SKIP("Fixture fehlt: " << fx.file);
             const fs::path p = copyToTemp(fx.file);
@@ -198,7 +221,7 @@ TEST_CASE("Formate: Tags schreiben (Round-Trip), Audiodaten bleiben unveraendert
 TEST_CASE("Formate: Tags loeschen durch Leerwerte", "[formats][tags][roundtrip]")
 {
     for (const Fixture& fx : kFixtures) {
-        if (!fx.tagged) continue;
+        if (!fx.tagged || skipWriteTests(fx.file)) continue;
         DYNAMIC_SECTION(fx.file) {
             if (!fs::exists(fixturePath(fx.file))) SKIP("Fixture fehlt: " << fx.file);
             const fs::path p = copyToTemp(fx.file);

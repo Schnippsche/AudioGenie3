@@ -38,7 +38,7 @@ rem ---- FLAC
 %FF% %SINE% -i "%COVER%" -map 0:a -map 1:v %STEREO% -c:v copy -disposition:v attached_pic %TAGS% flac\with_cover.flac || goto :fail
 %FF% %SINE% %MONO% %NOMETA% flac\mono_22k.flac || goto :fail
 
-rem ---- OGG Vorbis
+rem ---- OGG Vorbis (nicht bitgleich reproduzierbar: ffmpeg wuerfelt die Stream-Seriennummer; nur dann neu erzeugen, wenn noetig)
 %FF% %SINE% %STEREO% %NOMETA% -c:a libvorbis ogg\no_tags.ogg || goto :fail
 %FF% %SINE% %STEREO% %NOMETA% %TAGS% -c:a libvorbis ogg\tagged.ogg || goto :fail
 %FF% %SINE% %MONO% %NOMETA% -c:a libvorbis ogg\mono_22k.ogg || goto :fail
@@ -59,6 +59,10 @@ rem ---- WavPack, TTA, AAC (roher ADTS-Strom)
 %FF% %SINE% %STEREO% %NOMETA% -c:a tta tta\no_tags.tta || goto :fail
 %FF% %SINE% %STEREO% %NOMETA% %TAGS% -c:a tta tta\tagged.tta || goto :fail
 %FF% %SINE% %STEREO% %NOMETA% -c:a aac -b:a 96k -f adts aac\no_tags.aac || goto :fail
+
+rem ---- roher ADTS-Strom aus den realen MP4/AAC-Beispielen (aac\sample-*.aac, unveraendert uebernommen), ohne und mit ID3v2-Tag
+if exist aac\sample-1.aac %FF% -i aac\sample-1.aac -map 0:a -c copy -f adts aac\adts_sample-1.aac || goto :fail
+if exist aac\sample-2.aac %FF% -i aac\sample-2.aac -map 0:a -c copy -map_metadata -1 %TAGS% -write_id3v2 1 -f adts aac\adts_id3_sample-2.aac || goto :fail
 
 rem ---- kaputte Dateien: abgeschnitten (nur Header bzw. Haelfte)
 call :truncate mp3\tagged.mp3 broken\tagged_header_only.mp3 128 || goto :fail
