@@ -49,4 +49,4 @@
 *.bin binary
 
 # Generated Doxygen documentation: store unchanged, mark as generated in diffs
-doku/** -text linguist-generated
+docs/** -text linguist-generated

@@ -119,4 +119,4 @@ String literals in the DLL sources are ASCII; comments in all sources are Englis
 ## API documentation (Doxygen)
 
 The API documentation is in Doxygen comments in `dllmain.cpp` (English only, groups in `doxygen_groups.dox`). Regenerate it with:
-`doxygen Doxyfile` (output to `doku/`, warnings to `doku/doxygen-warnings.txt`). `doku/` is generated and must not be edited by hand.
+`doxygen Doxyfile` (output to `docs/`, warnings to `docs/doxygen-warnings.txt`). `docs/` is generated and must not be edited by hand.

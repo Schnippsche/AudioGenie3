@@ -1,5 +1,5 @@
 # graphify: source code and tests only, no generated documentation, no audio fixtures, no third-party code
-doku/
+docs/
 tests/fixtures/
 tests/fixtures_local/
 tests/third_party/
