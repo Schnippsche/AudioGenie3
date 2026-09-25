@@ -37,7 +37,7 @@ by `fixtures/generate.bat` and `fixtures/make_*.py` and read back by the tests.
 
 ## Wrapper smoke test (`wrappers/`)
 
-`wrappersun_wrappers.bat [-Arch x86,x64]` compiles `Wrapper/C #/AudioGenie2.cs` and `Wrapper/DotNET/audiogenie3.vb` together with the test
+`wrappers\run_wrappers.bat [-Arch x86,x64]` compiles `Wrapper/C #/AudioGenie2.cs` and `Wrapper/DotNET/audiogenie3.vb` together with the test
 programs and runs them against `Release\AudioGenie3.dll` (32 bit) and `x64\Release\AudioGenie3.dll` (64 bit). The test programs are compiled as
 libraries and loaded by a PowerShell of the same bitness as the DLL (`host.ps1`), because freshly built executables are sometimes removed by
 virus scanners. The VB6 and Delphi wrappers are not covered (no compiler needed for the signature check `contract/check_wrappers.py`, which covers all five).
