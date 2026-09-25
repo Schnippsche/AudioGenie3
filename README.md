@@ -4,6 +4,12 @@ AudioGenie3 is a Windows DLL for analyzing audio files and for reading and writi
 It exports a plain `__stdcall` C interface with Unicode (`...W`) functions, so it can be used from C/C++, C#, VB.NET,
 Delphi and VB6 alike. Ready-made wrappers for these languages are in `Wrapper/`.
 
+**Version 3.0.0** is the successor of version 2.0.4. Earlier versions of the library were called AudioGenie and
+AudioGenie2; the 2.0.x version numbers were kept for a while after the DLL had been renamed to AudioGenie3, and the
+version number now follows the name. The `@since` remarks in the API documentation (for example `2.0.1.0`) name the
+2.0.x version in which a function was introduced. For historical reasons the C# wrapper is still called `AudioGenie2.cs`
+(class `AudioGenie2`), so that existing code keeps working.
+
 ## What it does
 
 - **Analyzes** a file and reports technical data: format, duration, bit rate, sample rate, channels, file size,

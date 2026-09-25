@@ -2640,7 +2640,7 @@ extern "C" BSTR __stdcall WAVGetInfoChunkIDsW()
  */
 extern "C" BSTR __stdcall GetAudioGenieVersionW() 
 {
-	return CAtlString(L"2.0.4.0").AllocSysString();	
+	return CAtlString(L"3.0.0.0").AllocSysString();	
 }
 
 /* ------------------------------------------------------------------------------------- */
