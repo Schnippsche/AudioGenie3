@@ -63,7 +63,21 @@ MSBuild AudioGenie3.vcxproj /p:Configuration=Release /p:Platform=x64
 ```
 
 The result is `AudioGenie3.dll` (and `AudioGenie3.lib` for C/C++) in `Release\` or `x64\Release\`. Pick the bitness that
-matches your application. Copy the DLL next to your executable or into a folder on the search path.
+matches your application. The Visual Studio build registers the DLL for the current user automatically.
+
+### Register the DLL
+
+The DLL is a COM server and must be registered before use. Use the `regsvr32` of the same bitness as the DLL
+(`C:\Windows\SysWOW64egsvr32.exe` for the 32-bit DLL on 64-bit Windows):
+
+```
+regsvr32 AudioGenie3.dll                   (per machine, needs administrator rights)
+regsvr32 /n /i:user AudioGenie3.dll        (for the current user only)
+regsvr32 /u AudioGenie3.dll                (unregister a per-machine registration)
+regsvr32 /u /n /i:user AudioGenie3.dll     (unregister a per-user registration)
+```
+
+Keep the DLL in a fixed folder, because the registration stores its path.
 
 ### Wrappers
 

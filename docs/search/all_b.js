@@ -11,7 +11,7 @@ var searchData=
   ['monkeygetsamplesw_8',['MONKEYGetSamplesW',['../group___m_o_n_k_e_y.html#ga3baf15aef8e1b2bcde9469c4d6a635f2',1,'dllmain.cpp']]],
   ['mp1_20mp2_20mp3_9',['MPEG audio (MP1/MP2/MP3)',['../group___m_p_e_g.html',1,'']]],
   ['mp2_20mp3_10',['MPEG audio (MP1/MP2/MP3)',['../group___m_p_e_g.html',1,'']]],
-  ['mp3_11',['MP3',['../index.html#autotoc_md10',1,'C++: add a cover picture to an MP3'],['../group___m_p_e_g.html',1,'MPEG audio (MP1/MP2/MP3)']]],
+  ['mp3_11',['MP3',['../index.html#autotoc_md11',1,'C++: add a cover picture to an MP3'],['../group___m_p_e_g.html',1,'MPEG audio (MP1/MP2/MP3)']]],
   ['mp4_20m4a_12',['MP4 / M4A',['../group___m_p4.html',1,'']]],
   ['mp4addpicturearrayw_13',['MP4AddPictureArrayW',['../group___m_p4.html#gaacb62de3d184abfc79af73825fb0091e',1,'dllmain.cpp']]],
   ['mp4addpicturefilew_14',['MP4AddPictureFileW',['../group___m_p4.html#ga0de7c8ef909c11f18c6753e6752f612c',1,'dllmain.cpp']]],

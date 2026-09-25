@@ -37,5 +37,5 @@ var searchData=
   ['wmasavechangesw_34',['WMASaveChangesW',['../group___w_m_a.html#ga5d64abd5900bf4d34d03a13496edd7c1',1,'dllmain.cpp']]],
   ['wmasetuseritemw_35',['WMASetUserItemW',['../group___w_m_a.html#ga559911bbdc5c91f627b80dd822b07932',1,'dllmain.cpp']]],
   ['works_36',['How it works',['../index.html#autotoc_md3',1,'']]],
-  ['wrappers_37',['Wrappers',['../index.html#autotoc_md6',1,'']]]
+  ['wrappers_37',['Wrappers',['../index.html#autotoc_md7',1,'']]]
 ];
