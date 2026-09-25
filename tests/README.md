@@ -32,6 +32,17 @@ and thereby overwrites ID3v2 frames; use `ID3V2SaveChangesW` for frame tests.
 The test data values (`Testtitel`, `Testkuenstler`, `Kommentar` ...) are deliberately kept as they are: they are written into the fixtures
 by `fixtures/generate.bat` and `fixtures/make_*.py` and read back by the tests.
 
+## Library scan (performance, `tools/`)
+
+`toolsun_scan.bat <x86|x64> <root directory> [limit]` builds `tools/scan_library.cpp` against the 32 or 64 bit DLL and
+analyzes every audio file below the directory (mp3, mp2, mp1, wma, m4a, ogg, flac, wav, ape, mpc, tta, wv, aac). It writes
+`out\scan\<arch>esult.tsv` (path, size, format, duration, bit rate, sample rate, channels, title, artist, album, year, track,
+genre, comment, analysis time per file) and `result.tsv.summary.txt` with the timing: listing, analysis time (mean, median, p95,
+p99, max), CPU time, read operations and the slowest files. It is not part of the Catch2 run.
+
+Note for comparisons: on a network drive the first run reads cold data and is much slower than following runs (client and server
+caches). Compare runs of the same state, e.g. run each DLL twice in the order x64, x86, x64, x86.
+
 ## Encoder quirks (`kQuirks`)
 
 The earlier "read gaps" (year `TDRC`, Vorbis `DESCRIPTION`, APE `date`, WMA `Description`/`date`, WAV `IPRT`) are fixed in the DLL
