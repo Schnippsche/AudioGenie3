@@ -157,7 +157,7 @@ TEST_CASE("ID3v2: volume adjustment and equalisation in v2.4 (RVA2/EQU2 with ide
     CHECK(ID3V2AddEqualisationW(eq.ptr(), eq.len(), 1, L"eqid") == 0);
     s.reload();
     const std::wstring wids = take(ID3V2GetAllFrameIDsW());
-    const std::string ids(wids.begin(), wids.end());
+    const std::string ids = ascii(wids);
     INFO("frame IDs after saving: " << ids);
     const int volume = ID3V2GetFrameCountW(ID3F_RVAD) + ID3V2GetFrameCountW(ID3F_RVA2);
     const int equal = ID3V2GetFrameCountW(ID3F_EQUA) + ID3V2GetFrameCountW(ID3F_EQU2);

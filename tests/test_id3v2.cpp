@@ -58,7 +58,7 @@ TEST_CASE("ID3v2: year (TYER in v2.3, TDRC in v2.4) and genre", "[id3v2][text]")
         ID3V2SetTextFrameW(ID3F_TYER, L"1999");
         ID3V2SetTextFrameW(ID3F_TIT2, L"Titel");
         s.reload();
-        INFO("frame IDs: " << Catch::StringMaker<std::string>::convert([&] { auto w = take(ID3V2GetAllFrameIDsW()); return std::string(w.begin(), w.end()); }()));
+        INFO("frame IDs: " << Catch::StringMaker<std::string>::convert([&] { auto w = take(ID3V2GetAllFrameIDsW()); return ascii(w); }()));
         CHECK(take(ID3V2GetTextFrameW(ID3F_TYER)) == L"");
     }
 }
@@ -259,7 +259,7 @@ TEST_CASE("ID3v2: tag version and size", "[id3v2][version]")
             CHECK(ID3V2ExistsW() != 0);
             const std::wstring ver = take(ID3V2GetVersionW());
             const wchar_t* expect = cfg.format == 1 ? L"2.2" : cfg.format == 2 ? L"2.3" : L"2.4";
-            INFO("version according to the DLL: " << Catch::StringMaker<std::string>::convert(std::string(ver.begin(), ver.end())));
+            INFO("version according to the DLL: " << Catch::StringMaker<std::string>::convert(ascii(ver)));
             CHECK(ver.find(expect) != std::wstring::npos);
             CHECK(ID3V2GetSizeW() > 0);
             CHECK(static_cast<size_t>(ID3V2GetSizeW()) <= readFile(s.path).size());
