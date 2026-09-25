@@ -24,6 +24,14 @@
 *.py   text eol=lf
 *.md   text eol=lf
 
+# Configuration files and the license text: LF
+.editorconfig text eol=lf
+.gitattributes text eol=lf
+.gitignore text eol=lf
+.graphifyignore text eol=lf
+Doxyfile text eol=lf
+LICENSE text eol=lf
+
 # Binaerdateien nie umwandeln (Audio-Fixtures, Bibliotheken, Bilder, Archive)
 *.dll binary
 *.lib binary
