@@ -606,6 +606,9 @@ extern "C" long __stdcall AUDIOGetChannelsW()
 /**
  * @brief get the duration in seconds
  *
+ * For MPEG audio files with a variable bit rate (VBR) the value is only exact if the file has a Xing or VBRI header
+ * or if the configuration value MPEGEXACTREAD was set before the analysis, see SetConfigValueW().
+ *
  * @ingroup AUDIO
  * @since 2.0.1.0
  * @return duration in seconds
@@ -642,6 +645,9 @@ extern "C" long __stdcall AUDIOGetSampleRateW()
 
 /**
  * @brief get the bit rate in kbps
+ *
+ * For MPEG audio files with a variable bit rate (VBR) this is the average bit rate. It is only exact if the file has a
+ * Xing or VBRI header or if the configuration value MPEGEXACTREAD was set before the analysis, see SetConfigValueW().
  *
  * @ingroup AUDIO
  * @since 2.0.1.0
@@ -1870,6 +1876,10 @@ extern "C" long __stdcall MPEGGetFrameSizeW()
 /**
  * @brief get the number of Frames
  *
+ * The value comes from the Xing or VBRI header. Without a header it is calculated from the file size (exact for
+ * constant bit rate files) or, if the configuration value MPEGEXACTREAD was set before the analysis and the bit rate
+ * varies, counted frame by frame, see SetConfigValueW().
+ *
  * @ingroup MPEG
  * @since 2.0.1.0
  * @return number of frames
@@ -1895,6 +1905,9 @@ extern "C" BSTR __stdcall MPEGGetLayerW()
 
 /**
  * @brief returns -1 if it is variable bitrate
+ *
+ * A file is recognized as VBR if it has a Xing or VBRI header. A VBR file without such a header is only recognized
+ * if the configuration value MPEGEXACTREAD was set before the analysis, see SetConfigValueW().
  *
  * @ingroup MPEG
  * @since 2.0.1.0
@@ -4098,13 +4111,38 @@ extern "C" short __stdcall ID3V2GetEncodingW(u32 FrameID)
  *
  * | Key | ID | Defaultvalue | Description |
  * |---|---|---|---|
- * | 0 | MPEGEXACTREAD | 0 | a non-zero value activates reading all MPEG frames; replaces SetMPEGAnalyzeAllFrames |
+ * | 0 | MPEGEXACTREAD | 0 | a non-zero value activates reading all MPEG frames (see below); replaces SetMPEGAnalyzeAllFrames |
  * | 1 | ID3V2PADDINGSIZE | 4096 | the padding size in bytes for an ID3v2 tag |
  * | 2 | WRITEBLOCKSIZE | 524288 | the block size in bytes for internal file copy |
  * | 3 | DOEVENTSMILLIS | 250 | milliseconds after which AudioGenie fires a DoEvent |
  * | 4 | MAXTEXTBUFFER | 262144 | the maximum text size in bytes |
  * | 5 | WMAPADDINGSIZE | 4096 | the padding size in bytes for a WMA tag |
  * | 6 | MP4PADDINGSIZE | 4096 | the padding size in bytes for an MP4 tag |
+ *
+ * <b>MPEGEXACTREAD</b>
+ *
+ * Set this value <b>before</b> AUDIOAnalyzeFileW(); it only affects MPEG audio files (MP1/MP2/MP3).
+ *
+ * By default the duration, the number of frames and the bit rate are taken from a Xing or VBRI header, if the file has one.
+ * For files without such a header they are calculated from the file size and the bit rate of the first frame. This is exact
+ * for files with a constant bit rate (CBR). For files with a variable bit rate (VBR) that lack the header, the values are
+ * only an estimate, and the file is treated as CBR (MPEGIsVBRW() returns 0).
+ *
+ * With MPEGEXACTREAD not equal to 0 the analysis reads the whole file frame by frame instead:
+ * - MPEGGetFramesW(), AUDIOGetDurationW() and AUDIOGetBitrateW() are exact for VBR files, even without a header,
+ *   and the average bit rate is calculated from all frames. The values of the Xing/VBRI header are ignored.
+ * - MPEGIsVBRW() returns -1 if the bit rate changes between the frames.
+ * - For files with a constant bit rate the number of frames and the duration are still calculated from the file size.
+ * - The analysis takes as long as it takes to read the file: about 6 ms for a 40 MB file on a fast SSD, but seconds
+ *   for a large collection on a slow disk or a network drive. Without the setting only a few small blocks at the
+ *   beginning and at the end of the file are read, regardless of the file size.
+ * - Data that is not an MPEG frame (for example damaged parts) is skipped byte by byte; the tags at the end of the file
+ *   (ID3v1, Lyrics3, APE) are not scanned.
+ * - The properties of the first frame (padding, private, copyright and original bit, channel mode extension) are
+ *   kept; they are not overwritten by the last frame.
+ *
+ * Recommendation: leave the setting off for scanning large collections. Switch it on if the duration of VBR files
+ * without a header must be correct, e.g. before you show or compare durations.
  *
  * @ingroup UNIVERSAL
  * @since 2.0.1.0

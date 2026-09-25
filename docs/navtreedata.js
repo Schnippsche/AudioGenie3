@@ -28,23 +28,25 @@ var NAVTREE =
     [ "What it does", "index.html#autotoc_md1", [
       [ "Supported formats", "index.html#autotoc_md2", null ]
     ] ],
-    [ "How it works", "index.html#autotoc_md3", null ],
-    [ "Getting started", "index.html#autotoc_md4", [
-      [ "Build", "index.html#autotoc_md5", null ],
-      [ "Register the DLL", "index.html#autotoc_md6", null ],
-      [ "Wrappers", "index.html#autotoc_md7", null ]
+    [ "How it works", "index.html#autotoc_md3", [
+      [ "MP3 files with a variable bit rate (VBR)", "index.html#autotoc_md4", null ]
     ] ],
-    [ "Examples", "index.html#autotoc_md8", [
-      [ "C++: read tags and technical data", "index.html#autotoc_md9", null ],
-      [ "C++: change tags and save", "index.html#autotoc_md10", null ],
-      [ "C++: add a cover picture to an MP3", "index.html#autotoc_md11", null ],
-      [ "C", "index.html#autotoc_md12", null ],
-      [ "Delphi", "index.html#autotoc_md13", null ],
-      [ "VB6", "index.html#autotoc_md14", null ]
+    [ "Getting started", "index.html#autotoc_md5", [
+      [ "Build", "index.html#autotoc_md6", null ],
+      [ "Register the DLL", "index.html#autotoc_md7", null ],
+      [ "Wrappers", "index.html#autotoc_md8", null ]
     ] ],
-    [ "Documentation", "index.html#autotoc_md15", null ],
-    [ "Tests", "index.html#autotoc_md16", null ],
-    [ "License", "index.html#autotoc_md17", null ],
+    [ "Examples", "index.html#autotoc_md9", [
+      [ "C++: read tags and technical data", "index.html#autotoc_md10", null ],
+      [ "C++: change tags and save", "index.html#autotoc_md11", null ],
+      [ "C++: add a cover picture to an MP3", "index.html#autotoc_md12", null ],
+      [ "C", "index.html#autotoc_md13", null ],
+      [ "Delphi", "index.html#autotoc_md14", null ],
+      [ "VB6", "index.html#autotoc_md15", null ]
+    ] ],
+    [ "Documentation", "index.html#autotoc_md16", null ],
+    [ "Tests", "index.html#autotoc_md17", null ],
+    [ "License", "index.html#autotoc_md18", null ],
     [ "Picture types", "picturetypes.html", null ],
     [ "Topics", "topics.html", "topics" ]
   ] ]

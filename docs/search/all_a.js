@@ -1,6 +1,6 @@
 var searchData=
 [
-  ['license_0',['License',['../index.html#autotoc_md17',1,'']]],
+  ['license_0',['License',['../index.html#autotoc_md18',1,'']]],
   ['lyrics3_20tag_1',['Lyrics3 tag',['../group___l_y_r_i_c_s.html',1,'']]],
   ['lyricsexistsw_2',['LYRICSExistsW',['../group___l_y_r_i_c_s.html#gae0dc42e6a3f10d18215f6621c641bb2e',1,'dllmain.cpp']]],
   ['lyricsgetalbumw_3',['LYRICSGetAlbumW',['../group___l_y_r_i_c_s.html#ga2a9a5cea411d1884b0d4ad2d0a228a1e',1,'dllmain.cpp']]],

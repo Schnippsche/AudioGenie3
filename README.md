@@ -59,6 +59,23 @@ ID3v2 frames. If you edit ID3v2 frames directly, save with `ID3V2SaveChangesW` i
 Strings returned by the DLL are `BSTR`s. When you declare the functions yourself (for example with P/Invoke), the return
 type must be marshalled as `BStr`, otherwise the process crashes on x64. The wrappers in `Wrapper/` already do this.
 
+### MP3 files with a variable bit rate (VBR)
+
+The duration, the number of frames and the average bit rate of an MP3 file are exact if the file has a Xing or VBRI
+header, and for files with a constant bit rate (CBR). A VBR file **without** such a header can only be estimated from its
+size and the bit rate of the first frame, and is then treated as CBR.
+
+For such files set the configuration value `MPEGEXACTREAD` **before** the analysis:
+
+```cpp
+SetConfigValueW(0, 1);                    // key 0 = MPEGEXACTREAD
+AUDIOAnalyzeFileW(L"C:\\Music\\vbr.mp3");   // reads all frames: exact duration, frames, average bit rate, MPEGIsVBRW()
+```
+
+The analysis then reads the whole file frame by frame. That takes about 6 ms for a 40 MB file on a fast SSD, but
+noticeably longer on a slow disk or a network drive, so leave it off when you scan large collections. Details are in the
+documentation of `SetConfigValueW`.
+
 ## Getting started
 
 ### Build

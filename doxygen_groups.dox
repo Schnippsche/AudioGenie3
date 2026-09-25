@@ -26,7 +26,12 @@
  *  MP4 metadata (ilst atoms, pictures, iTunes frames). */
 
 /** @defgroup MPEG MPEG audio (MP1/MP2/MP3)
- *  Properties of MPEG audio files. */
+ *  Properties of MPEG audio files.
+ *
+ *  <b>Variable bit rate (VBR):</b> the duration, the number of frames and the average bit rate of a VBR file are exact
+ *  if the file has a Xing or VBRI header. Without such a header they can only be estimated (the file is treated as
+ *  constant bit rate). The configuration value MPEGEXACTREAD (see SetConfigValueW(), set before AUDIOAnalyzeFileW())
+ *  makes the analysis read all frames, which gives exact values for these files, but takes much longer. */
 
 /** @defgroup MPP Musepack
  *  Properties of Musepack files (stream versions 4 to 8). */

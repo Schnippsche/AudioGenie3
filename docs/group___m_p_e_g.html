@@ -149,7 +149,8 @@ Functions</h2></td></tr>
 <tr class="memdesc:gadf789e781b9fb2275dc2d1fc55077bb7"><td class="mdescLeft">&#160;</td><td class="mdescRight">modify the state of the private bit  <br /></td></tr>
 </table>
 <a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>Properties of MPEG audio files. </p>
+<div class="textblock"><p>Properties of MPEG audio files.</p>
+<p><b>Variable bit rate (VBR):</b> the duration, the number of frames and the average bit rate of a VBR file are exact if the file has a Xing or VBRI header. Without such a header they can only be estimated (the file is treated as constant bit rate). The configuration value MPEGEXACTREAD (see <a class="el" href="group___u_n_i_v_e_r_s_a_l.html#ga2f1f5b7ad32bc447043b8121c77d2ca0" title="set a configuration value.">SetConfigValueW()</a>, set before <a class="el" href="group___a_u_d_i_o.html#ga9073413421b0cd63fcb4b139c85b640c" title="read an audio-file and all known tags">AUDIOAnalyzeFileW()</a>) makes the analysis read all frames, which gives exact values for these files, but takes much longer. </p>
 </div><a name="doc-func-members" id="doc-func-members"></a><h2 id="header-doc-func-members" class="groupheader">Function Documentation</h2>
 <a id="ga23f6ad2c73d27f2594d10678e6eb6d2d" name="ga23f6ad2c73d27f2594d10678e6eb6d2d"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ga23f6ad2c73d27f2594d10678e6eb6d2d">&#9670;&#160;</a></span>MPEGIsCopyrightedW()</h2>
@@ -377,6 +378,7 @@ Functions</h2></td></tr>
 </div><div class="memdoc">
 
 <p>get the number of Frames </p>
+<p>The value comes from the Xing or VBRI header. Without a header it is calculated from the file size (exact for constant bit rate files) or, if the configuration value MPEGEXACTREAD was set before the analysis and the bit rate varies, counted frame by frame, see <a class="el" href="group___u_n_i_v_e_r_s_a_l.html#ga2f1f5b7ad32bc447043b8121c77d2ca0" title="set a configuration value.">SetConfigValueW()</a>.</p>
 <dl class="section since"><dt>Since</dt><dd>2.0.1.0 </dd></dl>
 <dl class="section return"><dt>Returns</dt><dd>number of frames </dd></dl>
 
@@ -419,6 +421,7 @@ Functions</h2></td></tr>
 </div><div class="memdoc">
 
 <p>returns -1 if it is variable bitrate </p>
+<p>A file is recognized as VBR if it has a Xing or VBRI header. A VBR file without such a header is only recognized if the configuration value MPEGEXACTREAD was set before the analysis, see <a class="el" href="group___u_n_i_v_e_r_s_a_l.html#ga2f1f5b7ad32bc447043b8121c77d2ca0" title="set a configuration value.">SetConfigValueW()</a>.</p>
 <dl class="section since"><dt>Since</dt><dd>2.0.1.0 </dd></dl>
 <dl class="section return"><dt>Returns</dt><dd>-1 if variable bitrate, otherwise 0 </dd></dl>
 

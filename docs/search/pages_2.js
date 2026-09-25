@@ -1,4 +1,5 @@
 var searchData=
 [
-  ['build_0',['Build',['../index.html#autotoc_md5',1,'']]]
+  ['bit_20rate_20vbr_0',['MP3 files with a variable bit rate (VBR)',['../index.html#autotoc_md4',1,'']]],
+  ['build_1',['Build',['../index.html#autotoc_md6',1,'']]]
 ];
