@@ -11,6 +11,7 @@ shift
 set FAILED=0
 where python >nul 2>nul
 if not errorlevel 1 (python "%TESTS%contract\check_wrappers.py" || set FAILED=1)
+if not errorlevel 1 (python "%TESTS%contract\check_line_endings.py" || set FAILED=1)
 for %%A in (%ARCHS%) do call :run %%A %1 %2 %3 %4
 exit /b %FAILED%
 

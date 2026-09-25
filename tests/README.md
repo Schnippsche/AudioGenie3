@@ -25,6 +25,7 @@ Prerequisite: `Release\AudioGenie3.dll/.lib` (Win32) and `x64\Release\...` are b
 | `test_md5.cpp` | MD5 of files: RFC 1321 values, comparison with the Windows CNG implementation for sizes around the 64 byte blocks and the read buffers, audio hash independent of the tags |
 | `test_fuzz_write.cpp` | fuzzing of the write paths: random operation sequences (tags, pictures, frames, saving) on fixture copies and on damaged copies; hang watchdog |
 | `contract/check_wrappers.py` | signatures of C++, C#, VB.NET, Delphi, VB6 against `dllmain.cpp` |
+| `contract/check_line_endings.py` | line endings of the working tree against `.gitattributes` (CRLF for sources, batch and project files; no mixed endings); `--fix` converts the files |
 
 Notes on the API (from the code): `AUDIOSaveChangesW` writes the abstract fields (title, artist ...)
 and thereby overwrites ID3v2 frames; use `ID3V2SaveChangesW` for frame tests.
