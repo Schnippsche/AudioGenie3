@@ -25,6 +25,25 @@
 var NAVTREE =
 [
   [ "AudioGenie3", "index.html", [
+    [ "What it does", "index.html#autotoc_md1", [
+      [ "Supported formats", "index.html#autotoc_md2", null ]
+    ] ],
+    [ "How it works", "index.html#autotoc_md3", null ],
+    [ "Getting started", "index.html#autotoc_md4", [
+      [ "Build", "index.html#autotoc_md5", null ],
+      [ "Wrappers", "index.html#autotoc_md6", null ]
+    ] ],
+    [ "Examples", "index.html#autotoc_md7", [
+      [ "C++: read tags and technical data", "index.html#autotoc_md8", null ],
+      [ "C++: change tags and save", "index.html#autotoc_md9", null ],
+      [ "C++: add a cover picture to an MP3", "index.html#autotoc_md10", null ],
+      [ "C", "index.html#autotoc_md11", null ],
+      [ "Delphi", "index.html#autotoc_md12", null ],
+      [ "VB6", "index.html#autotoc_md13", null ]
+    ] ],
+    [ "Documentation", "index.html#autotoc_md14", null ],
+    [ "Tests", "index.html#autotoc_md15", null ],
+    [ "License", "index.html#autotoc_md16", null ],
     [ "Picture types", "picturetypes.html", null ],
     [ "Topics", "topics.html", "topics" ]
   ] ]

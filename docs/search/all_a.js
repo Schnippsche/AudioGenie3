@@ -1,4 +1,31 @@
 var searchData=
 [
-  ['universal_20functions_0',['Universal functions',['../group___u_n_i_v_e_r_s_a_l.html',1,'']]]
+  ['license_0',['License',['../index.html#autotoc_md16',1,'']]],
+  ['lyrics3_20tag_1',['Lyrics3 tag',['../group___l_y_r_i_c_s.html',1,'']]],
+  ['lyricsexistsw_2',['LYRICSExistsW',['../group___l_y_r_i_c_s.html#gae0dc42e6a3f10d18215f6621c641bb2e',1,'dllmain.cpp']]],
+  ['lyricsgetalbumw_3',['LYRICSGetAlbumW',['../group___l_y_r_i_c_s.html#ga2a9a5cea411d1884b0d4ad2d0a228a1e',1,'dllmain.cpp']]],
+  ['lyricsgetartistw_4',['LYRICSGetArtistW',['../group___l_y_r_i_c_s.html#gab773181f34cfa90816ad1254725f4352',1,'dllmain.cpp']]],
+  ['lyricsgetauthorw_5',['LYRICSGetAuthorW',['../group___l_y_r_i_c_s.html#ga396b9993dbabcb6796f48d329b472733',1,'dllmain.cpp']]],
+  ['lyricsgetgenrew_6',['LYRICSGetGenreW',['../group___l_y_r_i_c_s.html#ga7dc60b1e4627945869134e1badb1626e',1,'dllmain.cpp']]],
+  ['lyricsgetimagelinkw_7',['LYRICSGetImageLinkW',['../group___l_y_r_i_c_s.html#ga6126d3a140379b3bf02c2e9785b74273',1,'dllmain.cpp']]],
+  ['lyricsgetindicationw_8',['LYRICSGetIndicationW',['../group___l_y_r_i_c_s.html#ga2b509e5d8060f72d6b9c5dd05fe60f09',1,'dllmain.cpp']]],
+  ['lyricsgetinformationw_9',['LYRICSGetInformationW',['../group___l_y_r_i_c_s.html#ga82a5a131caadb5310409a130ffe1320f',1,'dllmain.cpp']]],
+  ['lyricsgetlyricsw_10',['LYRICSGetLyricsW',['../group___l_y_r_i_c_s.html#ga85e05af7e02ac7e7a3420fce60c7186f',1,'dllmain.cpp']]],
+  ['lyricsgetsizew_11',['LYRICSGetSizeW',['../group___l_y_r_i_c_s.html#ga43a41913fa727e8ebc60af66cbc0b275',1,'dllmain.cpp']]],
+  ['lyricsgetstartpositionw_12',['LYRICSGetStartPositionW',['../group___l_y_r_i_c_s.html#gaf8a30dd351cfee04ffdecd5a250f8668',1,'dllmain.cpp']]],
+  ['lyricsgettitlew_13',['LYRICSGetTitleW',['../group___l_y_r_i_c_s.html#gaaf63d522056d3a1e402feead3cb9d4f3',1,'dllmain.cpp']]],
+  ['lyricsgetversionw_14',['LYRICSGetVersionW',['../group___l_y_r_i_c_s.html#ga0edbfd30a83215660bc941293eaf5cea',1,'dllmain.cpp']]],
+  ['lyricsremovetagfromfilew_15',['LYRICSRemoveTagFromFileW',['../group___l_y_r_i_c_s.html#gafae490dcb6a481b38347c747140ff4c6',1,'dllmain.cpp']]],
+  ['lyricsremovetagw_16',['LYRICSRemoveTagW',['../group___l_y_r_i_c_s.html#ga4be280d327846e97ea060cc457bb5d8f',1,'dllmain.cpp']]],
+  ['lyricssavechangestofilew_17',['LYRICSSaveChangesToFileW',['../group___l_y_r_i_c_s.html#gae8bdf856992a26c0885c00ab72386381',1,'dllmain.cpp']]],
+  ['lyricssavechangesw_18',['LYRICSSaveChangesW',['../group___l_y_r_i_c_s.html#ga7461303af760d65454d604e2176e4804',1,'dllmain.cpp']]],
+  ['lyricssetalbumw_19',['LYRICSSetAlbumW',['../group___l_y_r_i_c_s.html#ga0d93c07c344c318d6f88cbc01fc46cdc',1,'dllmain.cpp']]],
+  ['lyricssetartistw_20',['LYRICSSetArtistW',['../group___l_y_r_i_c_s.html#ga9939709e93014c5c526b2eaf1a4bf034',1,'dllmain.cpp']]],
+  ['lyricssetauthorw_21',['LYRICSSetAuthorW',['../group___l_y_r_i_c_s.html#gab5498179964a4317ba53bc3b77b565e4',1,'dllmain.cpp']]],
+  ['lyricssetgenrew_22',['LYRICSSetGenreW',['../group___l_y_r_i_c_s.html#ga89f8f5c294bc569e2a01349f8b1d6e82',1,'dllmain.cpp']]],
+  ['lyricssetimagelinkw_23',['LYRICSSetImageLinkW',['../group___l_y_r_i_c_s.html#gacbe41c8576c1855da5e3bebbc7617b70',1,'dllmain.cpp']]],
+  ['lyricssetindicationw_24',['LYRICSSetIndicationW',['../group___l_y_r_i_c_s.html#ga9b9c3f6dd2a36598304b6ba252d0bf72',1,'dllmain.cpp']]],
+  ['lyricssetinformationw_25',['LYRICSSetInformationW',['../group___l_y_r_i_c_s.html#gada97197d5f5e6abd9d7e11c7d7296434',1,'dllmain.cpp']]],
+  ['lyricssetlyricsw_26',['LYRICSSetLyricsW',['../group___l_y_r_i_c_s.html#ga2a669364c751007bea9f5419ea320ca1',1,'dllmain.cpp']]],
+  ['lyricssettitlew_27',['LYRICSSetTitleW',['../group___l_y_r_i_c_s.html#ga9574e3658c74d9151bf10120b76b4ed2',1,'dllmain.cpp']]]
 ];

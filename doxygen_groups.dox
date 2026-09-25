@@ -1,15 +1,3 @@
-/**
- * @mainpage AudioGenie3
- *
- * AudioGenie3 is a library for analyzing and tagging audio files. All functions are exported from the DLL with the
- * <tt>__stdcall</tt> calling convention and a <tt>W</tt> suffix for the Unicode variants.
- *
- * Usage: call AUDIOAnalyzeFileW() first; all other functions then work on the analyzed file. The library is single-threaded
- * by design and keeps its state in global objects.
- *
- * The functions are grouped by tag or format, see the <a href="topics.html">Topics</a> page.
- */
-
 /** @defgroup AUDIO Generic audio functions
  *  Analyze a file and read or write the common fields (title, artist, album ...) independent of the format. */
 

@@ -112,9 +112,187 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('index.html',''
   <div class="headertitle"><div class="title">AudioGenie3 </div></div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><p>AudioGenie3 is a library for analyzing and tagging audio files. All functions are exported from the DLL with the <span class="tt">__stdcall</span> calling convention and a <span class="tt">W</span> suffix for the Unicode variants.</p>
-<p>Usage: call <a class="el" href="group___a_u_d_i_o.html#ga9073413421b0cd63fcb4b139c85b640c" title="read an audio-file and all known tags">AUDIOAnalyzeFileW()</a> first; all other functions then work on the analyzed file. The library is single-threaded by design and keeps its state in global objects.</p>
-<p>The functions are grouped by tag or format, see the <a href="topics.html">Topics</a> page. </p>
+<div class="textblock"><p><a class="anchor" id="md__r_e_a_d_m_e"></a></p>
+<p>AudioGenie3 is a Windows DLL for analyzing audio files and for reading and writing their tags (metadata). It exports a plain <span class="tt">__stdcall</span> C interface with Unicode (<span class="tt">...W</span>) functions, so it can be used from C/C++, C#, VB.NET, Delphi and VB6 alike. Ready-made wrappers for these languages are in <span class="tt">Wrapper/</span>.</p>
+<h1 class="doxsection"><a class="anchor" id="autotoc_md1"></a>
+What it does</h1>
+<ul>
+<li><b>Analyzes</b> a file and reports technical data: format, duration, bit rate, sample rate, channels, file size, MD5 value of the audio data.</li>
+<li><b>Reads and writes the common tag fields</b> (title, artist, album, track, year, genre, comment, composer) through one format-independent set of <span class="tt">AUDIO*</span> functions. The DLL stores them in the tag type that fits the format.</li>
+<li><b>Gives full access to the format-specific tags</b>: ID3v1, ID3v2 (v2.2/2.3/2.4, all frame types including chapters, synchronized lyrics and pictures), APE, Lyrics3, Vorbis comments, WMA fields, MP4 atoms and WAV chunks.</li>
+<li><b>Handles cover art</b> (embedded pictures) in ID3v2, FLAC, WMA and MP4.</li>
+</ul>
+<h2 class="doxsection"><a class="anchor" id="autotoc_md2"></a>
+Supported formats</h2>
+<table class="markdownTable">
+<tr class="markdownTableHead">
+<th class="markdownTableHeadNone">Format  </th><th class="markdownTableHeadNone">Tags  </th></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone">MP3 (MPEG audio)  </td><td class="markdownTableBodyNone">ID3v1, ID3v2, APE, Lyrics3  </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone">MPC (Musepack)  </td><td class="markdownTableBodyNone">ID3v2, APE  </td></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone">AAC (ADTS)  </td><td class="markdownTableBodyNone">APE, ID3v2, ID3v1  </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone">MP4 / M4A  </td><td class="markdownTableBodyNone">MP4 atoms  </td></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone">WMA  </td><td class="markdownTableBodyNone">WMA fields  </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone">FLAC  </td><td class="markdownTableBodyNone">Vorbis comment, pictures  </td></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone">OGG Vorbis  </td><td class="markdownTableBodyNone">Vorbis comment  </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone">Monkey's Audio  </td><td class="markdownTableBodyNone">APE  </td></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone">WavPack  </td><td class="markdownTableBodyNone">APE  </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone">TTA  </td><td class="markdownTableBodyNone">ID3v2  </td></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone">WAV  </td><td class="markdownTableBodyNone">RIFF chunks (LIST/INFO, BEXT, CART, DISP)  </td></tr>
+</table>
+<p>The format is detected from the file content. Only for MP3/MP2/MP1 and AAC the file extension (<span class="tt">.mp3</span>, <span class="tt">.mp2</span>, <span class="tt">.mp1</span>, <span class="tt">.msf</span>, <span class="tt">.mp3~</span>, <span class="tt">.aac</span>) is checked first, so those files need their proper extension.</p>
+<h1 class="doxsection"><a class="anchor" id="autotoc_md3"></a>
+How it works</h1>
+<p>The DLL is <b>single-threaded by design</b> and keeps the data of the last analyzed file in memory:</p>
+<ol type="1">
+<li><span class="tt">AUDIOAnalyzeFileW(path)</span> reads the file and returns the format ID (0 = unknown, 1 = MP3, 2 = WMA, 3 = Monkey, 4 = FLAC, 5 = WAV, 6 = OGG, 7 = MPC, 8 = AAC, 9 = MP4/M4A, 10 = TTA, 11 = WavPack).</li>
+<li>All <span class="tt">AUDIOGet...W</span> / <span class="tt">ID3V2Get...W</span> / ... functions read from that remembered state.</li>
+<li><span class="tt">AUDIOSet...W</span> and the other setters change the state in memory only.</li>
+<li><span class="tt"><a class="el" href="group___a_u_d_i_o.html#ga9d2a81d26175ae87c79a2ca841ab97f4" title="store the changes in the last analyzed file, depending on format of the destination file:">AUDIOSaveChangesW()</a></span> writes the changes back into the analyzed file, and returns 0 on error, otherwise -1. <span class="tt">AUDIOSaveChangesToFileW(path)</span> writes into another file.</li>
+</ol>
+<p>Because of this you must not call the DLL from several threads at the same time. Analyze the file again before you access a different one.</p>
+<p>Note that <span class="tt"><a class="el" href="group___a_u_d_i_o.html#ga9d2a81d26175ae87c79a2ca841ab97f4" title="store the changes in the last analyzed file, depending on format of the destination file:">AUDIOSaveChangesW</a></span> writes the abstract fields (title, artist, ...) and thereby overwrites the matching ID3v2 frames. If you edit ID3v2 frames directly, save with <span class="tt"><a class="el" href="group___i_d3_v2.html#ga2b1bc39ea19a5472f27caed9215c538f" title="store the ID3v2 tag in the last analyzed file">ID3V2SaveChangesW</a></span> instead.</p>
+<p>Strings returned by the DLL are <span class="tt">BSTR</span>s. When you declare the functions yourself (for example with P/Invoke), the return type must be marshalled as <span class="tt">BStr</span>, otherwise the process crashes on x64. The wrappers in <span class="tt">Wrapper/</span> already do this.</p>
+<h1 class="doxsection"><a class="anchor" id="autotoc_md4"></a>
+Getting started</h1>
+<h2 class="doxsection"><a class="anchor" id="autotoc_md5"></a>
+Build</h2>
+<div class="fragment"><div class="line">MSBuild AudioGenie3.vcxproj /p:Configuration=Release /p:Platform=Win32</div>
+<div class="line">MSBuild AudioGenie3.vcxproj /p:Configuration=Release /p:Platform=x64</div>
+</div><!-- fragment --><p>The result is <span class="tt">AudioGenie3.dll</span> (and <span class="tt">AudioGenie3.lib</span> for C/C++) in <span class="tt">Release\</span> or <span class="tt">x64\Release\</span>. Pick the bitness that matches your application. Copy the DLL next to your executable or into a folder on the search path.</p>
+<h2 class="doxsection"><a class="anchor" id="autotoc_md6"></a>
+Wrappers</h2>
+<table class="markdownTable">
+<tr class="markdownTableHead">
+<th class="markdownTableHeadNone">Language  </th><th class="markdownTableHeadNone">File  </th></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone">C / C++  </td><td class="markdownTableBodyNone"><span class="tt">Wrapper/C C++/audiogenie3.h</span> (link <span class="tt">AudioGenie3.lib</span>)  </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone">C#  </td><td class="markdownTableBodyNone"><span class="tt">Wrapper/C #/AudioGenie2.cs</span>  </td></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone">VB.NET  </td><td class="markdownTableBodyNone"><span class="tt">Wrapper/DotNET/audiogenie3.vb</span>  </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone">Delphi  </td><td class="markdownTableBodyNone"><span class="tt">Wrapper/Delphi/AudioGenie3.pas</span>  </td></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone">VB6  </td><td class="markdownTableBodyNone"><span class="tt">Wrapper/VB6/clsAudioGenie.cls</span>  </td></tr>
+</table>
+<h1 class="doxsection"><a class="anchor" id="autotoc_md7"></a>
+Examples</h1>
+<h2 class="doxsection"><a class="anchor" id="autotoc_md8"></a>
+C++: read tags and technical data</h2>
+<div class="fragment"><div class="line"><span class="preprocessor">#include &quot;audiogenie3.h&quot;</span></div>
+<div class="line"><span class="preprocessor">#include &lt;cstdio&gt;</span></div>
+<div class="line"> </div>
+<div class="line"><span class="keywordtype">int</span> main()</div>
+<div class="line">{</div>
+<div class="line">    <span class="keywordtype">short</span> format = <a class="code hl_function" href="group___a_u_d_i_o.html#ga9073413421b0cd63fcb4b139c85b640c">AUDIOAnalyzeFileW</a>(L<span class="stringliteral">&quot;C:\\Music\\song.mp3&quot;</span>);</div>
+<div class="line">    <span class="keywordflow">if</span> (format == UNKNOWN) {</div>
+<div class="line">        BSTR err = <a class="code hl_function" href="group___a_u_d_i_o.html#gab1742cb65b6bb32e6ba7d568ac22d77f">AUDIOGetLastErrorTextW</a>();</div>
+<div class="line">        wprintf(L<span class="stringliteral">&quot;Not readable: %s\n&quot;</span>, err);</div>
+<div class="line">        SysFreeString(err);</div>
+<div class="line">        <span class="keywordflow">return</span> 1;</div>
+<div class="line">    }</div>
+<div class="line"> </div>
+<div class="line">    BSTR title  = <a class="code hl_function" href="group___a_u_d_i_o.html#gafff986ef0d161c896be50a3b99dc7bb6">AUDIOGetTitleW</a>();</div>
+<div class="line">    BSTR artist = <a class="code hl_function" href="group___a_u_d_i_o.html#ga9914d62b2176ca6031f1167a84d9d8e1">AUDIOGetArtistW</a>();</div>
+<div class="line">    wprintf(L<span class="stringliteral">&quot;%s - %s\n&quot;</span>, artist, title);</div>
+<div class="line">    wprintf(L<span class="stringliteral">&quot;%.1f s, %ld kbit/s, %ld Hz\n&quot;</span>,</div>
+<div class="line">            <a class="code hl_function" href="group___a_u_d_i_o.html#ga622fcfdba35703655af256ad32745656">AUDIOGetDurationW</a>(), <a class="code hl_function" href="group___a_u_d_i_o.html#gac8f3c0f91a4bdb859642f0797b7740be">AUDIOGetBitrateW</a>(), <a class="code hl_function" href="group___a_u_d_i_o.html#gac3b5081ae76577cc6d3cc48bbcce821e">AUDIOGetSampleRateW</a>());</div>
+<div class="line">    SysFreeString(title);</div>
+<div class="line">    SysFreeString(artist);</div>
+<div class="line">    <span class="keywordflow">return</span> 0;</div>
+<div class="line">}</div>
+<div class="ttc" id="agroup___a_u_d_i_o_html_ga622fcfdba35703655af256ad32745656"><div class="ttname"><a href="group___a_u_d_i_o.html#ga622fcfdba35703655af256ad32745656">AUDIOGetDurationW</a></div><div class="ttdeci">float AUDIOGetDurationW()</div><div class="ttdoc">get the duration in seconds</div><div class="ttdef"><b>Definition</b> dllmain.cpp:611</div></div>
+<div class="ttc" id="agroup___a_u_d_i_o_html_ga9073413421b0cd63fcb4b139c85b640c"><div class="ttname"><a href="group___a_u_d_i_o.html#ga9073413421b0cd63fcb4b139c85b640c">AUDIOAnalyzeFileW</a></div><div class="ttdeci">long AUDIOAnalyzeFileW(LPCWSTR FileName)</div><div class="ttdoc">read an audio-file and all known tags</div><div class="ttdef"><b>Definition</b> dllmain.cpp:161</div></div>
+<div class="ttc" id="agroup___a_u_d_i_o_html_ga9914d62b2176ca6031f1167a84d9d8e1"><div class="ttname"><a href="group___a_u_d_i_o.html#ga9914d62b2176ca6031f1167a84d9d8e1">AUDIOGetArtistW</a></div><div class="ttdeci">BSTR AUDIOGetArtistW()</div><div class="ttdoc">get the artist</div><div class="ttdef"><b>Definition</b> dllmain.cpp:772</div></div>
+<div class="ttc" id="agroup___a_u_d_i_o_html_gab1742cb65b6bb32e6ba7d568ac22d77f"><div class="ttname"><a href="group___a_u_d_i_o.html#gab1742cb65b6bb32e6ba7d568ac22d77f">AUDIOGetLastErrorTextW</a></div><div class="ttdeci">BSTR AUDIOGetLastErrorTextW()</div><div class="ttdoc">get the description of the last error</div><div class="ttdef"><b>Definition</b> dllmain.cpp:687</div></div>
+<div class="ttc" id="agroup___a_u_d_i_o_html_gac3b5081ae76577cc6d3cc48bbcce821e"><div class="ttname"><a href="group___a_u_d_i_o.html#gac3b5081ae76577cc6d3cc48bbcce821e">AUDIOGetSampleRateW</a></div><div class="ttdeci">long AUDIOGetSampleRateW()</div><div class="ttdoc">get the sample rate in Hz</div><div class="ttdef"><b>Definition</b> dllmain.cpp:635</div></div>
+<div class="ttc" id="agroup___a_u_d_i_o_html_gac8f3c0f91a4bdb859642f0797b7740be"><div class="ttname"><a href="group___a_u_d_i_o.html#gac8f3c0f91a4bdb859642f0797b7740be">AUDIOGetBitrateW</a></div><div class="ttdeci">long AUDIOGetBitrateW()</div><div class="ttdoc">get the bit rate in kbps</div><div class="ttdef"><b>Definition</b> dllmain.cpp:648</div></div>
+<div class="ttc" id="agroup___a_u_d_i_o_html_gafff986ef0d161c896be50a3b99dc7bb6"><div class="ttname"><a href="group___a_u_d_i_o.html#gafff986ef0d161c896be50a3b99dc7bb6">AUDIOGetTitleW</a></div><div class="ttdeci">BSTR AUDIOGetTitleW()</div><div class="ttdoc">get the title</div><div class="ttdef"><b>Definition</b> dllmain.cpp:747</div></div>
+</div><!-- fragment --><h2 class="doxsection"><a class="anchor" id="autotoc_md9"></a>
+C++: change tags and save</h2>
+<div class="fragment"><div class="line"><span class="keywordflow">if</span> (<a class="code hl_function" href="group___a_u_d_i_o.html#ga9073413421b0cd63fcb4b139c85b640c">AUDIOAnalyzeFileW</a>(L<span class="stringliteral">&quot;C:\\Music\\song.mp3&quot;</span>) != UNKNOWN) {</div>
+<div class="line">    <a class="code hl_function" href="group___a_u_d_i_o.html#ga21e92c35075c0f209dd3597c005dc5ba">AUDIOSetTitleW</a>(L<span class="stringliteral">&quot;New title&quot;</span>);</div>
+<div class="line">    <a class="code hl_function" href="group___a_u_d_i_o.html#gab7cbf15b7a7d1a1c59e986d797734835">AUDIOSetArtistW</a>(L<span class="stringliteral">&quot;New artist&quot;</span>);</div>
+<div class="line">    <a class="code hl_function" href="group___a_u_d_i_o.html#gad936d918d233e46a82528bb55785c58c">AUDIOSetYearW</a>(L<span class="stringliteral">&quot;2024&quot;</span>);</div>
+<div class="line">    <span class="keywordflow">if</span> (!<a class="code hl_function" href="group___a_u_d_i_o.html#ga9d2a81d26175ae87c79a2ca841ab97f4">AUDIOSaveChangesW</a>())</div>
+<div class="line">        wprintf(L<span class="stringliteral">&quot;Saving failed\n&quot;</span>);</div>
+<div class="line">}</div>
+<div class="ttc" id="agroup___a_u_d_i_o_html_ga21e92c35075c0f209dd3597c005dc5ba"><div class="ttname"><a href="group___a_u_d_i_o.html#ga21e92c35075c0f209dd3597c005dc5ba">AUDIOSetTitleW</a></div><div class="ttdeci">void AUDIOSetTitleW(LPCWSTR textString)</div><div class="ttdoc">set the title</div><div class="ttdef"><b>Definition</b> dllmain.cpp:759</div></div>
+<div class="ttc" id="agroup___a_u_d_i_o_html_ga9d2a81d26175ae87c79a2ca841ab97f4"><div class="ttname"><a href="group___a_u_d_i_o.html#ga9d2a81d26175ae87c79a2ca841ab97f4">AUDIOSaveChangesW</a></div><div class="ttdeci">short AUDIOSaveChangesW()</div><div class="ttdoc">store the changes in the last analyzed file, depending on format of the destination file:</div><div class="ttdef"><b>Definition</b> dllmain.cpp:586</div></div>
+<div class="ttc" id="agroup___a_u_d_i_o_html_gab7cbf15b7a7d1a1c59e986d797734835"><div class="ttname"><a href="group___a_u_d_i_o.html#gab7cbf15b7a7d1a1c59e986d797734835">AUDIOSetArtistW</a></div><div class="ttdeci">void AUDIOSetArtistW(LPCWSTR textString)</div><div class="ttdoc">set the artist</div><div class="ttdef"><b>Definition</b> dllmain.cpp:784</div></div>
+<div class="ttc" id="agroup___a_u_d_i_o_html_gad936d918d233e46a82528bb55785c58c"><div class="ttname"><a href="group___a_u_d_i_o.html#gad936d918d233e46a82528bb55785c58c">AUDIOSetYearW</a></div><div class="ttdeci">void AUDIOSetYearW(LPCWSTR textString)</div><div class="ttdoc">set the year</div><div class="ttdef"><b>Definition</b> dllmain.cpp:928</div></div>
+</div><!-- fragment --><h2 class="doxsection"><a class="anchor" id="autotoc_md10"></a>
+C++: add a cover picture to an MP3</h2>
+<div class="fragment"><div class="line"><a class="code hl_function" href="group___a_u_d_i_o.html#ga9073413421b0cd63fcb4b139c85b640c">AUDIOAnalyzeFileW</a>(L<span class="stringliteral">&quot;C:\\Music\\song.mp3&quot;</span>);</div>
+<div class="line"><span class="comment">// asLink = 0: embed the image data (1 would store only a link to the file)</span></div>
+<div class="line"><a class="code hl_function" href="group___i_d3_v2.html#ga57a827de06db91b6a3924165c0f73880">ID3V2AddPictureFileW</a>(L<span class="stringliteral">&quot;C:\\Music\\cover.jpg&quot;</span>, L<span class="stringliteral">&quot;Front cover&quot;</span>, COVER_FRONT, 0);</div>
+<div class="line"><a class="code hl_function" href="group___i_d3_v2.html#ga2b1bc39ea19a5472f27caed9215c538f">ID3V2SaveChangesW</a>();</div>
+<div class="ttc" id="agroup___i_d3_v2_html_ga2b1bc39ea19a5472f27caed9215c538f"><div class="ttname"><a href="group___i_d3_v2.html#ga2b1bc39ea19a5472f27caed9215c538f">ID3V2SaveChangesW</a></div><div class="ttdeci">short ID3V2SaveChangesW()</div><div class="ttdoc">store the ID3v2 tag in the last analyzed file</div><div class="ttdef"><b>Definition</b> dllmain.cpp:7010</div></div>
+<div class="ttc" id="agroup___i_d3_v2_html_ga57a827de06db91b6a3924165c0f73880"><div class="ttname"><a href="group___i_d3_v2.html#ga57a827de06db91b6a3924165c0f73880">ID3V2AddPictureFileW</a></div><div class="ttdeci">short ID3V2AddPictureFileW(LPCWSTR FileName, LPCWSTR Description, short PictureType, short asLink)</div><div class="ttdoc">&quot;APIC&quot; store a picture from a file in the tag</div><div class="ttdef"><b>Definition</b> dllmain.cpp:4524</div></div>
+</div><!-- fragment --><h2 class="doxsection"><a class="anchor" id="autotoc_md11"></a>
+C</h2>
+<div class="fragment"><div class="line"><span class="keyword">using </span>AudioGenie;</div>
+<div class="line"> </div>
+<div class="line">var format = AudioGenie2.AUDIOAnalyzeFile(<span class="stringliteral">@&quot;C:\Music\song.flac&quot;</span>);</div>
+<div class="line"><span class="keywordflow">if</span> (format != AudioFormatID.UNKNOWN)</div>
+<div class="line">{</div>
+<div class="line">    Console.WriteLine($<span class="stringliteral">&quot;{AudioGenie2.AUDIOArtist} - {AudioGenie2.AUDIOTitle}&quot;</span>);</div>
+<div class="line">    Console.WriteLine($<span class="stringliteral">&quot;{AudioGenie2.AUDIOGetDuration()} s&quot;</span>);</div>
+<div class="line"> </div>
+<div class="line">    AudioGenie2.AUDIOTitle = <span class="stringliteral">&quot;New title&quot;</span>;</div>
+<div class="line">    AudioGenie2.AUDIOSaveChanges();</div>
+<div class="line">}</div>
+</div><!-- fragment --><h2 class="doxsection"><a class="anchor" id="autotoc_md12"></a>
+Delphi</h2>
+<div class="fragment"><div class="line">var</div>
+<div class="line">  AG: TAudioGenie3;</div>
+<div class="line">begin</div>
+<div class="line">  AG := TAudioGenie3.Create;</div>
+<div class="line">  try</div>
+<div class="line">    if AG.AUDIOAnalyzeFileW(&#39;C:\Music\song.mp3&#39;) &lt;&gt; UNKNOWN then</div>
+<div class="line">    begin</div>
+<div class="line">      ShowMessage(AG.AUDIOArtistW + &#39; - &#39; + AG.AUDIOTitleW);</div>
+<div class="line">      AG.AUDIOTitleW := &#39;New title&#39;;</div>
+<div class="line">      AG.AUDIOSaveChangesW;</div>
+<div class="line">    end;</div>
+<div class="line">  finally</div>
+<div class="line">    AG.Free;</div>
+<div class="line">  end;</div>
+<div class="line">end;</div>
+</div><!-- fragment --><h2 class="doxsection"><a class="anchor" id="autotoc_md13"></a>
+VB6</h2>
+<div class="fragment"><div class="line">Dim ag As New clsAudioGenie</div>
+<div class="line"> </div>
+<div class="line">If ag.AUDIOAnalyzeFile(&quot;C:\Music\song.mp3&quot;) &lt;&gt; 0 Then</div>
+<div class="line">    Debug.Print ag.AUDIOArtist &amp; &quot; - &quot; &amp; ag.AUDIOTitle</div>
+<div class="line">    ag.AUDIOTitle = &quot;New title&quot;</div>
+<div class="line">    ag.AUDIOSaveChanges</div>
+<div class="line">End If</div>
+</div><!-- fragment --><p>The <span class="tt">VBasic/</span> folder contains complete sample applications (VB6 and VB.NET) with tag editors for ID3v1, ID3v2, APE and lyrics.</p>
+<h1 class="doxsection"><a class="anchor" id="autotoc_md14"></a>
+Documentation</h1>
+<p>The API reference (all 446 exported functions, grouped by format) is generated with Doxygen:</p>
+<div class="fragment"><div class="line">doxygen Doxyfile</div>
+</div><!-- fragment --><p>The output goes to <span class="tt">docs/</span> (open <span class="tt">docs/index.html</span>). In the generated help, the functions are grouped by tag or format on the <em>Topics</em> page. This README is used as the start page of the help.</p>
+<h1 class="doxsection"><a class="anchor" id="autotoc_md15"></a>
+Tests</h1>
+<p>The Catch2 test suite exercises the DLL through its C interface, with fixtures for every format, fuzzing and AddressSanitizer runs. See <span class="tt">tests/README.md</span>.</p>
+<h1 class="doxsection"><a class="anchor" id="autotoc_md16"></a>
+License</h1>
+<p>Copyright (C) 2001-2011 Stefan TÃ¶ngi.</p>
+<p>AudioGenie3 is free software, licensed under the GNU Lesser General Public License, version 2.1 or (at your option) any later version. See <span class="tt">LICENSE</span>.</p>
+<p>Third-party components and their licenses are listed in <span class="tt">THIRD-PARTY-NOTICES.md</span>. </p>
 </div></div><!-- PageDoc -->
 <a href="doxygen_crawl.html"></a>
 </div><!-- contents -->
