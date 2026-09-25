@@ -509,8 +509,7 @@ TEST_CASE("Broken files: saving tags into a truncated file does not crash", "[fo
 TEST_CASE("Damaged fixtures: no crash when analyzing", "[formats][robust]")
 {
     // The environment variable AG3_FUZZ_ROUNDS multiplies the iterations (e.g. 30 for a long ASan run).
-    const char* env = std::getenv("AG3_FUZZ_ROUNDS");
-    const int rounds = env ? std::max(1, std::atoi(env)) : 1;
+    const int rounds = ag3test::envSet("AG3_FUZZ_ROUNDS") ? std::max(1, std::atoi(ag3test::envValue("AG3_FUZZ_ROUNDS").c_str())) : 1;
     uint32_t seed = 4711;
     auto rnd = [&] { seed = seed * 1664525u + 1013904223u; return seed >> 8; };
 

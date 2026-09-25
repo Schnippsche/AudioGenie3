@@ -25,7 +25,7 @@ struct Buffer { BYTE* ptr; u32 len; };
 // AG3_MISUSE_SKIP=Fn1,Fn2: skip these functions (known crash candidates, to find further ones)
 bool skipped(const char* fn)
 {
-    static const std::string list = [] { const char* e = std::getenv("AG3_MISUSE_SKIP"); return std::string(",") + (e ? e : "") + ","; }();
+    static const std::string list = [] { return "," + ag3test::envValue("AG3_MISUSE_SKIP") + ","; }();
     return list.find(std::string(",") + fn + ",") != std::string::npos;
 }
 
@@ -33,7 +33,7 @@ bool skipped(const char* fn)
 std::string g_currentFile;
 void traceCall(const char* fn, int n)
 {
-    static const bool on = std::getenv("AG3_MISUSE_TRACE") != nullptr;
+    static const bool on = ag3test::envSet("AG3_MISUSE_TRACE");
     if (!on) return;
     static FILE* f = nullptr;
     if (!f) fopen_s(&f, (tempDir() / "misuse_trace.log").string().c_str(), "w");
@@ -102,7 +102,7 @@ void battery(const std::string& name, const fs::path& file, uint32_t seed)
 {
     g_currentFile = name;
     Rng r{ seed };
-    const int rounds = std::getenv("AG3_FUZZ_ROUNDS") ? std::max(1, std::atoi(std::getenv("AG3_FUZZ_ROUNDS"))) * 30 : 30;
+    const int rounds = ag3test::envSet("AG3_FUZZ_ROUNDS") ? std::max(1, std::atoi(ag3test::envValue("AG3_FUZZ_ROUNDS").c_str())) * 30 : 30;
     std::vector<BYTE> buf(4096);
     if (AUDIOAnalyzeFileW(file.c_str()) == UNKNOWN) FAIL("cannot be analyzed: " << file.string());
     prepareId3v2();

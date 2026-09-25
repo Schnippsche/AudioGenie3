@@ -7,6 +7,7 @@
 #include <windows.h>
 #include <oleauto.h>
 #include <cstdint>
+#include <cstdlib>
 #include <filesystem>
 #include <string>
 #include <vector>
@@ -30,6 +31,18 @@ Bytes readFile(const std::filesystem::path& p);
 std::wstring take(BSTR b);
 // narrows an ASCII-only wstring (e.g. frame IDs, version text) for log output
 inline std::string ascii(const std::wstring& w) { std::string s; for (wchar_t c : w) s += static_cast<char>(c); return s; }
+
+// Value of an environment variable, empty if it is not set (getenv replacement without the C4996 warning).
+inline std::string envValue(const char* name)
+{
+    char* buf = nullptr;
+    size_t len = 0;
+    std::string v;
+    if (_dupenv_s(&buf, &len, name) == 0 && buf) v = buf;
+    free(buf);
+    return v;
+}
+inline bool envSet(const char* name) { char* buf = nullptr; size_t len = 0; const bool set = _dupenv_s(&buf, &len, name) == 0 && buf; free(buf); return set; }
 
 // Size of the ID3v2 tag at the start of the file including the 10-byte header, 0 if there is none.
 size_t id3v2TotalSize(const Bytes& file);

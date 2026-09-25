@@ -30,8 +30,7 @@ struct Rng {
 
 int rounds()
 {
-    const char* env = std::getenv("AG3_FUZZ_ROUNDS");
-    return env ? std::max(1, std::atoi(env)) : 1;
+    return ag3test::envSet("AG3_FUZZ_ROUNDS") ? std::max(1, std::atoi(ag3test::envValue("AG3_FUZZ_ROUNDS").c_str())) : 1;
 }
 
 // all audio fixtures (recursively), including those under broken/
@@ -54,7 +53,7 @@ std::vector<fs::path> allFixtures()
 // and stores a copy of the input as last_cycle_input.<ext> before each cycle.
 void trace(const char* step)
 {
-    if (!std::getenv("AG3_FUZZ_TRACE")) return;
+    if (!ag3test::envSet("AG3_FUZZ_TRACE")) return;
     FILE* f = nullptr;
     if (fopen_s(&f, (tempDir() / "trace.log").string().c_str(), "a") == 0 && f) { fprintf(f, "%s\n", step); fclose(f); }
 }
