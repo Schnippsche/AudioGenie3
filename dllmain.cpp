@@ -7411,6 +7411,10 @@ extern "C" void __stdcall WAVSetCartChunkEntryW(short Index, LPCWSTR textString)
  *
  * You can use this for comparing audio files.
  *
+ * The file is read completely from the first to the last audio byte. The calculation itself runs at about 0.7 GB/s on a
+ * current desktop CPU (a 5 MB song takes about 7 ms); on a slow disk or a network drive the transfer rate is the limit.
+ * The hash is calculated with every call, keep the result if you need it more than once.
+ *
  * @ingroup AUDIO
  * @since 2.0.1.0
  * @return MD5 hash as 32 hexadecimal characters (empty if no file was analyzed)
@@ -7429,6 +7433,9 @@ extern "C" BSTR __stdcall AUDIOGetMD5ValueW()
  * @brief get an MD5 hash from the complete file
  *
  * You can use this for comparing files.
+ *
+ * The calculation itself runs at about 0.7 GB/s on a current desktop CPU; on a slow disk or a network drive the transfer
+ * rate is the limit.
  *
  * @ingroup UNIVERSAL
  * @since 2.0.1.0

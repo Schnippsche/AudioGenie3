@@ -21,7 +21,12 @@
 #pragma once
 #include "md5.h"
 
-#define MAX_MD5_BUFFER (64*1024)   /* larger blocks read faster than 16 KB (measured about 9 %) */
+/*
+* Size of the read blocks for the hash calculation. 64 KB instead of 16 KB reads about 9 % faster from the file cache (560 -> 610
+* MB/s); 256 KB and 1 MB, ReadFile with SEQUENTIAL_SCAN and overlapped reads showed no further gain. On a network drive the
+* transfer rate (50 to 70 MB/s measured) limits the speed regardless of the block size. See the notes in md5.cpp.
+*/
+#define MAX_MD5_BUFFER (64*1024)
 
 class CMD5Tool
 {

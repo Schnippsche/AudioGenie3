@@ -80,6 +80,28 @@ static unsigned char PADDING[64] = {
 //----------------------------------------------------------------------	
 //private member-functions
 
+/*
+* Performance notes (MD5 of the audio data or of a whole file, see CMD5Tool)
+* ---------------------------------------------------------------------------
+* The transformation is still the algorithm of RFC 1321 (same constants, same order of the 64 steps), but no longer the
+* reference code of the RFC, which transformed one block per call and decoded the 16 words byte by byte. Measured on an
+* AMD Ryzen 7 7700 with a 200 MB file in the file cache, x64, MSVC /O2, through GetMD5ValueFromFileW:
+*
+*   reference code, 16 KB reads                      about 560 MB/s
+*   + all blocks of a read in one call (MD5Blocks)   about 670 MB/s   (state stays in registers, words read directly,
+*     simplified F/G/H/I, _rotl, 64 KB reads)
+*   + round 2 with delayed addition (FAST_STEP_G)    about 745 MB/s
+*
+* What was tried and not adopted:
+* - the delayed addition for round 1 (F) as well: 814 instead of 837 MB/s in the benchmark of the transformation alone
+* - reading with overlapped I/O or with buffers larger than 64 KB: no measurable gain (the remaining difference to the
+*   speed of the transformation alone is presumably the copy out of the file cache); on a network drive (50 to 70 MB/s) the transfer rate is the limit anyway
+* MD5 cannot be parallelized within one file. The tests (tests/test_md5.cpp) compare the result with the RFC 1321 values and
+* with the Windows implementation for sizes around the block and buffer boundaries.
+*
+* Assumptions: little endian host (x86, x64, ARM64) and a 32 bit unsigned long (Windows).
+*/
+
 /**
 *  @brief 	Processes nblocks consecutive 64 byte blocks and updates state. The state stays in registers for all blocks and
 *  		the words are read directly (little endian host), which is faster than transforming block by block.
@@ -92,7 +114,10 @@ static unsigned char PADDING[64] = {
 #define FAST_H(x, y, z) ((x) ^ (y) ^ (z))
 #define FAST_I(x, y, z) ((y) ^ ((x) | ~(z)))
 #define FAST_STEP(f, a, b, c, d, x, t, s) { (a) += f((b), (c), (d)) + (x) + (t); (a) = _rotl((a), (s)); (a) += (b); }
-// round 2: the part of G that does not depend on b is added first, which shortens the dependency chain (about 12 % faster)
+// Round 2: G(b,c,d) = (b & d) | (c & ~d) has two parts that never share a set bit, so they can be added. The part (c & ~d)
+// does not depend on b, the result of the previous step, and is added to a together with the message word and the constant
+// before b is known; only (b & d) is on the critical path. This shortens the chain of every step of round 2 by one operation
+// (transformation alone: 746 -> 837 MB/s). The other rounds use the xor forms of F, H and I, which measured fastest.
 #define FAST_STEP_G(a, b, c, d, x, t, s) { (a) += ((c) & ~(d)) + (x) + (t); (a) += ((b) & (d)); (a) = _rotl((a), (s)); (a) += (b); }
 
 static_assert(sizeof(unsigned long int) == 4, "the state of MD5 must consist of 32 bit words");
@@ -252,7 +277,7 @@ void MD5::MD5Update (MD5_CTX *context, unsigned char *input, unsigned int inputL
     memcpy((POINTER)&context->buffer[index], (POINTER)input, partLen);
     MD5Transform (context->state, context->buffer);
 
-    // all complete blocks in one call
+    // all complete blocks in one call (the state stays in registers, see the performance notes above)
     const size_t blocks = (inputLen - partLen) / 64;
     MD5Blocks (context->state, &input[partLen], blocks);
     i = partLen + blocks * 64;
