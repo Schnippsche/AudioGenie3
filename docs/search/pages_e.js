@@ -1,6 +1,6 @@
 var searchData=
 [
-  ['save_0',['C++: change tags and save',['../index.html#autotoc_md11',1,'']]],
-  ['started_1',['Getting started',['../index.html#autotoc_md5',1,'']]],
-  ['supported_20formats_2',['Supported formats',['../index.html#autotoc_md2',1,'']]]
+  ['performance_0',['Performance',['../index.html#autotoc_md5',1,'']]],
+  ['picture_20to_20an_20mp3_1',['C++: add a cover picture to an MP3',['../index.html#autotoc_md16',1,'']]],
+  ['picture_20types_2',['Picture types',['../picturetypes.html',1,'']]]
 ];

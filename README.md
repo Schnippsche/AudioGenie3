@@ -77,6 +77,46 @@ The analysis then reads the whole file frame by frame. That takes about 6 ms for
 noticeably longer on a slow disk or a network drive, so leave it off when you scan large collections. Details are in the
 documentation of `SetConfigValueW`.
 
+## Performance
+
+Measured on an AMD Ryzen 7 7700 with a Samsung 990 Pro (NVMe) and on a network drive (SMB) with about 16000 MP3 files. The numbers
+depend on the hardware; the tool `tests/tools/run_scan.bat` repeats the measurement on your own library (see `tests/README.md`).
+
+### Analyzing files (`AUDIOAnalyzeFileW`)
+
+The analysis reads only the beginning and the end of a file, so its time does not depend on the file size, and it is limited by the
+first access to the file, not by the CPU.
+
+| | local SSD (7339 files, cached) | network drive (16000 files, first access) |
+|---|---|---|
+| time per file | 0.11 ms (AudioGenie 2.0.4: 0.14 ms) | about 33 ms (2.0.4: about 32 ms) |
+| read calls per file | 8.4 (2.0.4: 15.7) | 10.2 (2.0.4: 12.2) |
+
+The 32 and the 64 bit DLL are equally fast and return identical results. For 4000 files the length, bit rate and all tags are identical to
+the results of version 2.0.4. On a network drive the cost of the first access to each file dominates; if you scan large libraries
+repeatedly, keep the results in your application and analyze only new or changed files.
+
+### Optimizations
+
+| Area | Change | Effect |
+|---|---|---|
+| MPEG frame scan (`MPEGEXACTREAD`) | The file is read in 64 KB blocks instead of one read per frame; the scan stops in front of the tags at the end of the file (data that is not a frame was skipped byte by byte, including a large APE tag); the properties of the first frame are kept | 40 MB of frames: 181 ms -> 6 ms; 1 MB of non-frame data at the end: 446 ms -> about 1 ms |
+| MPEG frame scan | With `MPEGEXACTREAD` the counted frames are used for CBR files too | correct length of files with data after the last frame |
+| MD5 (`AUDIOGetMD5ValueW`, `GetMD5ValueFromFileW`) | All blocks of a read are processed in one call, the words are read directly, 64 KB read blocks | 560 -> 670 MB/s |
+| MD5 | Round 2 with delayed addition (shorter dependency chain) | 670 -> 745 MB/s (5 MB song: about 7 ms) |
+
+### Tried without a gain (not adopted)
+
+- **Reading the end of the file once** for ID3v1, Lyrics3, APE and the MPEG vendor block: fewer read calls (10.2 -> 6.7 per file) but the
+  same time on the network drive. The order of the reads matters: reading the end of the file before the ID3v2 tag made the analysis
+  50 % slower.
+- **`CBlob` growth strategy:** the buffer already grows by a factor of 1.5; the whole CPU time of the analysis is below 0.5 % of the
+  time per file on a network drive.
+- **Several processes in parallel** on the network drive: the same total throughput as one process.
+- **Larger MD5 read blocks and overlapped reads:** no gain above 64 KB; on a network drive the transfer rate (50 to 70 MB/s) is the limit.
+
+The details of the MD5 and the frame scan changes are documented in `md5.cpp`, `MD5Tool.h` and `MPEGAudio.cpp`.
+
 ## Getting started
 
 ### Build

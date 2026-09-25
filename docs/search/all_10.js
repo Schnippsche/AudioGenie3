@@ -1,11 +1,9 @@
 var searchData=
 [
-  ['tag_0',['tag',['../group___a_p_e.html',1,'APE tag'],['../group___i_d3_v1.html',1,'ID3v1 tag'],['../group___i_d3_v2.html',1,'ID3v2 tag'],['../group___l_y_r_i_c_s.html',1,'Lyrics3 tag']]],
-  ['tags_20and_20save_1',['C++: change tags and save',['../index.html#autotoc_md11',1,'']]],
-  ['tags_20and_20technical_20data_2',['C++: read tags and technical data',['../index.html#autotoc_md10',1,'']]],
-  ['technical_20data_3',['C++: read tags and technical data',['../index.html#autotoc_md10',1,'']]],
-  ['tests_4',['Tests',['../index.html#autotoc_md17',1,'']]],
-  ['the_20dll_5',['Register the DLL',['../index.html#autotoc_md7',1,'']]],
-  ['to_20an_20mp3_6',['C++: add a cover picture to an MP3',['../index.html#autotoc_md12',1,'']]],
-  ['types_7',['Picture types',['../picturetypes.html',1,'']]]
+  ['s_20audio_0',['Monkey&apos;s Audio',['../group___m_o_n_k_e_y.html',1,'']]],
+  ['save_1',['C++: change tags and save',['../index.html#autotoc_md15',1,'']]],
+  ['setconfigvaluew_2',['SetConfigValueW',['../group___u_n_i_v_e_r_s_a_l.html#ga2f1f5b7ad32bc447043b8121c77d2ca0',1,'dllmain.cpp']]],
+  ['setlogfilew_3',['SetLogFileW',['../group___u_n_i_v_e_r_s_a_l.html#gae2a9f1a38fbcdb187267d9a37d171770',1,'dllmain.cpp']]],
+  ['started_4',['Getting started',['../index.html#autotoc_md9',1,'']]],
+  ['supported_20formats_5',['Supported formats',['../index.html#autotoc_md2',1,'']]]
 ];

@@ -31,22 +31,27 @@ var NAVTREE =
     [ "How it works", "index.html#autotoc_md3", [
       [ "MP3 files with a variable bit rate (VBR)", "index.html#autotoc_md4", null ]
     ] ],
-    [ "Getting started", "index.html#autotoc_md5", [
-      [ "Build", "index.html#autotoc_md6", null ],
-      [ "Register the DLL", "index.html#autotoc_md7", null ],
-      [ "Wrappers", "index.html#autotoc_md8", null ]
+    [ "Performance", "index.html#autotoc_md5", [
+      [ "Analyzing files (<span class=\"tt\">AUDIOAnalyzeFileW</span>)", "index.html#autotoc_md6", null ],
+      [ "Optimizations", "index.html#autotoc_md7", null ],
+      [ "Tried without a gain (not adopted)", "index.html#autotoc_md8", null ]
     ] ],
-    [ "Examples", "index.html#autotoc_md9", [
-      [ "C++: read tags and technical data", "index.html#autotoc_md10", null ],
-      [ "C++: change tags and save", "index.html#autotoc_md11", null ],
-      [ "C++: add a cover picture to an MP3", "index.html#autotoc_md12", null ],
-      [ "C", "index.html#autotoc_md13", null ],
-      [ "Delphi", "index.html#autotoc_md14", null ],
-      [ "VB6", "index.html#autotoc_md15", null ]
+    [ "Getting started", "index.html#autotoc_md9", [
+      [ "Build", "index.html#autotoc_md10", null ],
+      [ "Register the DLL", "index.html#autotoc_md11", null ],
+      [ "Wrappers", "index.html#autotoc_md12", null ]
     ] ],
-    [ "Documentation", "index.html#autotoc_md16", null ],
-    [ "Tests", "index.html#autotoc_md17", null ],
-    [ "License", "index.html#autotoc_md18", null ],
+    [ "Examples", "index.html#autotoc_md13", [
+      [ "C++: read tags and technical data", "index.html#autotoc_md14", null ],
+      [ "C++: change tags and save", "index.html#autotoc_md15", null ],
+      [ "C++: add a cover picture to an MP3", "index.html#autotoc_md16", null ],
+      [ "C", "index.html#autotoc_md17", null ],
+      [ "Delphi", "index.html#autotoc_md18", null ],
+      [ "VB6", "index.html#autotoc_md19", null ]
+    ] ],
+    [ "Documentation", "index.html#autotoc_md20", null ],
+    [ "Tests", "index.html#autotoc_md21", null ],
+    [ "License", "index.html#autotoc_md22", null ],
     [ "Picture types", "picturetypes.html", null ],
     [ "Topics", "topics.html", "topics" ]
   ] ]

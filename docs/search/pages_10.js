@@ -1,6 +1,6 @@
 var searchData=
 [
-  ['variable_20bit_20rate_20vbr_0',['MP3 files with a variable bit rate (VBR)',['../index.html#autotoc_md4',1,'']]],
-  ['vb6_1',['VB6',['../index.html#autotoc_md15',1,'']]],
-  ['vbr_2',['MP3 files with a variable bit rate (VBR)',['../index.html#autotoc_md4',1,'']]]
+  ['save_0',['C++: change tags and save',['../index.html#autotoc_md15',1,'']]],
+  ['started_1',['Getting started',['../index.html#autotoc_md9',1,'']]],
+  ['supported_20formats_2',['Supported formats',['../index.html#autotoc_md2',1,'']]]
 ];
