@@ -149,6 +149,7 @@ int main(int argc, char** argv)
     add("CPU time:           user %.0f ms, kernel %.0f ms", filetimeMs(u), filetimeMs(k));
     add("read operations:    %.1f per file, %.1f KB per file", (double)(io1.ReadOperationCount - io0.ReadOperationCount) / std::max<size_t>(1, files.size()),
         (double)(io1.ReadTransferCount - io0.ReadTransferCount) / 1024 / std::max<size_t>(1, files.size()));
+    add("other I/O calls:    %.1f per file (open, close, query, ...)", (double)(io1.OtherOperationCount - io0.OtherOperationCount) / std::max<size_t>(1, files.size()));
     add("slowest files:");
     for (size_t i = 0; i < std::min<size_t>(5, slowest.size()); i++)
         add("  %8.1f ms  %s", slowest[i].first, files[slowest[i].second].string().c_str());
