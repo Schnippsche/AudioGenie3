@@ -62,8 +62,9 @@ type must be marshalled as `BStr`, otherwise the process crashes on x64. The wra
 ### MP3 files with a variable bit rate (VBR)
 
 The duration, the number of frames and the average bit rate of an MP3 file are exact if the file has a Xing or VBRI
-header, and for files with a constant bit rate (CBR). A VBR file **without** such a header can only be estimated from its
-size and the bit rate of the first frame, and is then treated as CBR.
+header, and for files with a constant bit rate (CBR) that have no additional data after the audio. A VBR file **without**
+such a header can only be estimated from its size and the bit rate of the first frame, and is then treated as CBR; the
+same estimate is too long for a CBR file with junk after the last frame.
 
 For such files set the configuration value `MPEGEXACTREAD` **before** the analysis:
 

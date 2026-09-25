@@ -378,7 +378,7 @@ Functions</h2></td></tr>
 </div><div class="memdoc">
 
 <p>get the number of Frames </p>
-<p>The value comes from the Xing or VBRI header. Without a header it is calculated from the file size (exact for constant bit rate files) or, if the configuration value MPEGEXACTREAD was set before the analysis and the bit rate varies, counted frame by frame, see <a class="el" href="group___u_n_i_v_e_r_s_a_l.html#ga2f1f5b7ad32bc447043b8121c77d2ca0" title="set a configuration value.">SetConfigValueW()</a>.</p>
+<p>The value comes from the Xing or VBRI header. Without a header it is calculated from the file size (exact for constant bit rate files without additional data after the audio). If the configuration value MPEGEXACTREAD was set before the analysis, the frames are counted one by one and the value is exact in every case, see <a class="el" href="group___u_n_i_v_e_r_s_a_l.html#ga2f1f5b7ad32bc447043b8121c77d2ca0" title="set a configuration value.">SetConfigValueW()</a>.</p>
 <dl class="section since"><dt>Since</dt><dd>2.0.1.0 </dd></dl>
 <dl class="section return"><dt>Returns</dt><dd>number of frames </dd></dl>
 

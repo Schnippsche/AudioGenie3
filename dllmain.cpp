@@ -1877,8 +1877,8 @@ extern "C" long __stdcall MPEGGetFrameSizeW()
  * @brief get the number of Frames
  *
  * The value comes from the Xing or VBRI header. Without a header it is calculated from the file size (exact for
- * constant bit rate files) or, if the configuration value MPEGEXACTREAD was set before the analysis and the bit rate
- * varies, counted frame by frame, see SetConfigValueW().
+ * constant bit rate files without additional data after the audio). If the configuration value MPEGEXACTREAD was set
+ * before the analysis, the frames are counted one by one and the value is exact in every case, see SetConfigValueW().
  *
  * @ingroup MPEG
  * @since 2.0.1.0
@@ -4125,14 +4125,16 @@ extern "C" short __stdcall ID3V2GetEncodingW(u32 FrameID)
  *
  * By default the duration, the number of frames and the bit rate are taken from a Xing or VBRI header, if the file has one.
  * For files without such a header they are calculated from the file size and the bit rate of the first frame. This is exact
- * for files with a constant bit rate (CBR). For files with a variable bit rate (VBR) that lack the header, the values are
- * only an estimate, and the file is treated as CBR (MPEGIsVBRW() returns 0).
+ * for files with a constant bit rate (CBR) unless there is additional data after the last frame, which makes the duration
+ * too long. For files with a variable bit rate (VBR) that lack the header, the values are only an estimate, and the file
+ * is treated as CBR (MPEGIsVBRW() returns 0).
  *
  * With MPEGEXACTREAD not equal to 0 the analysis reads the whole file frame by frame instead:
  * - MPEGGetFramesW(), AUDIOGetDurationW() and AUDIOGetBitrateW() are exact for VBR files, even without a header,
  *   and the average bit rate is calculated from all frames. The values of the Xing/VBRI header are ignored.
  * - MPEGIsVBRW() returns -1 if the bit rate changes between the frames.
- * - For files with a constant bit rate the number of frames and the duration are still calculated from the file size.
+ * - For files with a constant bit rate (CBR) the number of frames and the duration are counted as well, so data after the
+ *   last frame (e.g. junk or a tag that is not recognized) does not make the duration too long.
  * - The analysis takes as long as it takes to read the file: about 6 ms for a 40 MB file on a fast SSD, but seconds
  *   for a large collection on a slow disk or a network drive. Without the setting only a few small blocks at the
  *   beginning and at the end of the file are read, regardless of the file size.
