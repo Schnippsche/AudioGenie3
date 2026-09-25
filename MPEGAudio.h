@@ -187,6 +187,7 @@ private:
 	__int64 StartPosition;                                              /* Position of first valid Header */
 	long totalBitrate;
 	float secPerFrame;
+	long scannedFrames;                                                /* number of frames counted by ReadAllFrames, 0 = no scan */
 	VBRData FVBR;
 	tagFrameData Frame;
 	/* internal functions */

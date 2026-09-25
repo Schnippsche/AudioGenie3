@@ -55,6 +55,7 @@ void CMPEGAudio::ResetData()
 	memset(VendorID, 0, 10);
 	totalBitrate = 0;
 	secPerFrame = 0;
+	scannedFrames = 0;
 	firstAudioPos = 0;
 	lastAudioPos = 0;
 	Encoder.Empty();
@@ -288,6 +289,9 @@ long CMPEGAudio::GetFrames()
 	float tmp;
 	if (!Frame.Found)
 		return 0;
+	/* the frames were counted (MPEGEXACTREAD): exact, independent of data after the last frame */
+	if (scannedFrames > 0)
+		return scannedFrames;
 	/* Get total number of frames, calculate if VBR header not found */
 	if (FVBR.Found)
 		return FVBR.Frames;
@@ -307,13 +311,10 @@ float CMPEGAudio::GetDuration()
 	/* Calculate song duration */
 	if (!Frame.Found)
 		return 0.0f;
+	if (scannedFrames > 0)
+		return (float)(scannedFrames * secPerFrame);
 	if (FVBR.Found && FVBR.Frames > 0)
-	{
-		if (CTools::configValues[CONFIG_MPEGEXACTREAD] != 0)
-			return (float)(FVBR.Frames * secPerFrame);
-		else
-			return (float) FVBR.Frames * GetCoefficient() * 8.0f / GetSampleRate();
-	}
+		return (float) FVBR.Frames * GetCoefficient() * 8.0f / GetSampleRate();
 	MPEGSize = CTools::FileSize - CTools::ID3v1Size - Frame.FramePosition - CTools::LyricsSize - CTools::APESize;
 	return float(MPEGSize) / float(GetBitRate()) / 125.0f;
 }
@@ -700,6 +701,7 @@ void CMPEGAudio::ReadAllFrames(FILE *Stream)
 	delete [] block;
 	Frame = firstFrame;
 	FVBR.Frames = Count;
+	scannedFrames = Count;
 	secPerFrame = (float)GetCoefficient() * 8.0f / (float)GetSampleRate(); // sec per frame
 	ATLTRACE(_T("Counts: %d Lost:%d Duration:%f sec\n"), Count, Lost, (float)(Count * secPerFrame));
 }

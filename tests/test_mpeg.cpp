@@ -143,6 +143,19 @@ TEST_CASE("MPEG: exact read keeps the properties of the first frame", "[mpeg][ex
     CHECK((MPEGIsPaddingW() != 0) == padding);   // not the state of the last frame
 }
 
+TEST_CASE("MPEG: exact read gives the correct length of a CBR file with trailing data", "[mpeg][exactread]")
+{
+    Bytes withTail = makeMp3(1000);
+    withTail.insert(withTail.end(), 1 << 20, 'A');   // 1 MB non-frame data after the frames
+    auto p = writeTemp("cbr_trailing_data.mp3", withTail);
+
+    ExactRead on(true);
+    REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+    CHECK(MPEGGetFramesW() == 1000);
+    CHECK(AUDIOGetDurationW() == Catch::Approx(1000 * 1152.0 / 44100.0).margin(0.01));
+    CHECK(AUDIOGetBitrateW() == 128);
+}
+
 TEST_CASE("MPEG: exact read ignores a trailing tag and is fast with it", "[mpeg][exactread]")
 {
     const Bytes audio = makeVbrWithoutHeader(100);   // 300 frames, VBR is detected by the frame scan
