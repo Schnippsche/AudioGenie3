@@ -148,16 +148,7 @@ private:
   */  
   void Encode (unsigned char* output, unsigned long int *input, unsigned int len);
 
-  /**
-  *  @brief 	Decodes input data into output
-  *  @param	output Decoded data as OUT parameter
-  *  @param	input Input data
-  *  @param	len The length of the input assuming it is a
-  *  		multiple of 4
-  */  
-  void Decode (unsigned long int *output, unsigned char *input, unsigned int len);
-
-public:
+  public:
 
   /**
   *  @brief 	Initialization begins an operation,
