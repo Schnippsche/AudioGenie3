@@ -1,7 +1,10 @@
 // Scans a music library with AudioGenie3.dll: analyzes every audio file, writes length, bit rate and tags to a
 // tab separated file (UTF-8) and prints timing statistics. Used to compare the 32 and 64 bit DLL.
 //
-//   scan_library <root directory> <result file> [limit]
+//   scan_library <root directory> <result file> [limit] [k/n]
+//
+// limit: analyze at most this many files (0 = all). k/n: only every n-th file, starting with file k (k = 0..n-1),
+// to get disjoint samples of the same kind of files.
 //
 // The DLL is taken from the PATH (see run_scan.bat). Not part of the Catch2 test run.
 #define NOMINMAX
@@ -54,18 +57,26 @@ static double filetimeMs(const FILETIME& f) { return (((unsigned long long)f.dwH
 int main(int argc, char** argv)
 {
     if (argc < 3) {
-        fprintf(stderr, "usage: scan_library <root directory> <result file> [limit]\n");
+        fprintf(stderr, "usage: scan_library <root directory> <result file> [limit] [k/n]\n");
         return 2;
     }
     const fs::path root = argv[1];
     const fs::path result = argv[2];
     const size_t limit = argc > 3 ? (size_t)atoll(argv[3]) : 0;
+    size_t partK = 0, partN = 1;
+    if (argc > 4 && sscanf(argv[4], "%zu/%zu", &partK, &partN) != 2) partN = 1;
+    if (partN == 0) partN = 1;
 
     const auto wall0 = Clock::now();
     std::vector<fs::path> files;
     for (auto it = fs::recursive_directory_iterator(root, fs::directory_options::skip_permission_denied); it != fs::recursive_directory_iterator(); ++it)
         if (it->is_regular_file() && isAudio(it->path())) files.push_back(it->path());
     std::sort(files.begin(), files.end());
+    if (partN > 1) {
+        std::vector<fs::path> part;
+        for (size_t i = partK; i < files.size(); i += partN) part.push_back(files[i]);
+        files.swap(part);
+    }
     if (limit && files.size() > limit) files.resize(limit);
     const double listMs = msSince(wall0);
 

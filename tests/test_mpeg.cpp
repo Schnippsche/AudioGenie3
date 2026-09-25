@@ -178,3 +178,64 @@ TEST_CASE("MPEG: exact read ignores a trailing tag and is fast with it", "[mpeg]
     INFO("analysis with 1 MB trailing data took " << ms << " ms");
     CHECK(ms < 150.0);   // byte by byte it took about 450 ms
 }
+
+// ---------------------------------------------------------------- tags at the end of the file (read cache)
+
+namespace {
+
+// tags at the end of an MP3: ID3v1, APE with an item of the given size, Lyrics3 (optional)
+void writeTailTags(const std::filesystem::path& p, size_t apeItemChars, bool lyrics)
+{
+    REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+    ID3V1SetTitleW(L"v1 title");
+    ID3V1SetArtistW(L"v1 artist");
+    REQUIRE(ID3V1SaveChangesW() != 0);
+    if (apeItemChars > 0) {
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        APESetTitleW(L"ape title");
+        APESetUserItemW(L"Big", std::wstring(apeItemChars, L'x').c_str());
+        REQUIRE(APESaveChangesW() != 0);
+    }
+    if (lyrics) {
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        LYRICSSetLyricsW(L"la la la, the lyrics of the song");
+        LYRICSSetTitleW(L"lyrics title");
+        REQUIRE(LYRICSSaveChangesW() != 0);
+    }
+}
+
+}  // namespace
+
+TEST_CASE("MPEG: tags at the end of the file are read completely (read cache)", "[mpeg][tailcache]")
+{
+    struct Case { const char* name; int frames; size_t apeChars; bool lyrics; };
+    const Case cases[] = {
+        { "small file, all tags inside the cache", 20, 200, false },
+        { "APE tag larger than the cache", 200, 40000, false },
+        { "APE tag between the frames and ID3v1, 10 KB", 200, 10000, false },
+        { "Lyrics3 and ID3v1", 200, 0, true },
+    };
+    for (const Case& c : cases) {
+        DYNAMIC_SECTION(c.name) {
+            auto p = writeTemp(std::string("tail_") + std::to_string(c.frames) + "_" + std::to_string(c.apeChars) + ".mp3", makeMp3(c.frames));
+            writeTailTags(p, c.apeChars, c.lyrics);
+
+            REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+            CHECK(ID3V1ExistsW() != 0);
+            CHECK(take(ID3V1GetTitleW()) == L"v1 title");
+            CHECK(take(ID3V1GetArtistW()) == L"v1 artist");
+            CHECK(MPEGGetFramesW() > 0);
+            if (c.apeChars > 0) {
+                CHECK(take(APEGetTitleW()) == L"ape title");
+                CHECK(take(APEGetUserItemW(L"Big")).size() == c.apeChars);
+            }
+            if (c.lyrics) {
+                CHECK(LYRICSExistsW() != 0);
+                CHECK(take(LYRICSGetTitleW()) == L"lyrics title");
+                CHECK(take(LYRICSGetLyricsW()) == L"la la la, the lyrics of the song");
+            }
+            // the duration does not include the tags
+            CHECK(AUDIOGetDurationW() == Catch::Approx(c.frames * 1152.0 / 44100.0).margin(0.1));
+        }
+    }
+}
