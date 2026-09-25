@@ -25,6 +25,7 @@ Prerequisite: `Release\AudioGenie3.dll/.lib` (Win32) and `x64\Release\...` are b
 | `test_md5.cpp` | MD5 of files: RFC 1321 values, comparison with the Windows CNG implementation for sizes around the 64 byte blocks and the read buffers, audio hash independent of the tags |
 | `test_fuzz_write.cpp` | fuzzing of the write paths: random operation sequences (tags, pictures, frames, saving) on fixture copies and on damaged copies; hang watchdog |
 | `contract/check_wrappers.py` | signatures of C++, C#, VB.NET, Delphi, VB6 against `dllmain.cpp` |
+| `wrappers/run_wrappers.bat` | smoke test of the C# and VB.NET wrappers: each wrapper is compiled with a small test program (`CsCheck.cs`, `VbCheck.vb`) and run against the 32 and the 64 bit DLL (version, analysis, tags with special characters, MD5, missing file); needs the .NET Framework compilers of Windows, output in `out/wrappers/` |
 | `contract/check_line_endings.py` | line endings of the working tree against `.gitattributes` (CRLF for sources, batch and project files; no mixed endings); `--fix` converts the files |
 
 Notes on the API (from the code): `AUDIOSaveChangesW` writes the abstract fields (title, artist ...)
@@ -33,6 +34,13 @@ and thereby overwrites ID3v2 frames; use `ID3V2SaveChangesW` for frame tests.
 
 The test data values (`Testtitel`, `Testkuenstler`, `Kommentar` ...) are deliberately kept as they are: they are written into the fixtures
 by `fixtures/generate.bat` and `fixtures/make_*.py` and read back by the tests.
+
+## Wrapper smoke test (`wrappers/`)
+
+`wrappersun_wrappers.bat [-Arch x86,x64]` compiles `Wrapper/C #/AudioGenie2.cs` and `Wrapper/DotNET/audiogenie3.vb` together with the test
+programs and runs them against `Release\AudioGenie3.dll` (32 bit) and `x64\Release\AudioGenie3.dll` (64 bit). The test programs are compiled as
+libraries and loaded by a PowerShell of the same bitness as the DLL (`host.ps1`), because freshly built executables are sometimes removed by
+virus scanners. The VB6 and Delphi wrappers are not covered (no compiler needed for the signature check `contract/check_wrappers.py`, which covers all five).
 
 ## Library scan (performance, `tools/`)
 

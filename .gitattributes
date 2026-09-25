@@ -16,6 +16,7 @@
 *.cs   text eol=crlf
 *.pas  text eol=crlf
 *.bat  text eol=crlf
+*.ps1  text eol=crlf
 *.vcxproj text eol=crlf
 *.filters text eol=crlf
 *.slnx text eol=crlf
