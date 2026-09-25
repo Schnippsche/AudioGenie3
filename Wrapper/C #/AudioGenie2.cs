@@ -1448,7 +1448,7 @@ namespace AudioGenie
         }
         public static string AUDIOTitle
         {
-            get { Console.WriteLine(AUDIOGetTitleW()); return AUDIOGetTitleW(); }
+            get { return AUDIOGetTitleW(); }
             set { AUDIOSetTitleW(value); }
         }
         public static string AUDIOTrack

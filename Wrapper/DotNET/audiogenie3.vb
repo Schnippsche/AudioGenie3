@@ -1770,7 +1770,6 @@ Namespace AudioGenie
         End Property
         Public Property AUDIOTitle() As String
             Get
-                Console.WriteLine(AUDIOGetTitleW())
                 Return AUDIOGetTitleW()
             End Get
             Set(ByVal value As String)
