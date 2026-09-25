@@ -34,14 +34,24 @@ by `fixtures/generate.bat` and `fixtures/make_*.py` and read back by the tests.
 
 ## Library scan (performance, `tools/`)
 
-`toolsun_scan.bat <x86|x64> <root directory> [limit]` builds `tools/scan_library.cpp` against the 32 or 64 bit DLL and
+`tools\run_scan.bat <x86|x64> <root directory> [limit] [k/n]` builds `tools/scan_library.cpp` against the 32 or 64 bit DLL and
 analyzes every audio file below the directory (mp3, mp2, mp1, wma, m4a, ogg, flac, wav, ape, mpc, tta, wv, aac). It writes
-`out\scan\<arch>esult.tsv` (path, size, format, duration, bit rate, sample rate, channels, title, artist, album, year, track,
+`out\scan\<arch>\result.tsv` (path, size, format, duration, bit rate, sample rate, channels, title, artist, album, year, track,
 genre, comment, analysis time per file) and `result.tsv.summary.txt` with the timing: listing, analysis time (mean, median, p95,
 p99, max), CPU time, read operations and the slowest files. It is not part of the Catch2 run.
 
-Note for comparisons: on a network drive the first run reads cold data and is much slower than following runs (client and server
-caches). Compare runs of the same state, e.g. run each DLL twice in the order x64, x86, x64, x86.
+`limit` 0 means all files. `k/n` selects every n-th file starting with file k, which gives disjoint samples of the same kind of files.
+With the environment variable `AG3_DLLDIR` the tool uses the DLL (and .lib) of another directory, e.g. a baseline build for an A/B
+comparison.
+
+Note for comparisons: on a network drive the first access to a file is slow and the caches of the client and the server change the
+results. Use disjoint samples (`k/n`) or alternate the DLLs, e.g. run x64, x86, x64, x86.
+
+Measured on a network drive (SMB, about 16000 MP3 files): the analysis takes about 33 ms per file with both the 32 and the 64 bit DLL.
+It is limited by the first access to the file, not by CPU or by the number of read calls. Reading the end of the file once for ID3v1,
+Lyrics3, APE and the MPEG vendor block instead of several times reduced the read calls from 10 to 6.7 per file but did not change the
+time, so it was not adopted. The order of the reads matters: reading the end of the file before the ID3v2 tag made the analysis 50 %
+slower.
 
 ## Encoder quirks (`kQuirks`)
 
