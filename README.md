@@ -194,7 +194,7 @@ AddressSanitizer runs. See `tests/README.md`.
 
 ## License
 
-Copyright (C) 2001-2011 Stefan Toengi.
+Copyright (C) 2001-2026 Stefan Toengi.
 
 AudioGenie3 is free software, licensed under the GNU Lesser General Public
 License, version 2.1 or (at your option) any later version. See `LICENSE`.
