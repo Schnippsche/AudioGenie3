@@ -25,6 +25,8 @@
 #include "dllmain.h"
 #include "dlldatax.h"
 #include "io.h"
+#include <winver.h>
+#pragma comment(lib, "version.lib")
 
 
 CAudioGenie3Module _AtlModule;
@@ -2640,7 +2642,23 @@ extern "C" BSTR __stdcall WAVGetInfoChunkIDsW()
  */
 extern "C" BSTR __stdcall GetAudioGenieVersionW() 
 {
-	return CAtlString(L"3.0.0.0").AllocSysString();	
+	// The version is read from the VERSIONINFO resource of this DLL (AudioGenie3.rc), the single place to change it.
+	CAtlString version;
+	HMODULE module = NULL;
+	if (GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+		reinterpret_cast<LPCWSTR>(&GetAudioGenieVersionW), &module))
+	{
+		HRSRC res = FindResourceW(module, MAKEINTRESOURCEW(VS_VERSION_INFO), RT_VERSION);
+		HGLOBAL data = res ? LoadResource(module, res) : NULL;
+		VS_FIXEDFILEINFO* info = NULL;
+		UINT len = 0;
+		if (data && VerQueryValueW(LockResource(data), L"\\", reinterpret_cast<LPVOID*>(&info), &len) && info)
+		{
+			version.Format(L"%u.%u.%u.%u", HIWORD(info->dwFileVersionMS), LOWORD(info->dwFileVersionMS),
+				HIWORD(info->dwFileVersionLS), LOWORD(info->dwFileVersionLS));
+		}
+	}
+	return version.AllocSysString();
 }
 
 /* ------------------------------------------------------------------------------------- */
