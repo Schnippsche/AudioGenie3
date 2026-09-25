@@ -648,28 +648,43 @@ bool CMPEGAudio::IsValid()
 
 void CMPEGAudio::ReadAllFrames(FILE *Stream)
 {
-	// the header is at StartPosition
-	BYTE HeaderData[4];
+	// Scans the audio data frame by frame. The file is read in blocks (one read per frame would be very slow, especially
+	// on network drives). The scan stops in front of the tags at the end of the file; data that is not a frame is skipped byte by byte.
+	const size_t SCAN_BLOCK_SIZE = 64 * 1024;
 	long FrameLength, Count = 0, Lost = 0;
 	__int64 StartPos = Frame.FramePosition;
+	__int64 audioEnd = CTools::FileSize - CTools::ID3v1Size - CTools::LyricsSize - CTools::APESize;
 	long oldBitrate = 0, newBitrate = 0;
+	// DecodeHeader overwrites Frame with every frame; the properties of the first frame are restored after the scan
+	const tagFrameData firstFrame = Frame;
+	BYTE *block = new BYTE[SCAN_BLOCK_SIZE];
+	__int64 blockStart = 0;
+	size_t blockLen = 0;
 	ATLTRACE(_T("Start Scanning at %I64d...\n"), StartPos);
 	totalBitrate = 0;
 	FVBR.Found = false;
-	while (StartPos < CTools::FileSize - CTools::ID3v1Size - CTools::LyricsSize)
+	while (StartPos < audioEnd)
 	{
-		_fseeki64(Stream, StartPos, SEEK_SET);
-		fread(&HeaderData, 1, 4, Stream);
+		if (StartPos < blockStart || StartPos + 4 > blockStart + (__int64)blockLen)
+		{
+			// the 4 header bytes are not in the current block: read the next block starting at this position
+			blockStart = StartPos;
+			blockLen = 0;
+			if (_fseeki64(Stream, StartPos, SEEK_SET) == 0)
+				blockLen = fread(block, 1, SCAN_BLOCK_SIZE, Stream);
+			if (blockLen < 4)
+				break; // end of the file or read error
+		}
+		BYTE *HeaderData = block + (StartPos - blockStart);
 		if (IsFrameHeader(HeaderData))
 		{
 			Count++;
-			// ATLTRACE(_T("Frame %d at %d\n"), Count, StartPos);
 			DecodeHeader(HeaderData);
-			// ATLTRACE(_T("Bitrate: %d  "), GetBitRateID());
 			FrameLength = GetFrameLength();
-			// ATLTRACE(_T("Framelen: %d\n"), FrameLength);      
+			if (FrameLength < 1)
+				FrameLength = 1; // a frame length of 0 would never advance
 			newBitrate = GetBitRateID();
-			totalBitrate+=newBitrate;
+			totalBitrate += newBitrate;
 			if (oldBitrate != 0 && newBitrate != oldBitrate)
 				FVBR.Found = true;
 			oldBitrate = newBitrate;
@@ -678,14 +693,14 @@ void CMPEGAudio::ReadAllFrames(FILE *Stream)
 		else
 		{
 			Lost++;
-			// ATLTRACE(_T("Lost Byte Nr:%d at %d\n"), Lost, StartPos);
 			FrameLength = 1;
 		}
-		StartPos+= FrameLength;
+		StartPos += FrameLength;
 	}
+	delete [] block;
+	Frame = firstFrame;
 	FVBR.Frames = Count;
 	secPerFrame = (float)GetCoefficient() * 8.0f / (float)GetSampleRate(); // sec per frame
-	ATLTRACE(_T("Counts: %d Frames:%d Lost:%d Duration:%f sec "), Count, GetFrames(), Lost, (float)(Count * secPerFrame));
-	ATLTRACE(_T("Average Bitrate: %d\n"), totalBitrate / Count);  
+	ATLTRACE(_T("Counts: %d Lost:%d Duration:%f sec\n"), Count, Lost, (float)(Count * secPerFrame));
 }
 
