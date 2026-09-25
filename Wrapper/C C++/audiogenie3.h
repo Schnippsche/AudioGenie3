@@ -9,7 +9,7 @@
 // * folder. Don't forget to link the audiogenie3.lib.   *
 // * That's all you have to do!                          *
 // *******************************************************
-// *******   Copyright 2007-2010 by Stefan Toengi  *******
+// *******   Copyright 2007-2026 by Stefan Toengi  *******
 // *******************************************************
 
 #include "windows.h"

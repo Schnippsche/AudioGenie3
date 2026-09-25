@@ -25,7 +25,7 @@ Attribute VB_Exposed = False
 '  Set Genie = New clsAudioGenie
 '  Genie.AUDIOAnalyzeFile(file$)
 ' *******************************************************
-' *******  Copyright 2007-2010 by Stefan Toengi   *******
+' *******  Copyright 2007-2026 by Stefan Toengi   *******
 ' *******************************************************
 Option Explicit
 Private Declare Function AACGetBitRateTypeW Lib "AudioGenie3.dll" () As String
