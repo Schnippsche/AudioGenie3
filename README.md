@@ -253,7 +253,7 @@ End If
 
 ## Documentation
 
-The API reference (all 446 exported functions, grouped by format) is available online at
+The API reference (all 454 exported functions, grouped by format) is available online at
 <https://schnippsche.github.io/AudioGenie3/>. It is generated with Doxygen:
 
 ```

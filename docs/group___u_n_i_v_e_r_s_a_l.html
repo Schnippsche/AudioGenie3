@@ -192,9 +192,13 @@ Functions</h2></td></tr>
 <td class="markdownTableBodyNone">7  </td><td class="markdownTableBodyNone">ANSICODEPAGE  </td><td class="markdownTableBodyNone">1252  </td><td class="markdownTableBodyNone">the code page of ISO-8859-1 / ANSI strings, 0 = the code page of the system (see below)  </td></tr>
 <tr class="markdownTableRowOdd">
 <td class="markdownTableBodyNone">8  </td><td class="markdownTableBodyNone">ID3V2LINKEDPICTURES  </td><td class="markdownTableBodyNone">0  </td><td class="markdownTableBodyNone">1 = read the picture that an ID3v2 APIC frame links to (MIME type <span class="tt">--&gt;</span>) from disk  </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone">9  </td><td class="markdownTableBodyNone">ID3V1MAXTEXTLENGTH  </td><td class="markdownTableBodyNone">90  </td><td class="markdownTableBodyNone">30 to 90 = the longest title, artist and album that is written to an ID3v1 tag (see below)  </td></tr>
 </table>
 <p><b>ANSICODEPAGE</b></p>
 <p>Text with the encoding ISO-8859-1 (ID3v2 encoding 0, ID3v1 and other ANSI strings) is converted with this Windows code page. The default 1252 contains all characters of ISO-8859-1 and gives the same result on every computer. Use 28591 for strict ISO-8859-1 (the bytes $80 to $9F are then control characters), or a code page such as 1251 for tags that were written with that code page. 0 selects the code page of the system (the behaviour of version 2.0.4). Set the value before the analysis.</p>
+<p><b>ID3V1MAXTEXTLENGTH</b></p>
+<p>The ID3v1 tag has 30 characters for title, artist and album. A longer text is stored in the enhanced tag ("TAG+", 227 bytes in front of the ID3v1 tag) up to 90 characters; a longer text is cut. With the value 30 a longer text is cut at 30 characters and the enhanced tag is written only if a speed, a genre text or a time is set (ID3V1SetSpeedW, ID3V1SetEnhancedGenreW, ID3V1SetStartTimeW, ID3V1SetEndTimeW). Values outside of 30 to 90 are set to the nearest limit. The value does not change reading: an existing enhanced tag is always read.</p>
 <p><b>ID3V2LINKEDPICTURES</b></p>
 <p>An ID3v2 picture frame can contain a link to a file instead of the picture (MIME type <span class="tt">--&gt;</span>). The link comes from the tag of the audio file, so it is not followed by default (the picture size is 0); otherwise a manipulated file could make an application read any file of the computer. Set the value to 1 to load such pictures.</p>
 <p><b>MPEGEXACTREAD</b></p>
@@ -258,6 +262,8 @@ Functions</h2></td></tr>
 <td class="markdownTableBodyNone">7  </td><td class="markdownTableBodyNone">ANSICODEPAGE  </td><td class="markdownTableBodyNone">the code page of ISO-8859-1 / ANSI strings  </td></tr>
 <tr class="markdownTableRowOdd">
 <td class="markdownTableBodyNone">8  </td><td class="markdownTableBodyNone">ID3V2LINKEDPICTURES  </td><td class="markdownTableBodyNone">1 if linked pictures are read from disk  </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone">9  </td><td class="markdownTableBodyNone">ID3V1MAXTEXTLENGTH  </td><td class="markdownTableBodyNone">the longest text that is written to an ID3v1 tag  </td></tr>
 </table>
 <dl class="section since"><dt>Since</dt><dd>2.0.1.0 </dd></dl>
 <dl class="params"><dt>Parameters</dt><dd>
