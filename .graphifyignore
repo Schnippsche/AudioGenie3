@@ -6,7 +6,6 @@ tests/third_party/
 tests/out/
 build-asan/
 *.bak
-VBasic/Res/
 *.bmp
 *.gif
 *.jpg

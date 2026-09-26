@@ -251,9 +251,6 @@ If ag.AUDIOAnalyzeFile("C:\Music\song.mp3") <> 0 Then
 End If
 ```
 
-The `VBasic/` folder contains complete sample applications (VB6 and VB.NET) with tag editors for ID3v1, ID3v2,
-APE and lyrics.
-
 ## Documentation
 
 The API reference (all 446 exported functions, grouped by format) is generated with Doxygen:
