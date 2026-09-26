@@ -3207,6 +3207,10 @@ extern "C" BSTR __stdcall APEGetUserItemW(LPCWSTR Key)
  *
  * use the method APEGetItemKeysW for a list of all existing keys.
  *
+ * A key has 2 to 255 characters from the range space (0x20) to tilde (0x7E); ID3, TAG, OggS and MP+ are not allowed. A new item
+ * with another key is ignored (the log contains a warning). An APE tag of version 1 stays a version 1 tag and its values are
+ * ANSI; all other tags are written as version 2 with UTF-8 values.
+ *
  * @ingroup APE
  * @since 2.0.1.0
  * @param Key user-defined key
@@ -3312,6 +3316,8 @@ extern "C" BSTR __stdcall ID3V1GetGenreW()
 
 /**
  * @brief set the genre
+ *
+ * The name is compared with the list of ID3V1GetGenreItemW; an unknown name sets the value 255 (no genre).
  *
  * @ingroup ID3V1
  * @since 2.0.1.0
@@ -3442,6 +3448,10 @@ extern "C" BSTR __stdcall ID3V1GetTrackW()
 
 /**
  * @brief set the track
+ *
+ * The track is one byte (1 to 255). Another value, an empty text or 0 means no track: the tag is then written as id3v1.0.
+ * An id3v1.1 tag (with a track) is recognized by the byte $00 before the track in the comment field; the comment has
+ * 28 characters then.
  *
  * @ingroup ID3V1
  * @since 2.0.1.0

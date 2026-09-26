@@ -204,6 +204,7 @@ Functions</h2></td></tr>
 </div><div class="memdoc">
 
 <p>set the genre </p>
+<p>The name is compared with the list of ID3V1GetGenreItemW; an unknown name sets the value 255 (no genre).</p>
 <dl class="section since"><dt>Since</dt><dd>2.0.1.0 </dd></dl>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
@@ -439,6 +440,7 @@ Functions</h2></td></tr>
 </div><div class="memdoc">
 
 <p>set the track </p>
+<p>The track is one byte (1 to 255). Another value, an empty text or 0 means no track: the tag is then written as id3v1.0. An id3v1.1 tag (with a track) is recognized by the byte $00 before the track in the comment field; the comment has 28 characters then.</p>
 <dl class="section since"><dt>Since</dt><dd>2.0.1.0 </dd></dl>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
