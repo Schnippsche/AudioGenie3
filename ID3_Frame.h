@@ -37,6 +37,8 @@ public:
 	virtual bool equals(const unsigned int ID);
 	void init(unsigned int frameID);
 	long getSize();
+	// size of the frame data including the additional header fields (group byte, encryption method, data length) for the new tag version
+	long getStoredSize();
 	CBlob _blob, _data;	
 	unsigned int _frameID;
 	BYTE encodingID;
@@ -44,6 +46,11 @@ public:
 	bool isDecoded;
 	bool mustRebuild;
 	bool useTextEncoding;
+	// Frame header flags in a version independent form: read according to the version of the tag in the file (load), written
+	// according to the version of the new tag (storeFrame), so that a frame keeps its meaning when the tag version changes.
+	bool _discardOnTagAlter, _discardOnFileAlter, _readOnly, _grouped, _compressed, _encrypted, _hasDataLength, _unsyncResolved;
+	BYTE _groupId, _encryptionMethod;
+	u32 _dataLength;                     // decompressed size or data length indicator
 	long getData(BYTE *destination, long maxLen);
 	bool setData(BYTE *source, unsigned int maxLen);
 	void storeFrame(CBlob *tmp);
@@ -63,5 +70,8 @@ public:
 	bool isCompressed();
 	bool isEncrypted();
 	bool isDataLenIndicator();	
+	// the generic getters of CID3V2 check these before they use a frame as text or URL frame
+	virtual bool isTextFrame() { return false; }
+	virtual bool isUrlFrame() { return false; }
 };
 

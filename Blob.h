@@ -42,7 +42,8 @@ static const LPCWSTR TILDE(_T("~"));
 
 static const int TEXT_ENCODED_ANSI = 0;     // ISO-8859-1 or ANSI
 static const int TEXT_ENCODED_UTF16BOM = 1; // UTF-16 with BOM
-static const int TEXT_ENCODED_UTF16 = 2;    // UTF-16 without BOM
+static const int TEXT_ENCODED_UTF16 = 2;    // UTF-16BE without BOM (encoding $02 of ID3v2.4)
+static const int TEXT_ENCODED_UTF16LE = 4;  // internal: UTF-16 little endian without BOM (WMA, SYLT), not an ID3v2 encoding
 static const int TEXT_ENCODED_UTF8 = 3;     // UTF-8
 static const bool TEXT_WITH_ENCODING = true;
 static const bool TEXT_WITHOUT_ENCODING = false;

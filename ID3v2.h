@@ -57,6 +57,7 @@ public:
 	BYTE buf[16];
 	u32 ID, FrameID;
 	u32 FrameSize, Size, oldTagSize;
+	u32 TagDataSize;                      // size field of the header: extended header, frames and padding (without header and footer)
 	u16 FrameFlags;
 	//static BYTE oldTagVersion, newTagVersion, defaultEncodingID, Flags;
 	BYTE Revision, Version;	

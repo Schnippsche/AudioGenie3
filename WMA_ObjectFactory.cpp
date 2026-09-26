@@ -183,8 +183,8 @@ TagPictureStruct* CWMA_ObjectFactory::ExtractPicture(CBlob* data)
 	tps.Type = data->GetAt(0);
 	tps.PicSize = (u32)data->GetR4B(1);
 	int startPos = 5;
-	tps.Mime = data->getNextString(TEXT_ENCODED_UTF16, startPos);
-	tps.Description = data->getNextString(TEXT_ENCODED_UTF16, startPos);
+	tps.Mime = data->getNextString(TEXT_ENCODED_UTF16LE, startPos);
+	tps.Description = data->getNextString(TEXT_ENCODED_UTF16LE, startPos);
 	if (startPos + tps.PicSize > data->GetLength())
 	{
 		CTools::instance().setLastError(ERR_WMA_PARSE);

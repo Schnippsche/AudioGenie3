@@ -34,6 +34,7 @@ public:
 	void encode();
 	void setURL(LPCWSTR newText);
 	CAtlString getURL();	
+	bool isUrlFrame() { return true; }
 private:
 	CAtlString _url;
 };

@@ -22,6 +22,7 @@ Prerequisite: `Release\AudioGenie3.dll/.lib` (Win32) and `x64\Release\...` are b
 | `test_id3v2.cpp`, `test_id3v2_frames.cpp` | ID3v2 API: round trips per frame type across v2.2/2.3/2.4 and the encodings ISO-8859-1/UTF-16/UTF-16BE/UTF-8 (text, URL, comment, lyrics, pictures, chapters, binary and numeric frames) |
 | `test_special.cpp` | special cases: Unicode/special-character file names, upper/lower case extensions, long paths (up to 1500 characters with `\\?\`), invalid paths, tiny files, read-only files and locks, sparse files of 3 and 5 GB |
 | `test_api_misuse.cpp` | every exported function with random, partly invalid arguments (NULL, huge strings, index 0/-1/32767, foreign frame IDs) on one file per format; the call list `misuse_calls.inc` is generated from the header by `gen_misuse.py` |
+| `test_id3v2_spec.cpp` | ID3v2.4 specification with hand made tags: extended header, footer, frame flags and additional header fields (grouping, encryption, unsynchronisation, conversion between v2.3 and v2.4), UTF-16BE, text frames with several strings, unknown text frames |
 | `test_md5.cpp` | MD5 of files: RFC 1321 values, comparison with the Windows CNG implementation for sizes around the 64 byte blocks and the read buffers, audio hash independent of the tags |
 | `test_fuzz_write.cpp` | fuzzing of the write paths: random operation sequences (tags, pictures, frames, saving) on fixture copies and on damaged copies; hang watchdog |
 | `contract/check_wrappers.py` | signatures of C++, C#, VB.NET, Delphi, VB6 against `dllmain.cpp` |

@@ -22,6 +22,7 @@
 
 #include "StdAfx.h"
 #include "ID3F_T000.h"
+#include "ID3v2.h"
 
 /*
 <Header for 'Text information frame', ID: "T000" - "TZZZ", excluding "TXXX">
@@ -54,6 +55,8 @@ void CID3F_T000::init(unsigned int frameID, LPCWSTR newText)
 	useTextEncoding = true;
 	mustRebuild = true;
 	isDecoded = true;
+	_more.RemoveAll();
+	_lastTag = 99;
 }
 
 
@@ -69,6 +72,8 @@ void CID3F_T000::decode()
 		if (isUnsynchronized())
 			resync();
 		_text.Empty();
+		_more.RemoveAll();
+		_lastTag = CTools::ID3V2oldTagVersion;
 		if (_blob.GetLength() > 0)
 		{
 			encodingID = _blob.GetAt(0);
@@ -76,6 +81,12 @@ void CID3F_T000::decode()
 			{
 				int start = 1;
 				_text = _blob.getNextString(encodingID, start);
+				// further strings, separated by the terminator of the encoding
+				while (start < (int)_blob.GetLength())
+					_more.Add(_blob.getNextString(encodingID, start));
+				// a terminator after the last string does not add a value
+				while (_more.GetCount() > 0 && _more[_more.GetCount() - 1].IsEmpty())
+					_more.RemoveAt(_more.GetCount() - 1);
 			}
 		}
 		isDecoded = true;
@@ -84,11 +95,31 @@ void CID3F_T000::decode()
 
 void CID3F_T000::encode()
 {
-	if (mustRebuild)
+	if (mustRebuild || (_more.GetCount() > 0 && _lastTag != CTools::ID3V2newTagVersion))
 	{
 		decode();
 		_blob.Clear();
-		_blob.AddEncodedString(encodingID, _text, TEXT_WITH_ENCODING, TEXT_WITHOUT_NULLBYTES);
+		if (_more.GetCount() == 0)
+			_blob.AddEncodedString(encodingID, _text, TEXT_WITH_ENCODING, TEXT_WITHOUT_NULLBYTES);
+		else if (CTools::ID3V2newTagVersion == TAG_VERSION_2_4)
+		{
+			// id3v2.4: null separated list of strings
+			_blob.AddEncodedString(encodingID, _text, TEXT_WITH_ENCODING, TEXT_WITH_NULLBYTES);
+			for (size_t i = 0; i < _more.GetCount(); i++)
+				_blob.AddEncodedString(encodingID, _more[i], TEXT_WITHOUT_ENCODING, (i + 1 < _more.GetCount()) ? TEXT_WITH_NULLBYTES : TEXT_WITHOUT_NULLBYTES);
+		}
+		else
+		{
+			// id3v2.2 and id3v2.3 know only one string; several values are separated by a slash
+			CAtlString joined(_text);
+			for (size_t i = 0; i < _more.GetCount(); i++)
+			{
+				joined += _T("/");
+				joined += _more[i];
+			}
+			_blob.AddEncodedString(encodingID, joined, TEXT_WITH_ENCODING, TEXT_WITHOUT_NULLBYTES);
+		}
+		_lastTag = CTools::ID3V2newTagVersion;
 		mustRebuild = false;
 	}
 }

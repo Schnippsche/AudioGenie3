@@ -74,6 +74,7 @@ bool CID3V2::ReadHeader(FILE *Stream)
 	// $49 44 33 yy yy xx zz zz zz zz
 	// Where yy is less than $FF, xx is the 'flags' byte and zz is less than $80.
 	memset(buf, 0, 10);
+	TagDataSize = 0;
 	_fseeki64(Stream, 0, SEEK_SET);
 	fread(buf, 1, 10, Stream);	
 	Size = 0;
@@ -82,9 +83,11 @@ bool CID3V2::ReadHeader(FILE *Stream)
 		Version = buf[3];
 		Revision = buf[4];
 		CTools::ID3V2Flags = buf[5];
-		Size = (buf[6] << 21) + ( buf[7] << 14) + (buf[8] << 7) + buf[9] + 10;
-		if ( (CTools::ID3V2Flags & 0x40) == 0x40)
-			Size+= 10; // Extended Header present
+		// the size field contains the extended header, the frames and the padding, but not the header and the footer
+		TagDataSize = (buf[6] << 21) + ( buf[7] << 14) + (buf[8] << 7) + buf[9];
+		Size = TagDataSize + 10;
+		if (Version == TAG_VERSION_2_4 && (CTools::ID3V2Flags & 0x10) == 0x10)
+			Size+= 10; // footer present (id3v2.4)
 		if (Size > CTools::FileSize)
 		{
 			CTools::instance().writeError(L"ID3V2 tag is corrupt, because the ID3V2 size is bigger than filesize!");
@@ -142,8 +145,8 @@ void CID3V2::ReadFromFile(FILE *Stream)
 	{
 		CTools::instance().writeDebug(_T("id3v2.%i tag found"), Version);
 		CTools::ID3V2oldTagVersion = Version;
-		CBlob data(Size);
-		data.FileRead(Size - 10, Stream);
+		CBlob data(TagDataSize + 10);
+		data.FileRead(TagDataSize, Stream);
 		parseTags(&data);		
 	}
 	else
@@ -155,6 +158,17 @@ void CID3V2::parseTags(CBlob* data)
 	u32 DataPosition = 0;
 	int headerSize = ( Version == TAG_VERSION_2_2) ? 6 : 10;
 	u32 dataSize = (u32)data->GetLength();
+	// extended header (v2.3 and v2.4): skip it. v2.4: the size field includes itself; v2.3: it does not
+	if ((CTools::ID3V2Flags & 0x40) == 0x40 && dataSize >= 4)
+	{
+		u32 extendedSize = 0;
+		if (Version == TAG_VERSION_2_4)
+			extendedSize = data->GetS4B(0);
+		else if (Version == TAG_VERSION_2_3)
+			extendedSize = data->Get4B(0) + 4;
+		if (extendedSize >= 6 && extendedSize <= dataSize)
+			DataPosition = extendedSize;
+	}
 	while ((DataPosition + headerSize) < dataSize)
 	{
 		ATLTRACE(_T("Reading at Pos:%d \n"), DataPosition);
@@ -384,7 +398,7 @@ CAtlString CID3V2::GetText(u32 ID)
 	if (_frames.GetCount() == 0)
 		return EMPTY;
 	CID3_Frame *f = findFrame(ID);
-	return (f != NULL ) ? cT000(f)->getText() : EMPTY;
+	return (f != NULL && f->isTextFrame()) ? cT000(f)->getText() : EMPTY;
 }
 
 CAtlString CID3V2::GetURL(u32 ID)
@@ -392,7 +406,7 @@ CAtlString CID3V2::GetURL(u32 ID)
 	if (_frames.GetCount() == 0)
 		return EMPTY;
 	CID3_Frame *f = findFrame(ID);
-	return (f != NULL ) ? cW000(f)->getURL() : EMPTY;
+	return (f != NULL && f->isUrlFrame()) ? cW000(f)->getURL() : EMPTY;
 }
 
 void CID3V2::SetText(u32 ID, LPCWSTR newText)
@@ -578,7 +592,7 @@ u32 CID3V2::calcTagSize()
 		frame = _frames[i];
 		id = CID3_FrameFactory::instance().findTagForVersion(frame->_frameID);
 		if (id != F_NONE)
-			TagSize+= frame->getSize() + wide;		
+			TagSize+= frame->getStoredSize() + wide;		
 	}
 	return TagSize;
 }

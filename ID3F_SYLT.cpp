@@ -160,7 +160,7 @@ void CID3F_SYLT::decode()
 			// extract text ( ANSI, Unicode or UTF8 )
 			// IMPORTANT: a BOM is no longer listed here!!!
 			// therefore convert
-			BYTE code = (encodingID == TEXT_ENCODED_UTF16BOM) ? TEXT_ENCODED_UTF16 : encodingID;
+			BYTE code = (encodingID == TEXT_ENCODED_UTF16BOM) ? TEXT_ENCODED_UTF16LE : encodingID;
 			int nr = 0;
 			_data.AddBlob(_blob, start);
 			start = 0;
@@ -195,7 +195,7 @@ void CID3F_SYLT::encode()
 		tmp.Append(_T("\n"));
 		int pos = tmp.Find(_T("\n"));
 		int start = 0;
-		BYTE code = (encodingID == TEXT_ENCODED_UTF16BOM) ? TEXT_ENCODED_UTF16 : encodingID;
+		BYTE code = (encodingID == TEXT_ENCODED_UTF16BOM) ? TEXT_ENCODED_UTF16LE : encodingID;
 		while (pos >= 0)
 		{
 			entry = tmp.Mid(start, pos - start);

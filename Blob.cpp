@@ -457,7 +457,7 @@ CAtlString CBlob::getNextString(BYTE encoding, int& startPos)
 
 	// find next nullbyte
 	size_t endPos = startPos;
-	if (encoding == TEXT_ENCODED_UTF16BOM || encoding == TEXT_ENCODED_UTF16)
+	if (encoding == TEXT_ENCODED_UTF16BOM || encoding == TEXT_ENCODED_UTF16 || encoding == TEXT_ENCODED_UTF16LE)
 	{
 		while (endPos < m_CurrentLength && (m_pData[endPos] + m_pData[endPos + 1] != 0) )
 			endPos+=2;
@@ -512,7 +512,16 @@ CAtlString CBlob::getNextString(BYTE encoding, int& startPos)
 		}
 		result = CAtlString(po);
 		break;
-	case TEXT_ENCODED_UTF16: // UTF-16 without BOM
+	case TEXT_ENCODED_UTF16: // UTF-16BE without BOM (ID3v2.4, encoding $02)
+		n = size / 2;
+		if (n > maxBuffer - 1)
+			n = maxBuffer - 1;
+		for (size_t i = 0; i < n; i++)
+			po[i] = (wchar_t)((m_pData[startPos + 2 * i] << 8) + m_pData[startPos + 2 * i + 1]);
+		po[n] = 0;
+		result = CAtlString(po);
+		break;
+	case TEXT_ENCODED_UTF16LE: // UTF-16 little endian without BOM (internal)
 		n = size / 2;
 		if (n > maxBuffer - 1)
 			n = maxBuffer - 1;
@@ -567,7 +576,7 @@ void CBlob::AddEncodedString(BYTE encoding, const CAtlString source, bool withEn
 	{
 		if (withNullBytes)
 		{
-			if (encoding == TEXT_ENCODED_UTF16BOM || encoding == TEXT_ENCODED_UTF16)
+			if (encoding == TEXT_ENCODED_UTF16BOM || encoding == TEXT_ENCODED_UTF16 || encoding == TEXT_ENCODED_UTF16LE)
 				AddValue(0, 2);
 			else
 				AddNullByte();
@@ -598,7 +607,19 @@ void CBlob::AddEncodedString(BYTE encoding, const CAtlString source, bool withEn
 		if (withNullBytes)
 			AddValue(0, 2);
 		break;
-	case TEXT_ENCODED_UTF16: // UTF-16 without BOM
+	case TEXT_ENCODED_UTF16: // UTF-16BE without BOM (ID3v2.4, encoding $02)
+		{
+			const size_t chars = wcslen(source);
+			for (size_t i = 0; i < chars; i++)
+			{
+				AddValue((BYTE)((source[(int)i] >> 8) & 0xFF));
+				AddValue((BYTE)(source[(int)i] & 0xFF));
+			}
+		}
+		if (withNullBytes)
+			AddValue(0, 2);
+		break;
+	case TEXT_ENCODED_UTF16LE: // UTF-16 little endian without BOM (internal)
 		ConcatInPlace(wcslen(source) * 2, source);
 		if (withNullBytes)
 			AddValue(0, 2);

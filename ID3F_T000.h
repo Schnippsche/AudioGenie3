@@ -21,6 +21,7 @@
 #pragma once
 
 #include "ID3_frame.h"
+#include "atlcoll.h"
 
 class CID3F_T000 : public CID3_Frame
 {
@@ -33,7 +34,10 @@ public:
 	void decode();
 	void encode();
 	CAtlString getText();
+	bool isTextFrame() { return true; }
 	void print();
 private:
-	CAtlString _text;
+	CAtlString _text;                    // the first string
+	CAtlArray<CAtlString> _more;         // further strings (id3v2.4 allows several strings in a text frame)
+	BYTE _lastTag;                       // tag version of the data in the blob
 };

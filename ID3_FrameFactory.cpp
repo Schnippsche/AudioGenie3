@@ -86,7 +86,8 @@ unsigned int CID3_FrameFactory::findFrameClassType(unsigned int oldID)
 	if(pPair)
 		return (pPair->m_value);
 	// not found, maybe an unknown text frame (T...)
-	if ( ((oldID << 24 ) & 0xFF) == 'T')
+	// the first character of the frame ID: v2.3/v2.4 IDs have four characters, v2.2 IDs three
+	if ((((oldID > 0xFFFFFF) ? (oldID >> 24) : (oldID >> 16)) & 0xFF) == 'T')
 		return ID3_T000;
 
 	// not found
@@ -140,7 +141,7 @@ CID3_Frame* CID3_FrameFactory::createFrame(unsigned int oldID)
 	case ID3_SIGN: return new CID3F_SIGN();
 	case ID3_SYLT: return new CID3F_SYLT();
 	case ID3_SYTC: return new CID3F_SYTC();
-	case ID3_T000: return new CID3F_T000(findUniqueFrameID(oldID));
+	case ID3_T000: { u32 unique = findUniqueFrameID(oldID); return new CID3F_T000(unique != ID3_NONE ? unique : oldID); } // unknown text frames keep their ID
 	case ID3_TXXX: return new CID3F_TXXX();
 	case ID3_UFID: return new CID3F_UFID();
 	case ID3_USER: return new CID3F_USER();

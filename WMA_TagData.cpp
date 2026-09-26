@@ -65,8 +65,8 @@ bool CWMA_TagData::setNewPicture(BYTE *arr, u32 len, LPCWSTR Description, BYTE p
 	_data.Clear();
 	_data.AddValue(picType);
 	_data.AddR4B(int(len));
-	_data.AddEncodedString(TEXT_ENCODED_UTF16, CTools::instance().ExtractMimeFromPicture(arr), false, true);
-	_data.AddEncodedString(TEXT_ENCODED_UTF16, Description, false, true);
+	_data.AddEncodedString(TEXT_ENCODED_UTF16LE, CTools::instance().ExtractMimeFromPicture(arr), false, true);
+	_data.AddEncodedString(TEXT_ENCODED_UTF16LE, Description, false, true);
 	_data.AddMemory(arr, len);
 	return false;
 }
@@ -128,7 +128,7 @@ bool CWMA_TagData::load(FILE *Stream, size_t maxLen)
 		}
 		/* Read field name */
 		_data.FileRead(FieldSize, Stream);
-		FieldName = _data.ConvertToUnicodeString(TEXT_ENCODED_UTF16);
+		FieldName = _data.ConvertToUnicodeString(TEXT_ENCODED_UTF16LE);
 		/* Read value data type */
 		_data.FileRead(4, Stream);
 		Type = _data.GetR2B(0);
@@ -146,7 +146,7 @@ bool CWMA_TagData::load(FILE *Stream, size_t maxLen)
 		DataSize = _data.GetR4B(8);
 		/* Read field name */
 		_data.FileRead(FieldSize, Stream);
-		FieldName = _data.ConvertToUnicodeString(TEXT_ENCODED_UTF16);
+		FieldName = _data.ConvertToUnicodeString(TEXT_ENCODED_UTF16LE);
 		ATLTRACE(_T("   FieldName Metadata: %s at:%d with %u bytes "), FieldName, (long)_ftelli64(Stream), DataSize);
 		_data.FileRead(DataSize, Stream);
 	}
@@ -172,12 +172,12 @@ void CWMA_TagData::buildData(CBlob* blob)
 		blob->AddR2B(FieldSize);
 		blob->AddR2B(Type);
 		blob->AddR4B((int)_data.GetLength());
-		blob->AddEncodedString(TEXT_ENCODED_UTF16, FieldName, false, true);			
+		blob->AddEncodedString(TEXT_ENCODED_UTF16LE, FieldName, false, true);			
 	}
 	else if (_art == EXTCONTENT_ART)
 	{
 		blob->AddR2B(FieldSize);
-		blob->AddEncodedString(TEXT_ENCODED_UTF16, FieldName, false, true);
+		blob->AddEncodedString(TEXT_ENCODED_UTF16LE, FieldName, false, true);
 		blob->AddR2B(Type);
 		blob->AddR2B((int)_data.GetLength());
 	}
@@ -203,7 +203,7 @@ CAtlString CWMA_TagData::getFieldValue()
 {
 	// Datatypes , 0=Unicode, 1=Byte-Array, 2=Bool(32), 3=DWord(32), 4=QWord(64), 5=Word(16), 6=GUID
 	if (Type == 0) // UNICODE
-		return _data.ConvertToUnicodeString(TEXT_ENCODED_UTF16);
+		return _data.ConvertToUnicodeString(TEXT_ENCODED_UTF16LE);
 
 	if (Type == 2)  // BOOL
 		return (_data.GetR4B(0) != 0) ? _T("true") : _T("false");
