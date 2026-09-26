@@ -23,6 +23,8 @@
 #include "StdAfx.h"
 #include "ID3F_LINK.h"
 #include "id3_framefactory.h"
+#include "Tools.h"
+#include "ID3v2.h"
 
 /* Linked information
 
@@ -82,6 +84,7 @@ void CID3F_LINK::init(long identifier, LPCWSTR URL, LPCWSTR additional)
 	_URL = URL;
 	mustRebuild = true;
 	isDecoded = true;
+	lastTag = 99;
 }
 
 CID3F_LINK::~CID3F_LINK(void)
@@ -104,7 +107,10 @@ void CID3F_LINK::decode()
 	{	
 		if (isUnsynchronized())
 			resync();
-		if (_blob.GetLength() < 5)
+		lastTag = CTools::ID3V2oldTagVersion;
+		// the frame ID has three characters in a v2.2 tag (LNK), four in v2.3 and v2.4 (LINK)
+		const int idLength = (CTools::ID3V2oldTagVersion == TAG_VERSION_2_2) ? 3 : 4;
+		if (_blob.GetLength() < (size_t)idLength + 1)
 		{
 			_identifier = 0;
 			_URL.Empty();
@@ -112,8 +118,10 @@ void CID3F_LINK::decode()
 		}
 		else
 		{
-			_identifier = _blob.Get4B(0);
-			int start = 4;
+			const long raw = (idLength == 3) ? _blob.Get3B(0) : _blob.Get4B(0);
+			const u32 unique = CID3_FrameFactory::instance().findUniqueFrameID(raw);
+			_identifier = (unique != ID3_NONE) ? (long)unique : raw;
+			int start = idLength;
 			_URL = _blob.getNextString(TEXT_ENCODED_ANSI, start);
 			_additional = _blob.getNextString(TEXT_ENCODED_ANSI, start);
 		}		
@@ -122,15 +130,31 @@ void CID3F_LINK::decode()
 }
 void CID3F_LINK::encode()
 {
-	if (mustRebuild)
+	if (mustRebuild || lastTag != CTools::ID3V2newTagVersion)
 	{
 		decode();
 		_blob.Clear();
-		_blob.Add4B(_identifier);
+		const u32 id = CID3_FrameFactory::instance().findTagForVersion((u32)_identifier);
+		if (CTools::ID3V2newTagVersion == TAG_VERSION_2_2)
+			_blob.Add3B((int)id);
+		else
+			_blob.Add4B(id);
 		_blob.AddEncodedString(TEXT_ENCODED_ANSI, _URL, TEXT_WITHOUT_ENCODING, TEXT_WITH_NULLBYTES);
 		_blob.AddEncodedString(TEXT_ENCODED_ANSI, _additional, TEXT_WITHOUT_ENCODING, TEXT_WITHOUT_NULLBYTES);
+		lastTag = CTools::ID3V2newTagVersion;
 		mustRebuild = false;	
 	}
+}
+
+// the linked frame must exist in the version of the tag
+bool CID3F_LINK::canStoreFor(BYTE version)
+{
+	decode();
+	const BYTE saved = CTools::ID3V2newTagVersion;
+	CTools::ID3V2newTagVersion = version;
+	const bool ok = CID3_FrameFactory::instance().findTagForVersion((u32)_identifier) != F_NONE;
+	CTools::ID3V2newTagVersion = saved;
+	return ok;
 }
 
 CAtlString CID3F_LINK::getURL()

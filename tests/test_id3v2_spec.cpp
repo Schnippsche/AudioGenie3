@@ -637,3 +637,128 @@ TEST_CASE("ID3v2: unknown frames are preserved when the tag is saved", "[id3v2][
         CHECK(take(ID3V2GetTextFrameW(ID3F_TPE1)) == L"x");
     }
 }
+
+
+// ---- ID3v2.2 and ID3v2.3 (id3v2-00 and id3v2.3.0) ----
+
+namespace {
+
+// v2.2 frame: three character ID, three byte size
+Bytes frame22(const char* id, const Bytes& data)
+{
+    Bytes f;
+    put(f, id);
+    f.push_back(static_cast<uint8_t>(data.size() >> 16));
+    f.push_back(static_cast<uint8_t>(data.size() >> 8));
+    f.push_back(static_cast<uint8_t>(data.size()));
+    put(f, data);
+    return f;
+}
+
+// unsynchronisation scheme: $FF is followed by $00 if the next byte is $00 or a sync ($E0 and above), and at the end of the data
+Bytes unsynchronise(const Bytes& in)
+{
+    Bytes out;
+    for (size_t i = 0; i < in.size(); i++) {
+        out.push_back(in[i]);
+        if (in[i] == 0xFF && (i + 1 == in.size() || in[i + 1] == 0x00 || in[i + 1] >= 0xE0))
+            out.push_back(0x00);
+    }
+    return out;
+}
+
+}  // namespace
+
+TEST_CASE("ID3v2.2 and v2.3: unsynchronisation of the whole tag", "[id3v2][spec][header]")
+{
+    // frame sizes are those of the data before unsynchronisation, the tag size is the size after it
+    const Bytes title = { 0x00, 'a', 0xFF, 0xE0, 0xFF, 0xFF, 0xE1, 'z' };
+    const Bytes artist = { 0x00, 'B' };
+    SECTION("v2.3") {
+        Bytes body = frame("TIT2", title, 0, 3);
+        put(body, frame("TPE1", artist, 0, 3));
+        auto p = writeTagged("spec_unsync23.mp3", tagBytes(3, 0x80, unsynchronise(body), 20));
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        CHECK(take(ID3V2GetTextFrameW(ID3F_TIT2)) == L"a\xFF\xE0\xFF\xFF\xE1z");
+        CHECK(take(ID3V2GetTextFrameW(ID3F_TPE1)) == L"B");
+    }
+    SECTION("v2.2") {
+        Bytes body = frame22("TT2", title);
+        put(body, frame22("TP1", artist));
+        auto p = writeTagged("spec_unsync22.mp3", tagBytes(2, 0x80, unsynchronise(body), 20));
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        CHECK(take(ID3V2GetTextFrameW(ID3F_TIT2)) == L"a\xFF\xE0\xFF\xFF\xE1z");
+        CHECK(take(ID3V2GetTextFrameW(ID3F_TPE1)) == L"B");
+    }
+}
+
+TEST_CASE("ID3v2.2: a tag with the compression bit is ignored", "[id3v2][spec][header]")
+{
+    auto p = writeTagged("spec_compr22.mp3", tagBytes(2, 0x40, frame22("TT2", { 0x00, 'X' }), 20));
+    REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+    CHECK(take(ID3V2GetTextFrameW(ID3F_TIT2)).empty());
+}
+
+TEST_CASE("ID3v2.2: frames are converted into the IDs of v2.3 and v2.4", "[id3v2][spec][convert]")
+{
+    Bytes body = frame22("TT2", { 0x00, 'T' });
+    put(body, frame22("TYE", { 0x00, '1', '9', '9', '9' }));
+    put(body, frame22("IPL", { 0x00, 'g', 0x00, 'p', 0x00 }));
+    put(body, frame22("CNT", { 0x00, 0x00, 0x00, 0x07 }));
+    put(body, frame22("POP", { 'a', '@', 'b', 0x00, 0x80, 0x00, 0x00, 0x00, 0x03 }));
+    put(body, frame22("PIC", { 0x00, 'J', 'P', 'G', 0x03, 0x00, 0xFF, 0xD8, 0xFF, 0xE0, 0x01, 0x02 }));
+    auto p = writeTagged("spec_conv22.mp3", tagBytes(2, 0, body, 50));
+    REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+    REQUIRE(ID3V2SetFormatAndEncodingW(2, 0) != 0);
+    ID3V2SetTextFrameW(ID3F_TPE1, L"x");
+    REQUIRE(ID3V2SaveChangesW() != 0);
+    const Bytes f = readFile(p);
+    for (const char* id : { "TIT2", "TYER", "IPLS", "PCNT", "POPM", "APIC" })
+        CHECK(findBytes(f, bytesOf(id)) != static_cast<size_t>(-1));
+    CHECK(findBytes(f, bytesOf("image/jpeg")) != static_cast<size_t>(-1));
+    REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+    CHECK(take(ID3V2GetTextFrameW(ID3F_TIT2)) == L"T");
+    CHECK(take(ID3V2GetPictureMimeW(1)) == L"image/jpeg");
+    // and back to v2.2
+    REQUIRE(ID3V2SetFormatAndEncodingW(1, 0) != 0);
+    ID3V2SetTextFrameW(ID3F_TPE1, L"y");
+    REQUIRE(ID3V2SaveChangesW() != 0);
+    const Bytes g = readFile(p);
+    for (const char* id : { "TT2", "TYE", "IPL", "CNT", "POP", "PIC" })
+        CHECK(findBytes(g, bytesOf(id)) != static_cast<size_t>(-1));
+    CHECK(audioIntact(p));
+}
+
+TEST_CASE("ID3v2.2 and v2.3: only the encodings $00 and $01 exist", "[id3v2][spec][encoding]")
+{
+    CHECK(ID3V2SetFormatAndEncodingW(1, 2) == 0);   // v2.2 with UTF-16BE
+    CHECK(ID3V2SetFormatAndEncodingW(2, 2) == 0);   // v2.3 with UTF-16BE
+    CHECK(ID3V2SetFormatAndEncodingW(1, 3) == 0);
+    CHECK(ID3V2SetFormatAndEncodingW(2, 3) == 0);
+    CHECK(ID3V2SetFormatAndEncodingW(3, 2) != 0);   // v2.4 accepts it
+    CHECK(ID3V2SetFormatAndEncodingW(2, 1) != 0);
+}
+
+TEST_CASE("ID3v2.2 and v2.3: linked information has a three or four character frame ID", "[id3v2][spec][convert]")
+{
+    Bytes lnk = { 'T', 'T', '2' };
+    put(lnk, "http://x/a.mp3");
+    lnk.push_back(0);
+    auto p = writeTagged("spec_link22.mp3", tagBytes(2, 0, frame22("LNK", lnk), 50));
+    REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+    REQUIRE(ID3V2SetFormatAndEncodingW(2, 0) != 0);
+    ID3V2SetTextFrameW(ID3F_TPE1, L"x");
+    REQUIRE(ID3V2SaveChangesW() != 0);
+    Bytes f = readFile(p);
+    size_t i = findBytes(f, bytesOf("LINK"));
+    REQUIRE(i != static_cast<size_t>(-1));
+    CHECK(Bytes(f.begin() + static_cast<std::ptrdiff_t>(i) + 10, f.begin() + static_cast<std::ptrdiff_t>(i) + 14) == bytesOf("TIT2"));
+    REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+    REQUIRE(ID3V2SetFormatAndEncodingW(1, 0) != 0);
+    ID3V2SetTextFrameW(ID3F_TPE1, L"y");
+    REQUIRE(ID3V2SaveChangesW() != 0);
+    f = readFile(p);
+    i = findBytes(f, bytesOf("LNK"));
+    REQUIRE(i != static_cast<size_t>(-1));
+    CHECK(Bytes(f.begin() + static_cast<std::ptrdiff_t>(i) + 6, f.begin() + static_cast<std::ptrdiff_t>(i) + 9) == bytesOf("TT2"));
+}

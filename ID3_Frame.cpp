@@ -365,8 +365,7 @@ bool CID3_Frame::isUnsynchronized()
 {
 	if (_unsyncResolved) // already reversed in load()
 		return false;
-	if (CTools::ID3V2oldTagVersion == TAG_VERSION_2_2 || CTools::ID3V2oldTagVersion == TAG_VERSION_2_3) // flag of the tag: applies to all frames
-		return ( (CTools::ID3V2Flags & 128) == 128);
+	// v2.2 and v2.3: the flag of the tag applies to the whole tag, which is reversed before the frames are read
 	if (CTools::ID3V2oldTagVersion == TAG_VERSION_2_4) // v2.4: flag of the frame (the flag of the tag only says that all frames have it)
 		return ((flags & 2) == 2);
 	return false;

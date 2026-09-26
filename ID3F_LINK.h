@@ -35,7 +35,9 @@ public:
 	CAtlString getURL();
 	CAtlString getAdditional();
 	long getIdentifier();
+	bool canStoreFor(BYTE version);
 private:
 	CAtlString _URL, _additional;
-	long _identifier;
+	long _identifier;		// the ID of the linked frame as unique frame ID (three characters in a v2.2 tag, four in v2.3 and v2.4)
+	BYTE lastTag;
 };

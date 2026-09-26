@@ -25,6 +25,8 @@
 #include "id3v1.h"
 #include "io.h"
 
+static void resyncTag(CBlob* data);
+
 
 CID3V2::CID3V2(void)
 {
@@ -56,7 +58,9 @@ bool CID3V2::setTargetFormatAndEncoding(BYTE newFormat, BYTE newEncoding)
 	ATLASSERT(newFormat >= 0 && newFormat <= 3);
 	if (newFormat > 0)
 		newFormat++;
-	if (newFormat != TAG_VERSION_2_4 && newEncoding == 3)
+	// id3v2.2 and v2.3 know only the encodings ISO-8859-1 and UTF-16 with BOM; UTF-16BE and UTF-8 were introduced with v2.4
+	const BYTE targetVersion = (newFormat != 0) ? newFormat : CTools::ID3V2newTagVersion;
+	if (targetVersion != TAG_VERSION_2_4 && targetVersion != 0 && newEncoding >= 2)
 	{
 		CTools::instance().setLastError(ERR_UTF8_NOT_ALLOWED); 
 		return false;
@@ -147,10 +151,36 @@ void CID3V2::ReadFromFile(FILE *Stream)
 		CTools::ID3V2oldTagVersion = Version;
 		CBlob data(TagDataSize + 10);
 		data.FileRead(TagDataSize, Stream);
-		parseTags(&data);		
+		if (Version == TAG_VERSION_2_2 && (CTools::ID3V2Flags & 0x40) == 0x40)
+			CTools::instance().writeWarning(L"id3v2.2 tag is compressed: no compression scheme is defined, the tag is ignored");
+		else
+		{
+			// v2.2 and v2.3: the unsynchronisation applies to the whole tag (frame sizes are those of the original data)
+			if (Version < TAG_VERSION_2_4 && (CTools::ID3V2Flags & 0x80) == 0x80)
+				resyncTag(&data);
+			parseTags(&data);
+		}
 	}
 	else
 		CTools::instance().writeDebug(_T("no id3v2 tag present"));
+}
+
+// Transforms all FF 00 sequences into FF
+static void resyncTag(CBlob* data)
+{
+	const size_t length = data->GetLength();
+	BYTE *dest = new BYTE[length + 1];
+	const BYTE *src = data->m_pData;
+	const BYTE *end = src + length;
+	size_t ln = 0;
+	while (src < end)
+	{
+		dest[ln++] = *src;
+		src += (src[0] == 0xFF && (src + 1 < end) && src[1] == 0) ? 2 : 1;
+	}
+	data->Clear();
+	data->AddMemory(dest, (long)ln);
+	delete [] dest;
 }
 
 void CID3V2::parseTags(CBlob* data)
