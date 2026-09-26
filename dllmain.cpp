@@ -3112,6 +3112,8 @@ extern "C" BSTR __stdcall WMAGetUserItemW(LPCWSTR ItemKey)
  *
  * use the method WMAGetItemKeysW for a list of all existing keys.
  *
+ * A text has at most 32766 characters (the length has 16 bit in the file); a longer text is shortened.
+ *
  * @ingroup WMA
  * @since 2.0.1.0
  * @param ItemKey the key you want to set

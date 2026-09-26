@@ -21,6 +21,7 @@
 #include "StdAfx.h"
 #include "WMA_ContentDescription.h"
 #include "Tools.h"
+#include "WMA_TagData.h"
 
 CWMA_ContentDescription::CWMA_ContentDescription(void)
 {
@@ -100,6 +101,11 @@ void CWMA_ContentDescription::buildData()
 	if (_mustBuild)
 	{
 		_data.Clear();
+		Title = LimitWmaText(Title, L"Title");
+		Author = LimitWmaText(Author, L"Author");
+		Copyright = LimitWmaText(Copyright, L"Copyright");
+		Description = LimitWmaText(Description, L"Description");
+		Rating = LimitWmaText(Rating, L"Rating");
 		u16 TitleLength = (u16)Title.GetLength() * 2; 
 		u16 AuthorLength = (u16)Author.GetLength() * 2;
 		u16 CopyrightLength = (u16)Copyright.GetLength() * 2;

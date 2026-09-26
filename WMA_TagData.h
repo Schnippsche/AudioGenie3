@@ -27,6 +27,10 @@ typedef unsigned __int16  u16;
 #define METADATA_ART 1
 #define EXTCONTENT_ART 2
 
+// A text of the content description and of the extended content description has a 16 bit length in bytes (with the terminating zero):
+// at most 32766 characters. A longer text is shortened (a length that wraps around would damage the attribute).
+CAtlString LimitWmaText(const CAtlString &text, LPCWSTR what);
+
 class CWMA_TagData
 {
 public:

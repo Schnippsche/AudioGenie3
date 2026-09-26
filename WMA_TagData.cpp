@@ -35,6 +35,18 @@ CWMA_TagData::CWMA_TagData(BYTE art)
 	FieldName.Empty();
 }
 
+CAtlString LimitWmaText(const CAtlString &text, LPCWSTR what)
+{
+	const int MAX_CHARS = 32766;
+	if (text.GetLength() <= MAX_CHARS)
+		return text;
+	int length = MAX_CHARS;
+	if ((text[length - 1] & 0xFC00) == 0xD800)
+		length--;   // do not separate a surrogate pair
+	CTools::instance().writeWarning(L"WMA %s shortened to %d characters (the length has 16 bit)", what, length);
+	return text.Left(length);
+}
+
 CWMA_TagData::CWMA_TagData(CAtlString fieldName, CAtlString fieldValue)
 {
 	FieldName = fieldName;
@@ -105,6 +117,8 @@ void CWMA_TagData::setNewValue(CAtlString newValue)
 	}
 	// UNICODE
 	Type = 0;
+	if (_art == EXTCONTENT_ART)
+		newValue = LimitWmaText(newValue, FieldName);
 	if (newValue.GetLength() > 0)
 	{
 		_data.AddString(newValue);
