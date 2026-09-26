@@ -20,7 +20,10 @@ public static class CsCheck
 
         string version = AudioGenie2.GetAudioGenieVersion();
         Console.WriteLine("DLL version: " + version);
-        Check("version is 3.0.0.0", version == "3.0.0.0", version);
+        // the version of the DLL (read from its version resource) equals the version of the DLL file
+        string dllPath = Path.Combine(Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location), "AudioGenie3.dll");
+        string fileVersion = System.Diagnostics.FileVersionInfo.GetVersionInfo(dllPath).FileVersion;
+        Check("version equals the file version of the DLL (" + fileVersion + ")", version == fileVersion, version);
 
         string tagged = Path.Combine(fixtures, "mp3", "tagged.mp3");
         AudioFormatID fmt = AudioGenie2.AUDIOAnalyzeFile(tagged);

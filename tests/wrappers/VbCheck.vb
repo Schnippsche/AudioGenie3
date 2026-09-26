@@ -21,7 +21,10 @@ Module VbCheck
 
         Dim version As String = GetAudioGenieVersion()
         Console.WriteLine("DLL version: " & version)
-        Check("version is 3.0.0.0", version = "3.0.0.0", version)
+        ' the version of the DLL (read from its version resource) equals the version of the DLL file
+        Dim dllPath As String = Path.Combine(Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location), "AudioGenie3.dll")
+        Dim fileVersion As String = System.Diagnostics.FileVersionInfo.GetVersionInfo(dllPath).FileVersion
+        Check("version equals the file version of the DLL (" & fileVersion & ")", version = fileVersion, version)
 
         ' read tags
         Dim tagged As String = Path.Combine(fixtures, "mp3", "tagged.mp3")
