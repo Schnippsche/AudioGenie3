@@ -43,8 +43,6 @@ void CTTA::ResetData()
 	_bitspersample = 0;
 }
 
-/* -------------------------------------------------------------------------- */
-
 bool CTTA::IsValid()
 {
 	if (_header.GetLength() > 26)
@@ -61,16 +59,12 @@ bool CTTA::IsValid()
 	return false;
 }
 
-/* -------------------------------------------------------------------------- */
-
 CAtlString CTTA::GetFileVersion()
 {
 	if (IsValid())
 		return _header.GetStringAt(0,4);
 	return L"";
 }
-
-/* -------------------------------------------------------------------------- */
 
 CAtlString CTTA::GetChannelMode()
 {
@@ -86,8 +80,6 @@ CAtlString CTTA::GetChannelMode()
 	}  
 }
 
-/* -------------------------------------------------------------------------- */
-
 float CTTA::GetDuration()
 {
 	/* Get song duration */
@@ -95,8 +87,6 @@ float CTTA::GetDuration()
 		return 0.0f;
 	return (float)_samples / _samplerate;	
 }
-
-/* -------------------------------------------------------------------------- */
 
 bool CTTA::ReadFromFile(FILE *Stream)
 {

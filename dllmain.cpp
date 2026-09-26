@@ -42,8 +42,6 @@ extern "C" BOOL WINAPI DllMain(HINSTANCE hInstance, DWORD dwReason, LPVOID lpRes
 	return _AtlModule.DllMain(dwReason, lpReserved); 
 }
 
-// ******************************************************************************
-
 BYTE GetFileFormat(FILE *Stream)
 {
 	CTools::APEHeadSize = 0;
@@ -947,8 +945,6 @@ extern "C" void __stdcall AUDIOSetYearW(LPCWSTR textString)
 }
 
 
-/* ------------------------------------------------------------------------------------- */
-
 /**
  * @brief get the Header Type
  *
@@ -1365,8 +1361,6 @@ extern "C" short __stdcall FLACSaveChangesW()
 	return FLACSaveChangesToFileW(lastFile);
 }
 
-/* ------------------------------------------------------------------------------------- */
-
 /**
  * @brief get the bits per sample
  *
@@ -1456,8 +1450,6 @@ extern "C" long __stdcall MONKEYGetSamplesPerFrameW()
 {
 	return monkey.GetSamplesPerFrame();
 }
-
-/* ------------------------------------------------------------------------------------- */
 
 /**
  * @brief get a comma-separated list of all unique frame ids
@@ -1751,8 +1743,6 @@ extern "C" short __stdcall MP4SaveChangesW()
 {
 	return MP4SaveChangesToFileW(lastFile);
 }
-
-/* ------------------------------------------------------------------------------------- */
 
 
 /**
@@ -2245,8 +2235,6 @@ extern "C" short __stdcall MPPGetStreamVersionW()
 {
 	return mpp.GetStreamVersion();
 }
-
-/* ------------------------------------------------------------------------------------- */
 
 /**
  * @brief get the nominal bitrate
@@ -2799,8 +2787,6 @@ extern "C" short __stdcall OGGRemoveTagW()
 	return b2s(false);
 }
 
-/* ------------------------------------------------------------------------------------- */
-
 /**
  * @brief get the bits per sample
  *
@@ -2938,8 +2924,6 @@ extern "C" BSTR __stdcall GetAudioGenieVersionW()
 	}
 	return version.AllocSysString();
 }
-
-/* ------------------------------------------------------------------------------------- */
 
 /**
  * @brief get a picture from the tag and store it in a file
@@ -3202,7 +3186,6 @@ extern "C" short __stdcall WMASaveChangesW()
 {
 	return WMASaveChangesToFileW(lastFile);
 }
-/* ------------------------------------------------------------------------------------- */
 
 /**
  * @brief get the album
@@ -3569,7 +3552,6 @@ extern "C" short __stdcall APERemoveTagW()
 	}
 	return b2s(false);
 }
-/* ------------------------------------------------------------------------------------- */
 
 /**
  * @brief get the genre
@@ -4035,8 +4017,6 @@ extern "C" short __stdcall ID3V1SaveChangesW()
 	return ID3V1SaveChangesToFileW(lastFile);
 }
 
-/* ------------------------------------------------------------------------------------- */
-
 /**
  * @brief returns -1 if the Lyrics tag exists
  *
@@ -4397,7 +4377,6 @@ extern "C" short __stdcall LYRICSSaveChangesW()
 {
 	return LYRICSSaveChangesToFileW(lastFile);
 }
-/* ------------------------------------------------------------------------------------- */
 
 /**
  * @brief get the text entry of an ID3v2 frame
@@ -7863,8 +7842,6 @@ extern "C" void __stdcall WAVSetCartChunkEntryW(short Index, LPCWSTR textString)
 {
 	wav.setCartText((BYTE)Index, getValidPointer(textString));
 }
-
-/* ----------------------------------------------------------------------------------------- */
 
 /**
  * @brief get an MD5 hash only from the audio data and without tag information from the last analyzed file

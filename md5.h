@@ -26,8 +26,6 @@
 * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-//----------------------------------------------------------------------	
-
 /*
 * The hashlib++ MD5 implementation is derivative from the sourcecode
 * published in RFC 1321 
@@ -54,15 +52,12 @@
 * documentation and/or software.
 */
 
-//----------------------------------------------------------------------	
-
 /**
 *  @file 	hl_md5.h
 *  @brief	This file contains the declaration of the MD5 class
 *  @date 	Mo 17 Sep 2007
 */  
 
-//---------------------------------------------------------------------- 
 //include protection
 #ifndef MD5_H
 #define MD5_H
@@ -71,11 +66,8 @@
 #pragma once
 #endif // _MSC_VER > 1000
 
-//---------------------------------------------------------------------- 
 //STL includes
 #include "stdafx.h"
-
-//---------------------------------------------------------------------- 
 
 //typedefs
 
@@ -115,8 +107,6 @@ typedef struct
   /** input buffer */
   unsigned char buffer[64];
 } MD5_CTX;
-
-//---------------------------------------------------------------------- 
 
 /**
 *  @brief 	This class represents the implementation of 
@@ -185,5 +175,4 @@ private:
   MD5(){};
 };
 
-//---------------------------------------------------------------------- 
 #endif

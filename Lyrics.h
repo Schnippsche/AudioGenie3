@@ -18,10 +18,8 @@
    License along with the AudioGenie Library; if not, see <http://www.gnu.org/licenses/>.
 */
 
-/* -------------------------------------------------------------------------- */
 /* Lyrics.h          for use with Lyrics.cpp                                  */
 /* by Stefan Toengi (c) 2003                                                  */
-/* -------------------------------------------------------------------------- */
 #pragma once
 
 #include "Blob.h"

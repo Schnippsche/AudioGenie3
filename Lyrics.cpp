@@ -44,8 +44,6 @@ CLyrics::~CLyrics()
 {
 }
 
-/* -------------------------------------------------------------------------- */
-
 void CLyrics::ResetData()
 {
 	/* Reset all variables */
@@ -61,8 +59,6 @@ void CLyrics::ResetData()
 	FEndPosition = 0;
 	CTools::LyricsSize = 0;
 }
-
-/* -------------------------------------------------------------------------- */
 
 // Writes the region [start, start + oldLength) of the file again with the data (may be NULL). The lyrics tag is usually directly in
 // front of the ID3v1 data: then only the end of the file is written, otherwise (an APE tag is behind it) the file is rewritten.
@@ -91,8 +87,6 @@ bool CLyrics::WriteRegion(LPCWSTR FileName, __int64 start, __int64 oldLength, CB
 	return ok;
 }
 
-/* -------------------------------------------------------------------------- */
-
 // stores the data of a defined field; returns false if the field is not defined
 bool CLyrics::SetTagItem(const char ID[], long Pos, long DataSize)
 {
@@ -106,8 +100,6 @@ bool CLyrics::SetTagItem(const char ID[], long Pos, long DataSize)
 	}
 	return false;
 }
-
-/* -------------------------------------------------------------------------- */
 
 bool CLyrics::ReadHeader(FILE *Stream)
 {
@@ -178,8 +170,6 @@ bool CLyrics::ReadHeader(FILE *Stream)
 	return false;
 }
 
-/* -------------------------------------------------------------------------- */
-
 // Lyrics3 v1.00: "LYRICSBEGIN", the text (up to 5100 bytes), "LYRICSEND"
 bool CLyrics::ReadFramesOld(FILE *Stream, bool isDeleting)
 {
@@ -208,8 +198,6 @@ bool CLyrics::ReadFramesOld(FILE *Stream, bool isDeleting)
 	}
 	return false;
 }
-
-/* -------------------------------------------------------------------------- */
 
 // Lyrics3 v2.00: "LYRICSBEGIN", fields (ID, size with 5 digits, data), size of "LYRICSBEGIN" and the fields (6 digits), "LYRICS200"
 bool CLyrics::ReadFramesNew(FILE *Stream, bool isDeleting)
@@ -266,8 +254,6 @@ bool CLyrics::ReadFramesNew(FILE *Stream, bool isDeleting)
 	return true;
 }
 
-/* -------------------------------------------------------------------------- */
-
 void CLyrics::ReadFromFile(FILE *Stream)
 {
 	/* Process data if loaded and header valid */
@@ -280,8 +266,6 @@ void CLyrics::ReadFromFile(FILE *Stream)
 	}
 	ResetData();
 }
-
-/* -------------------------------------------------------------------------- */
 
 bool CLyrics::RemoveFromFile(LPCWSTR FileName)
 {
@@ -302,8 +286,6 @@ bool CLyrics::RemoveFromFile(LPCWSTR FileName)
 	CTools::instance().setLastError(errno);
 	return false;
 }
-
-/* -------------------------------------------------------------------------- */
 
 // the longest field in bytes; the indication has two characters, the lyrics, the information and the image links have 99999
 static const int FIELD_MAX_SIZE[LYRICS_FRAME_COUNT] = { 2, 99999, 99999, 250, 250, 250, 250, 99999, 250 };
@@ -382,8 +364,6 @@ void CLyrics::BuildTagData()
 	sprintf_s(Buffer, 16, "%06iLYRICS200", (int)Data.GetLength());
 	Data.AddMemory(Buffer, 15);
 }
-
-/* -------------------------------------------------------------------------- */
 
 bool CLyrics::SaveToFile(LPCWSTR FileName)
 {

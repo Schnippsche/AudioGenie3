@@ -41,8 +41,6 @@ CAPE::~CAPE()
 	ResetData();
 }
 
-/* -------------------------------------------------------------------------- */
-
 void CAPE::ResetData()
 { /* Reset all variables */
 	for (size_t i = 0; i < _items.GetCount(); i++)
@@ -53,8 +51,6 @@ void CAPE::ResetData()
 	FVersion = 0;
 	Data.Clear();
 }
-
-/* -------------------------------------------------------------------------- */
 
 bool CAPE::FindTailFooter(FILE *Stream, int id3v1Size, bool checkLyrics, __int64 &footerPos, __int64 &lyricsAfter)
 {
@@ -91,8 +87,6 @@ bool CAPE::FindTailFooter(FILE *Stream, int id3v1Size, bool checkLyrics, __int64
 	return false;
 }
 
-/* -------------------------------------------------------------------------- */
-
 bool CAPE::ReadFooter(FILE *Stream)
 {
 	/* Read footer data */
@@ -103,8 +97,6 @@ bool CAPE::ReadFooter(FILE *Stream)
 	_fseeki64(Stream, _footerPos, SEEK_SET);
 	return TagInfo.ReadFromFile(Stream);
 }
-
-/* -------------------------------------------------------------------------- */
 
 // position and size of the tag at the end of the file if a Lyrics3 tag is behind it; false for every other case
 bool CAPE::LocateTail(LPCWSTR FileName, __int64 &start, __int64 &total)
@@ -127,8 +119,6 @@ bool CAPE::LocateTail(LPCWSTR FileName, __int64 &start, __int64 &total)
 	start = footerPos + APE_TAG_FOOTER_SIZE - total;
 	return (start >= 0 && total >= APE_TAG_FOOTER_SIZE);
 }
-
-/* -------------------------------------------------------------------------- */
 
 // APE item keys: 2 to 255 characters in the range $20 to $7E; ID3, TAG, OggS and MP+ are not allowed
 static bool isValidKey(LPCWSTR key)
@@ -196,8 +186,6 @@ bool CAPE::SetTagItem(LPCWSTR FieldName, LPCWSTR Value)
 	return true;
 }
 
-/* -------------------------------------------------------------------------- */
-
 CAtlString CAPE::GetTagItem(LPCWSTR FieldName)
 {
 	/* search all stored fields for key */
@@ -214,8 +202,6 @@ CAtlString CAPE::GetTagItem(LPCWSTR FieldName)
 	}
 	return EMPTY;
 }
-
-/* -------------------------------------------------------------------------- */
 
 bool CAPE::ReadFields(FILE *Stream, __int64 headOffset)
 {
@@ -245,8 +231,6 @@ bool CAPE::ReadFields(FILE *Stream, __int64 headOffset)
 	}
 	return true;
 }
-
-/* -------------------------------------------------------------------------- */
 
 bool CAPE::FindHeadTag(FILE *Stream, __int64 &offset, __int64 &length)
 {
@@ -281,8 +265,6 @@ bool CAPE::FindHeadTag(FILE *Stream, __int64 &offset, __int64 &length)
 	return true;
 }
 
-/* -------------------------------------------------------------------------- */
-
 bool CAPE::ReadHeadTag(FILE *Stream, __int64 offset, __int64 length)
 {
 	_fseeki64(Stream, offset, SEEK_SET);
@@ -295,8 +277,6 @@ bool CAPE::ReadHeadTag(FILE *Stream, __int64 offset, __int64 length)
 	CTools::APEHeadSize = (int)length;
 	return ReadFields(Stream, offset);
 }
-
-/* -------------------------------------------------------------------------- */
 
 // writes the file again: the data before the region, the new data (may be NULL) and the data behind the old region
 bool CAPE::RewriteRegion(LPCWSTR FileName, __int64 offset, __int64 oldLength, CBlob *data)
@@ -332,8 +312,6 @@ bool CAPE::RewriteRegion(LPCWSTR FileName, __int64 offset, __int64 oldLength, CB
 	return CTools::finishRewrite(Source, Destination, NewFileName, FileName);
 }
 
-/* -------------------------------------------------------------------------- */
-
 bool CAPE::TruncateFile(LPCWSTR FileName, int Offset)
 {
 	int fh;
@@ -349,8 +327,6 @@ bool CAPE::TruncateFile(LPCWSTR FileName, int Offset)
 	return false;
 }
 
-/* -------------------------------------------------------------------------- */
-
 bool CAPE::AddToFile(LPCWSTR FileName)
 { /* Add tag data to file */
 	FILE * Stream;
@@ -364,8 +340,6 @@ bool CAPE::AddToFile(LPCWSTR FileName)
 	CTools::instance().setLastError(errno);
 	return false;
 }
-
-/* -------------------------------------------------------------------------- */
 
 void CAPE::BuildFooter()
 {
@@ -388,8 +362,6 @@ void CAPE::BuildFooter()
 	TagInfo.Fields = (long)_items.GetCount();
 }
 
-
-/* -------------------------------------------------------------------------- */
 
 void CAPE::BuildTagData()
 {
@@ -423,8 +395,6 @@ void CAPE::BuildTagData()
 	TagInfo.WriteToBlob(Data);
 }
 
-/* -------------------------------------------------------------------------- */
-
 bool CAPE::SaveTag(LPCWSTR FileName)
 {
 	BuildTagData();
@@ -435,8 +405,6 @@ bool CAPE::SaveTag(LPCWSTR FileName)
 		tmpid3v1.SaveToFile(FileName);
 	return result;
 }
-
-/* -------------------------------------------------------------------------- */
 
 bool CAPE::ReadFromFile(FILE *Stream)
 {
@@ -455,8 +423,6 @@ bool CAPE::ReadFromFile(FILE *Stream)
 	ResetData();
 	return false;
 }
-
-/* -------------------------------------------------------------------------- */
 
 bool CAPE::RemoveFromFile(LPCWSTR FileName, bool saveID3v1Tag)
 { /* Remove tag from file if found */
@@ -513,8 +479,6 @@ bool CAPE::RemoveFromFile(LPCWSTR FileName, bool saveID3v1Tag)
 	return false;
 }
 
-/* -------------------------------------------------------------------------- */
-
 bool CAPE::SaveToFile(LPCWSTR FileName)
 {
 	/* Delete old tag if exists and write new tag */
@@ -552,8 +516,6 @@ bool CAPE::SaveToFile(LPCWSTR FileName)
 	return SaveTag(FileName);  
 }
 
-/* -------------------------------------------------------------------------- */
-
 CAtlString CAPE::GetTagVersion()
 {
 	if (FVersion == 0)
@@ -562,8 +524,6 @@ CAtlString CAPE::GetTagVersion()
 	tmp.Format(_T("%i"), FVersion);
 	return tmp;	
 }
-
-/* -------------------------------------------------------------------------- */
 
 CAtlString CAPE::GetAllKeys()
 {

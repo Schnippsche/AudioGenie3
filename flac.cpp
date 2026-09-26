@@ -63,15 +63,11 @@ void CFLAC::ResetData()
 	DeletePictures();
 }
 
-/* -------------------------------------------------------------------------- */
-
 bool CFLAC::IsValid()
 {
 	/* Check for right FLAC's Audio file data */
 	return (Channels > 0 && SampleRate > 0 && BitsPerSample > 0 && Samples > 0);
 }
-
-//-------------------------------------------------------------------------
 
 float CFLAC::GetDuration()
 {
@@ -82,8 +78,6 @@ float CFLAC::GetDuration()
 	return 0.0f;	
 }
 
-/* -------------------------------------------------------------------------- */
-
 float CFLAC::GetRatio()
 {
 	/* Get compression ratio */
@@ -93,8 +87,6 @@ float CFLAC::GetRatio()
 	return 0.0f;	
 }
 
-/* -------------------------------------------------------------------------- */
-
 long CFLAC::GetBitRate()
 {
 	long dur = (long) GetDuration();
@@ -102,8 +94,6 @@ long CFLAC::GetBitRate()
 		return (long) ((CTools::FileSize - CTools::ID3v2Size - CTools::ID3v1Size - oldLen) / 125 / dur + .5);
 	return 0;
 }
-
-/* -------------------------------------------------------------------------- */
 
 bool CFLAC::ReadFromFile(FILE *Stream)
 {
@@ -126,8 +116,6 @@ bool CFLAC::ReadFromFile(FILE *Stream)
 	return false;
 }
 
-//-------------------------------------------------------------------------
-
 void CFLAC::ReadBlockHeader(FILE *Stream)
 {
 	memset(tmpHdr, 0, 4);	
@@ -141,8 +129,6 @@ void CFLAC::ReadBlockHeader(FILE *Stream)
 		BlockHeader.lastBlock = true;
 }
 
-//-------------------------------------------------------------------------
-
 void CFLAC::BuildBlockHeader(int Len, BYTE typ)
 {
 	tmpHdr[0] = typ;
@@ -150,8 +136,6 @@ void CFLAC::BuildBlockHeader(int Len, BYTE typ)
 	tmpHdr[2] = (BYTE) (Len >> 8);
 	tmpHdr[3] = (BYTE) (Len & 0xFF);
 }
-
-//-------------------------------------------------------------------------
 
 void CFLAC::ReadBlock(FILE *Stream)
 {
@@ -185,8 +169,6 @@ void CFLAC::ReadBlock(FILE *Stream)
 	};
 }
 
-//-------------------------------------------------------------------------
-
 void CFLAC::AnalyzeStreamInfo()
 {
 	minBlockSize = BlockStreamInfo.Get2B(0);
@@ -198,8 +180,6 @@ void CFLAC::AnalyzeStreamInfo()
 	BitsPerSample = ((BlockStreamInfo.GetAt(12) & 1) << 4) + (BlockStreamInfo.GetAt(13) >> 4) + 1;
 	Samples = (long)BlockStreamInfo.Get4B(14);
 }
-
-//-------------------------------------------------------------------------
 
 void CFLAC::BuildComment()
 {
@@ -213,8 +193,6 @@ void CFLAC::BuildComment()
 	BlockComment.AddMemory(tmpHdr, 4);
 	BlockComment.AddBlob(neu); 
 }
-
-//-------------------------------------------------------------------------
 
 void CFLAC::BuildFrame(bool withComment)
 {
@@ -260,8 +238,6 @@ void CFLAC::BuildFrame(bool withComment)
 	Daten.AddValue(0, padding);  
 }
 
-//-------------------------------------------------------------------------
-
 bool CFLAC::SaveToFile(LPCWSTR FileName)
 {
 	BuildFrame(true);
@@ -269,8 +245,6 @@ bool CFLAC::SaveToFile(LPCWSTR FileName)
 		return RebuildFile(FileName);
 	return ReplaceTag(FileName);
 }
-
-//-------------------------------------------------------------------------
 
 bool CFLAC::RebuildFile(LPCWSTR FileName)
 {
@@ -312,8 +286,6 @@ bool CFLAC::RebuildFile(LPCWSTR FileName)
 	}
 	return CTools::finishRewrite(Source, Destination, NewFileName, FileName);
 }
-
-//-------------------------------------------------------------------------
 
 bool CFLAC::ReplaceTag(LPCWSTR FileName)
 {

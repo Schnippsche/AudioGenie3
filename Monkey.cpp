@@ -39,8 +39,6 @@ void CMonkey::ResetData()
   Header.Reset();
 }
 
-/* -------------------------------------------------------------------------- */
-
 bool CMonkey::IsValid()
 {
   /* Check for right Monkey"s Audio file data */
@@ -48,8 +46,6 @@ bool CMonkey::IsValid()
           Header.SampleRate > 0 &&
           Header.Channels > 0);
 }
-
-/* -------------------------------------------------------------------------- */
 
 CAtlString CMonkey::GetFileVersion()
 {
@@ -64,15 +60,11 @@ CAtlString CMonkey::GetFileVersion()
   return CAtlString(Buf);
 }
 
-/* -------------------------------------------------------------------------- */
-
 CAtlString CMonkey::GetCompression()
 {
   /* Get compression level */
   return MONKEY_COMPRESSION[Header.CompressionID / 1000];
 }
-
-/* -------------------------------------------------------------------------- */
 
 BYTE CMonkey::GetBits()
 {
@@ -85,8 +77,6 @@ BYTE CMonkey::GetBits()
     return 24;
   return 16;
 }
-
-/* -------------------------------------------------------------------------- */
 
 CAtlString CMonkey::GetChannelMode()
 {
@@ -102,8 +92,6 @@ CAtlString CMonkey::GetChannelMode()
   }  
 }
 
-/* -------------------------------------------------------------------------- */
-
 float CMonkey::GetPeak()
 {
   /* Get peak level ratio */
@@ -117,8 +105,6 @@ float CMonkey::GetPeak()
   }
   return 0.0f;
 }
-
-/* -------------------------------------------------------------------------- */
 
 long CMonkey::GetSamplesPerFrame()
 {
@@ -137,8 +123,6 @@ long CMonkey::GetSamplesPerFrame()
     return 9216l;
 }
 
-/* -------------------------------------------------------------------------- */
-
 long CMonkey::GetSamples()
 {
   /* Get number of samples */
@@ -150,8 +134,6 @@ long CMonkey::GetSamples()
     return (Header.Frames - 1) * GetSamplesPerFrame() + Header.FinalSamples;
 }
 
-/* -------------------------------------------------------------------------- */
-
 float CMonkey::GetDuration()
 {
   /* Get song duration */
@@ -159,8 +141,6 @@ float CMonkey::GetDuration()
     return 0.0f;
   return (float)GetSamples() / Header.SampleRate;
 }
-
-/* -------------------------------------------------------------------------- */
 
 float CMonkey::GetCompressionRatio()
 {
@@ -174,8 +154,6 @@ float CMonkey::GetCompressionRatio()
   //  (GetSamples() * Header.Channels * GetBits() / 8.0f + 44.0f) * 100.0f;
 }
 
-/* -------------------------------------------------------------------------- */
-
 long CMonkey::GetBitRate()
 {
   if (GetDuration() > 0)
@@ -183,7 +161,6 @@ long CMonkey::GetBitRate()
   else
     return 0;
 }
-/* -------------------------------------------------------------------------- */
 
 bool CMonkey::ReadFromFile(FILE *Stream)
 {

@@ -42,8 +42,6 @@ void CWavPack::ResetData()
 	_flags;	
 }
 
-/* -------------------------------------------------------------------------- */
-
 bool CWavPack::IsValid()
 {
 	if (_header.GetLength() >= 32)
@@ -59,8 +57,6 @@ bool CWavPack::IsValid()
 	return false;
 }
 
-/* -------------------------------------------------------------------------- */
-
 CAtlString CWavPack::GetFileVersion()
 {
 	if (IsValid())
@@ -72,15 +68,11 @@ CAtlString CWavPack::GetFileVersion()
 	return L"";
 }
 
-/* -------------------------------------------------------------------------- */
-
 CAtlString CWavPack::GetChannelMode()
 {
 	/* Get channel mode */
 	return (_flags & 4) ? MONO : STEREO;	  
 }
-
-/* -------------------------------------------------------------------------- */
 
 float CWavPack::GetDuration()
 {
@@ -104,8 +96,6 @@ long CWavPack::GetChannels()
 {
 	return (_flags & 4) ? 1 : 2;
 }
-
-/* -------------------------------------------------------------------------- */
 
 bool CWavPack::ReadFromFile(FILE *Stream)
 {

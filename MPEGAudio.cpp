@@ -37,14 +37,11 @@ CMPEGAudio::~CMPEGAudio()
 {
 }
 
-/* -------------------------------------------------------------------------- */
-
+// reads a 32 bit big endian number
 long CMPEGAudio::Get4B(BYTE v[])
 {
 	return v[0] * 0x1000000 + v[1] * 0x10000 + v[2] * 0x100 + v[3];
 }
-
-/* -------------------------------------------------------------------------- */
 
 void CMPEGAudio::ResetData()
 {
@@ -72,8 +69,7 @@ void CMPEGAudio::ResetData()
 	Frame.FramePosition = 0;
 }
 
-/* -------------------------------------------------------------------------- */
-
+// checks the 4 bytes of a frame header: sync bits and the reserved or unsupported values of the fields
 bool CMPEGAudio::IsFrameHeader(BYTE HeaderData[])
 {
 	/* Check for valid frame header       AAAAAAAA AAABBCCD EEEEFFGH IIJJKLMM */
@@ -91,8 +87,7 @@ bool CMPEGAudio::IsFrameHeader(BYTE HeaderData[])
 
 }
 
-/* -------------------------------------------------------------------------- */
-
+// coefficient for the frame length: frame length = coefficient * bit rate / sample rate + padding
 WORD CMPEGAudio::GetCoefficient()
 {
 	/* Get frame size coefficient */
@@ -114,15 +109,12 @@ WORD CMPEGAudio::GetCoefficient()
 	}
 }
 
-/* -------------------------------------------------------------------------- */
-
+// bit rate in kbit/s from the table of the version, layer and bit rate index
 WORD CMPEGAudio::GetBitRateID()
 {
 	/* Get bit rate */
 	return MPEG_BIT_RATE[Frame.VersionID][Frame.LayerID][Frame.BitRateID];
 }
-
-/* -------------------------------------------------------------------------- */
 
 long CMPEGAudio::GetSampleRate()
 {
@@ -130,8 +122,7 @@ long CMPEGAudio::GetSampleRate()
 	return MPEG_SAMPLE_RATE[Frame.VersionID][Frame.SampleRateID];
 }
 
-/* -------------------------------------------------------------------------- */
-
+// size of the padding slot: 4 bytes in layer 1, 1 byte in the other layers
 int CMPEGAudio::GetPadding()
 {
 	/* Get frame padding */
@@ -146,8 +137,6 @@ int CMPEGAudio::GetPadding()
 		return 0;
 }
 
-/* -------------------------------------------------------------------------- */
-
 // samples per frame: layer 1 has 384, layer 2 has 1152, layer 3 has 1152 (MPEG 1) or 576 (MPEG 2 and 2.5)
 long CMPEGAudio::GetSamplesPerFrame()
 {
@@ -158,8 +147,7 @@ long CMPEGAudio::GetSamplesPerFrame()
 	return 576;
 }
 
-/* -------------------------------------------------------------------------- */
-
+// length of the current frame in bytes, including the header
 long CMPEGAudio::GetFrameLength()
 {
 	long Coefficient, BitRate, SampleRate, Padding;
@@ -178,8 +166,6 @@ long CMPEGAudio::GetFrameLength()
 	return ((long) (Coefficient * BitRate * 1000l / SampleRate)) + Padding;
 }
 
-/* -------------------------------------------------------------------------- */
-
 void CMPEGAudio::DecodeHeader(BYTE HeaderData[])
 {
 	/* Decode frame header data */
@@ -197,8 +183,7 @@ void CMPEGAudio::DecodeHeader(BYTE HeaderData[])
 	Frame.EmphasisID = (BYTE) ((HeaderData[3] & 3));
 }
 
-/* -------------------------------------------------------------------------- */
-
+// true if a valid frame header is at the given position of the buffer
 bool CMPEGAudio::ValidFrameAt(long Index, BYTE Data[])
 {
 	/* Check for frame at given position */
@@ -209,15 +194,11 @@ bool CMPEGAudio::ValidFrameAt(long Index, BYTE Data[])
 	return false;
 }
 
-/* -------------------------------------------------------------------------- */
-
 bool CMPEGAudio::IsXing(long Index, BYTE Data[])
 {
 	/* Get true if Xing encoder */
 	return (memcmp(&Data[Index], &ZERO, 6) == 0);
 }
-
-/* -------------------------------------------------------------------------- */
 
 // Xing and Info header: ID, flags (4 bytes), then in this order the fields whose flag is set: frames (bit 0), bytes (bit 1),
 // table of contents with 100 bytes (bit 2), quality (bit 3, 4 bytes); the encoder string (for example LAME3.99r) follows
@@ -250,8 +231,7 @@ void CMPEGAudio::GetXingInfo(long Index, BYTE Data[], bool info)
 	memcpy(&FVBR.VendorID, &Data[pos], 8);
 }
 
-/* -------------------------------------------------------------------------- */
-
+// reads the VBRI header of Fraunhofer: number of bytes, number of frames and scale
 void CMPEGAudio::GetFhgInfo(long Index, BYTE Data[])
 {
 	memset(&FVBR, 0, sizeof(FVBR));
@@ -263,8 +243,6 @@ void CMPEGAudio::GetFhgInfo(long Index, BYTE Data[])
 	FVBR.Scale = Data[Index + 9];
 }
 
-/* -------------------------------------------------------------------------- */
-
 void CMPEGAudio::FindVBR(long Index, BYTE Data[])
 {
 	/* Check for a Xing or Info header at given position: behind the header, the CRC and the side information */
@@ -273,8 +251,6 @@ void CMPEGAudio::FindVBR(long Index, BYTE Data[])
 	else if (memcmp(&Data[Index], "Info", 4) == 0)
 		GetXingInfo(Index, Data, true);
 }
-
-/* -------------------------------------------------------------------------- */
 
 // The frames and bytes of a Xing, Info or VBRI header describe the file at the time of the encoding. If the file was cut, extended or
 // joined afterwards they do not match the audio data any more: then the header is not used (the values are estimated from the size).
@@ -305,8 +281,6 @@ bool CMPEGAudio::IsHeaderPlausible()
 	return true;
 }
 
-/* -------------------------------------------------------------------------- */
-
 // CRC-16 as LAME writes it: polynomial $8005, start value 0, most significant bit first
 static unsigned short LameCrc16(unsigned short crc, const BYTE *data, size_t length)
 {
@@ -333,8 +307,6 @@ static float LameGain(const BYTE *p, int name)
 	const float gain = (value & 0x1FF) / 10.0f;
 	return (value & 0x200) ? -gain : gain;
 }
-
-/* -------------------------------------------------------------------------- */
 
 // The LAME tag follows the fields of the Xing/Info header (which all have to be present, flags $0F): 9 characters encoder version,
 // revision and method, lowpass, replay gain, flags, bit rate, delay and padding, misc, MP3 gain, preset, music length, music CRC and
@@ -376,8 +348,6 @@ void CMPEGAudio::ParseLameTag(long frameIndex, long xingIndex, BYTE Data[])
 	lameHeaderSize = Frame.FrameSize;
 }
 
-/* -------------------------------------------------------------------------- */
-
 // Checks the CRC-16 of the music data: from the frame behind the LAME tag frame up to the music length of the tag
 bool CMPEGAudio::IsLameMusicCrcValid(LPCWSTR FileName)
 {
@@ -406,8 +376,6 @@ bool CMPEGAudio::IsLameMusicCrcValid(LPCWSTR FileName)
 	return ok && crc == FLame.MusicCrc;
 }
 
-/* -------------------------------------------------------------------------- */
-
 void CMPEGAudio::FindVBRI(long Index, BYTE Data[])
 {
 	/* the VBRI header of Fraunhofer is always 32 bytes behind the frame header */
@@ -415,8 +383,7 @@ void CMPEGAudio::FindVBRI(long Index, BYTE Data[])
 		GetFhgInfo(Index, Data);
 }
 
-/* -------------------------------------------------------------------------- */
-
+// offset of the Xing header behind the frame header (side information: 36 or 21 bytes for MPEG 1 stereo or mono, 21 or 13 for MPEG 2)
 BYTE CMPEGAudio::GetVBRDeviation()
 {
 	/* Calculate VBR deviation */
@@ -430,8 +397,6 @@ BYTE CMPEGAudio::GetVBRDeviation()
 	else
 		return 13;
 }
-
-/* -------------------------------------------------------------------------- */
 
 long CMPEGAudio::GetBitRate()
 {
@@ -473,8 +438,6 @@ long CMPEGAudio::GetBitRate()
 	return long(Res1);
 }
 
-/* -------------------------------------------------------------------------- */
-
 long CMPEGAudio::GetFrames()
 {
 	__int64 MPEGSize;
@@ -495,8 +458,7 @@ long CMPEGAudio::GetFrames()
 	}
 }
 
-/* -------------------------------------------------------------------------- */
-
+// duration in seconds: from the scan of all frames if it was made, else from the number of frames of the Xing/VBRI header, else estimated from the size and the bit rate
 float CMPEGAudio::GetDuration()
 {
 	__int64 MPEGSize;
@@ -510,8 +472,6 @@ float CMPEGAudio::GetDuration()
 	MPEGSize = CTools::FileSize - CTools::ID3v1Size - Frame.FramePosition - CTools::LyricsSize - CTools::APESize;
 	return float(MPEGSize) / float(GetBitRate()) / 125.0f;
 }
-
-/* -------------------------------------------------------------------------- */
 
 BYTE CMPEGAudio::GetVBREncoderID()
 {
@@ -533,8 +493,6 @@ BYTE CMPEGAudio::GetVBREncoderID()
 		result = MPEG_ENCODER_FHG;
 	return result;
 }
-
-/* -------------------------------------------------------------------------- */
 
 BYTE CMPEGAudio::GetCBREncoderID()
 {
@@ -560,8 +518,7 @@ BYTE CMPEGAudio::GetCBREncoderID()
 	return result;
 }
 
-/* -------------------------------------------------------------------------- */
-
+// guessed encoder (see the tables of the VBR and CBR encoders)
 BYTE CMPEGAudio::GetEncoderID()
 {
 	/* Get guessed encoder ID */
@@ -573,7 +530,6 @@ BYTE CMPEGAudio::GetEncoderID()
 	return 0;
 }
 
-/* -------------------------------------------------------------------------- */
 void CMPEGAudio::GetInternEncoder()
 {
 	BYTE temp[10];
@@ -599,8 +555,6 @@ void CMPEGAudio::GetInternEncoder()
 	}
 }
 
-/* -------------------------------------------------------------------------- */
-
 CAtlString CMPEGAudio::GetChannelMode()
 {
 	switch (Frame.ModeID)
@@ -618,8 +572,6 @@ CAtlString CMPEGAudio::GetChannelMode()
 	}
 }
 
-/* -------------------------------------------------------------------------- */
-
 long CMPEGAudio::GetChannels()
 {
 	if (Frame.ModeID == MPEG_CM_MONO)
@@ -628,28 +580,21 @@ long CMPEGAudio::GetChannels()
 		return 0;
 	return 2;
 }
-/* -------------------------------------------------------------------------- */
 
 CAtlString CMPEGAudio::GetLayer()
 {
 	return MPEG_LAYER[Frame.LayerID];
 }
 
-/* -------------------------------------------------------------------------- */
-
 CAtlString CMPEGAudio::GetEmphasis()
 {
 	return MPEG_EMPHASIS[Frame.EmphasisID];
 }
 
-/* -------------------------------------------------------------------------- */
-
 CAtlString CMPEGAudio::GetFileVersion()
 {
 	return MPEG_VERSION[Frame.VersionID];
 }
-
-/* -------------------------------------------------------------------------- */
 
 void CMPEGAudio::FindVendorID()
 {
@@ -686,8 +631,7 @@ void CMPEGAudio::FindVendorID()
 	memset(VendorID, 0, 8);
 }
 
-/* -------------------------------------------------------------------------- */
-
+// searches the first frame in the data at the start of the audio; it counts only if the next frame follows at the calculated distance
 bool CMPEGAudio::FindFrame()
 {
 	BYTE HeaderData[4];
@@ -739,8 +683,6 @@ bool CMPEGAudio::FindFrame()
 	}
 	return true;
 }
-
-/* -------------------------------------------------------------------------- */
 
 bool CMPEGAudio::ReadFromFile(FILE *Stream)
 {
@@ -794,27 +736,22 @@ bool CMPEGAudio::ReadFromFile(FILE *Stream)
 	return false;
 }
 
-/* -------------------------------------------------------------------------- */
-
 bool CMPEGAudio::SetPrivateBit(LPCWSTR FileName, bool neu)
 {
 	return SetBit(FileName, 2, 1, neu);
 }
-/* -------------------------------------------------------------------------- */
 
 bool CMPEGAudio::SetCopyrightBit(LPCWSTR FileName, bool neu)
 {
 	return SetBit(FileName, 3, 8, neu);
 }
-/* -------------------------------------------------------------------------- */
 
 bool CMPEGAudio::SetOriginalBit(LPCWSTR FileName, bool neu)
 {
 	return SetBit(FileName, 3, 4, neu);
 }
 
-/* -------------------------------------------------------------------------- */
-
+// sets or clears one bit of the first frame header directly in the file
 bool CMPEGAudio::SetBit(LPCWSTR FileName, int HdrPos, BYTE BitPos, bool neu)
 {
 	BYTE HeaderData[4];

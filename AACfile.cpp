@@ -68,15 +68,11 @@ void CAAC::ResetData()
 	FBitRateTypeID = AAC_BITRATE_TYPE_UNKNOWN;
 }
 
-/* --------------------------------------------------------------------------- */
-
 CAtlString CAAC::GetHeaderType()
 {
 	/* Get header type name */
 	return AAC_HEADER_TYPE[FHeaderTypeID];
 }
-
-/* --------------------------------------------------------------------------- */
 
 CAtlString CAAC::GetFileVersion()
 {
@@ -84,23 +80,17 @@ CAtlString CAAC::GetFileVersion()
 	return AAC_MPEG_VERSION[FMPEGVersionID];
 }
 
-/* --------------------------------------------------------------------------- */
-
 CAtlString CAAC::GetProfile()
 {
 	/* Get profile name */
 	return AAC_PROFILE[FProfileID];
 }
 
-/* --------------------------------------------------------------------------- */
-
 CAtlString CAAC::GetBitRateType()
 {
 	/* Get bit rate type name */
 	return AAC_BITRATE_TYPE[FBitRateTypeID];
 }
-
-/* --------------------------------------------------------------------------- */
 
 float CAAC::GetDuration()
 {
@@ -110,8 +100,6 @@ float CAAC::GetDuration()
 	return 8.0f * (CTools::FileSize - CTools::audioStart()) / FBitRate;
 }
 
-/* --------------------------------------------------------------------------- */
-
 bool CAAC::IsValid()
 {
 	/* Check for file correctness */
@@ -120,8 +108,6 @@ bool CAAC::IsValid()
 		FSampleRate > 0 &&
 		FBitRate > 0);
 }
-
-/* --------------------------------------------------------------------------- */
 
 BYTE CAAC::RecognizeHeaderType(FILE *Source)
 {
@@ -135,8 +121,6 @@ BYTE CAAC::RecognizeHeaderType(FILE *Source)
 		return AAC_HEADER_TYPE_ADTS;
 	return AAC_HEADER_TYPE_UNKNOWN;
 }
-
-/* --------------------------------------------------------------------------- */
 
 void CAAC::ReadADIF(FILE *Source)
 {
@@ -170,8 +154,6 @@ void CAAC::ReadADIF(FILE *Source)
 	Position += 4l;
 	FChannels += (BYTE) (ReadBits(Source, Position, 2l));  
 }
-
-/* --------------------------------------------------------------------------- */
 
 void CAAC::ReadADTS(FILE *Source)
 {
@@ -224,8 +206,6 @@ void CAAC::ReadADTS(FILE *Source)
 		//FBitRate = long(8.0 * TotalSize / 1024.0 * FSampleRate / Frames + 0.5 );
 	
 }
-
-/* --------------------------------------------------------------------------- */
 
 bool CAAC::ReadFromFile(FILE *Source)
 {

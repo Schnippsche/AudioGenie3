@@ -40,8 +40,6 @@ COggVorbis::~COggVorbis()
 {
 }
 
-/* -------------------------------------------------------------------------- */
-
 // Ogg (RFC 3533): a stream consists of pages with a header (27 bytes + the lacing values) and the segments of the packets. A packet
 // ends with a segment of less than 255 bytes. Vorbis: the first packet is the identification header (it has a page of its own), then
 // the comment header and the setup header follow; the audio packets start on a new page.
@@ -97,8 +95,6 @@ __int64 COggVorbis::GetSamples(FILE *Source)
 	}
 	return 0;
 }
-
-/* --------------------------------------------------------------------------- */
 
 // Reads the identification header and the packets of the comment header and the setup header.
 bool COggVorbis::GetInfo(FILE *Source, bool withComments)
@@ -188,15 +184,11 @@ bool COggVorbis::GetInfo(FILE *Source, bool withComments)
 	return true;
 }
 
-/* --------------------------------------------------------------------------- */
-
 void COggVorbis::ReadTag(FILE *Source)
 {
 	Source;
 	AnalyzeVorbisComments(commentPacket.m_pData + 7, commentPacket.GetLength() - 7);
 }
-
-/* -------------------------------------------------------------------------- */
 
 void COggVorbis::BuildTag()
 {
@@ -205,8 +197,6 @@ void COggVorbis::BuildTag()
 	BuildVorbisComments(Data);
 	Data.AddValue(1);   // the framing bit
 }
-
-/* -------------------------------------------------------------------------- */
 
 unsigned long COggVorbis::CalculateCRC(unsigned long CRC, BYTE Data[], long Size)
 {
@@ -217,8 +207,6 @@ unsigned long COggVorbis::CalculateCRC(unsigned long CRC, BYTE Data[], long Size
 
 	return CRC;
 }
-
-/* -------------------------------------------------------------------------- */
 
 // the pages of the headers behind the identification header: the new comment header and the old setup header. A page has at most 255
 // segments, the headers end on a page. Sequence numbers start with 1, the checksums are set.
@@ -277,8 +265,6 @@ int COggVorbis::BuildHeaderPages(CBlob &out)
 	return pages;
 }
 
-/* -------------------------------------------------------------------------- */
-
 // Copies the pages behind the headers. If the number of the header pages has changed, the sequence numbers of the pages of the stream
 // change by delta and their checksums are calculated again.
 bool COggVorbis::CopyPages(FILE *Source, FILE *Destination, int delta)
@@ -326,8 +312,6 @@ bool COggVorbis::CopyPages(FILE *Source, FILE *Destination, int delta)
 	}
 }
 
-/* -------------------------------------------------------------------------- */
-
 bool COggVorbis::RebuildFile(LPCWSTR FileName)
 {
 	FILE *Source;
@@ -368,8 +352,6 @@ bool COggVorbis::RebuildFile(LPCWSTR FileName)
 	return CTools::finishRewrite(Source, Destination, NewFileName, FileName);
 }
 
-/* -------------------------------------------------------------------------- */
-
 void COggVorbis::ResetData()
 {
 	/* Reset variables */
@@ -398,8 +380,6 @@ void COggVorbis::ResetData()
 	CVorbisComment::ResetData();
 }
 
-/* --------------------------------------------------------------------------- */
-
 float COggVorbis::FGetDuration()
 {
 	/* Calculate duration time: the granule position of the last page is the number of the samples */
@@ -415,8 +395,6 @@ float COggVorbis::FGetDuration()
 	return 0.0f;
 }
 
-/* --------------------------------------------------------------------------- */
-
 int COggVorbis::FGetBitRate()
 {
 	/* Calculate average bit rate */
@@ -427,8 +405,6 @@ int COggVorbis::FGetBitRate()
 		return 0;
 }
 
-/* --------------------------------------------------------------------------- */
-
 bool COggVorbis::FIsValid()
 {
 	/* Check for file correctness: Vorbis allows 1 to 255 channels */
@@ -437,8 +413,6 @@ bool COggVorbis::FIsValid()
 		FGetDuration() > 0.1f &&
 		FGetBitRate() > 0);
 }
-
-/* --------------------------------------------------------------------------- */
 
 bool COggVorbis::ReadFromFile(FILE *Stream)
 {
@@ -454,8 +428,6 @@ bool COggVorbis::ReadFromFile(FILE *Stream)
 	}
 	return false;
 }
-
-/* --------------------------------------------------------------------------- */
 
 bool COggVorbis::SaveTag(LPCWSTR FileName)
 {
@@ -489,8 +461,6 @@ bool COggVorbis::SaveTag(LPCWSTR FileName)
 	return Result;
 }
 
-/* -------------------------------------------------------------------------- */
-
 bool COggVorbis::RemoveTag(LPCWSTR FileName)
 {
 	// Clear Vorbis tag except the vendor (the name of the encoder)
@@ -499,8 +469,6 @@ bool COggVorbis::RemoveTag(LPCWSTR FileName)
 	SetVendor(vendor);
 	return SaveTag(FileName);
 }
-
-/* -------------------------------------------------------------------------- */
 
 CAtlString COggVorbis::GetChannelMode()
 {

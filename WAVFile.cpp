@@ -45,29 +45,21 @@ CWAVFile::~CWAVFile()
 	delete mainContainer;
 }
 
-/* -------------------------------------------------------------------------- */
-
 bool CWAVFile::ReadWAV(FILE *Stream)
 {
 	return mainContainer->load(Stream, CTools::ID3v2Size, toU32Clamped(CTools::FileSize - CTools::ID3v1Size));
 }
-
-/* -------------------------------------------------------------------------- */
 
 bool CWAVFile::HeaderIsValid()
 {
 	return (mainContainer->getSize() > 20);	
 }
 
-/* -------------------------------------------------------------------------- */
-
 void CWAVFile::ResetData()
 {
 	/* Reset all data */
 	mainContainer->Remove();
 }
-
-/* -------------------------------------------------------------------------- */
 
 CAtlString CWAVFile::GetFormat()
 {
@@ -332,8 +324,6 @@ CAtlString CWAVFile::GetFormat()
 	}
 }
 
-/* -------------------------------------------------------------------------- */
-
 CAtlString CWAVFile::GetChannelMode()
 {
 	CWAVFormatChunk *fmt = mainContainer->getFormatChunk();
@@ -353,8 +343,6 @@ CAtlString CWAVFile::GetChannelMode()
 	}
 }
 
-/* -------------------------------------------------------------------------- */
-
 float CWAVFile::GetDuration()
 {
 	/* Get duration */	
@@ -373,8 +361,6 @@ float CWAVFile::GetDuration()
 		return (float)SampleNumber / (float) fmt->SampleRate;
 	return 0;
 }
-
-/* -------------------------------------------------------------------------- */
 
 bool CWAVFile::ReadFromFile(FILE *Stream)
 {

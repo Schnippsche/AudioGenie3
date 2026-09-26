@@ -39,8 +39,6 @@ CMPEGPlus::~CMPEGPlus()
 {
 }
 
-/* -------------------------------------------------------------------------- */
-
 bool CMPEGPlus::ReadHeader(FILE *Stream)
 {
   FIsSV8 = false;
@@ -58,8 +56,6 @@ bool CMPEGPlus::ReadHeader(FILE *Stream)
     return ReadHeaderSV8(Stream);
   return false;
 }
-
-/* -------------------------------------------------------------------------- */
 
 // variable-length integer from a buffer: 7 bits per byte (high bit = another byte follows), most significant group first.
 // returns false at the end of the buffer or on overflow (more than 9 bytes).
@@ -144,8 +140,6 @@ bool CMPEGPlus::ReadHeaderSV8(FILE *Stream)
   return true;
 }
 
-/* -------------------------------------------------------------------------- */
-
 BYTE CMPEGPlus::GetStreamVersion()
 {
   if (FIsSV8)
@@ -164,8 +158,6 @@ BYTE CMPEGPlus::GetStreamVersion()
   return 0;
 }
 
-/* -------------------------------------------------------------------------- */
-
 long CMPEGPlus::GetSampleRate()
 {
   if (FIsSV8)
@@ -179,7 +171,6 @@ long CMPEGPlus::GetSampleRate()
   }
   return 0l;
 }
-/* -------------------------------------------------------------------------- */
 
 BYTE CMPEGPlus::GetChannelModeID()
 {
@@ -202,8 +193,6 @@ BYTE CMPEGPlus::GetChannelModeID()
   }
 }
 
-/* -------------------------------------------------------------------------- */
-
 long CMPEGPlus::GetFrameCount()
 {
   if (FIsSV8)
@@ -217,8 +206,6 @@ long CMPEGPlus::GetFrameCount()
   return 0;
 }
 
-/* -------------------------------------------------------------------------- */
-
 int CMPEGPlus::GetBitRateIntern()
 {
   /*{ Try to get bit rate */
@@ -229,8 +216,6 @@ int CMPEGPlus::GetBitRateIntern()
   return 0;
 }
 
-/* -------------------------------------------------------------------------- */
-
 BYTE CMPEGPlus::GetProfileID()
 {
   BYTE ver = GetStreamVersion();
@@ -239,8 +224,6 @@ BYTE CMPEGPlus::GetProfileID()
     return ProfileFromIndex((Header.ByteArray[10] & 0xF0) >> 4);
   return MPP_PROFILE_UNKNOWN;
 }
-
-/* -------------------------------------------------------------------------- */
 
 // profile index (1..15): in SV7 the upper 4 bits of byte 10, in SV8 the profile of the EI packet divided by 8
 BYTE CMPEGPlus::ProfileFromIndex(BYTE index)
@@ -265,8 +248,6 @@ BYTE CMPEGPlus::ProfileFromIndex(BYTE index)
   return MPP_PROFILE_UNKNOWN;
 }
 
-/* -------------------------------------------------------------------------- */
-
 void CMPEGPlus::ResetData()
 {
   FIsSV8 = false;
@@ -283,8 +264,6 @@ void CMPEGPlus::ResetData()
   memset(&Header, 0, sizeof(Header));
 }
 
-/* -------------------------------------------------------------------------- */
-
 CAtlString CMPEGPlus::GetChannelMode()
 {
   switch (FChannelModeID)
@@ -299,8 +278,6 @@ CAtlString CMPEGPlus::GetChannelMode()
       return UNKNOWN;
   }  
 }
-
-/* -------------------------------------------------------------------------- */
 
 long CMPEGPlus::GetBitRate()
 {
@@ -319,14 +296,10 @@ long CMPEGPlus::GetBitRate()
   return FBitRate;
 }
 
-/* -------------------------------------------------------------------------- */
-
 CAtlString CMPEGPlus::GetFileVersion()
 {
   return MPP_PROFILE[FProfileID];
 }
-
-/* -------------------------------------------------------------------------- */
 
 float CMPEGPlus::GetDuration()
 {
@@ -338,8 +311,6 @@ float CMPEGPlus::GetDuration()
   else
     return 0.0f;
 }
-
-/* -------------------------------------------------------------------------- */
 
 bool CMPEGPlus::ReadFromFile(FILE *Stream)
 {

@@ -26,8 +26,6 @@
 * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-//----------------------------------------------------------------------	
-
 /*
 * The hashlib++ MD5 implementation is derivative from the sourcecode
 * published in RFC 1321 
@@ -54,21 +52,17 @@
 * documentation and/or software.
 */
 
-//----------------------------------------------------------------------	
-
 /**
 *  @file 	hl_md5.cpp
 *  @brief	This file contains the implementation of the MD5 class
 *  @date 	Mo 17 Sep 2007
 */  
 
-//----------------------------------------------------------------------
 //hashlib++ includes
 #include "stdafx.h"
 #include <intrin.h>
 #include "md5.h"
 
-//----------------------------------------------------------------------
 // defines
 
 static unsigned char PADDING[64] = {
@@ -77,7 +71,6 @@ static unsigned char PADDING[64] = {
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 };
 
-//----------------------------------------------------------------------	
 //private member-functions
 
 /*
@@ -229,7 +222,6 @@ void MD5::Encode (unsigned char *output, unsigned long int *input, unsigned int 
   }
 }
 
-//----------------------------------------------------------------------	
 //public member-functions
 
 /**
