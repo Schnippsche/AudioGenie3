@@ -378,7 +378,7 @@ Functions</h2></td></tr>
 </div><div class="memdoc">
 
 <p>get the number of Frames </p>
-<p>The value comes from the Xing or VBRI header. Without a header it is calculated from the file size (exact for constant bit rate files without additional data after the audio). If the configuration value MPEGEXACTREAD was set before the analysis, the frames are counted one by one and the value is exact in every case, see <a class="el" href="group___u_n_i_v_e_r_s_a_l.html#ga2f1f5b7ad32bc447043b8121c77d2ca0" title="set a configuration value.">SetConfigValueW()</a>.</p>
+<p>The value comes from the Xing, Info or VBRI header (the frame that carries the header is not counted). Without a header it is calculated from the file size (exact for constant bit rate files without additional data after the audio). If the configuration value MPEGEXACTREAD was set before the analysis, the frames are counted one by one and the value is exact in every case, see <a class="el" href="group___u_n_i_v_e_r_s_a_l.html#ga2f1f5b7ad32bc447043b8121c77d2ca0" title="set a configuration value.">SetConfigValueW()</a>.</p>
 <dl class="section since"><dt>Since</dt><dd>2.0.1.0 </dd></dl>
 <dl class="section return"><dt>Returns</dt><dd>number of frames </dd></dl>
 
@@ -421,7 +421,7 @@ Functions</h2></td></tr>
 </div><div class="memdoc">
 
 <p>returns -1 if it is variable bitrate </p>
-<p>A file is recognized as VBR if it has a Xing or VBRI header. A VBR file without such a header is only recognized if the configuration value MPEGEXACTREAD was set before the analysis, see <a class="el" href="group___u_n_i_v_e_r_s_a_l.html#ga2f1f5b7ad32bc447043b8121c77d2ca0" title="set a configuration value.">SetConfigValueW()</a>.</p>
+<p>A file is recognized as VBR if it has a Xing or VBRI header. The Info header has the same layout as the Xing header, but it marks a file with a constant bit rate: its number of frames is used for the duration, the file is not VBR. A VBR file without a header is only recognized if the configuration value MPEGEXACTREAD was set before the analysis, see <a class="el" href="group___u_n_i_v_e_r_s_a_l.html#ga2f1f5b7ad32bc447043b8121c77d2ca0" title="set a configuration value.">SetConfigValueW()</a>.</p>
 <dl class="section since"><dt>Since</dt><dd>2.0.1.0 </dd></dl>
 <dl class="section return"><dt>Returns</dt><dd>-1 if variable bitrate, otherwise 0 </dd></dl>
 
