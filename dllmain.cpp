@@ -963,11 +963,11 @@ extern "C" void __stdcall AUDIOSetYearW(LPCWSTR textString)
 
 
 /**
- * @brief get the Header Type
+ * @brief get the header type of an AAC file
  *
  * @ingroup AAC
  * @since 2.0.1.0
- * @return Header Type
+ * @return "ADTS" (a header in front of every frame) or "ADIF" (one header at the start of the file)
  */
 extern "C" BSTR __stdcall AACGetHeaderTypeW()
 {
@@ -976,11 +976,12 @@ extern "C" BSTR __stdcall AACGetHeaderTypeW()
 
 
 /**
- * @brief get the Profile
+ * @brief get the profile (object type) of an AAC file
  *
  * @ingroup AAC
  * @since 2.0.1.0
- * @return Profile
+ * @return "AAC Main", "AAC LC", "AAC SSR" or "AAC LTP". A HE-AAC stream (with SBR) is not recognized as such by the ADTS header: the profile, the sample rate
+ * and the channels are those of the core codec
  */
 extern "C" BSTR __stdcall AACGetProfileW()
 {

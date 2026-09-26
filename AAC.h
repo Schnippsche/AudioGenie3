@@ -67,10 +67,10 @@ static const LPCWSTR AAC_BITRATE_TYPE[] =
 
 static const char *ADIF = "ADIF";
 
-/* Sample rate values */
+/* Sample rate values (ISO/IEC 14496-3, sampling frequency index): 13 and 14 are reserved, 15 means an explicit value */
 static long SAMPLE_RATE[] =
 { 96000, 88200, 64000, 48000, 44100, 32000,
-24000, 22050, 16000, 12000, 11025, 8000, 0, 0, 0, 0 };
+24000, 22050, 16000, 12000, 11025, 8000, 7350, 0, 0, 0 };
 
 class CAAC : public CAudio
 { 
@@ -82,10 +82,10 @@ private:
 	long FSampleRate;
 	long FBitRate;
 	BYTE FBitRateTypeID;
+	double FDuration;                                      /* ADTS: sum of the frames */
 	BYTE RecognizeHeaderType(FILE *Source);
-	void ReadADIF(FILE *Source);
-	void ReadADTS(FILE *Source);
-	long ReadBits(FILE *Source, long Position, long Count);
+	bool ReadADIF(FILE *Source);
+	bool ReadADTS(FILE *Source);
 public:
 	CAAC();
 	virtual ~CAAC();
@@ -98,7 +98,7 @@ public:
 	CAtlString GetProfile();                                  /* Profile name */
 	long GetChannels()      { return FChannels; };         /* Number of channels */
 	long GetSampleRate()      { return FSampleRate; };     /* Sample rate (hz) */
-	long GetBitRate()         { return FBitRate/1000; };   /* Bit rate (kBit/s) */
+	long GetBitRate()         { return (FBitRate + 500) / 1000; };   /* Bit rate (kBit/s) */
 	CAtlString GetBitRateType();                              /* Bit rate type name */
 	float GetDuration();                                   /* Duration (seconds) */
 	bool IsValid();                                        /* True if data valid */

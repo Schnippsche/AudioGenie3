@@ -2,7 +2,8 @@
  *  Analyze a file and read or write the common fields (title, artist, album ...) independent of the format. */
 
 /** @defgroup AAC AAC
- *  Properties of AAC files (ADTS/ADIF). */
+ *  Properties of AAC files (ADTS/ADIF). With ADTS the duration is the number of the frames (1024 samples per raw data block) divided by the sample rate,
+ *  with ADIF (no frame headers) it is estimated from the bit rate in the header. LATM/LOAS streams are not supported. */
 
 /** @defgroup APE APE tag
  *  Read and write APEv2 tags (used by Monkey's Audio, WavPack, TTA, Musepack and AAC). */
