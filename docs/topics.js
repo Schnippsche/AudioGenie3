@@ -11,7 +11,7 @@ var topics =
     [ "MP4 / M4A", "group___m_p4.html", "group___m_p4" ],
     [ "MPEG audio (MP1/MP2/MP3)", "group___m_p_e_g.html", "group___m_p_e_g" ],
     [ "Musepack", "group___m_p_p.html", "group___m_p_p" ],
-    [ "Ogg Vorbis", "group___o_g_g.html", "group___o_g_g" ],
+    [ "Ogg Vorbis and Ogg Opus", "group___o_g_g.html", "group___o_g_g" ],
     [ "Universal functions", "group___u_n_i_v_e_r_s_a_l.html", "group___u_n_i_v_e_r_s_a_l" ],
     [ "WAV", "group___w_a_v.html", "group___w_a_v" ],
     [ "WMA", "group___w_m_a.html", "group___w_m_a" ]
