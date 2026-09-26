@@ -116,14 +116,14 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('group___a_a_c.
 <tr class="heading"><td colspan="2"><h2 id="header-func-members" class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
 <tr class="memitem:gac2fb0df889399412cb4c987a9e166e82" id="r_gac2fb0df889399412cb4c987a9e166e82"><td class="memItemLeft">BSTR&#160;</td><td class="memItemRight"><a class="el" href="#gac2fb0df889399412cb4c987a9e166e82">AACGetHeaderTypeW</a> ()</td></tr>
-<tr class="memdesc:gac2fb0df889399412cb4c987a9e166e82"><td class="mdescLeft">&#160;</td><td class="mdescRight">get the Header Type  <br /></td></tr>
+<tr class="memdesc:gac2fb0df889399412cb4c987a9e166e82"><td class="mdescLeft">&#160;</td><td class="mdescRight">get the header type of an AAC file  <br /></td></tr>
 <tr class="memitem:ga85359dbd0841f48316351ec211da3968" id="r_ga85359dbd0841f48316351ec211da3968"><td class="memItemLeft">BSTR&#160;</td><td class="memItemRight"><a class="el" href="#ga85359dbd0841f48316351ec211da3968">AACGetProfileW</a> ()</td></tr>
-<tr class="memdesc:ga85359dbd0841f48316351ec211da3968"><td class="mdescLeft">&#160;</td><td class="mdescRight">get the Profile  <br /></td></tr>
+<tr class="memdesc:ga85359dbd0841f48316351ec211da3968"><td class="mdescLeft">&#160;</td><td class="mdescRight">get the profile (object type) of an AAC file  <br /></td></tr>
 <tr class="memitem:ga5ff8e25ecfc861905321370e4e555514" id="r_ga5ff8e25ecfc861905321370e4e555514"><td class="memItemLeft">BSTR&#160;</td><td class="memItemRight"><a class="el" href="#ga5ff8e25ecfc861905321370e4e555514">AACGetBitRateTypeW</a> ()</td></tr>
 <tr class="memdesc:ga5ff8e25ecfc861905321370e4e555514"><td class="mdescLeft">&#160;</td><td class="mdescRight">get the bit rate type (CBR or VBR)  <br /></td></tr>
 </table>
 <a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>Properties of AAC files (ADTS/ADIF). </p>
+<div class="textblock"><p>Properties of AAC files (ADTS/ADIF). With ADTS the duration is the number of the frames (1024 samples per raw data block) divided by the sample rate, with ADIF (no frame headers) it is estimated from the bit rate in the header. LATM/LOAS streams are not supported. </p>
 </div><a name="doc-func-members" id="doc-func-members"></a><h2 id="header-doc-func-members" class="groupheader">Function Documentation</h2>
 <a id="gac2fb0df889399412cb4c987a9e166e82" name="gac2fb0df889399412cb4c987a9e166e82"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#gac2fb0df889399412cb4c987a9e166e82">&#9670;&#160;</a></span>AACGetHeaderTypeW()</h2>
@@ -140,9 +140,9 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>get the Header Type </p>
+<p>get the header type of an AAC file </p>
 <dl class="section since"><dt>Since</dt><dd>2.0.1.0 </dd></dl>
-<dl class="section return"><dt>Returns</dt><dd>Header Type </dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>"ADTS" (a header in front of every frame) or "ADIF" (one header at the start of the file) </dd></dl>
 
 </div>
 </div>
@@ -161,9 +161,9 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>get the Profile </p>
+<p>get the profile (object type) of an AAC file </p>
 <dl class="section since"><dt>Since</dt><dd>2.0.1.0 </dd></dl>
-<dl class="section return"><dt>Returns</dt><dd>Profile </dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>"AAC Main", "AAC LC", "AAC SSR" or "AAC LTP". A HE-AAC stream (with SBR) is not recognized as such by the ADTS header: the profile, the sample rate and the channels are those of the core codec </dd></dl>
 
 </div>
 </div>
