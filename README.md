@@ -24,7 +24,7 @@ version number now follows the name. The `@since` remarks in the API documentati
 
 | Format | Tags |
 |---|---|
-| MP3 (MPEG audio) | ID3v1, ID3v2, APE, Lyrics3 |
+| MP3 (MPEG audio) | ID3v1 (also the enhanced tag), ID3v2, APE (at the end or at the beginning of the file), Lyrics3 |
 | MPC (Musepack) | ID3v2, APE |
 | AAC (ADTS) | APE, ID3v2, ID3v1 |
 | MP4 / M4A | MP4 atoms |

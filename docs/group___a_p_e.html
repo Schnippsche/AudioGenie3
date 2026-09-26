@@ -584,6 +584,7 @@ Functions</h2></td></tr>
 </div><div class="memdoc">
 
 <p>returns -1 if the APE tag exists </p>
+<p>The tag is looked for at the end of the file (in front of an ID3v1 tag) and at the beginning of the file (at the start or behind an ID3v2 tag, then it begins with a header). A tag at the beginning is written again at the same place when it is saved or removed, which rewrites the file. A new tag is always written at the end of the file.</p>
 <dl class="section since"><dt>Since</dt><dd>2.0.1.0 </dd></dl>
 <dl class="section return"><dt>Returns</dt><dd>-1 if APE tag exists, otherwise 0 </dd></dl>
 
