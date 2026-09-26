@@ -61,6 +61,8 @@ private:
 	CApeTagItem* item;
 	CBlob Data;
 	bool ReadFooter(FILE *Stream);
+	__int64 _footerPos;	// position of the footer of an APE tag at the end of the file
+	bool LocateTail(LPCWSTR FileName, __int64 &start, __int64 &total);
 	bool ReadFields(FILE *Stream, __int64 headOffset);
 	bool ReadHeadTag(FILE *Stream, __int64 offset, __int64 length);
 	bool RewriteRegion(LPCWSTR FileName, __int64 offset, __int64 oldLength, CBlob *data);
@@ -79,6 +81,9 @@ public:
 	bool Exists()          { return (CTools::APESize > 0 || (CTools::APEHeadSize > 0 && TagInfo.Version != 0)); };
 	// looks for a tag at the beginning of the file: directly at the start or behind an ID3v2 tag; it begins with a header
 	static bool FindHeadTag(FILE *Stream, __int64 &offset, __int64 &length);
+	// looks for the footer of a tag at the end of the file: directly in front of the ID3v1 data or in front of a Lyrics3 v2.00 tag
+	// that is between them (lyricsAfter = its size)
+	static bool FindTailFooter(FILE *Stream, int id3v1Size, __int64 &footerPos, __int64 &lyricsAfter);
 	void ResetData();
 	void Print();
 	bool ReadFromFile(FILE *Stream);

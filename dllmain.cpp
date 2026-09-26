@@ -416,12 +416,9 @@ extern "C" long __stdcall AUDIOAnalyzeFileW(LPCWSTR FileName)
 			audio = &mpeg;
 			// determine the last audio position from the tags
 			__int64 last = CTools::FileSize - 1;
-			if (CTools::APESize > 0)
-				last = min(last, CTools::FileSize - CTools::APESize - 32 - CTools::ID3v1Size - 1);
-			if (lyrics.Exists() )
-				last = min(last, lyrics.GetStartPosition() - 1);
-			if (id3v1.Exists() )
-				last = min(last, CTools::FileSize - CTools::ID3v1Size - 1);
+			// the tags at the end of the file (APE, Lyrics3 and ID3v1 in any order) follow each other
+			if (CTools::APESize > 0 || CTools::LyricsSize > 0 || CTools::ID3v1Size > 0)
+				last = min(last, CTools::FileSize - CTools::APESize - CTools::LyricsSize - CTools::ID3v1Size - 1);
 			mpeg.setLastAudioPosition(last);
 		}
 
@@ -3175,7 +3172,8 @@ extern "C" long __stdcall APEGetSizeW()
 /**
  * @brief returns -1 if the APE tag exists
  *
- * The tag is looked for at the end of the file (in front of an ID3v1 tag) and at the beginning of the file (at the start or
+ * The tag is looked for at the end of the file (in front of an ID3v1 tag, or in front of a Lyrics3 v2.00 tag that is in front of
+ * the ID3v1 tag) and at the beginning of the file (at the start or
  * behind an ID3v2 tag, then it begins with a header). A tag at the beginning is written again at the same place when it is
  * saved or removed, which rewrites the file. A new tag is always written at the end of the file.
  *
@@ -4129,7 +4127,8 @@ extern "C" short __stdcall LYRICSSaveChangesToFileW(LPCWSTR FileName)
 /**
  * @brief stores the Lyrics tag in the last analyzed file
  *
- * The tag is always written as Lyrics3 v2.00 in front of the ID3v1 tag (and its enhanced tag), which has to exist. Fields
+ * The tag is always written as Lyrics3 v2.00 in front of the ID3v1 tag (and its enhanced tag), which has to exist; an existing tag
+ * is replaced at its place, also if an APE tag is between it and the ID3v1 tag. Fields
  * that this library does not know are kept. The indication has two characters (0 or 1, otherwise it is not written); the lyrics,
  * the information and the image links have at most 99999 bytes, the other fields 250; longer texts are cut. Line breaks are
  * written as CR LF. If all fields are empty the tag is removed.

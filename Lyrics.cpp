@@ -34,6 +34,7 @@ CLyrics::CLyrics()
 {
 	FStartPosition = 0;
 	FEndPosition = 0;
+	FFileSize = 0;
 	FVersion = LYRICS_VERSION_UNKNOWN;
 	ID3v1AreaSize = 0;
 	memset(ID3v1Area, 0, sizeof(ID3v1Area));
@@ -63,21 +64,27 @@ void CLyrics::ResetData()
 
 /* -------------------------------------------------------------------------- */
 
-bool CLyrics::RemoveTag(LPCWSTR FileName)
+// Writes the region [start, start + oldLength) of the file again with the data (may be NULL). The lyrics tag is usually directly in
+// front of the ID3v1 data: then only the end of the file is written, otherwise (an APE tag is behind it) the file is rewritten.
+bool CLyrics::WriteRegion(LPCWSTR FileName, __int64 start, __int64 oldLength, CBlob *data)
 {
+	const long dataLength = (data != NULL) ? (long)data->GetLength() : 0;
+	if (start + oldLength != FFileSize - ID3v1AreaSize)
+		return CTools::rewriteRegion(FileName, start, oldLength, data);
 	int fh;
 	if (_wsopen_s(&fh, FileName, O_RDWR | _O_BINARY, _SH_DENYWR, _S_IREAD | _S_IWRITE ) != 0)
 	{
 		CTools::instance().setLastError(errno);
 		return false;
 	}
-
-	/* Save the ID3 tag (with the enhanced tag in front of it, if there is one) */
-	const int area = ID3v1AreaSize;
-	bool ok = (area > 0 && _lseeki64(fh, -area, SEEK_END) >= 0 && _read(fh, ID3v1Area, area) == area);
-	/* write the ID3 tag in place of the lyrics tag and cut the file */
+	bool ok = (_lseeki64(fh, start, SEEK_SET) >= 0);
+	if (ok && dataLength > 0)
+		ok = (_write(fh, data->m_pData, dataLength) == dataLength);
+	/* the ID3 tag (with the enhanced tag in front of it, if there is one) follows the lyrics tag */
 	if (ok)
-		ok = (_lseeki64(fh, FStartPosition, SEEK_SET) >= 0 && _write(fh, ID3v1Area, area) == area && _chsize_s(fh, FStartPosition + area) == 0);
+		ok = (_write(fh, ID3v1Area, ID3v1AreaSize) == ID3v1AreaSize);
+	if (ok)
+		ok = (_chsize_s(fh, start + dataLength + ID3v1AreaSize) == 0);
 	_close(fh);
 	if (!ok)
 		CTools::instance().setLastError(errno != 0 ? errno : EIO);
@@ -123,8 +130,21 @@ bool CLyrics::ReadHeader(FILE *Stream)
 	if (_fseeki64(Stream, fileSize - area, SEEK_SET) != 0 || fread(ID3v1Area, 1, area, Stream) != (size_t)area)
 		return false;
 	ID3v1AreaSize = area;
+	FFileSize = fileSize;
+	/* an APE tag (footer and items, header) can be between the lyrics tag and the id3v1 data */
+	__int64 end = fileSize - area;
+	BYTE footer[32];
+	if (end >= 32 && _fseeki64(Stream, end - 32, SEEK_SET) == 0 && fread(footer, 1, 32, Stream) == 32 && memcmp(footer, "APETAGEX", 8) == 0)
+	{
+		const unsigned long version = footer[8] | (footer[9] << 8) | (footer[10] << 16) | ((unsigned long)footer[11] << 24);
+		const unsigned long size = footer[12] | (footer[13] << 8) | (footer[14] << 16) | ((unsigned long)footer[15] << 24);
+		const unsigned long flags = footer[20] | (footer[21] << 8) | (footer[22] << 16) | ((unsigned long)footer[23] << 24);
+		const __int64 total = (__int64)size + ((version >= 2000 && (flags & 0x80000000ul) != 0) ? 32 : 0);
+		if (total >= 32 && total <= end)
+			end -= total;
+	}
 	/* Read header and get Version & Size */
-	FEndPosition = fileSize - area - 9;
+	FEndPosition = end - 9;
 	if (FEndPosition < 0)
 		return false;
 	_fseeki64(Stream, FEndPosition, SEEK_SET);
@@ -267,7 +287,7 @@ bool CLyrics::RemoveFromFile(LPCWSTR FileName)
 			CTools::instance().setLastError(ERR_TAG_NOT_EXIST);
 			return false;
 		}
-		return RemoveTag(FileName);
+		return WriteRegion(FileName, FStartPosition, FEndPosition + 9 - FStartPosition, NULL);
 	}
 	CTools::instance().setLastError(errno);
 	return false;
@@ -301,11 +321,11 @@ static CAtlString NormalizeLineBreaks(const CAtlString &text)
 	return result;
 }
 
-bool CLyrics::SaveTag(LPCWSTR FileName)
+// builds the tag in Data; Data is empty if there is no field
+void CLyrics::BuildTagData()
 {
 	char Buffer[16];
 	Data.Clear();
-	FILE *Stream;
 	Data.AddMemory(LYRICS_BEGIN, 11);
 	for (long Iterator = 0; Iterator < LYRICS_FRAME_COUNT; Iterator++)
 	{
@@ -347,27 +367,10 @@ bool CLyrics::SaveTag(LPCWSTR FileName)
 	if (Data.GetLength() == 11)
 	{
 		Data.Clear();
-		FVersion = LYRICS_VERSION_UNKNOWN;
-		CTools::LyricsSize = 0;
-		return true;
+		return;
 	}
 	sprintf_s(Buffer, 16, "%06iLYRICS200", (int)Data.GetLength());
 	Data.AddMemory(Buffer, 15);
-	CTools::LyricsSize = (int)Data.GetLength();
-
-	FVersion = LYRICS_VERSION_200;
-	if ( (Stream = _wfsopen(FileName, READ_AND_WRITE, _SH_DENYWR)) != NULL)
-	{
-		_fseeki64(Stream, -ID3v1AreaSize, SEEK_END);
-		Data.FileWrite(Data.GetLength(), Stream);
-		fwrite(ID3v1Area, 1, ID3v1AreaSize, Stream); // the ID3v1 tag has already been filled
-		fflush(Stream);
-		fclose(Stream);
-		return true;
-	}
-	else
-		CTools::instance().setLastError(errno);
-	return false;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -376,24 +379,45 @@ bool CLyrics::SaveToFile(LPCWSTR FileName)
 {
 	/* Prepare tag record */
 	FILE *Stream;
-	if ( (Stream = _wfsopen(FileName, READ_ONLY, _SH_DENYNO)) != NULL)
+	bool hadTag = false;
+	if ( (Stream = _wfsopen(FileName, READ_ONLY, _SH_DENYNO)) == NULL)
 	{
-		ReadHeader(Stream);
-		fclose(Stream);
-		/*  ID3v1-Tag must exist! */
-		if (ID3v1AreaSize == 0)
-		{
-			CTools::instance().setLastError(ERR_V1TAG_MISSING);
-			return false;
-		}
-		/* Delete old tag */
-		RemoveFromFile(FileName);
-		/* Write new tag */
-		return SaveTag(FileName);
-	}
-	else
 		CTools::instance().setLastError(errno);
-	return false;
+		return false;
+	}
+	if (ReadHeader(Stream))
+		hadTag = (FVersion == LYRICS_VERSION_200) ? ReadFramesNew(Stream, true) : ReadFramesOld(Stream, true);
+	fclose(Stream);
+	/*  ID3v1-Tag must exist! */
+	if (ID3v1AreaSize == 0)
+	{
+		CTools::instance().setLastError(ERR_V1TAG_MISSING);
+		return false;
+	}
+	BuildTagData();
+	/* an existing tag is replaced at its place (an APE tag can be behind it), a new tag is written in front of the ID3v1 data */
+	__int64 start = FFileSize - ID3v1AreaSize;
+	__int64 oldLength = 0;
+	if (hadTag)
+	{
+		start = FStartPosition;
+		oldLength = FEndPosition + 9 - FStartPosition;
+	}
+	if (Data.GetLength() == 0)
+	{
+		if (!hadTag)
+			return true;
+		FVersion = LYRICS_VERSION_UNKNOWN;
+		CTools::LyricsSize = 0;
+		return WriteRegion(FileName, start, oldLength, NULL);
+	}
+	const bool ok = WriteRegion(FileName, start, oldLength, &Data);
+	if (ok)
+	{
+		FVersion = LYRICS_VERSION_200;
+		CTools::LyricsSize = (int)Data.GetLength();
+	}
+	return ok;
 }
 
 CAtlString CLyrics::GetTagVersion()

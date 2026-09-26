@@ -69,6 +69,8 @@ public:
 	bool RemoveFromFile(LPCWSTR FileName);
 	bool SaveToFile(LPCWSTR FileName);
 	bool OpenFile(LPCWSTR FileName, bool WriteModus);
+	// size of the id3v1 data at the end of a file: 128 (id3v1 tag), 355 (with the enhanced tag) or 0 (none)
+	static int DetectSize(FILE *Stream);
 
 private:
 	bool RemoveTag(LPCWSTR FileName);

@@ -146,6 +146,8 @@ public:
 	// copies count bytes block by block (count < 0: until the end of the file). Returns false on a read or write error
 	static bool copyStream(FILE *source, FILE *destination, __int64 count);
 	static bool finishRewrite(FILE *source, FILE *destination, LPCWSTR newFileName, LPCWSTR origFileName);
+	// writes the file again: the data before the region, the new data (may be NULL) and the data behind the old region
+	static bool rewriteRegion(LPCWSTR FileName, __int64 offset, __int64 oldLength, CBlob *data);
 	static __int64 FileSize;
 	static int ID3v1Size;
 	static long ID3v2Size;

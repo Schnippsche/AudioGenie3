@@ -47,6 +47,7 @@ static const char *FIELD_LIST[] = {
 	private:
 		__int64 FStartPosition;
 		__int64 FEndPosition;
+		__int64 FFileSize;
 		CAtlString FField[LYRICS_FRAME_COUNT];
 		CBlob Data;
 		BYTE ID3v1Area[ID3V1_TAG_SIZE + ID3V1_ENHANCED_SIZE];	// the id3v1 data at the end of the file: the id3v1 tag and the enhanced tag in front of it, if there is one
@@ -54,12 +55,12 @@ static const char *FIELD_LIST[] = {
 		CBlob FUnknown;		// fields that are not defined, as they were read
 		BYTE FHeader[12];/* 9 Bytes Version 3 Bytes 'TAG' */
 		BYTE FVersion;
-		bool RemoveTag(LPCWSTR FileName);
+		bool WriteRegion(LPCWSTR FileName, __int64 start, __int64 oldLength, CBlob *data);
 		bool SetTagItem(const char ID[], long Pos, long DataSize);
 		bool ReadHeader(FILE *Stream);
 		bool ReadFramesOld(FILE *Stream, bool isDeleting);
 		bool ReadFramesNew(FILE *Stream, bool isDeleting);
-		bool SaveTag(LPCWSTR FileName);
+		void BuildTagData();
 	public:
 		CLyrics();
 		virtual ~CLyrics();

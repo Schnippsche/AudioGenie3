@@ -889,3 +889,121 @@ TEST_CASE("Lyrics3 v2.00: damaged tags", "[tags][spec][lyrics]")
         CHECK(take(LYRICSGetLyricsW()).empty());
     }
 }
+
+// ---- order of the tags at the end of the file: APE, Lyrics3 and ID3v1 (with the enhanced tag) ----
+
+TEST_CASE("Tags at the end of the file: APE, Lyrics3 and ID3v1 in every order", "[tags][spec][order]")
+{
+    const Bytes ape = apeTag(2000, { apeItem("Title", text("ape title")) });
+    const Bytes apeChanged = apeTag(2000, { apeItem("Title", text("changed")) });
+    const Bytes lyr = lyrics200({ lyricsField("LYR", "lyrics text"), lyricsField("AUT", "author") });
+    const Bytes lyrChanged = lyrics200({ lyricsField("LYR", "lyrics text"), lyricsField("AUT", "changed") });
+    const Bytes v1 = id3v1("Title", "Artist", "Album", "2001", pad30("comment"), 17);
+    const Bytes v1Long = id3v1(std::string(30, 't'), "Artist", "Album", "2001", pad30("comment"), 17);   // a full title continues in the enhanced tag
+    const Bytes plus = enhancedTag("more", "", "", 2, "Rock", "000:10", "003:00");
+    const Bytes idTags = concat({ plus, v1Long });
+    const Bytes apeNew = apeTag(2000, { apeItem("TITLE", text("changed")) });   // the key of a new item is TITLE
+    const std::wstring md5 = md5OfAudio(writeParts("order_plain.mp3", Bytes()));
+
+    struct Order { const char* name; bool apeFirst; bool hasApe, hasLyr, enhanced; };
+    const Order orders[] = {
+        { "APE, ID3v1", true, true, false, false },
+        { "Lyrics3, ID3v1", true, false, true, false },
+        { "APE, Lyrics3, ID3v1", true, true, true, false },
+        { "Lyrics3, APE, ID3v1", false, true, true, false },
+        { "APE, Lyrics3, TAG+, ID3v1", true, true, true, true },
+        { "Lyrics3, APE, TAG+, ID3v1", false, true, true, true },
+        { "Lyrics3, TAG+, ID3v1", true, false, true, true },
+    };
+    for (const Order& o : orders) {
+        INFO(o.name);
+        const Bytes& id = o.enhanced ? idTags : v1;
+        auto build = [&](const Bytes& a, const Bytes& l) {
+            Bytes tail;
+            if (o.apeFirst) { if (o.hasApe) put(tail, a); if (o.hasLyr) put(tail, l); }
+            else { if (o.hasLyr) put(tail, l); if (o.hasApe) put(tail, a); }
+            put(tail, id);
+            return concat({ audio(), tail });
+        };
+
+        {
+            auto p = writeTemp("order_read.mp3", build(ape, lyr));
+            REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+            CHECK(take(ID3V1GetTitleW()) == (o.enhanced ? wide(std::string(30, 't') + "more") : L"Title"));
+            CHECK((APEExistsW() != 0) == o.hasApe);
+            CHECK((LYRICSExistsW() != 0) == o.hasLyr);
+            if (o.hasApe) CHECK(take(APEGetTitleW()) == L"ape title");
+            if (o.hasLyr) {
+                CHECK(take(LYRICSGetLyricsW()) == L"lyrics text");
+                CHECK(take(LYRICSGetAuthorW()) == L"author");
+                const long expectedStart = static_cast<long>(audio().size()) + ((o.apeFirst && o.hasApe) ? static_cast<long>(ape.size()) : 0);
+                CHECK(LYRICSGetStartPositionW() == expectedStart);
+                CHECK(LYRICSGetSizeW() == static_cast<long>(lyr.size()));
+            }
+            CHECK(take(AUDIOGetMD5ValueW()) == md5);   // the audio data end in front of the first tag
+        }
+        if (o.hasApe) {
+            auto p = writeTemp("order_ape_save.mp3", build(ape, lyr));
+            REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+            APESetTitleW(L"changed");
+            REQUIRE(APESaveChangesW() != 0);
+            CHECK(diffIndex(readFile(p), build(apeChanged, lyr)) == -1);   // the APE tag is written again at its place
+            REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+            CHECK(take(APEGetTitleW()) == L"changed");
+            CHECK(take(AUDIOGetMD5ValueW()) == md5);
+
+            auto q = writeTemp("order_ape_remove.mp3", build(ape, lyr));
+            REQUIRE(AUDIOAnalyzeFileW(q.c_str()) == MPEG);
+            REQUIRE(APERemoveTagFromFileW(q.c_str()) != 0);
+            Bytes expected = audio();
+            if (o.hasLyr) put(expected, lyr);
+            put(expected, id);
+            CHECK(diffIndex(readFile(q), expected) == -1);
+        }
+        if (o.hasLyr) {
+            auto p = writeTemp("order_lyr_save.mp3", build(ape, lyr));
+            REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+            LYRICSSetAuthorW(L"changed");
+            REQUIRE(LYRICSSaveChangesW() != 0);
+            CHECK(diffIndex(readFile(p), build(ape, lyrChanged)) == -1);
+            REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+            CHECK(take(LYRICSGetAuthorW()) == L"changed");
+            CHECK(take(AUDIOGetMD5ValueW()) == md5);
+
+            auto q = writeTemp("order_lyr_remove.mp3", build(ape, lyr));
+            REQUIRE(AUDIOAnalyzeFileW(q.c_str()) == MPEG);
+            REQUIRE(LYRICSRemoveTagFromFileW(q.c_str()) != 0);
+            Bytes expected = audio();
+            if (o.hasApe) put(expected, ape);
+            put(expected, id);
+            CHECK(diffIndex(readFile(q), expected) == -1);
+            REQUIRE(AUDIOAnalyzeFileW(q.c_str()) == MPEG);
+            if (o.hasApe) CHECK(take(APEGetTitleW()) == L"ape title");
+        }
+        if (!o.hasApe) {
+            // a new APE tag is written in front of the ID3v1 data, behind a Lyrics3 tag
+            auto p = writeTemp("order_ape_new.mp3", build(ape, lyr));
+            REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+            APESetTitleW(L"changed");
+            REQUIRE(APESaveChangesW() != 0);
+            Bytes expected = audio();
+            put(expected, lyr);
+            put(expected, apeNew);
+            put(expected, id);
+            CHECK(diffIndex(readFile(p), expected) == -1);
+        }
+        if (!o.hasLyr) {
+            // a new Lyrics3 tag is written in front of the ID3v1 data, behind an APE tag
+            auto p = writeTemp("order_lyr_new.mp3", build(ape, lyr));
+            REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+            LYRICSSetLyricsW(L"lyrics text");
+            LYRICSSetAuthorW(L"changed");
+            REQUIRE(LYRICSSaveChangesW() != 0);
+            Bytes expected = audio();
+            put(expected, ape);
+            put(expected, lyrChanged);
+            put(expected, id);
+            CHECK(diffIndex(readFile(p), expected) == -1);
+        }
+    }
+}

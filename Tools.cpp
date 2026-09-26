@@ -153,6 +153,39 @@ bool CTools::copyStream(FILE *source, FILE *destination, __int64 count)
 	return true;
 }
 
+bool CTools::rewriteRegion(LPCWSTR FileName, __int64 offset, __int64 oldLength, CBlob *data)
+{
+	FILE *Source;
+	FILE *Destination;
+	CAtlString NewFileName(FileName);
+	if ( (Source = _wfsopen(FileName, READ_ONLY, _SH_DENYNO)) == NULL)
+	{
+		instance().setLastError(errno);
+		return false;
+	}
+	NewFileName += TILDE;
+	if ( (Destination = _wfsopen(NewFileName, READ_AND_WRITENEW, _SH_DENYWR)) == NULL)
+	{
+		instance().setLastError(errno);
+		fclose(Source);
+		return false;
+	}
+	bool ok = copyStream(Source, Destination, offset);
+	if (ok && data != NULL && data->GetLength() > 0)
+		ok = (data->FileWrite(data->GetLength(), Destination) == data->GetLength());
+	if (ok)
+		ok = (_fseeki64(Source, offset + oldLength, SEEK_SET) == 0) && copyStream(Source, Destination, -1);
+	if (!ok)
+	{
+		fclose(Destination);
+		fclose(Source);
+		_wremove(NewFileName);
+		instance().setLastError(EIO);
+		return false;
+	}
+	return finishRewrite(Source, Destination, NewFileName, FileName);
+}
+
 bool CTools::finishRewrite(FILE *source, FILE *destination, LPCWSTR newFileName, LPCWSTR origFileName)
 {
 	bool ok = true;

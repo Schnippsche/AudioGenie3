@@ -33,6 +33,7 @@
 //////////////////////////////////////////////////////////////////////
 CAPE::CAPE()
 {
+	_footerPos = 0;
 	_items.SetCount(0, 20);
 }
 CAPE::~CAPE()
@@ -55,11 +56,75 @@ void CAPE::ResetData()
 
 /* -------------------------------------------------------------------------- */
 
+bool CAPE::FindTailFooter(FILE *Stream, int id3v1Size, __int64 &footerPos, __int64 &lyricsAfter)
+{
+	const __int64 end = _filelengthi64(_fileno(Stream)) - id3v1Size;
+	BYTE id[8];
+	footerPos = 0;
+	lyricsAfter = 0;
+	// directly in front of the ID3v1 data
+	if (end >= APE_TAG_FOOTER_SIZE && _fseeki64(Stream, end - APE_TAG_FOOTER_SIZE, SEEK_SET) == 0 && fread(id, 1, 8, Stream) == 8 && memcmp(id, APE_ID, 8) == 0)
+	{
+		footerPos = end - APE_TAG_FOOTER_SIZE;
+		return true;
+	}
+	// a Lyrics3 v2.00 tag ends with its size (6 digits: LYRICSBEGIN and the fields) and "LYRICS200"
+	BYTE tail[15];
+	if (end >= 15 + APE_TAG_FOOTER_SIZE && _fseeki64(Stream, end - 15, SEEK_SET) == 0 && fread(tail, 1, 15, Stream) == 15 && memcmp(tail + 6, "LYRICS200", 9) == 0)
+	{
+		__int64 size = 0;
+		int digits = 0;
+		while (digits < 6 && tail[digits] >= '0' && tail[digits] <= '9')
+		{
+			size = size * 10 + (tail[digits] - '0');
+			digits++;
+		}
+		const __int64 total = size + 15;
+		if (digits == 6 && size >= 11 && end - total - APE_TAG_FOOTER_SIZE >= 0 && _fseeki64(Stream, end - total - APE_TAG_FOOTER_SIZE, SEEK_SET) == 0
+			&& fread(id, 1, 8, Stream) == 8 && memcmp(id, APE_ID, 8) == 0)
+		{
+			footerPos = end - total - APE_TAG_FOOTER_SIZE;
+			lyricsAfter = total;
+			return true;
+		}
+	}
+	return false;
+}
+
+/* -------------------------------------------------------------------------- */
+
 bool CAPE::ReadFooter(FILE *Stream)
 {
 	/* Read footer data */
-	_fseeki64(Stream, - CTools::ID3v1Size - APE_TAG_FOOTER_SIZE, SEEK_END);
-	return TagInfo.ReadFromFile(Stream);  
+	__int64 lyricsAfter;
+	if (!FindTailFooter(Stream, CTools::ID3v1Size, _footerPos, lyricsAfter))
+		return false;
+	_fseeki64(Stream, _footerPos, SEEK_SET);
+	return TagInfo.ReadFromFile(Stream);
+}
+
+/* -------------------------------------------------------------------------- */
+
+// position and size of the tag at the end of the file if a Lyrics3 tag is behind it; false for every other case
+bool CAPE::LocateTail(LPCWSTR FileName, __int64 &start, __int64 &total)
+{
+	FILE *Source = _wfsopen(FileName, READ_ONLY, _SH_DENYNO);
+	if (Source == NULL)
+		return false;
+	__int64 footerPos, lyricsAfter;
+	CApeTagInfo info;
+	bool found = FindTailFooter(Source, CID3V1::DetectSize(Source), footerPos, lyricsAfter) && lyricsAfter > 0;
+	if (found)
+	{
+		_fseeki64(Source, footerPos, SEEK_SET);
+		found = info.ReadFromFile(Source);
+	}
+	fclose(Source);
+	if (!found)
+		return false;
+	total = (__int64)(unsigned long)info.Size + (((unsigned long)info.Flags & 0x80000000ul) ? APE_TAG_HEADER_SIZE : 0);
+	start = footerPos + APE_TAG_FOOTER_SIZE - total;
+	return (start >= 0 && total >= APE_TAG_FOOTER_SIZE);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -159,7 +224,7 @@ bool CAPE::ReadFields(FILE *Stream, __int64 headOffset)
 	if (headOffset >= 0)
 		_fseeki64(Stream, headOffset + APE_TAG_HEADER_SIZE, SEEK_SET);
 	else
-		_fseeki64(Stream, -CTools::ID3v1Size - TagInfo.Size, SEEK_END);
+		_fseeki64(Stream, _footerPos + APE_TAG_FOOTER_SIZE - TagInfo.Size, SEEK_SET);
 	/* Read all stored fields */
 	for (Iterator = 0; Iterator < TagInfo.Fields; Iterator++)
 	{
@@ -381,7 +446,8 @@ bool CAPE::ReadFromFile(FILE *Stream)
 	/* Process data if loaded and footer is valid */
 	if (ReadFooter(Stream))
 	{
-		CTools::APESize = TagInfo.Size;
+		// the whole tag: items, footer and the header (if the flags say so)
+		CTools::APESize = TagInfo.Size + (((unsigned long)TagInfo.Flags & 0x80000000ul) ? APE_TAG_HEADER_SIZE : 0);
 		FVersion = TagInfo.Version;
 		/* Get information from fields */
 		return ReadFields(Stream, -1);
@@ -408,9 +474,18 @@ bool CAPE::RemoveFromFile(LPCWSTR FileName, bool saveID3v1Tag)
 			return removed;
 		}
 	}
+	// a Lyrics3 tag between the APE tag and the ID3v1 data: only the region of the APE tag is removed
+	__int64 tailStart, tailTotal;
+	if (LocateTail(FileName, tailStart, tailTotal))
+	{
+		const bool removed = CTools::rewriteRegion(FileName, tailStart, tailTotal, NULL);
+		TagInfo.Reset();
+		return removed;
+	}
 	if ( (Source = _wfsopen(FileName, READ_ONLY, _SH_DENYWR)) != NULL)
 	{
 		// read and remember the ID3v1 tag
+		CTools::ID3v1Size = 0;
 		tmpid3v1.ReadFromFile(Source);
 
 		bool result = ReadFooter(Source);
@@ -456,6 +531,13 @@ bool CAPE::SaveToFile(LPCWSTR FileName)
 			BuildTagData();
 			return RewriteRegion(FileName, headOffset, headLength, &Data);
 		}
+	}
+	// a Lyrics3 tag behind the APE tag: the APE tag is written again at the same place, the other tags stay as they are
+	__int64 tailStart, tailTotal;
+	if (LocateTail(FileName, tailStart, tailTotal))
+	{
+		BuildTagData();
+		return CTools::rewriteRegion(FileName, tailStart, tailTotal, &Data);
 	}
 	// delete APE and ID3v1 tag
 	bool result = RemoveFromFile(FileName, false);
