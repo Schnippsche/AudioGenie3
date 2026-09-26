@@ -706,7 +706,7 @@ Functions</h2></td></tr>
 </div><div class="memdoc">
 
 <p>set the format and text encoding of the ID3v2 tag </p>
-<p>The encoding applies to all text frames when the tag is saved. Text that ISO-8859-1 cannot represent is not replaced by question marks: such a frame is stored as UTF-16 with BOM instead.</p>
+<p>The encoding applies to all text frames when the tag is saved. Text that ISO-8859-1 cannot represent is not replaced by question marks: such a frame is stored as UTF-16 with BOM instead. The encodings 2 (UTF-16BE) and 3 (UTF-8) exist only in id3v2.4; with the format id3v2.2 or id3v2.3 they are rejected.</p>
 <dl class="section since"><dt>Since</dt><dd>2.0.1.0 </dd></dl>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">

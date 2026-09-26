@@ -4085,7 +4085,8 @@ extern "C" short __stdcall ID3V2DeleteSelectedFrameW(u32 FrameID, short Index)
  * @brief set the format and text encoding of the ID3v2 tag
  *
  * The encoding applies to all text frames when the tag is saved. Text that ISO-8859-1 cannot represent is not replaced by
- * question marks: such a frame is stored as UTF-16 with BOM instead.
+ * question marks: such a frame is stored as UTF-16 with BOM instead. The encodings 2 (UTF-16BE) and 3 (UTF-8) exist only in
+ * id3v2.4; with the format id3v2.2 or id3v2.3 they are rejected.
  *
  * @ingroup ID3V2
  * @since 2.0.1.0
