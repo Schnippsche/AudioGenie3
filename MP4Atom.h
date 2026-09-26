@@ -23,6 +23,7 @@
 #include "atlcoll.h"
 
 typedef unsigned __int32  u32;
+typedef unsigned __int64  u64;
 
 class CMP4Atom
 {
@@ -33,12 +34,12 @@ public:
 	virtual CMP4Atom* copy();
 	virtual CMP4Atom* find(CAtlString atomID);
 	void init(unsigned int frameID);
-	virtual u32 getSize();
+	virtual u64 getSize();
 	CBlob _blob;
 	CAtlString _txtid;
 	void print();
 	virtual void replaceAtom(CMP4Atom* atom) { atom; } ;
-	virtual void load(FILE *stream, u32 offset, u32 size);
+	virtual void load(FILE *stream, u64 offset, u64 size);
 	virtual void save(FILE *stream);
 	virtual void Empty();
 	virtual void remove() { };
@@ -54,6 +55,8 @@ public:
 	u32 getFrameID() { return _frameID; };
 	u32 getDataLen();
 	u32 getVersion();
+	bool _extended;		// the box has a 64 bit size (header of 16 bytes)
+	u32 headerSize() { return _extended ? 16 : 8; }
 	CAtlString _parent;
 	CMP4Atom* _parentAtom;
 	CAtlArray<CMP4Atom *> _children;

@@ -80,6 +80,7 @@ bool CMP4Atom::removeAtom(CMP4Atom* atom)
 
 void CMP4Atom::init(unsigned int frameID)
 {
+	_extended = false;
 	_parent.Empty();
 	setFrameID(frameID);		
 }
@@ -95,12 +96,12 @@ CAtlString CMP4Atom::getId()
 {
 	return _txtid;
 }
-u32 CMP4Atom::getSize()
+u64 CMP4Atom::getSize()
 {
-	return (u32)_blob.GetLength() + 8;
+	return (u64)_blob.GetLength() + headerSize();
 }
 
-void CMP4Atom::load(FILE *Stream, u32 offset, u32 size)
+void CMP4Atom::load(FILE *Stream, u64 offset, u64 size)
 {
 	offset;
 	//_fseeki64(Stream, offset, SEEK_SET); not needed
@@ -109,11 +110,22 @@ void CMP4Atom::load(FILE *Stream, u32 offset, u32 size)
 
 void CMP4Atom::save(FILE *stream)
 {
-	u32 frameSize = getSize();
-	CBlob tmp(8);
-	tmp.Add4B(frameSize);
-	tmp.Add4B(_frameID);
-	tmp.FileWrite(8, stream);
+	u64 frameSize = getSize();
+	CBlob tmp(16);
+	if (_extended)
+	{
+		// 64 bit size: the size field is 1, the size follows the type
+		tmp.Add4B(1);
+		tmp.Add4B(_frameID);
+		tmp.Add4B((u32)(frameSize >> 32));
+		tmp.Add4B((u32)frameSize);
+	}
+	else
+	{
+		tmp.Add4B((u32)frameSize);
+		tmp.Add4B(_frameID);
+	}
+	tmp.FileWrite(tmp.GetLength(), stream);
 	_blob.FileWrite(_blob.GetLength(), stream);	
 	CTools::instance().doEvents();	
 }

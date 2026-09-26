@@ -34,7 +34,7 @@ CMP4_AtomFactory *CMP4_AtomFactory::factory = 0;
 int CMP4_AtomFactory::count = 0;
 __int64 CMP4_AtomFactory::firstAudioPos = 0;
 __int64 CMP4_AtomFactory::lastAudioPos = 0;
-long CMP4_AtomFactory::mediaLength = 0;
+__int64 CMP4_AtomFactory::mediaLength = 0;
 __int64 CMP4_AtomFactory::lastOffset = 0;
 CMP4_MDHD* CMP4_AtomFactory::lastMDHDAtom = NULL;
 
@@ -79,6 +79,13 @@ CMP4Atom* CMP4_AtomFactory::createAtom(u32 atomID) const
 	case MP4_SOUN: return new CMP4_SOUN();
 	case MP4_STBL: return new CMP4_Container(MP4_STBL);
 	case MP4_STCO: return new CMP4_STCO();
+	case MP4_CO64: return new CMP4_STCO(MP4_CO64);
+	case MP4_STSD:
+		{
+			CMP4_STSD* stsd = new CMP4_STSD();
+			stsd->mdhd = factory->lastMDHDAtom;   // the media header of the same track is in front of the sample description
+			return stsd;
+		}
 	case MP4_TRAK: return new CMP4_Container(MP4_TRAK);
 	case MP4_VMHD: return new CMP4_Container(MP4_VMHD);
 	case MP4_SMHD:
@@ -125,15 +132,16 @@ CAtlString CMP4_AtomFactory::getText(CMP4Atom* atom)
 				result = MUSIC_GENRE[genreID - 1];
 		}
 		else if (ln == 2)
-			result.Format(_T("%i"), (BYTE)atom->_blob.m_pData[17]);
+			result.Format(_T("%i"), (int)atom->_blob.Get2B(16));   // 16 bit number (tempo)
 		else if (ln == 4)		
 			result.Format(_T("%i"), atom->_blob.Get4B(16)); // (BYTE)atom->_blob.m_pData[19]);
 		else if (ln ==6 || ln == 8)
 		{
-			if (atom->_blob.m_pData[21] >  0)
-				result.Format(_T("%i/%i"), (BYTE)atom->_blob.m_pData[19], (BYTE)atom->_blob.m_pData[21]);
+			// track or disk: 2 bytes reserved, number (16 bit), total (16 bit), 2 bytes reserved (only trkn)
+			if (atom->_blob.Get2B(20) >  0)
+				result.Format(_T("%i/%i"), (int)atom->_blob.Get2B(18), (int)atom->_blob.Get2B(20));
 			else
-				result.Format(_T("%i"), (BYTE)atom->_blob.m_pData[19]);
+				result.Format(_T("%i"), (int)atom->_blob.Get2B(18));
 		}
 		else  // unknown length, what now?
 		{
@@ -169,28 +177,34 @@ void CMP4_AtomFactory::setText(CMP4Atom *atom, CAtlString newText)
 		type = 21;	
 		tmp.AddValue((BYTE)_wtoi(newText));
 	}
-	else if (id == 'tmpo') // 2 Databyte
+	else if (id == 'tmpo') // 2 Databyte (16 bit number)
 	{
 		type = 21;
-		tmp.AddNullByte();
-		tmp.AddValue((BYTE)_wtoi(newText));		
+		int tempo = _wtoi(newText);
+		if (tempo < 0) tempo = 0;
+		if (tempo > 65535) tempo = 65535;
+		tmp.AddValue((BYTE)(tempo >> 8));
+		tmp.AddValue((BYTE)(tempo & 0xFF));
 	}
-	else if (id == 'disk') // 6 Byte x/y
+	else if (id == 'disk') // 6 bytes: 2 reserved, disk number (16 bit), total (16 bit)
 	{
 		type = 0;	
 		int pos = newText.Find('/');
-		tmp.AddValue(0, 3);
+		int disk = 0, total = 0;
 		if (pos == -1) // not found
-		{
-			tmp.AddValue((BYTE)_wtoi(newText));	
-			tmp.AddValue(0, 2);
-		}			
+			disk = _wtoi(newText);
 		else
 		{
-			tmp.AddValue((BYTE)_wtoi(newText.Left(pos)));
-			tmp.AddNullByte();
-			tmp.AddValue((BYTE)_wtoi(newText.Mid(pos + 1)));			
-		}	
+			disk = _wtoi(newText.Left(pos));
+			total = _wtoi(newText.Mid(pos + 1));
+		}
+		disk = (disk < 0) ? 0 : ((disk > 65535) ? 65535 : disk);
+		total = (total < 0) ? 0 : ((total > 65535) ? 65535 : total);
+		tmp.AddValue(0, 2);
+		tmp.AddValue((BYTE)(disk >> 8));
+		tmp.AddValue((BYTE)(disk & 0xFF));
+		tmp.AddValue((BYTE)(total >> 8));
+		tmp.AddValue((BYTE)(total & 0xFF));
 	}
 	else if (id == 'purl' || id == 'egid')
 	{
@@ -207,19 +221,16 @@ void CMP4_AtomFactory::setText(CMP4Atom *atom, CAtlString newText)
 	atom->_blob.AddMemory(tmp.m_pData, tmp.GetLength());
 }
 
-void CMP4_AtomFactory::setTrack(CMP4Atom *atom, BYTE von, BYTE bis)
+// trkn: 8 bytes: 2 reserved, track number (16 bit), total (16 bit), 2 reserved
+void CMP4_AtomFactory::setTrack(CMP4Atom *atom, WORD von, WORD bis)
 {
 	buildData(atom, 8, 0);
-	atom->_blob.AddValue(0, 3);
-	atom->_blob.AddValue(von);
-	if (bis > 0)
-	{
-		atom->_blob.AddNullByte();
-		atom->_blob.AddValue(bis);
-		atom->_blob.AddValue(0, 2);
-	}
-	else 
-		atom->_blob.AddValue(0, 4);
+	atom->_blob.AddValue(0, 2);
+	atom->_blob.AddValue((BYTE)(von >> 8));
+	atom->_blob.AddValue((BYTE)(von & 0xFF));
+	atom->_blob.AddValue((BYTE)(bis >> 8));
+	atom->_blob.AddValue((BYTE)(bis & 0xFF));
+	atom->_blob.AddValue(0, 2);
 }
 
 void CMP4_AtomFactory::buildData(CMP4Atom *atom, int length, BYTE flag)
@@ -230,45 +241,77 @@ void CMP4_AtomFactory::buildData(CMP4Atom *atom, int length, BYTE flag)
 	atom->_blob.Add4B(flag);
 	atom->_blob.Add4B(0);
 }
-void CMP4_AtomFactory::setItuneText(CMP4Atom *atom, CAtlString frame, CAtlString newText)
+// A free form item ("----") consists of the boxes "mean" (the owner of the name, for example com.apple.iTunes), "name" and "data"
+// (ISO/IEC 14496-12 boxes with their own sizes; mean and name have version and flags, data has the type and a locale).
+static bool FindSubAtom(CMP4Atom *atom, u32 wanted, size_t &start, size_t &length)
+{
+	size_t pos = 0;
+	const size_t total = atom->_blob.GetLength();
+	while (pos + 8 <= total)
+	{
+		const u32 size = atom->_blob.Get4B(pos);
+		const u32 type = atom->_blob.Get4B(pos + 4);
+		if (size < 8 || pos + size > total)
+			return false;
+		if (type == wanted)
+		{
+			start = pos;
+			length = size;
+			return true;
+		}
+		pos += size;
+	}
+	return false;
+}
+
+static CAtlString SubAtomText(CMP4Atom *atom, u32 wanted, size_t skip)
+{
+	size_t start = 0, length = 0;
+	if (!FindSubAtom(atom, wanted, start, length) || length <= skip)
+		return EMPTY;
+	CBlob tmp;
+	tmp.AddMemory(atom->_blob.m_pData + start + skip, length - skip);
+	return tmp.ConvertToUnicodeString(TEXT_ENCODED_UTF8);
+}
+
+void CMP4_AtomFactory::setItuneText(CMP4Atom *atom, CAtlString frame, CAtlString newText, CAtlString mean)
 {
 	CBlob tmp;
+	if (mean.IsEmpty())
+		mean = _T("com.apple.iTunes");
 	atom->_blob.Clear();
-	atom->_blob.Add4B(28);
+	// Atom "mean"
+	tmp.Clear();
+	tmp.AddEncodedString(TEXT_ENCODED_UTF8, mean, TEXT_WITHOUT_ENCODING, TEXT_WITHOUT_NULLBYTES);
+	atom->_blob.Add4B((u32)tmp.GetLength() + 12);
 	atom->_blob.Add4B('mean');
-	atom->_blob.Add4B(0); // Reserved
-	atom->_blob.Add4B('com.');
-	atom->_blob.Add4B('appl');
-	atom->_blob.Add4B('e.iT');
-	atom->_blob.Add4B('unes');
+	atom->_blob.Add4B(0); // version and flags
+	atom->_blob.AddBlob(tmp);
 	// Atom "name"
 	tmp.Clear();
 	tmp.AddEncodedString(TEXT_ENCODED_UTF8, frame, TEXT_WITHOUT_ENCODING, TEXT_WITHOUT_NULLBYTES);
-	atom->_blob.Add4B(tmp.GetLength() + 12);
+	atom->_blob.Add4B((u32)tmp.GetLength() + 12);
 	atom->_blob.Add4B('name');
-	atom->_blob.Add4B(0); // Reserved
+	atom->_blob.Add4B(0); // version and flags
 	atom->_blob.AddBlob(tmp);
 	// Atom "data"
 	tmp.Clear();
 	tmp.AddEncodedString(TEXT_ENCODED_UTF8, newText, TEXT_WITHOUT_ENCODING, TEXT_WITHOUT_NULLBYTES);
-	atom->_blob.Add4B(tmp.GetLength() + 16);
+	atom->_blob.Add4B((u32)tmp.GetLength() + 16);
 	atom->_blob.Add4B('data');
-	atom->_blob.Add4B(1); // Version Text
-	atom->_blob.Add4B(0); // Reserved
+	atom->_blob.Add4B(1); // type: text
+	atom->_blob.Add4B(0); // locale
 	atom->_blob.AddBlob(tmp);
 }
 CAtlString CMP4_AtomFactory::getiTuneText(CMP4Atom *atom)
 {
-	atom;
-	int start = 40;
-	atom->_blob.getNextString(TEXT_ENCODED_UTF8, start);
-	start+=15;
-	return atom->_blob.getNextString(TEXT_ENCODED_UTF8, start);
+	return SubAtomText(atom, 'data', 16);
 }
 CAtlString CMP4_AtomFactory::getiTuneFrame(CMP4Atom *atom)
 {
-	atom;
-	int start = 40;
-	return atom->_blob.getNextString(TEXT_ENCODED_UTF8, start);	
+	return SubAtomText(atom, 'name', 12);
 }
-
+CAtlString CMP4_AtomFactory::getiTuneMean(CMP4Atom *atom)
+{
+	return SubAtomText(atom, 'mean', 12);
+}

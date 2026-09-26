@@ -25,10 +25,12 @@ class CMP4_STCO :
 	public CMP4Atom
 {
 public:
-	CMP4_STCO(void);
+	CMP4_STCO(u32 id = 'stco');	// 'stco' (32 bit offsets) or 'co64' (64 bit offsets)
 	~CMP4_STCO(void);
-	void move(long newDataPosition, FILE *Destination);
+	// adds delta to all offsets; false if an offset does not fit into the table any more
+	bool move(__int64 delta, FILE *Destination);
 	void save(FILE *Destination);
 private:
 	__int64 _position;
+	bool _is64;
 };

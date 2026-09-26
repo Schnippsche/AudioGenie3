@@ -26,15 +26,15 @@ class CMP4_MDAT:public CMP4Atom
 public:
 	CMP4_MDAT(void);
 	~CMP4_MDAT(void);
-	u32 getSize();
-	void load(FILE *stream, u32 offset, u32 size);
+	u64 getSize();
+	void load(FILE *stream, u64 offset, u64 size);
 	__int64 getPosition() { return _position; };
 	void save(FILE *Destination);
 	void setSourceFile(CAtlString file) { _sourcefile = file; };
 	void setSameFile(bool status)       { _sameFile = status; };
 private:
-	u32 _position;
-	u32 _size;
+	u64 _position;
+	u64 _size;
 	CAtlString _sourcefile;
 	bool _sameFile;
 };

@@ -26,9 +26,10 @@ class CMP4_MDHD:public CMP4Atom
 public:
 	CMP4_MDHD(void);
 	~CMP4_MDHD(void);
-	void load(FILE *stream, u32 offset, u32 size);
+	void load(FILE *stream, u64 offset, u64 size);
 	BYTE version;
-	u32 flags, creationTime, modifyTime, timeScale, duration;
+	u32 flags, timeScale;
+	u64 creationTime, modifyTime, duration;
 	WORD language, quality;
 	bool isSoundAtom;
 };

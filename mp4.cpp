@@ -59,6 +59,7 @@ void CMP4::ResetData()
 	mainContainer->remove();
 	CMP4_AtomFactory::lastOffset = 0;
 	CMP4_AtomFactory::mediaLength = 0;
+	CMP4_AtomFactory::lastMDHDAtom = NULL;
 	CMP4_AtomFactory::firstAudioPos = 0;
 	CMP4_AtomFactory::lastAudioPos = 0;
 }
@@ -69,7 +70,7 @@ bool CMP4::ReadFromFile(FILE *Stream)
 	CMP4_AtomFactory::lastAudioPos = CTools::FileSize;
 	/* Read file data */
 	//_fseeki64(Stream, CTools::ID3v2Size, SEEK_SET);
-	mainContainer->load(Stream, CTools::ID3v2Size, toU32Clamped(CTools::FileSize - CTools::ID3v1Size));
+	mainContainer->load(Stream, CTools::ID3v2Size, (u64)(CTools::FileSize - CTools::ID3v1Size));
 	return (mainContainer->find(FTYP_PFAD) != NULL);	
 }
 
@@ -109,7 +110,14 @@ CAtlString CMP4::GetPictureMime(int Index)
 		atom = cont->_children[Index - 1];
 	else
 		return L"";
-	return (atom->_blob.Get4B(0) == 14) ? _T("png") : _T("jpg");
+	// type of the data box: 13 JPEG, 14 PNG, 12 GIF, 27 BMP
+	switch (atom->_blob.Get4B(0))
+	{
+	case 14: return _T("png");
+	case 12: return _T("gif");
+	case 27: return _T("bmp");
+	default: return _T("jpg");
+	}
 }
 
 long CMP4::GetPictureSize(int Index)
@@ -195,6 +203,10 @@ bool CMP4::AddPictureArray(BYTE *arr, u32 length)
 	BYTE picType = 13; // JPEG = Default
 	if (arr[0] ==  0x89 && arr[1] == 0x50 && arr[2] == 0x4E && arr[3] == 0x47)
 		picType = 14;
+	else if (arr[0] == 'G' && arr[1] == 'I' && arr[2] == 'F')
+		picType = 12;
+	else if (arr[0] == 'B' && arr[1] == 'M')
+		picType = 27;
 	atom->_blob.Clear();
 	atom->_blob.Add4B(picType);
 	atom->_blob.Add4B(0);
@@ -314,9 +326,10 @@ void CMP4::SetItuneText(CAtlString frame, CAtlString newText)
 		CMP4_AtomFactory::instance()->setItuneText(atom, frame, newText);
 		mainContainer->addAtom(atom);
 	}
-	else // replace
+	else // replace: the owner (mean) of the item stays
 	{
-		CMP4_AtomFactory::instance()->setItuneText(atom, frame, newText);
+		const CAtlString mean = CMP4_AtomFactory::instance()->getiTuneMean(atom);
+		CMP4_AtomFactory::instance()->setItuneText(atom, frame, newText, mean);
 	}
 }
 CAtlString CMP4::getILSTFrameIDs()
@@ -359,10 +372,11 @@ CAtlString CMP4::GetTrack()
 	if (atom == NULL || atom->_blob.GetLength() < 20)
 		return L"";
 	CAtlString tmp;
-	if (atom->getDataLen() >= 22 && atom->_blob.GetAt(21) > 0)
-		tmp.Format(_T("%i/%i"), atom->_blob.GetAt(19), atom->_blob.GetAt(21));
+	// 2 bytes reserved, track number (16 bit), total (16 bit)
+	if (atom->getDataLen() >= 22 && atom->_blob.Get2B(20) > 0)
+		tmp.Format(_T("%i/%i"), (int)atom->_blob.Get2B(18), (int)atom->_blob.Get2B(20));
 	else
-		tmp.Format(_T("%i"), atom->_blob.GetAt(19));
+		tmp.Format(_T("%i"), (int)atom->_blob.Get2B(18));
 	return tmp;
 }
 
@@ -377,18 +391,21 @@ void CMP4::SetTrack(LPCWSTR newTrack)
 	}
 	// format either as one number or as two numbers separated by /
 	CAtlString info(newTrack);
-	BYTE von = 0, bis = 0;
+	int von = 0, bis = 0;
 	int pos = info.Find('/');
 	if (pos == -1) // not found
-		von = (BYTE)_wtoi(newTrack) ;	
+		von = _wtoi(newTrack) ;	
 	else
 	{
-		von = (BYTE)_wtoi(info.Left(pos));
-		bis = (BYTE)_wtoi(info.Mid(pos + 1));
+		von = _wtoi(info.Left(pos));
+		bis = _wtoi(info.Mid(pos + 1));
 	}
+	// the numbers have 16 bit
+	von = (von < 0) ? 0 : ((von > 65535) ? 65535 : von);
+	bis = (bis < 0) ? 0 : ((bis > 65535) ? 65535 : bis);
 	CMP4Atom* atom = new CMP4Atom(ILST_TRKN);
 	atom->setParent(ILST_PFAD);
-	CMP4_AtomFactory::instance()->setTrack(atom, von, bis);
+	CMP4_AtomFactory::instance()->setTrack(atom, (WORD)von, (WORD)bis);
 	mainContainer->replaceAtom(atom);
 }
 
@@ -443,20 +460,33 @@ void CMP4::SetGenre(LPCWSTR newgenre)
 	mainContainer->replaceAtom(atom); // set new genre
 }
 
+// the first sample description of a sound track
+static CMP4_STSD* FirstSoundSampleEntry(CMP4_MainContainer *container)
+{
+	int start = 1;
+	CMP4_STSD* stsd;
+	while ( (stsd = cSTSD(container->find(STSD_PFAD, start))) != NULL)
+	{
+		start++;
+		if (stsd->mdhd != NULL && stsd->mdhd->isSoundAtom && stsd->channels > 0)
+			return stsd;
+	}
+	return NULL;
+}
+
 long CMP4::GetChannels()
 {
-	// TODO
-	// look for stsd, MP4A atom; if found, take NumberOfChannels, otherwise 2
-	CMP4Atom* atom = mainContainer->find(STSD_PFAD);
-	if (atom != NULL)
-	{
-		// Analyse stsd atom
-	}
-	return 2;
+	// number of the channels in the sample description of the sound track; 2 without a description
+	CMP4_STSD* stsd = FirstSoundSampleEntry(mainContainer);
+	return (stsd != NULL) ? stsd->channels : 2;
 }
 
 long CMP4::GetSampleRate()
 {
+	// the sample rate is in the sample description; the time scale of the media header is the fall back (it is often the sample rate too)
+	CMP4_STSD* stsd = FirstSoundSampleEntry(mainContainer);
+	if (stsd != NULL && stsd->sampleRate > 0)
+		return stsd->sampleRate;
 	int start = 1;
 	CMP4_MDHD* atom;
 	long tmpSamplerate = 0;
@@ -475,16 +505,21 @@ long CMP4::GetSampleRate()
 
 float CMP4::GetDuration()
 {
+	// the file is as long as its longest sound track
 	int start = 1;
-	float duration = 0.0;
+	double duration = 0.0;
 	CMP4_MDHD* atom;
 	while ( (atom = cMDHD(mainContainer->find(MDHD_PFAD, start))) != NULL)
 	{
 		if (atom->isSoundAtom && atom->duration > 0 && atom->timeScale > 0)
-			duration+= (float)atom->duration / (float)atom->timeScale;
-		start++;		
+		{
+			const double trackDuration = (double)atom->duration / (double)atom->timeScale;
+			if (trackDuration > duration)
+				duration = trackDuration;
+		}
+		start++;
 	}
-	return duration;
+	return (float)duration;
 }
 
 void CMP4::RemoveTag()
@@ -514,7 +549,7 @@ bool CMP4::SaveToFile(LPCWSTR FileName)
 	_fseeki64(Source, CTools::ID3v2Size, SEEK_SET);
 	CTools::FileSize = _filelengthi64(_fileno(Source));
 	CMP4_MainContainer *newData = new CMP4_MainContainer();
-	newData->load(Source, CTools::ID3v2Size, toU32Clamped(CTools::FileSize - CTools::ID3v1Size));
+	newData->load(Source, CTools::ID3v2Size, (u64)(CTools::FileSize - CTools::ID3v1Size));
 	atom = newData->find(MDAT_PFAD);
 	if (atom == NULL)
 	{
@@ -526,7 +561,7 @@ bool CMP4::SaveToFile(LPCWSTR FileName)
 	CMP4_MDAT *mdat = cMDAT(atom);
 	__int64 oldMDATPosition = mdat->getPosition();
 	mdat->setSourceFile(FileName);
-	u32 sizeBefore = newData->getSize();
+	u64 sizeBefore = newData->getSize();
 	// delete wrong paddings
 	atom = newData->find(_T("moov.udta.meta.free"));
 	if (atom != NULL)
@@ -542,11 +577,11 @@ bool CMP4::SaveToFile(LPCWSTR FileName)
 		// no tagging data wanted	
 		newData->removeAtom(_T("moov.udta"));
 	}
-	u32 sizeAfter = newData->getSize();
+	u64 sizeAfter = newData->getSize();
 	long paddingBlockSize = CTools::configValues[CONFIG_MP4PADDINGSIZE];
-	u32 optimalSize = sizeAfter;
+	u64 optimalSize = sizeAfter;
 	if (paddingBlockSize > 0)
-		optimalSize = ((u32)(sizeAfter / paddingBlockSize) + 1) * paddingBlockSize;
+		optimalSize = ((sizeAfter / (u64)paddingBlockSize) + 1) * (u64)paddingBlockSize;
 
 	if (sizeAfter > sizeBefore || optimalSize < sizeBefore || paddingBlockSize == 0)
 	{ 
@@ -563,27 +598,50 @@ bool CMP4::SaveToFile(LPCWSTR FileName)
 			return false;
 		};
 		/* adjust padding  */
-		newData->adjustPadding(paddingBlockSize - 8);		
+		newData->adjustPadding((u32)(paddingBlockSize - 8));		
 		/* Copy atom blocks */
 		newData->save(Destination);
 		_flushall();
 		/* if mdat position is different and stco is present, then adjust the stco atom */
-		CMP4_STCO* stco = cSTCO(newData->find(STCO_PFAD));
 		CMP4_MDAT* mdat = cMDAT(newData->find(MDAT_PFAD));
-		// adjust indices
-		if (stco != NULL && mdat != NULL && mdat->getPosition() != oldMDATPosition)
+		bool offsetsOk = true;
+		// adjust the chunk offsets of all tracks: 32 bit tables (stco) and 64 bit tables (co64)
+		if (mdat != NULL && mdat->getPosition() != oldMDATPosition)
 		{
-			stco->move((long)(mdat->getPosition() - oldMDATPosition), Destination);
+			const __int64 delta = (__int64)mdat->getPosition() - (__int64)oldMDATPosition;
+			for (int track = 1; offsetsOk; track++)
+			{
+				CMP4_STCO* table = cSTCO(newData->find(STCO_PFAD, track));
+				if (table == NULL)
+					break;
+				offsetsOk = table->move(delta, Destination);
+			}
+			for (int track = 1; offsetsOk; track++)
+			{
+				CMP4_STCO* table = cSTCO(newData->find(CO64_PFAD, track));
+				if (table == NULL)
+					break;
+				offsetsOk = table->move(delta, Destination);
+			}
 			_flushall();
-		}		
+		}
 		delete newData;
+		if (!offsetsOk)
+		{
+			// an offset does not fit into a 32 bit table: the file is not changed
+			fclose(Destination);
+			fclose(Source);
+			_wremove(NewFileName);
+			CTools::instance().setLastError(ERR_FRAME_TOO_BIG);
+			return false;
+		}
 		return CTools::finishRewrite(Source, Destination, NewFileName, FileName);
 	}
 	CTools::instance().writeDebug(_T("Rewrite mp4 tag")); 
 	mdat->setSameFile(false);
 	// adjust padding
 	errno = 0;
-	newData->adjustPadding(sizeBefore - sizeAfter);
+	newData->adjustPadding((u32)(sizeBefore - sizeAfter));
 	_fseeki64(Source, CTools::ID3v2Size, SEEK_SET);
 	newData->save(Source);
 	fflush(Source);

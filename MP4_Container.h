@@ -35,9 +35,9 @@ public:
 	virtual bool removeAtom(CAtlString atomID);
 	void remove();
 	bool removeAtom(CMP4Atom* atom);
-	void load(FILE *stream, u32 offset, u32 size);
+	void load(FILE *stream, u64 offset, u64 size);
 	virtual void save(FILE *stream);
-	u32 getSize();	
+	u64 getSize();	
 protected:
-	u32 _offset, _size;
+	u64 _offset, _size;
 };

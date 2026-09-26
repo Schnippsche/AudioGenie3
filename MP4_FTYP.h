@@ -26,7 +26,7 @@ class CMP4_FTYP:public CMP4Atom
 public:
 	CMP4_FTYP(void);
 	~CMP4_FTYP(void);	
-	void load(FILE *stream, u32 offset, u32 size);
+	void load(FILE *stream, u64 offset, u64 size);
 private:
 	long _majorType, _majorVersion,	_minorType;
 };

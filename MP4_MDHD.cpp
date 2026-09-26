@@ -32,11 +32,29 @@ CMP4_MDHD::~CMP4_MDHD(void)
 {
 }
 
-void CMP4_MDHD::load(FILE *Stream, u32 offset, u32 size)
+void CMP4_MDHD::load(FILE *Stream, u64 offset, u64 size)
 {
 	offset;
-	_blob.FileRead(size, Stream);	
-	if (_blob.GetLength() >= 24)
+	_blob.FileRead((size_t)size, Stream);
+	version = 0;
+	timeScale = 0;
+	duration = 0;
+	// version 0: 32 bit times and duration; version 1: 64 bit times and duration
+	if (_blob.GetLength() >= 1 && _blob.GetAt(0) == 1)
+	{
+		if (_blob.GetLength() >= 36)
+		{
+			version = 1;
+			flags = _blob.Get3B(1);
+			creationTime = ((u64)_blob.Get4B(4) << 32) | _blob.Get4B(8);
+			modifyTime = ((u64)_blob.Get4B(12) << 32) | _blob.Get4B(16);
+			timeScale = _blob.Get4B(20);
+			duration = ((u64)_blob.Get4B(24) << 32) | _blob.Get4B(28);
+			language = _blob.Get2B(32);
+			quality = _blob.Get2B(34);
+		}
+	}
+	else if (_blob.GetLength() >= 24)
 	{
 		version = _blob.GetAt(0);
 		flags = _blob.Get3B(1);

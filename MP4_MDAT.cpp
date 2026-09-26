@@ -34,21 +34,21 @@ CMP4_MDAT::CMP4_MDAT(void)
 CMP4_MDAT::~CMP4_MDAT(void)
 {
 }
-void CMP4_MDAT::load(FILE *Stream, u32 offset, u32 size)
+void CMP4_MDAT::load(FILE *Stream, u64 offset, u64 size)
 {
 	offset;
 	Stream;
 	//_fseeki64(Stream, offset, SEEK_SET);
 	// remember position and length but do not read the data
 	// is only read when saving
-	_position = offset - 8;
-	_size = size + 8;
-	CMP4_AtomFactory::mediaLength+= size;
-	CMP4_AtomFactory::firstAudioPos = offset;
-	CMP4_AtomFactory::lastAudioPos = offset + size - 8;
+	_position = offset - headerSize();
+	_size = size + headerSize();
+	CMP4_AtomFactory::mediaLength+= (__int64)size;
+	CMP4_AtomFactory::firstAudioPos = (__int64)offset;
+	CMP4_AtomFactory::lastAudioPos = (__int64)(offset + size) - 8;
 	_sourcefile.Empty();
 }
-u32 CMP4_MDAT::getSize()
+u64 CMP4_MDAT::getSize()
 {
 	return _size;
 }
@@ -86,7 +86,7 @@ void CMP4_MDAT::save(FILE *Destination)
 				frameSize-=tmpSize;
 			}
 			fclose(Source);
-			_position = (u32)newPos;
+			_position = (u64)newPos;
 		} 
 		else
 			CTools::instance().setLastError(errno);

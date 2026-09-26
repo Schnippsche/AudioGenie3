@@ -22,38 +22,57 @@
 #include "MP4_STCO.h"
 #include "mp4_atomfactory.h"
 
-CMP4_STCO::CMP4_STCO(void)
+CMP4_STCO::CMP4_STCO(u32 id)
 {
-	setFrameID(MP4_STCO);
+	setFrameID(id);
+	_is64 = (id == MP4_CO64);
+	_position = 0;
 }
 
 CMP4_STCO::~CMP4_STCO(void)
 {
 }
 
-void CMP4_STCO::move(long offset, FILE* Destination)
+bool CMP4_STCO::move(__int64 delta, FILE* Destination)
 {
-	if (_blob.GetLength() > 8 && offset != 0)
+	if (_blob.GetLength() < 8 || delta == 0)
+		return true;
+	const size_t entrySize = _is64 ? 8 : 4;
+	u32 count = _blob.Get4B(4);
+	// entry_count comes from the file: at most as many entries as the atom content really holds
+	// (otherwise the calculation overflows and the loop takes practically forever)
+	const u32 maxCount = (u32)((_blob.GetLength() - 8) / entrySize);
+	if (count > maxCount)
+		count = maxCount;
+	CBlob tmp(count * entrySize + 8);
+	tmp.AddMemory(_blob.m_pData, 8);
+	for (u32 lfd = 0; lfd < count; lfd++)
 	{
-		u32 count = _blob.Get4B(4);
-		// entry_count comes from the file: at most as many entries as the atom content really holds
-		// (otherwise count*4+4 overflows and the loop takes practically forever)
-		const u32 maxCount = (u32)((_blob.GetLength() - 8) / 4);
-		if (count > maxCount)
-			count = maxCount;
-		u32 lfd, entry;
-		CBlob tmp(count*4+4);
-		tmp.AddMemory(_blob.m_pData, 8);
-		for (lfd = 0; lfd < count; lfd++)
+		if (_is64)
 		{
-			entry = _blob.Get4B(lfd*4 + 8) + offset;
-			tmp.Add4B(entry);
+			const __int64 entry = (__int64)(((u64)_blob.Get4B(8 + (size_t)lfd * 8) << 32) | _blob.Get4B(12 + (size_t)lfd * 8)) + delta;
+			if (entry < 0)
+				return false;
+			tmp.Add4B((u32)((u64)entry >> 32));
+			tmp.Add4B((u32)entry);
 		}
-		_blob.Clear();
-		_blob.AddBlob(tmp);
-		_fseeki64(Destination, _position, SEEK_SET);
-		CMP4Atom::save(Destination);	
-	}	
+		else
+		{
+			const __int64 entry = (__int64)_blob.Get4B(8 + (size_t)lfd * 4) + delta;
+			if (entry < 0 || entry > 0xFFFFFFFFll)
+				return false;   // a 32 bit table cannot hold the offset
+			tmp.Add4B((u32)entry);
+		}
+	}
+	// data behind the entries stay as they are
+	const size_t used = 8 + (size_t)count * entrySize;
+	if (_blob.GetLength() > used)
+		tmp.AddMemory(_blob.m_pData + used, _blob.GetLength() - used);
+	_blob.Clear();
+	_blob.AddBlob(tmp);
+	_fseeki64(Destination, _position, SEEK_SET);
+	CMP4Atom::save(Destination);
+	return true;
 }
 
 void CMP4_STCO::save(FILE *Destination)
