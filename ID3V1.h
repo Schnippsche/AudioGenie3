@@ -56,6 +56,13 @@ public:
 	void SetComment(LPCWSTR newComment) { id3v1tag.Comment = newComment; };
 	// general
 	int GetGenreID()            { return id3v1tag.Genre;   };
+	// enhanced tag
+	int GetSpeed()                      { return id3v1tag.GetSpeed(); };
+	void SetSpeed(int value)            { id3v1tag.SetSpeed(value); };
+	CAtlString GetEnhancedGenre()       { return id3v1tag.GetEnhancedGenre(); };
+	void SetEnhancedGenre(LPCWSTR value){ id3v1tag.SetEnhancedGenre(value); };
+	CAtlString GetTime(bool end)        { return id3v1tag.GetTime(end); };
+	bool SetTime(bool end, LPCWSTR value) { return id3v1tag.SetTime(end, value); };
 	int NumberOfGenres()        { return MAX_MUSIC_GENRES; };
 	CAtlString GetGenreItem(int i);
 	long GetSize()              { return CTools::ID3v1Size; };

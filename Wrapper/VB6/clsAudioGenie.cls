@@ -110,10 +110,14 @@ Private Declare Function ID3V1GetAlbumW Lib "AudioGenie3.dll" () As String
 Private Declare Function ID3V1GetArtistW Lib "AudioGenie3.dll" () As String
 Private Declare Function ID3V1GetCommentW Lib "AudioGenie3.dll" () As String
 Private Declare Function ID3V1GetGenreIDW Lib "AudioGenie3.dll" () As Integer
+Private Declare Function ID3V1GetSpeedW Lib "AudioGenie3.dll" () As Integer
 Private Declare Function ID3V1GetGenreItemW Lib "AudioGenie3.dll" (ByVal number As Integer) As String
 Private Declare Function ID3V1GetGenreW Lib "AudioGenie3.dll" () As String
 Private Declare Function ID3V1GetGenresW Lib "AudioGenie3.dll" () As Integer
 Private Declare Function ID3V1GetTitleW Lib "AudioGenie3.dll" () As String
+Private Declare Function ID3V1GetEndTimeW Lib "AudioGenie3.dll" () As String
+Private Declare Function ID3V1GetEnhancedGenreW Lib "AudioGenie3.dll" () As String
+Private Declare Function ID3V1GetStartTimeW Lib "AudioGenie3.dll" () As String
 Private Declare Function ID3V1GetTrackW Lib "AudioGenie3.dll" () As String
 Private Declare Function ID3V1GetVersionW Lib "AudioGenie3.dll" () As String
 Private Declare Function ID3V1GetYearW Lib "AudioGenie3.dll" () As String
@@ -125,9 +129,13 @@ Private Declare Sub ID3V1SetAlbumW Lib "AudioGenie3.dll" (ByVal textString As Lo
 Private Declare Sub ID3V1SetArtistW Lib "AudioGenie3.dll" (ByVal textString As Long)
 Private Declare Sub ID3V1SetCommentW Lib "AudioGenie3.dll" (ByVal textString As Long)
 Private Declare Sub ID3V1SetGenreIDW Lib "AudioGenie3.dll" (ByVal nNewValue As Integer)
+Private Declare Sub ID3V1SetSpeedW Lib "AudioGenie3.dll" (ByVal speed As Integer)
 Private Declare Sub ID3V1SetGenreW Lib "AudioGenie3.dll" (ByVal textString As Long)
 Private Declare Sub ID3V1SetTitleW Lib "AudioGenie3.dll" (ByVal textString As Long)
 Private Declare Sub ID3V1SetTrackW Lib "AudioGenie3.dll" (ByVal textString As Long)
+Private Declare Sub ID3V1SetEndTimeW Lib "AudioGenie3.dll" (ByVal textString As Long)
+Private Declare Sub ID3V1SetEnhancedGenreW Lib "AudioGenie3.dll" (ByVal textString As Long)
+Private Declare Sub ID3V1SetStartTimeW Lib "AudioGenie3.dll" (ByVal textString As Long)
 Private Declare Sub ID3V1SetYearW Lib "AudioGenie3.dll" (ByVal textString As Long)
 Private Declare Function ID3V2AddAudioEncryptionW Lib "AudioGenie3.dll" (ByVal arr As Long, ByVal maxLen As Long, ByVal URL As Long, ByVal PreviewStart As Integer, ByVal PreviewLength As Integer) As Integer
 Private Declare Function ID3V2AddAudioSeekPointW Lib "AudioGenie3.dll" (ByVal arr As Long, ByVal maxLen As Long, ByVal start As Long, ByVal Length As Long, ByVal numbers As Integer, ByVal BitsPerPoint As Byte) As Integer
@@ -1128,6 +1136,34 @@ Public Property Get ID3V1Track() As String
 End Property
 Public Property Let ID3V1Track(ByVal textString As String)
   Call ID3V1SetTrackW(StrPtr(textString))
+End Property
+
+Public Property Get ID3V1Speed() As Integer
+  ID3V1Speed = ID3V1GetSpeedW()
+End Property
+Public Property Let ID3V1Speed(ByVal speed As Integer)
+  Call ID3V1SetSpeedW(speed)
+End Property
+
+Public Property Get ID3V1EndTime() As String
+  ID3V1EndTime = StrConv(ID3V1GetEndTimeW(), vbFromUnicode)
+End Property
+Public Property Let ID3V1EndTime(ByVal textString As String)
+  Call ID3V1SetEndTimeW(StrPtr(textString))
+End Property
+
+Public Property Get ID3V1EnhancedGenre() As String
+  ID3V1EnhancedGenre = StrConv(ID3V1GetEnhancedGenreW(), vbFromUnicode)
+End Property
+Public Property Let ID3V1EnhancedGenre(ByVal textString As String)
+  Call ID3V1SetEnhancedGenreW(StrPtr(textString))
+End Property
+
+Public Property Get ID3V1StartTime() As String
+  ID3V1StartTime = StrConv(ID3V1GetStartTimeW(), vbFromUnicode)
+End Property
+Public Property Let ID3V1StartTime(ByVal textString As String)
+  Call ID3V1SetStartTimeW(StrPtr(textString))
 End Property
 
 Public Property Get ID3V1Year() As String

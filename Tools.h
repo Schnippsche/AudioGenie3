@@ -132,10 +132,11 @@ enum CONFIGKEYS {
 	CONFIG_WMAPADDINGSIZE,
 	CONFIG_MP4PADDINGSIZE,
 	CONFIG_ANSICODEPAGE,           // code page of ISO-8859-1 / ANSI strings, 0 = code page of the system
-	CONFIG_ID3V2LINKEDPICTURES     // 1 = read pictures that an ID3v2 APIC frame links to (MIME type -->) from disk
+	CONFIG_ID3V2LINKEDPICTURES,    // 1 = read pictures that an ID3v2 APIC frame links to (MIME type -->) from disk
+	CONFIG_ID3V1MAXTEXTLENGTH      // 30 to 90: longest title, artist and album of an ID3v1 tag; more than 30 characters need the enhanced tag (TAG+)
 };
 
-#define MAX_CONFIG_VALUES 9
+#define MAX_CONFIG_VALUES 10
 
 class CTools
 {

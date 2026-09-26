@@ -692,8 +692,12 @@ type
     function ID3V1GetAlbumW: WideString;
     function ID3V1GetArtistW: WideString;
     function ID3V1GetCommentW: WideString;
+    function ID3V1GetSpeedW: SmallInt;
     function ID3V1GetGenreIDW: SmallInt;
     function ID3V1GetGenreW: WideString; 
+    function ID3V1GetEndTimeW: WideString;
+    function ID3V1GetEnhancedGenreW: WideString;
+    function ID3V1GetStartTimeW: WideString;
     function ID3V1GetTitleW: WideString; 
     function ID3V1GetTrackW: WideString; 
     function ID3V1GetYearW: WideString;
@@ -840,8 +844,12 @@ type
     procedure ID3V1SetAlbumW(const textString: WideString);
     procedure ID3V1SetArtistW(const textString: WideString);
     procedure ID3V1SetCommentW(const textString: WideString);
+    procedure ID3V1SetSpeedW(const speed: SmallInt);
     procedure ID3V1SetGenreIDW(const nNewValue: SmallInt);
     procedure ID3V1SetGenreW(const textString: WideString);
+    procedure ID3V1SetEndTimeW(const textString: WideString);
+    procedure ID3V1SetEnhancedGenreW(const textString: WideString);
+    procedure ID3V1SetStartTimeW(const textString: WideString);
     procedure ID3V1SetTitleW(const textString: WideString);
     procedure ID3V1SetTrackW(const textString: WideString);
     procedure ID3V1SetYearW(const textString: WideString);
@@ -1007,6 +1015,10 @@ type
     property ID3V1GenreIDW: SmallInt read ID3V1GetGenreIDW write ID3V1SetGenreIDW;
     property ID3V1GenreW: WideString read ID3V1GetGenreW write ID3V1SetGenreW;
     property ID3V1GenresW: SmallInt read ID3V1GetGenresW;
+    property ID3V1SpeedW: SmallInt read ID3V1GetSpeedW write ID3V1SetSpeedW;
+    property ID3V1EndTimeW: WideString read ID3V1GetEndTimeW write ID3V1SetEndTimeW;
+    property ID3V1EnhancedGenreW: WideString read ID3V1GetEnhancedGenreW write ID3V1SetEnhancedGenreW;
+    property ID3V1StartTimeW: WideString read ID3V1GetStartTimeW write ID3V1SetStartTimeW;
     property ID3V1TitleW: WideString read ID3V1GetTitleW write ID3V1SetTitleW;
     property ID3V1TrackW: WideString read ID3V1GetTrackW write ID3V1SetTrackW;
     property ID3V1VersionW: WideString read ID3V1GetVersionW;
@@ -1506,10 +1518,14 @@ function AG3ID3V1ExistsW: SmallInt; stdcall; external AudioGenie3DLL name 'ID3V1
 function AG3ID3V1GetAlbumW: PWideChar; stdcall; external AudioGenie3DLL name 'ID3V1GetAlbumW';
 function AG3ID3V1GetArtistW: PWideChar; stdcall; external AudioGenie3DLL name 'ID3V1GetArtistW';
 function AG3ID3V1GetCommentW: PWideChar; stdcall; external AudioGenie3DLL name 'ID3V1GetCommentW';
+function AG3ID3V1GetSpeedW: SmallInt; stdcall; external AudioGenie3DLL name 'ID3V1GetSpeedW';
 function AG3ID3V1GetGenreIDW: SmallInt; stdcall; external AudioGenie3DLL name 'ID3V1GetGenreIDW';
 function AG3ID3V1GetGenreItemW(const number: SmallInt): PWideChar; stdcall; external AudioGenie3DLL name 'ID3V1GetGenreItemW';
 function AG3ID3V1GetGenreW: PWideChar; stdcall; external AudioGenie3DLL name 'ID3V1GetGenreW';
 function AG3ID3V1GetGenresW: SmallInt; stdcall; external AudioGenie3DLL name 'ID3V1GetGenresW';
+function AG3ID3V1GetEndTimeW: PWideChar; stdcall; external AudioGenie3DLL name 'ID3V1GetEndTimeW';
+function AG3ID3V1GetEnhancedGenreW: PWideChar; stdcall; external AudioGenie3DLL name 'ID3V1GetEnhancedGenreW';
+function AG3ID3V1GetStartTimeW: PWideChar; stdcall; external AudioGenie3DLL name 'ID3V1GetStartTimeW';
 function AG3ID3V1GetTitleW: PWideChar; stdcall; external AudioGenie3DLL name 'ID3V1GetTitleW';
 function AG3ID3V1GetTrackW: PWideChar; stdcall; external AudioGenie3DLL name 'ID3V1GetTrackW';
 function AG3ID3V1GetVersionW: PWideChar; stdcall; external AudioGenie3DLL name 'ID3V1GetVersionW';
@@ -1521,8 +1537,12 @@ function AG3ID3V1SaveChangesW: SmallInt; stdcall; external AudioGenie3DLL name '
 procedure AG3ID3V1SetAlbumW(const textString: PWideChar); stdcall; external AudioGenie3DLL name 'ID3V1SetAlbumW';
 procedure AG3ID3V1SetArtistW(const textString: PWideChar); stdcall; external AudioGenie3DLL name 'ID3V1SetArtistW';
 procedure AG3ID3V1SetCommentW(const textString: PWideChar); stdcall; external AudioGenie3DLL name 'ID3V1SetCommentW';
+procedure AG3ID3V1SetSpeedW(const speed: SmallInt); stdcall; external AudioGenie3DLL name 'ID3V1SetSpeedW';
 procedure AG3ID3V1SetGenreIDW(const nNewValue: SmallInt); stdcall; external AudioGenie3DLL name 'ID3V1SetGenreIDW';
 procedure AG3ID3V1SetGenreW(const textString: PWideChar); stdcall; external AudioGenie3DLL name 'ID3V1SetGenreW';
+procedure AG3ID3V1SetEndTimeW(const textString: PWideChar); stdcall; external AudioGenie3DLL name 'ID3V1SetEndTimeW';
+procedure AG3ID3V1SetEnhancedGenreW(const textString: PWideChar); stdcall; external AudioGenie3DLL name 'ID3V1SetEnhancedGenreW';
+procedure AG3ID3V1SetStartTimeW(const textString: PWideChar); stdcall; external AudioGenie3DLL name 'ID3V1SetStartTimeW';
 procedure AG3ID3V1SetTitleW(const textString: PWideChar); stdcall; external AudioGenie3DLL name 'ID3V1SetTitleW';
 procedure AG3ID3V1SetTrackW(const textString: PWideChar); stdcall; external AudioGenie3DLL name 'ID3V1SetTrackW';
 procedure AG3ID3V1SetYearW(const textString: PWideChar); stdcall; external AudioGenie3DLL name 'ID3V1SetYearW';
@@ -2324,6 +2344,11 @@ begin
   result := AG3ID3V1ExistsW() = AG_TRUE;
 end;
 
+function TAudioGenie3.ID3V1GetSpeedW: SmallInt;
+begin
+  result := AG3ID3V1GetSpeedW();
+end;
+
 function TAudioGenie3.ID3V1GetGenreIDW: SmallInt; 
 begin
   result := AG3ID3V1GetGenreIDW();
@@ -2362,6 +2387,21 @@ end;
 function TAudioGenie3.ID3V1SaveChangesW: Boolean;
 begin
   result := AG3ID3V1SaveChangesW() = AG_TRUE;
+end;
+
+function TAudioGenie3.ID3V1GetEndTimeW: WideString;
+begin
+  result := ConvertString(AG3ID3V1GetEndTimeW());
+end;
+
+function TAudioGenie3.ID3V1GetEnhancedGenreW: WideString;
+begin
+  result := ConvertString(AG3ID3V1GetEnhancedGenreW());
+end;
+
+function TAudioGenie3.ID3V1GetStartTimeW: WideString;
+begin
+  result := ConvertString(AG3ID3V1GetStartTimeW());
 end;
 
 function TAudioGenie3.ID3V1GetTitleW: WideString; 
@@ -4308,6 +4348,11 @@ begin
   AG3ID3V1SetCommentW(PWideChar(textString));
 end;
 
+procedure TAudioGenie3.ID3V1SetSpeedW(const speed: SmallInt);
+begin
+  AG3ID3V1SetSpeedW(speed);
+end;
+
 procedure TAudioGenie3.ID3V1SetGenreIDW(const nNewValue: SmallInt);
 begin
   AG3ID3V1SetGenreIDW(nNewValue);
@@ -4316,6 +4361,21 @@ end;
 procedure TAudioGenie3.ID3V1SetGenreW(const textString: WideString);
 begin
   AG3ID3V1SetGenreW(PWideChar(textString));
+end;
+
+procedure TAudioGenie3.ID3V1SetEndTimeW(const textString: WideString);
+begin
+  AG3ID3V1SetEndTimeW(PWideChar(textString));
+end;
+
+procedure TAudioGenie3.ID3V1SetEnhancedGenreW(const textString: WideString);
+begin
+  AG3ID3V1SetEnhancedGenreW(PWideChar(textString));
+end;
+
+procedure TAudioGenie3.ID3V1SetStartTimeW(const textString: WideString);
+begin
+  AG3ID3V1SetStartTimeW(PWideChar(textString));
 end;
 
 procedure TAudioGenie3.ID3V1SetTitleW(const textString: WideString);

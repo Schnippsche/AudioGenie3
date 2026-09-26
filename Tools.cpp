@@ -61,6 +61,7 @@ CTools::CTools(void)
 	configValues[CONFIG_MP4PADDINGSIZE] = 4096;
 	configValues[CONFIG_ANSICODEPAGE] = 1252;         // Windows-1252, a superset of ISO-8859-1
 	configValues[CONFIG_ID3V2LINKEDPICTURES] = 0;
+	configValues[CONFIG_ID3V1MAXTEXTLENGTH] = 90;
 	setConfigValue(CONFIG_MAXTEXTBUFFER, 0x40000l); // default 256 KB
 }
 
@@ -334,6 +335,9 @@ void CTools::setConfigValue(long key, long value)
 		}
 		if (key == CONFIG_ID3V2LINKEDPICTURES)
 			value = (value != 0) ? 1 : 0;
+		// the id3v1 tag has 30 characters, the enhanced tag adds 60 more
+		if (key == CONFIG_ID3V1MAXTEXTLENGTH)
+			value = (value < 30) ? 30 : ((value > 90) ? 90 : value);
 		configValues[key] = value;
 	}
 }

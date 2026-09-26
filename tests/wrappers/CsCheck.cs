@@ -49,6 +49,20 @@ public static class CsCheck
         Check("title round trip", AudioGenie2.AUDIOTitle == special, AudioGenie2.AUDIOTitle);
         Check("artist round trip", AudioGenie2.AUDIOArtist == "C#", AudioGenie2.AUDIOArtist);
         Check("MD5 of the audio data unchanged", AudioGenie2.AUDIOGetMD5Value() == md5, "");
+
+        // enhanced ID3v1 tag: speed, genre text and times
+        AudioGenie2.AUDIOAnalyzeFile(work);
+        AudioGenie2.ID3V1Speed = 2;
+        AudioGenie2.ID3V1EnhancedGenre = "Wrapper";
+        AudioGenie2.ID3V1StartTime = "000:10";
+        AudioGenie2.ID3V1EndTime = "003:20";
+        Check("ID3v1 save", AudioGenie2.ID3V1SaveChanges(), "ID3V1SaveChanges returned false");
+        AudioGenie2.AUDIOAnalyzeFile(work);
+        Check("ID3v1 speed", AudioGenie2.ID3V1Speed == 2, AudioGenie2.ID3V1Speed.ToString());
+        Check("ID3v1 genre text", AudioGenie2.ID3V1EnhancedGenre == "Wrapper", AudioGenie2.ID3V1EnhancedGenre);
+        Check("ID3v1 start time", AudioGenie2.ID3V1StartTime == "000:10", AudioGenie2.ID3V1StartTime);
+        Check("ID3v1 end time", AudioGenie2.ID3V1EndTime == "003:20", AudioGenie2.ID3V1EndTime);
+        Check("MD5 unchanged after the enhanced ID3v1 tag", AudioGenie2.AUDIOGetMD5Value() == md5, "");
         File.Delete(work);
 
         Check("missing file is not recognized", AudioGenie2.AUDIOAnalyzeFile(Path.Combine(fixtures, "does_not_exist.mp3")) == AudioFormatID.UNKNOWN, "");

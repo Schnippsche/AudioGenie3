@@ -25,7 +25,7 @@ TEST_CASE("All exports of the .def are present in the DLL", "[exports]")
         CHECK(GetProcAddress(h, name.c_str()) != nullptr);
         count++;
     }
-    CHECK(count == 451);  // 446 API-Funktionen + 5 COM-Standardexporte
+    CHECK(count == 459);  // 454 API-Funktionen + 5 COM-Standardexporte
     FreeLibrary(h);
 }
 

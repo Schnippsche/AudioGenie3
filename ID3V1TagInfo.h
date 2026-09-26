@@ -95,6 +95,12 @@ public:
 	bool WriteToFile(FILE *Stream);
 	void Reset();
 	bool exists();
+	int GetSpeed();
+	void SetSpeed(int value);
+	CAtlString GetEnhancedGenre();
+	void SetEnhancedGenre(LPCWSTR value);
+	CAtlString GetTime(bool end);
+	bool SetTime(bool end, LPCWSTR value);
 	bool needsEnhanced();		// texts longer than 30 characters or data of an enhanced tag
 	int GetSize() { return needsEnhanced() ? ID3V1_TAG_SIZE + ID3V1_ENHANCED_SIZE : ID3V1_TAG_SIZE; }
 	CAtlString GetTagVersion();

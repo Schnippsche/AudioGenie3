@@ -547,3 +547,117 @@ TEST_CASE("APE tag at the beginning of the file", "[tags][spec][ape][head]")
         CHECK(APEExistsW() == 0);
     }
 }
+
+TEST_CASE("ID3v1 enhanced tag: speed, genre text and times through the API", "[tags][spec][id3v1][enhanced]")
+{
+    const Bytes v1 = id3v1("T", "A", "B", "2001", pad30("c"), 17);
+    auto p = writeParts("enh_api.mp3", Bytes(), v1);
+    REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+    CHECK(ID3V1GetSpeedW() == 0);
+    CHECK(take(ID3V1GetEnhancedGenreW()).empty());
+    CHECK(take(ID3V1GetStartTimeW()).empty());
+    CHECK(take(ID3V1GetEndTimeW()).empty());
+
+    SECTION("values are written and read again") {
+        ID3V1SetSpeedW(3);
+        ID3V1SetEnhancedGenreW(L"Progressive Rock");
+        ID3V1SetStartTimeW(L"001:05");
+        ID3V1SetEndTimeW(L"123:59");
+        REQUIRE(ID3V1SaveChangesW() != 0);
+        const Bytes f = readFile(p);
+        REQUIRE(f.size() == audio().size() + 355);
+        CHECK(audioDiff(f) == -1);
+        const Bytes rest(f.end() - 355 + 184, f.end() - 128);
+        CHECK(rest == concat({ Bytes{ 3 }, field("Progressive Rock", 30), field("001:05", 6), field("123:59", 6) }));
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        CHECK(ID3V1GetSpeedW() == 3);
+        CHECK(take(ID3V1GetEnhancedGenreW()) == L"Progressive Rock");
+        CHECK(take(ID3V1GetStartTimeW()) == L"001:05");
+        CHECK(take(ID3V1GetEndTimeW()) == L"123:59");
+        CHECK(take(ID3V1GetTitleW()) == L"T");
+        // everything removed: the enhanced tag is not written again
+        ID3V1SetSpeedW(0);
+        ID3V1SetEnhancedGenreW(L"");
+        ID3V1SetStartTimeW(L"");
+        ID3V1SetEndTimeW(L"");
+        REQUIRE(ID3V1SaveChangesW() != 0);
+        CHECK(readFile(p).size() == audio().size() + 128);
+    }
+    SECTION("invalid values are not accepted") {
+        ID3V1SetSpeedW(5);
+        CHECK(ID3V1GetSpeedW() == 0);
+        ID3V1SetSpeedW(-1);
+        CHECK(ID3V1GetSpeedW() == 0);
+        ID3V1SetStartTimeW(L"1:05");
+        ID3V1SetStartTimeW(L"001:65");
+        ID3V1SetStartTimeW(L"00a:10");
+        ID3V1SetStartTimeW(L"001-05");
+        CHECK(take(ID3V1GetStartTimeW()).empty());
+        ID3V1SetEndTimeW(L"002:30");
+        ID3V1SetEndTimeW(L"bad");
+        CHECK(take(ID3V1GetEndTimeW()) == L"002:30");   // the invalid value did not replace it
+        ID3V1SetEnhancedGenreW(L"0123456789012345678901234567890123456789");
+        CHECK(take(ID3V1GetEnhancedGenreW()) == L"012345678901234567890123456789");   // 30 characters
+    }
+}
+
+namespace {
+struct MaxTextLength {
+    long old;
+    MaxTextLength() : old(GetConfigValueW(9)) {}
+    ~MaxTextLength() { SetConfigValueW(9, old); }
+};
+}  // namespace
+
+TEST_CASE("ID3v1 enhanced tag: configuration value ID3V1MAXTEXTLENGTH", "[tags][spec][id3v1][enhanced][config]")
+{
+    MaxTextLength guard;
+    const std::string longTitle = "0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789";   // 100 characters
+    REQUIRE(longTitle.size() == 100);
+    CHECK(GetConfigValueW(9) == 90);   // the default
+    auto p = writeParts("enh_config.mp3", Bytes(), id3v1("T", "A", "B", "2001", pad30("c"), 17));
+    REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+
+    SECTION("the default is 90 characters") {
+        ID3V1SetTitleW(wide(longTitle).c_str());
+        REQUIRE(ID3V1SaveChangesW() != 0);
+        CHECK(readFile(p).size() == audio().size() + 355);
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        CHECK(take(ID3V1GetTitleW()) == wide(longTitle.substr(0, 90)));
+    }
+    SECTION("30: no enhanced tag for long texts") {
+        SetConfigValueW(9, 30);
+        ID3V1SetTitleW(wide(longTitle).c_str());
+        REQUIRE(ID3V1SaveChangesW() != 0);
+        CHECK(readFile(p).size() == audio().size() + 128);
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        CHECK(take(ID3V1GetTitleW()) == wide(longTitle.substr(0, 30)));
+    }
+    SECTION("30: the enhanced tag is written for a speed") {
+        SetConfigValueW(9, 30);
+        ID3V1SetTitleW(wide(longTitle).c_str());
+        ID3V1SetSpeedW(2);
+        REQUIRE(ID3V1SaveChangesW() != 0);
+        const Bytes f = readFile(p);
+        REQUIRE(f.size() == audio().size() + 355);
+        CHECK(Bytes(f.end() - 355 + 4, f.end() - 355 + 64) == field("", 60));   // the title continues nowhere
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        CHECK(take(ID3V1GetTitleW()) == wide(longTitle.substr(0, 30)));
+        CHECK(ID3V1GetSpeedW() == 2);
+    }
+    SECTION("50 characters") {
+        SetConfigValueW(9, 50);
+        ID3V1SetTitleW(wide(longTitle).c_str());
+        REQUIRE(ID3V1SaveChangesW() != 0);
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        CHECK(take(ID3V1GetTitleW()) == wide(longTitle.substr(0, 50)));
+    }
+    SECTION("values outside of 30 to 90 are set to the limit") {
+        SetConfigValueW(9, 10);
+        CHECK(GetConfigValueW(9) == 30);
+        SetConfigValueW(9, 500);
+        CHECK(GetConfigValueW(9) == 90);
+        SetConfigValueW(9, 61);
+        CHECK(GetConfigValueW(9) == 61);
+    }
+}

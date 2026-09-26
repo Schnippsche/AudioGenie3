@@ -103,10 +103,14 @@ ID3V1ExistsW
 ID3V1GetAlbumW
 ID3V1GetArtistW
 ID3V1GetCommentW
+ID3V1GetEndTimeW
+ID3V1GetEnhancedGenreW
 ID3V1GetGenreIDW
 ID3V1GetGenreItemW
 ID3V1GetGenresW
 ID3V1GetGenreW
+ID3V1GetSpeedW
+ID3V1GetStartTimeW
 ID3V1GetTitleW
 ID3V1GetTrackW
 ID3V1GetVersionW
@@ -118,8 +122,12 @@ ID3V1SaveChangesW
 ID3V1SetAlbumW
 ID3V1SetArtistW
 ID3V1SetCommentW
+ID3V1SetEndTimeW
+ID3V1SetEnhancedGenreW
 ID3V1SetGenreIDW
 ID3V1SetGenreW
+ID3V1SetSpeedW
+ID3V1SetStartTimeW
 ID3V1SetTitleW
 ID3V1SetTrackW
 ID3V1SetYearW

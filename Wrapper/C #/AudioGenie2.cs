@@ -531,6 +531,8 @@ namespace AudioGenie
         [DllImport("AudioGenie3.dll", CharSet = CharSet.Unicode, SetLastError = true, ExactSpelling = true)]
         private static extern short ID3V1GetGenreIDW();
         [DllImport("AudioGenie3.dll", CharSet = CharSet.Unicode, SetLastError = true, ExactSpelling = true)]
+        private static extern short ID3V1GetSpeedW();
+        [DllImport("AudioGenie3.dll", CharSet = CharSet.Unicode, SetLastError = true, ExactSpelling = true)]
         [return: MarshalAs(UnmanagedType.BStr)]
         private static extern string ID3V1GetGenreItemW(short number);
         [DllImport("AudioGenie3.dll", CharSet = CharSet.Unicode, SetLastError = true, ExactSpelling = true)]
@@ -541,6 +543,15 @@ namespace AudioGenie
         [DllImport("AudioGenie3.dll", CharSet = CharSet.Unicode, SetLastError = true, ExactSpelling = true)]
         [return: MarshalAs(UnmanagedType.BStr)]
         private static extern string ID3V1GetTitleW();
+        [DllImport("AudioGenie3.dll", CharSet = CharSet.Unicode, SetLastError = true, ExactSpelling = true)]
+        [return: MarshalAs(UnmanagedType.BStr)]
+        private static extern string ID3V1GetEndTimeW();
+        [DllImport("AudioGenie3.dll", CharSet = CharSet.Unicode, SetLastError = true, ExactSpelling = true)]
+        [return: MarshalAs(UnmanagedType.BStr)]
+        private static extern string ID3V1GetEnhancedGenreW();
+        [DllImport("AudioGenie3.dll", CharSet = CharSet.Unicode, SetLastError = true, ExactSpelling = true)]
+        [return: MarshalAs(UnmanagedType.BStr)]
+        private static extern string ID3V1GetStartTimeW();
         [DllImport("AudioGenie3.dll", CharSet = CharSet.Unicode, SetLastError = true, ExactSpelling = true)]
         [return: MarshalAs(UnmanagedType.BStr)]
         private static extern string ID3V1GetTrackW();
@@ -567,11 +578,19 @@ namespace AudioGenie
         [DllImport("AudioGenie3.dll", CharSet = CharSet.Unicode, SetLastError = true, ExactSpelling = true)]
         private static extern void ID3V1SetGenreIDW(short nNewValue);
         [DllImport("AudioGenie3.dll", CharSet = CharSet.Unicode, SetLastError = true, ExactSpelling = true)]
+        private static extern void ID3V1SetSpeedW(short speed);
+        [DllImport("AudioGenie3.dll", CharSet = CharSet.Unicode, SetLastError = true, ExactSpelling = true)]
         private static extern void ID3V1SetGenreW(string textString);
         [DllImport("AudioGenie3.dll", CharSet = CharSet.Unicode, SetLastError = true, ExactSpelling = true)]
         private static extern void ID3V1SetTitleW(string textString);
         [DllImport("AudioGenie3.dll", CharSet = CharSet.Unicode, SetLastError = true, ExactSpelling = true)]
         private static extern void ID3V1SetTrackW(string textString);
+        [DllImport("AudioGenie3.dll", CharSet = CharSet.Unicode, SetLastError = true, ExactSpelling = true)]
+        private static extern void ID3V1SetEndTimeW(string textString);
+        [DllImport("AudioGenie3.dll", CharSet = CharSet.Unicode, SetLastError = true, ExactSpelling = true)]
+        private static extern void ID3V1SetEnhancedGenreW(string textString);
+        [DllImport("AudioGenie3.dll", CharSet = CharSet.Unicode, SetLastError = true, ExactSpelling = true)]
+        private static extern void ID3V1SetStartTimeW(string textString);
         [DllImport("AudioGenie3.dll", CharSet = CharSet.Unicode, SetLastError = true, ExactSpelling = true)]
         private static extern void ID3V1SetYearW(string textString);
         [DllImport("AudioGenie3.dll", CharSet = CharSet.Unicode, SetLastError = true, ExactSpelling = true)]
@@ -1620,6 +1639,26 @@ namespace AudioGenie
         {
             get { return ID3V1GetTrackW(); }
             set { ID3V1SetTrackW(value); }
+        }
+        public static short ID3V1Speed
+        {
+            get { return ID3V1GetSpeedW(); }
+            set { ID3V1SetSpeedW(value); }
+        }
+        public static string ID3V1EndTime
+        {
+            get { return ID3V1GetEndTimeW(); }
+            set { ID3V1SetEndTimeW(value); }
+        }
+        public static string ID3V1EnhancedGenre
+        {
+            get { return ID3V1GetEnhancedGenreW(); }
+            set { ID3V1SetEnhancedGenreW(value); }
+        }
+        public static string ID3V1StartTime
+        {
+            get { return ID3V1GetStartTimeW(); }
+            set { ID3V1SetStartTimeW(value); }
         }
         public static string ID3V1Year
         {

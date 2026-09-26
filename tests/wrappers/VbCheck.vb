@@ -51,6 +51,20 @@ Module VbCheck
         Check("title round trip", AUDIOTitle = special, AUDIOTitle)
         Check("artist round trip", AUDIOArtist = "VB.NET", AUDIOArtist)
         Check("MD5 of the audio data unchanged", AUDIOGetMD5Value() = md5, AUDIOGetMD5Value())
+
+        ' enhanced ID3v1 tag: speed, genre text and times
+        AUDIOAnalyzeFile(work)
+        ID3V1Speed = 2
+        ID3V1EnhancedGenre = "Wrapper"
+        ID3V1StartTime = "000:10"
+        ID3V1EndTime = "003:20"
+        Check("ID3v1 save", ID3V1SaveChanges(), "ID3V1SaveChanges returned False")
+        AUDIOAnalyzeFile(work)
+        Check("ID3v1 speed", ID3V1Speed = 2, ID3V1Speed.ToString())
+        Check("ID3v1 genre text", ID3V1EnhancedGenre = "Wrapper", ID3V1EnhancedGenre)
+        Check("ID3v1 start time", ID3V1StartTime = "000:10", ID3V1StartTime)
+        Check("ID3v1 end time", ID3V1EndTime = "003:20", ID3V1EndTime)
+        Check("MD5 unchanged after the enhanced ID3v1 tag", AUDIOGetMD5Value() = md5, AUDIOGetMD5Value())
         File.Delete(work)
 
         ' unknown file

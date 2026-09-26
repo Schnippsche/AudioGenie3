@@ -558,6 +558,9 @@ Namespace AudioGenie
         Private Function ID3V1GetGenreIDW() As Short
         End Function
         <DllImport("AudioGenie3.dll", CharSet:=CharSet.Unicode, SetLastError:=True, ExactSpelling:=True)> _
+        Private Function ID3V1GetSpeedW() As Short
+        End Function
+        <DllImport("AudioGenie3.dll", CharSet:=CharSet.Unicode, SetLastError:=True, ExactSpelling:=True)> _
         Private Function ID3V1GetGenreItemW(ByVal number As Short) As <MarshalAs(UnmanagedType.BStr)> String
         End Function
         <DllImport("AudioGenie3.dll", CharSet:=CharSet.Unicode, SetLastError:=True, ExactSpelling:=True)> _
@@ -568,6 +571,15 @@ Namespace AudioGenie
         End Function
         <DllImport("AudioGenie3.dll", CharSet:=CharSet.Unicode, SetLastError:=True, ExactSpelling:=True)> _
         Private Function ID3V1GetTitleW() As <MarshalAs(UnmanagedType.BStr)> String
+        End Function
+        <DllImport("AudioGenie3.dll", CharSet:=CharSet.Unicode, SetLastError:=True, ExactSpelling:=True)> _
+        Private Function ID3V1GetEndTimeW() As <MarshalAs(UnmanagedType.BStr)> String
+        End Function
+        <DllImport("AudioGenie3.dll", CharSet:=CharSet.Unicode, SetLastError:=True, ExactSpelling:=True)> _
+        Private Function ID3V1GetEnhancedGenreW() As <MarshalAs(UnmanagedType.BStr)> String
+        End Function
+        <DllImport("AudioGenie3.dll", CharSet:=CharSet.Unicode, SetLastError:=True, ExactSpelling:=True)> _
+        Private Function ID3V1GetStartTimeW() As <MarshalAs(UnmanagedType.BStr)> String
         End Function
         <DllImport("AudioGenie3.dll", CharSet:=CharSet.Unicode, SetLastError:=True, ExactSpelling:=True)> _
         Private Function ID3V1GetTrackW() As <MarshalAs(UnmanagedType.BStr)> String
@@ -603,6 +615,9 @@ Namespace AudioGenie
         Private Sub ID3V1SetGenreIDW(ByVal nNewValue As Short)
         End Sub
         <DllImport("AudioGenie3.dll", CharSet:=CharSet.Unicode, SetLastError:=True, ExactSpelling:=True)> _
+        Private Sub ID3V1SetSpeedW(ByVal speed As Short)
+        End Sub
+        <DllImport("AudioGenie3.dll", CharSet:=CharSet.Unicode, SetLastError:=True, ExactSpelling:=True)> _
         Private Sub ID3V1SetGenreW(ByVal textString As String)
         End Sub
         <DllImport("AudioGenie3.dll", CharSet:=CharSet.Unicode, SetLastError:=True, ExactSpelling:=True)> _
@@ -610,6 +625,15 @@ Namespace AudioGenie
         End Sub
         <DllImport("AudioGenie3.dll", CharSet:=CharSet.Unicode, SetLastError:=True, ExactSpelling:=True)> _
         Private Sub ID3V1SetTrackW(ByVal textString As String)
+        End Sub
+        <DllImport("AudioGenie3.dll", CharSet:=CharSet.Unicode, SetLastError:=True, ExactSpelling:=True)> _
+        Private Sub ID3V1SetEndTimeW(ByVal textString As String)
+        End Sub
+        <DllImport("AudioGenie3.dll", CharSet:=CharSet.Unicode, SetLastError:=True, ExactSpelling:=True)> _
+        Private Sub ID3V1SetEnhancedGenreW(ByVal textString As String)
+        End Sub
+        <DllImport("AudioGenie3.dll", CharSet:=CharSet.Unicode, SetLastError:=True, ExactSpelling:=True)> _
+        Private Sub ID3V1SetStartTimeW(ByVal textString As String)
         End Sub
         <DllImport("AudioGenie3.dll", CharSet:=CharSet.Unicode, SetLastError:=True, ExactSpelling:=True)> _
         Private Sub ID3V1SetYearW(ByVal textString As String)
@@ -2044,6 +2068,38 @@ Namespace AudioGenie
             End Get
             Set(ByVal value As String)
                 ID3V1SetTrackW(value)
+            End Set
+        End Property
+        Public Property ID3V1Speed() As Short
+            Get
+                Return ID3V1GetSpeedW()
+            End Get
+            Set(ByVal value As Short)
+                ID3V1SetSpeedW(value)
+            End Set
+        End Property
+        Public Property ID3V1EndTime() As String
+            Get
+                Return ID3V1GetEndTimeW()
+            End Get
+            Set(ByVal value As String)
+                ID3V1SetEndTimeW(value)
+            End Set
+        End Property
+        Public Property ID3V1EnhancedGenre() As String
+            Get
+                Return ID3V1GetEnhancedGenreW()
+            End Get
+            Set(ByVal value As String)
+                ID3V1SetEnhancedGenreW(value)
+            End Set
+        End Property
+        Public Property ID3V1StartTime() As String
+            Get
+                Return ID3V1GetStartTimeW()
+            End Get
+            Set(ByVal value As String)
+                ID3V1SetStartTimeW(value)
             End Set
         End Property
         Public Property ID3V1Year() As String

@@ -3565,6 +3565,127 @@ extern "C" short __stdcall ID3V1GetGenresW()
 }
 
 /**
+ * @brief get the speed of the enhanced ID3v1 tag
+ *
+ * The enhanced tag ("TAG+") is in front of the ID3v1 tag, see ID3V1SetTitleW.
+ *
+ * @ingroup ID3V1
+ * @since 3.1.0.0
+ * @return 0=not set  1=slow  2=medium  3=fast  4=hardcore
+ */
+extern "C" short __stdcall ID3V1GetSpeedW()
+{
+	return (short)id3v1.GetSpeed();
+}
+
+
+/**
+ * @brief set the speed of the enhanced ID3v1 tag
+ *
+ * The enhanced tag is written if a speed, a genre or a time is set, or if a text is longer than 30 characters (see the
+ * configuration value ID3V1MAXTEXTLENGTH in SetConfigValueW).
+ *
+ * @ingroup ID3V1
+ * @since 3.1.0.0
+ * @param speed 0=not set  1=slow  2=medium  3=fast  4=hardcore; another value means 0
+ */
+extern "C" void __stdcall ID3V1SetSpeedW(short speed)
+{
+	id3v1.SetSpeed(speed);
+}
+
+
+/**
+ * @brief get the genre text of the enhanced ID3v1 tag
+ *
+ * This is a free text of up to 30 characters, not the genre number of the ID3v1 tag (see ID3V1GetGenreW).
+ *
+ * @ingroup ID3V1
+ * @since 3.1.0.0
+ * @return genre text
+ */
+extern "C" BSTR __stdcall ID3V1GetEnhancedGenreW()
+{
+	return id3v1.GetEnhancedGenre().AllocSysString();
+}
+
+
+/**
+ * @brief set the genre text of the enhanced ID3v1 tag
+ *
+ * This is a free text of up to 30 characters, not the genre number of the ID3v1 tag (see ID3V1SetGenreW).
+ *
+ * @ingroup ID3V1
+ * @since 3.1.0.0
+ * @param textString genre text, an empty text removes it
+ */
+extern "C" void __stdcall ID3V1SetEnhancedGenreW(LPCWSTR textString)
+{
+	id3v1.SetEnhancedGenre(getValidPointer(textString));
+}
+
+
+/**
+ * @brief get the start time of the enhanced ID3v1 tag
+ *
+ * @ingroup ID3V1
+ * @since 3.1.0.0
+ * @return start time in the form mmm:ss or empty
+ */
+extern "C" BSTR __stdcall ID3V1GetStartTimeW()
+{
+	return id3v1.GetTime(false).AllocSysString();
+}
+
+
+/**
+ * @brief set the start time of the enhanced ID3v1 tag
+ *
+ * The start time is the position at which the music starts, for example to skip a lead-in.
+ *
+ * @ingroup ID3V1
+ * @since 3.1.0.0
+ * @param textString time in the form mmm:ss (three digits, colon, seconds from 00 to 59), an empty text removes it;
+ *        another text is ignored (the log contains a warning)
+ */
+extern "C" void __stdcall ID3V1SetStartTimeW(LPCWSTR textString)
+{
+	if (!id3v1.SetTime(false, getValidPointer(textString)))
+		CTools::instance().writeWarning(L"ID3v1 start time '%s' ignored: the form is mmm:ss", getValidPointer(textString));
+}
+
+
+/**
+ * @brief get the end time of the enhanced ID3v1 tag
+ *
+ * @ingroup ID3V1
+ * @since 3.1.0.0
+ * @return end time in the form mmm:ss or empty
+ */
+extern "C" BSTR __stdcall ID3V1GetEndTimeW()
+{
+	return id3v1.GetTime(true).AllocSysString();
+}
+
+
+/**
+ * @brief set the end time of the enhanced ID3v1 tag
+ *
+ * The end time is the position at which the music ends, for example to skip a fade-out.
+ *
+ * @ingroup ID3V1
+ * @since 3.1.0.0
+ * @param textString time in the form mmm:ss (three digits, colon, seconds from 00 to 59), an empty text removes it;
+ *        another text is ignored (the log contains a warning)
+ */
+extern "C" void __stdcall ID3V1SetEndTimeW(LPCWSTR textString)
+{
+	if (!id3v1.SetTime(true, getValidPointer(textString)))
+		CTools::instance().writeWarning(L"ID3v1 end time '%s' ignored: the form is mmm:ss", getValidPointer(textString));
+}
+
+
+/**
  * @brief returns -1 if ID3v1 tag exists
  *
  * @ingroup ID3V1
@@ -4165,6 +4286,7 @@ extern "C" short __stdcall ID3V2GetEncodingW(u32 FrameID)
  * | 6 | MP4PADDINGSIZE | 4096 | the padding size in bytes for an MP4 tag |
  * | 7 | ANSICODEPAGE | 1252 | the code page of ISO-8859-1 / ANSI strings, 0 = the code page of the system (see below) |
  * | 8 | ID3V2LINKEDPICTURES | 0 | 1 = read the picture that an ID3v2 APIC frame links to (MIME type <tt>--></tt>) from disk |
+ * | 9 | ID3V1MAXTEXTLENGTH | 90 | 30 to 90 = the longest title, artist and album that is written to an ID3v1 tag (see below) |
  *
  * <b>ANSICODEPAGE</b>
  *
@@ -4172,6 +4294,14 @@ extern "C" short __stdcall ID3V2GetEncodingW(u32 FrameID)
  * default 1252 contains all characters of ISO-8859-1 and gives the same result on every computer. Use 28591 for strict
  * ISO-8859-1 (the bytes $80 to $9F are then control characters), or a code page such as 1251 for tags that were written with
  * that code page. 0 selects the code page of the system (the behaviour of version 2.0.4). Set the value before the analysis.
+ *
+ * <b>ID3V1MAXTEXTLENGTH</b>
+ *
+ * The ID3v1 tag has 30 characters for title, artist and album. A longer text is stored in the enhanced tag ("TAG+", 227 bytes in
+ * front of the ID3v1 tag) up to 90 characters; a longer text is cut. With the value 30 a longer text is cut at 30 characters and the
+ * enhanced tag is written only if a speed, a genre text or a time is set (ID3V1SetSpeedW, ID3V1SetEnhancedGenreW,
+ * ID3V1SetStartTimeW, ID3V1SetEndTimeW). Values outside of 30 to 90 are set to the nearest limit. The value does not
+ * change reading: an existing enhanced tag is always read.
  *
  * <b>ID3V2LINKEDPICTURES</b>
  *
@@ -4231,6 +4361,7 @@ extern "C" void __stdcall SetConfigValueW(long key, long value)
  * | 6 | MP4PADDINGSIZE | the padding size in bytes for an MP4 tag |
  * | 7 | ANSICODEPAGE | the code page of ISO-8859-1 / ANSI strings |
  * | 8 | ID3V2LINKEDPICTURES | 1 if linked pictures are read from disk |
+ * | 9 | ID3V1MAXTEXTLENGTH | the longest text that is written to an ID3v1 tag |
  *
  * @ingroup UNIVERSAL
  * @since 2.0.1.0

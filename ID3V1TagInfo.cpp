@@ -132,9 +132,71 @@ bool CID3V1TagInfo::ReadFromFile(FILE *Stream)
   return true;
 }
 
+// the longest text that is written: 30 to 90 characters (configuration ID3V1MAXTEXTLENGTH)
+static int MaxTextLength()
+{
+  const long value = CTools::configValues[CONFIG_ID3V1MAXTEXTLENGTH];
+  return (value < 30) ? 30 : ((value > 90) ? 90 : (int)value);
+}
+
+// enhanced tag: speed (0 = not set, 1 slow, 2 medium, 3 fast, 4 hardcore), genre (free text of 30 characters),
+// start and end time ("mmm:ss"); the 43 bytes are _enhancedRest[0], [1..30], [31..36] and [37..42]
+int CID3V1TagInfo::GetSpeed()
+{
+  return _enhancedRest[0];
+}
+
+void CID3V1TagInfo::SetSpeed(int value)
+{
+  _enhancedRest[0] = (value >= 0 && value <= 4) ? (BYTE)value : 0;
+}
+
+CAtlString CID3V1TagInfo::GetEnhancedGenre()
+{
+  CBlob field;
+  field.AddMemory(_enhancedRest + 1, 30);
+  return ReadFixedField(&field, 0, 30);
+}
+
+void CID3V1TagInfo::SetEnhancedGenre(LPCWSTR value)
+{
+  CBlob field;
+  field.AddFixedAnsiString(value, 30);
+  memset(_enhancedRest + 1, 0, 30);
+  memcpy(_enhancedRest + 1, field.m_pData, min(field.GetLength(), (size_t)30));
+}
+
+CAtlString CID3V1TagInfo::GetTime(bool end)
+{
+  const BYTE *time = _enhancedRest + (end ? 37 : 31);
+  CAtlString result;
+  for (int i = 0; i < 6 && time[i] != 0; i++)
+    result += (TCHAR)time[i];
+  return result;
+}
+
+// a time has the form mmm:ss (seconds below 60) or is empty; anything else is not accepted
+bool CID3V1TagInfo::SetTime(bool end, LPCWSTR value)
+{
+  BYTE *time = _enhancedRest + (end ? 37 : 31);
+  const size_t length = (value == NULL) ? 0 : wcslen(value);
+  if (length == 0)
+  {
+    memset(time, 0, 6);
+    return true;
+  }
+  if (length != 6 || !iswdigit(value[0]) || !iswdigit(value[1]) || !iswdigit(value[2]) || value[3] != L':'
+    || value[4] < L'0' || value[4] > L'5' || !iswdigit(value[5]))
+    return false;
+  for (int i = 0; i < 6; i++)
+    time[i] = (BYTE)value[i];
+  return true;
+}
+
 bool CID3V1TagInfo::needsEnhanced()
 {
-  if (Title.GetLength() > 30 || Artist.GetLength() > 30 || Album.GetLength() > 30)
+  const int maxLength = MaxTextLength();
+  if (min(Title.GetLength(), maxLength) > 30 || min(Artist.GetLength(), maxLength) > 30 || min(Album.GetLength(), maxLength) > 30)
     return true;
   for (int i = 0; i < ID3V1_ENHANCED_REST; i++)
     if (_enhancedRest[i] != 0)
@@ -150,9 +212,10 @@ bool CID3V1TagInfo::WriteToFile(FILE *Stream)
   {
     // the parts of title, artist and album behind the 30th character (up to 60 more), then speed, genre and times as they were
     tmp->AddMemory("TAG+", 4);
-    tmp->AddFixedAnsiString(Title.Mid(30), 60);
-    tmp->AddFixedAnsiString(Artist.Mid(30), 60);
-    tmp->AddFixedAnsiString(Album.Mid(30), 60);
+    const int maxLength = MaxTextLength();
+    tmp->AddFixedAnsiString(Title.Left(maxLength).Mid(30), 60);
+    tmp->AddFixedAnsiString(Artist.Left(maxLength).Mid(30), 60);
+    tmp->AddFixedAnsiString(Album.Left(maxLength).Mid(30), 60);
     tmp->AddMemory(_enhancedRest, ID3V1_ENHANCED_REST);
   }
   tmp->AddMemory(ID3V1_ID, 3);
