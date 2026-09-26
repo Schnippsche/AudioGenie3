@@ -770,7 +770,7 @@ Functions</h2></td></tr>
 </div><div class="memdoc">
 
 <p>stores the Lyrics tag in the last analyzed file </p>
-<p>The tag is always written as Lyrics3 v2.00 in front of the ID3v1 tag (and its enhanced tag), which has to exist. Fields that this library does not know are kept. The indication has two characters (0 or 1, otherwise it is not written); the lyrics, the information and the image links have at most 99999 bytes, the other fields 250; longer texts are cut. Line breaks are written as CR LF. If all fields are empty the tag is removed.</p>
+<p>The tag is always written as Lyrics3 v2.00 in front of the ID3v1 tag (and its enhanced tag), which has to exist; an existing tag is replaced at its place, also if an APE tag is between it and the ID3v1 tag. Fields that this library does not know are kept. The indication has two characters (0 or 1, otherwise it is not written); the lyrics, the information and the image links have at most 99999 bytes, the other fields 250; longer texts are cut. Line breaks are written as CR LF. If all fields are empty the tag is removed.</p>
 <dl class="section since"><dt>Since</dt><dd>2.0.1.0 </dd></dl>
 <dl class="section return"><dt>Returns</dt><dd>0 on error, otherwise -1 </dd></dl>
 
