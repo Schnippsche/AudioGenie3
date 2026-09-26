@@ -4084,6 +4084,9 @@ extern "C" short __stdcall ID3V2DeleteSelectedFrameW(u32 FrameID, short Index)
 /**
  * @brief set the format and text encoding of the ID3v2 tag
  *
+ * The encoding applies to all text frames when the tag is saved. Text that ISO-8859-1 cannot represent is not replaced by
+ * question marks: such a frame is stored as UTF-16 with BOM instead.
+ *
  * @ingroup ID3V2
  * @since 2.0.1.0
  * @param format 0=existing format 1=id3v2.2  2=id3v2.3 3=id3v2.4
@@ -4122,6 +4125,21 @@ extern "C" short __stdcall ID3V2GetEncodingW(u32 FrameID)
  * | 4 | MAXTEXTBUFFER | 262144 | the maximum text size in bytes |
  * | 5 | WMAPADDINGSIZE | 4096 | the padding size in bytes for a WMA tag |
  * | 6 | MP4PADDINGSIZE | 4096 | the padding size in bytes for an MP4 tag |
+ * | 7 | ANSICODEPAGE | 1252 | the code page of ISO-8859-1 / ANSI strings, 0 = the code page of the system (see below) |
+ * | 8 | ID3V2LINKEDPICTURES | 0 | 1 = read the picture that an ID3v2 APIC frame links to (MIME type <tt>--></tt>) from disk |
+ *
+ * <b>ANSICODEPAGE</b>
+ *
+ * Text with the encoding ISO-8859-1 (ID3v2 encoding 0, ID3v1 and other ANSI strings) is converted with this Windows code page. The
+ * default 1252 contains all characters of ISO-8859-1 and gives the same result on every computer. Use 28591 for strict
+ * ISO-8859-1 (the bytes $80 to $9F are then control characters), or a code page such as 1251 for tags that were written with
+ * that code page. 0 selects the code page of the system (the behaviour of version 2.0.4). Set the value before the analysis.
+ *
+ * <b>ID3V2LINKEDPICTURES</b>
+ *
+ * An ID3v2 picture frame can contain a link to a file instead of the picture (MIME type <tt>--></tt>). The link comes from the
+ * tag of the audio file, so it is not followed by default (the picture size is 0); otherwise a manipulated file could make
+ * an application read any file of the computer. Set the value to 1 to load such pictures.
  *
  * <b>MPEGEXACTREAD</b>
  *
@@ -4173,6 +4191,8 @@ extern "C" void __stdcall SetConfigValueW(long key, long value)
  * | 4 | MAXTEXTBUFFER | the maximum text size in bytes |
  * | 5 | WMAPADDINGSIZE | the padding size in bytes for a WMA tag |
  * | 6 | MP4PADDINGSIZE | the padding size in bytes for an MP4 tag |
+ * | 7 | ANSICODEPAGE | the code page of ISO-8859-1 / ANSI strings |
+ * | 8 | ID3V2LINKEDPICTURES | 1 if linked pictures are read from disk |
  *
  * @ingroup UNIVERSAL
  * @since 2.0.1.0
