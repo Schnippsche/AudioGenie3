@@ -566,7 +566,7 @@ bool CMP4::SaveToFile(LPCWSTR FileName)
 	atom = newData->find(_T("moov.udta.meta.free"));
 	if (atom != NULL)
 		newData->removeAtom(atom);
-	newData->adjustPadding(0);
+	newData->adjustPadding(-1);
 	if (oldTaggings != NULL)
 	{
 		newData->checkMetaBox();
@@ -583,7 +583,8 @@ bool CMP4::SaveToFile(LPCWSTR FileName)
 	if (paddingBlockSize > 0)
 		optimalSize = ((sizeAfter / (u64)paddingBlockSize) + 1) * (u64)paddingBlockSize;
 
-	if (sizeAfter > sizeBefore || optimalSize < sizeBefore || paddingBlockSize == 0)
+	// a padding box has 8 bytes of header: a gap of 1..7 bytes cannot be filled in place
+	if (sizeAfter > sizeBefore || (sizeBefore - sizeAfter > 0 && sizeBefore - sizeAfter < 8) || optimalSize < sizeBefore || paddingBlockSize == 0)
 	{ 
 		CTools::instance().writeDebug(_T("Rebuild mp4 tag")); 
 		mdat->setSameFile(false);
@@ -598,7 +599,7 @@ bool CMP4::SaveToFile(LPCWSTR FileName)
 			return false;
 		};
 		/* adjust padding  */
-		newData->adjustPadding((u32)(paddingBlockSize - 8));		
+		newData->adjustPadding((paddingBlockSize > 0) ? (__int64)paddingBlockSize - 8 : -1);		
 		/* Copy atom blocks */
 		newData->save(Destination);
 		_flushall();
@@ -641,7 +642,8 @@ bool CMP4::SaveToFile(LPCWSTR FileName)
 	mdat->setSameFile(false);
 	// adjust padding
 	errno = 0;
-	newData->adjustPadding((u32)(sizeBefore - sizeAfter));
+	// the size of the padding box is its payload plus 8 bytes of header
+	newData->adjustPadding((sizeBefore > sizeAfter) ? (__int64)(sizeBefore - sizeAfter) - 8 : -1);
 	_fseeki64(Source, CTools::ID3v2Size, SEEK_SET);
 	newData->save(Source);
 	fflush(Source);

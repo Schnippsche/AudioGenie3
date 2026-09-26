@@ -455,6 +455,31 @@ TEST_CASE("MP4: writing tags keeps the media and the chunk offsets of all tracks
     }
 }
 
+TEST_CASE("MP4: a small change is written in place into the padding, the media do not move", "[mp4][spec][write]")
+{
+    // the padding box has 8 bytes of header: every difference of the tag sizes must end up with correct chunk offsets
+    int inPlace = 0, total = 0;
+    for (size_t padding : { 300, 1500, 4096, 6000 }) {
+        for (int extra = 0; extra < 30; extra++) {
+            INFO("padding " << padding << " extra " << extra);
+            Mp4 m;
+            m.padding = padding;
+            const Bytes f = mp4File(m);
+            auto p = writeTemp("mp4_inplace.m4a", f);
+            REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MP4M4A);
+            MP4SetTextFrameW(MP4_TITLE, wide(std::string(1 + extra, 't')).c_str());
+            REQUIRE(MP4SaveChangesW() != 0);
+            const Bytes g = readFile(p);
+            CHECK(mdatPayload(g) == mediaData(m));
+            checkChunks(g, m);
+            total++;
+            if (g.size() == f.size()) inPlace++;
+        }
+    }
+    CHECK(inPlace > 0);
+    CHECK(inPlace < total);   // both ways (in place and rebuilt) are covered
+}
+
 TEST_CASE("MP4: track and disk numbers above 255, tempo above 255", "[mp4][spec][write]")
 {
     Mp4 m;

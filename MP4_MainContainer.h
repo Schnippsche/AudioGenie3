@@ -27,6 +27,6 @@ public:
 	~CMP4_MainContainer(void);
 	CMP4Atom* find(CAtlString atomID, int count = 1);
 	void save(FILE *stream);
-	void adjustPadding(u32 size);
+	void adjustPadding(__int64 size);
 	void checkMetaBox();
 };

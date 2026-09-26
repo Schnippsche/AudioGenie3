@@ -48,10 +48,10 @@ CMP4Atom* CMP4_MainContainer::find(CAtlString atomID, int count)
 	return NULL;
 }
 
-void CMP4_MainContainer::adjustPadding(u32 size)
+void CMP4_MainContainer::adjustPadding(__int64 size)
 {
-	// is padding wanted? If not, delete the padding atom
-	if (size <= 0)
+	// size = payload of the padding box (the box has 8 bytes more); negative: no padding wanted, delete the padding atom
+	if (size < 0)
 	{
 		this->removeAtom(L"free");
 		return;
@@ -61,7 +61,7 @@ void CMP4_MainContainer::adjustPadding(u32 size)
 	CMP4Atom* atom = find(_T("free"));
 	if (atom != NULL)
 	{
-		atom->_blob.AddValue(0, size);
+		atom->_blob.AddValue(0, (size_t)size);
 		return;
 	}
 	// no padding present, create a new one
@@ -73,7 +73,7 @@ void CMP4_MainContainer::adjustPadding(u32 size)
 		if (atom != NULL)
 		{
 			atom = CMP4_AtomFactory::instance()->createAtom('free');
-			atom->_blob.AddValue(0, size);
+			atom->_blob.AddValue(0, (size_t)size);
 			_children.InsertAt(i, atom);
 			return;
 		}
