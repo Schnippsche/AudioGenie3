@@ -57,7 +57,7 @@ private:
   int Channels;
   long SampleRate;
   int BitsPerSample;
-  long Samples;
+  __int64 Samples;                                 // total number of samples (36 bits in the STREAMINFO)
   int minBlockSize;
   int maxBlockSize;
   long minFrameSize;
@@ -67,16 +67,20 @@ private:
   long oldLen;
   __int64 firstAudioPosition;
   bool mustRebuild;
+  bool metadataComplete;                              // the metadata blocks were read up to the last block
+  bool commentRead;                                // the first Vorbis comment block was read
   strBlockHeader BlockHeader;
-  void ReadBlockHeader(FILE *Stream);
-  void ReadBlock(FILE *Stream);
+  bool ReadBlockHeader(FILE *Stream);
+  bool ReadBlock(FILE *Stream, bool first);
+  __int64 SamplesOfLastFrame(FILE *Stream);
   void AnalyzeComment();
   void AnalyzeStreamInfo();
   void BuildComment();
+  bool CurrentMetadataSize(LPCWSTR FileName, long &size);
   bool RebuildFile(LPCWSTR FileName);
   bool ReplaceTag(LPCWSTR FileName);
   void BuildBlockHeader(int Len, BYTE typ);
-  void BuildFrame(bool withComment);
+  bool BuildFrame(bool withComment);
 public:
   CFLAC();
   virtual ~CFLAC();
@@ -95,7 +99,7 @@ public:
   long GetChannels()                { return Channels;      };
   long GetSampleRate()              { return SampleRate;    };
   int GetBitsPerSample()            { return BitsPerSample; };
-  long GetSamples()                 { return Samples;       };
+  long GetSamples()                 { return Samples > 0x7FFFFFFF ? 0x7FFFFFFF : (long)Samples; };   /* the API has 32 bit */
   int GetMinBlockSize()             { return minBlockSize;  };
   int GetMaxBlockSize()             { return maxBlockSize;  };
   long GetMinFrameSize()            { return minFrameSize;  };

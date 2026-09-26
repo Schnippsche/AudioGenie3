@@ -41,6 +41,7 @@ public:
 	long getPictureArray(BYTE *arr, size_t maxLen);
 	CAtlString getPictureTypeAsText();
 	bool setPictureFile(LPCWSTR fileName);
+	void setPictureData(const BYTE *arr, size_t length);
 	bool setFileLink(LPCWSTR fileName);
 	CAtlString getMime();
 	void CFlacCover::Save(CBlob * destination);

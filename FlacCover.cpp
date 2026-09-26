@@ -184,6 +184,20 @@ bool CFlacCover::setPictureFile(LPCWSTR fileName)
 	return false;
 }
 
+// the picture data from memory: the MIME type, the size and the colors are determined from the data as for a picture from a file
+void CFlacCover::setPictureData(const BYTE *arr, size_t length)
+{
+	data.Clear();
+	_isLink = false;
+	_pictureLink.Empty();
+	_mime.Empty();
+	if (arr != NULL && length > 0)
+		data.AddMemory(arr, length);
+	if (length >= 4)
+		_mime = CTools::instance().ExtractMimeFromPicture(data.m_pData);
+	calcInfos();
+}
+
 bool CFlacCover::setFileLink(LPCWSTR fileName)
 {
 	FILE *Stream;
@@ -206,94 +220,132 @@ bool CFlacCover::setFileLink(LPCWSTR fileName)
 	return false;
 }
 
+// width, height, color depth (bits per pixel) and the number of the colors of an indexed picture from the header of the picture data
 void CFlacCover::calcInfos()
 {
 	width = 0;
 	height = 0;
 	colordepth = 24;
 	colornumbers = 0;
-	// determine width, height and color depth from the picture
-	if (data.GetLength() > 4)
+	const size_t length = data.GetLength();
+	if (length <= 4)
+		return;
+	switch (CTools::instance().CalcMimeFromPicture(data.m_pData))
 	{
-		int format = CTools::instance().CalcMimeFromPicture(data.m_pData);
-		switch (format)
+	case IMAGE_JPG:
 		{
-		case IMAGE_JPG: // ok
+			// the segments follow each other: marker (0xFF and a code), length (16 bit, with the length field); the start of frame
+			// (SOF0 to SOF15 without DHT 0xC4, JPG 0xC8 and DAC 0xCC) has precision (1 byte), height, width (2 bytes each) and the number of components
+			size_t i = 2;
+			while (i + 4 <= length && data.GetAt(i) == 0xFF)
 			{
-				//Retrieve the block length of the first block since the first block will not contain the size of file
-				size_t i = 4;
-				size_t block_length = data.Get2B(i);
-				while (i < data.GetLength()) 
+				const BYTE marker = data.GetAt(i + 1);
+				if (marker == 0xFF)
 				{
-					i+=block_length;               //Increase the file index to get to the next block
-					if(i >= data.GetLength()) 
-						break;   //Check to protect against segmentation faults
-					if(data.GetAt(i) != 0xFF) 
-						break;   //Check that we are truly at the start of another block
-					if(data.GetAt(i + 1) == 0xC0) 
-					{    //0xFFC0 is the "Start of frame" marker which contains the file size
-						//The structure of the 0xFFC0 block is quite simple [0xFFC0][ushort length][uchar precision][ushort x][ushort y]
-						height = data.Get2B(i+5);
-						width = data.Get2B(i+7);
-						colordepth = data.GetAt(i + 9) * 8;
+					i++;   // fill byte
+					continue;
+				}
+				if (marker >= 0xC0 && marker <= 0xCF && marker != 0xC4 && marker != 0xC8 && marker != 0xCC)
+				{
+					if (i + 10 <= length)
+					{
+						height = data.Get2B(i + 5);
+						width = data.Get2B(i + 7);
+						colordepth = data.GetAt(i + 9) * data.GetAt(i + 4);   // components x precision
+					}
+					break;
+				}
+				if (marker == 0xD8 || (marker >= 0xD0 && marker <= 0xD7) || marker == 0x01)
+					i += 2;   // markers without a length
+				else if (marker == 0xDA)
+					break;    // the scan data follow: no start of frame found
+				else
+					i += 2 + data.Get2B(i + 2);
+			}
+		}
+		break;
+	case IMAGE_GIF:
+		// "GIF89a", the logical screen: width and height (16 bit little endian), flags: global color table (bit 7), its size 2^(n+1) (bits 0 to 2)
+		if (length >= 11)
+		{
+			width = (unsigned short)data.GetR2B(6);
+			height = (unsigned short)data.GetR2B(8);
+			const BYTE flags = data.GetAt(10);
+			colordepth = ((flags >> 4) & 7) + 1;   // bits per primary color of the palette
+			if (flags & 0x80)
+				colornumbers = 1 << ((flags & 7) + 1);
+		}
+		break;
+	case IMAGE_PNG:
+		// IHDR: width, height (32 bit big endian), bit depth, color type (0 gray, 2 RGB, 3 palette, 4 gray with alpha, 6 RGB with alpha)
+		if (length >= 29)
+		{
+			width = data.Get4B(16);
+			height = data.Get4B(20);
+			const int depth = data.GetAt(24);
+			const int colorType = data.GetAt(25);
+			const int channels = (colorType == 2) ? 3 : (colorType == 4) ? 2 : (colorType == 6) ? 4 : 1;
+			colordepth = depth * channels;
+			if (colorType == 3)
+			{
+				// the number of the colors is the length of the PLTE chunk / 3
+				size_t pos = 8;
+				while (pos + 12 <= length)
+				{
+					const size_t chunk = (size_t)(unsigned long)data.Get4B(pos);
+					if (memcmp(data.m_pData + pos + 4, "PLTE", 4) == 0)
+					{
+						colornumbers = (unsigned int)(chunk / 3);
 						break;
 					}
-					else
-					{
-						i+=2;                              //Skip the block marker
-						block_length = data.Get2B(i);   //Go to the next block
-					}
+					if (chunk > length)
+						break;
+					pos += 12 + chunk;
 				}
 			}
-			break;	//If this point is reached then no size was found
-		case IMAGE_GIF:
-			if (data.GetLength() >= 10 )
-			{
-				height = data.GetR2B(6);
-				width = data.GetR2B(8);	
-			}
-			break;
-		case IMAGE_PNG:
-			if(data.GetLength() >= 29 )
-			{
-				height = data.Get4B(16);
-				width = data.Get4B(20);	
-			}
-			break;
-		case IMAGE_TIFF:
-			if (data.GetLength() > 8)
-			{
-				long offset = data.GetR4B(4);
-				if (offset > 8 && offset < (long)data.GetLength())
-				{
-					short anz = data.GetR2B(offset);
-					offset+=2;
-					while (anz > 0 && offset < (long)data.GetLength())
-					{
-						short tagcode = data.GetR2B(offset);
-						// short tagtype = data.GetR2B(offset + 2);
-						if (tagcode == 256)
-							width = data.GetR2B(offset + 8);
-						else if (tagcode == 257)
-							height = data.GetR2B(offset + 8);
-						//else if (tagcode == 258)
-						//	colordepth = data.GetR2B(offset + 8); 
-						offset+=12;
-						anz--;
-					}
-				}
-			}
-			break;
-		case IMAGE_BMP: // ok
-			if(data.GetLength() >= 29 )
-			{
-				height = data.GetR4B(18);
-				width = data.GetR4B(22);
-				colordepth = data.GetR2B(28);
-			}
-			break;
-
 		}
+		break;
+	case IMAGE_TIFF:
+		// "II" little endian or "MM" big endian, the offset of the first directory, the entries: tag, type, count, value (12 bytes each)
+		if (length > 8)
+		{
+			const bool little = data.GetAt(0) == 'I';
+			auto read2 = [&](size_t pos) -> long { return little ? (unsigned short)data.GetR2B(pos) : (unsigned short)data.Get2B(pos); };
+			auto read4 = [&](size_t pos) -> long { return little ? data.GetR4B(pos) : data.Get4B(pos); };
+			const long offset = read4(4);
+			if (offset > 8 && (size_t)offset + 2 < length)
+			{
+				size_t pos = (size_t)offset;
+				long entries = read2(pos);
+				pos += 2;
+				while (entries > 0 && pos + 12 <= length)
+				{
+					const long tag = read2(pos);
+					const long valueType = read2(pos + 2);
+					const long value = (valueType == 3) ? read2(pos + 8) : read4(pos + 8);   // SHORT or LONG
+					if (tag == 256)
+						width = value;
+					else if (tag == 257)
+						height = value;
+					pos += 12;
+					entries--;
+				}
+			}
+		}
+		break;
+	case IMAGE_BMP:
+		// BITMAPINFOHEADER: width, height (32 bit little endian, the height is negative for a picture stored from the top), bits per pixel,
+		// the number of the colors used
+		if (length >= 50)
+		{
+			width = data.GetR4B(18);
+			const long h = data.GetR4B(22);
+			height = h < 0 ? -h : h;
+			colordepth = (unsigned short)data.GetR2B(28);
+			if (colordepth <= 8)
+				colornumbers = data.GetR4B(46) != 0 ? data.GetR4B(46) : (1u << colordepth);
+		}
+		break;
 	}
 }
 

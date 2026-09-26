@@ -321,7 +321,9 @@ int CTools::CalcMimeFromPicture(const BYTE *buf)
 	if (buf[0] == 'B' && buf[1] == 'M')
 		return IMAGE_BMP; 
 	if (buf[0] == 0x49 && buf[1] == 0x49 && buf[2] == 0x2A && buf[3] == 0x00)
-		return IMAGE_TIFF; 
+		return IMAGE_TIFF;   // little endian
+	if (buf[0] == 0x4D && buf[1] == 0x4D && buf[2] == 0x00 && buf[3] == 0x2A)
+		return IMAGE_TIFF;   // big endian
 	if (buf[0] == '-' && buf[1] == '-' && buf[2] == '>')
 		return IMAGE_LINK; 
 	return IMAGE_UNKNOWN;

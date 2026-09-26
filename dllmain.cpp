@@ -1030,6 +1030,9 @@ extern "C" float __stdcall FLACGetCompressionRatioW()
 /**
  * @brief get the number of samples
  *
+ * The STREAMINFO block has 36 bits for it; the function returns at most 2147483647. If the STREAMINFO does not know the number (0, for example when
+ * the file was written to a pipe), it is taken from the last frame of the file.
+ *
  * @ingroup FLAC
  * @since 2.0.1.0
  * @return number of samples
@@ -1196,11 +1199,14 @@ extern "C" short __stdcall FLACAddPictureFileW(LPCWSTR FileName, LPCWSTR Descrip
  * @param Description a description of the picture
  * @param PictureType picture type from 0 to 20, see @ref picturetypes
  * @return -1 if frame was replaced, 0 if frame was added
+ *
+ * The MIME type, the width, the height, the color depth and the number of the colors (indexed pictures) are determined from the picture data. A picture block
+ * has at most 16777215 bytes: with a bigger picture saving fails.
  */
 extern "C" short __stdcall FLACAddPictureArrayW(BYTE *arr, u32 Length, LPCWSTR Description, short PictureType)
 {
 	CFlacCover *pic = new CFlacCover( (BYTE)PictureType, getValidPointer(Description));
-	pic->data.AddMemory(arr, Length);
+	pic->setPictureData(arr, Length);
 	return b2s(flac.replaceCover(pic));
 }
 
