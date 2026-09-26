@@ -147,6 +147,27 @@ static const BYTE ZERO[6] = { 0,0,0,0,0,0 };
 #define DATASIZE  3460                        /* ca MAX_MPEG_FRAME_LENGTH * 2 */
 static BYTE Data[DATASIZE + 16]; // reserve: header checks read up to 4 bytes beyond DATASIZE
 
+/* Extension of the Xing/Info header written by LAME (and encoders with the same layout) */
+struct LameData
+{
+	bool Found;
+	char Version[10];                            /* encoder version string, 9 characters */
+	BYTE Revision;
+	BYTE VbrMethod;
+	long Lowpass;                                /* Hz */
+	float PeakSignal;
+	float RadioGain;                             /* dB */
+	float AudiophileGain;                        /* dB */
+	long Bitrate;
+	long EncoderDelay;
+	long EncoderPadding;
+	short Mp3Gain;
+	long Preset;
+	long MusicLength;
+	unsigned short MusicCrc;
+	bool TagCrcValid;
+};
+
 struct VBRData
 {
 	BYTE ID[4];                                  /* Header ID: "Xing", "Info" or "VBRI" */
@@ -190,6 +211,9 @@ private:
 	float secPerFrame;
 	long scannedFrames;                                                /* number of frames counted by ReadAllFrames, 0 = no scan */
 	VBRData FVBR;
+	LameData FLame;
+	__int64 lameHeaderStart;                                          /* position of the frame with the LAME tag */
+	long lameHeaderSize;
 	tagFrameData Frame;
 	/* internal functions */
 	long Get4B(BYTE v[]);
@@ -205,6 +229,7 @@ private:
 	void GetFhgInfo(long Index, BYTE Data[]);
 	void FindVBR(long Index, BYTE Data[]);
 	void FindVBRI(long Index, BYTE Data[]);
+	void ParseLameTag(long frameIndex, long xingIndex, BYTE Data[]);
 	void GetInternEncoder();
 	BYTE GetVBRDeviation();
 	BYTE GetVBREncoderID();
@@ -239,6 +264,23 @@ public:
 	bool GetOriginalBit()     { return Frame.OriginalBit; };
 	bool GetPaddingBit()      { return Frame.PaddingBit; };
 	bool IsVBR()              { return FVBR.Found && !FVBR.Cbr; };
+	/* LAME tag */
+	bool HasLameTag()               { return FLame.Found; };
+	CAtlString GetLameVersion()     { return CAtlString(FLame.Version); };
+	short GetLameRevision()         { return FLame.Revision; };
+	short GetLameVBRMethod()        { return FLame.VbrMethod; };
+	long GetLameLowpass()           { return FLame.Lowpass; };
+	long GetLameBitrate()           { return FLame.Bitrate; };
+	long GetEncoderDelay()          { return FLame.EncoderDelay; };
+	long GetEncoderPadding()        { return FLame.EncoderPadding; };
+	float GetLamePeakSignal()       { return FLame.PeakSignal; };
+	float GetLameRadioGain()        { return FLame.RadioGain; };
+	float GetLameAudiophileGain()   { return FLame.AudiophileGain; };
+	short GetLameMp3Gain()          { return FLame.Mp3Gain; };
+	long GetLamePreset()            { return FLame.Preset; };
+	long GetLameMusicLength()       { return FLame.MusicLength; };
+	bool IsLameTagCrcValid()        { return FLame.Found && FLame.TagCrcValid; };
+	bool IsLameMusicCrcValid(LPCWSTR FileName);
 	bool SetPrivateBit(LPCWSTR FileName, bool neu);
 	bool SetCopyrightBit(LPCWSTR FileName, bool neu);
 	bool SetOriginalBit(LPCWSTR FileName, bool neu);

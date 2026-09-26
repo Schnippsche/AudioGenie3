@@ -366,3 +366,220 @@ TEST_CASE("MPEG: a real VBR file is recognized when the frame scan is on", "[mpe
     CHECK(AUDIOGetBitrateW() == sum / count);
     CHECK(std::fabs(AUDIOGetDurationW() - count * 1152.0 / 44100) < 0.0005);
 }
+
+// ---- LAME tag (extension of the Xing / Info header) ----
+
+namespace {
+
+uint16_t crc16(uint16_t crc, const uint8_t* d, size_t n)
+{
+    for (size_t i = 0; i < n; i++) {
+        crc = static_cast<uint16_t>(crc ^ (d[i] << 8));
+        for (int b = 0; b < 8; b++) crc = static_cast<uint16_t>((crc & 0x8000) ? ((crc << 1) ^ 0x8005) : (crc << 1));
+    }
+    return crc;
+}
+
+struct Lame {
+    const char* version = "LAME3.99r";
+    int revision = 1, method = 4;
+    int lowpass = 195;                 // in 100 Hz
+    double peak = 0.8;
+    int radioGainTenths = -63;         // -6.3 dB
+    int audiophileGainTenths = 25;     // +2.5 dB
+    int bitrate = 128;
+    int delay = 576, padding = 1000;
+    int mp3gain = -3;
+    int preset = 1006;
+    uint32_t flags = 0xF;
+};
+
+uint16_t gainField(int name, int tenths)
+{
+    const int magnitude = tenths < 0 ? -tenths : tenths;
+    return static_cast<uint16_t>((name << 13) | (3 << 10) | ((tenths < 0 ? 1 : 0) << 9) | magnitude);
+}
+
+// The first frame: header, side information, Xing/Info tag with the LAME extension; then the audio frames.
+struct LameFile {
+    Bytes file;
+    size_t headerFrameSize = 0;
+    size_t audioBytes = 0;
+};
+
+LameFile lameFile(const Spec& s, const Lame& l, const char* id, int audioFrames, bool tamperTag = false)
+{
+    LameFile r;
+    Bytes first = headerOf(s, 0);
+    if (s.crc) { first.push_back(0); first.push_back(0); }
+    first.resize(first.size() + static_cast<size_t>(sideInfoSize(s.version, s.mode)), 0);
+    const size_t xingPos = first.size();
+    put(first, id);
+    putBE32(first, l.flags);
+    putBE32(first, static_cast<uint32_t>(audioFrames));
+    const Bytes audio = framesOf(s, audioFrames, 1);
+    putBE32(first, static_cast<uint32_t>(audio.size()));
+    first.insert(first.end(), 100, 0);
+    putBE32(first, 78);                       // quality
+    const size_t ext = first.size();          // 120 bytes behind the Xing tag
+    Bytes e;
+    put(e, l.version);
+    e.push_back(static_cast<uint8_t>((l.revision << 4) | l.method));
+    e.push_back(static_cast<uint8_t>(l.lowpass));
+    putBE32(e, static_cast<uint32_t>(l.peak * 8388608.0 + 0.5));
+    putBE16(e, gainField(1, l.radioGainTenths));
+    putBE16(e, gainField(2, l.audiophileGainTenths));
+    e.push_back(0x13);                        // encoding flags and ATH type
+    e.push_back(static_cast<uint8_t>(l.bitrate));
+    e.push_back(static_cast<uint8_t>(l.delay >> 4));
+    e.push_back(static_cast<uint8_t>(((l.delay & 0xF) << 4) | (l.padding >> 8)));
+    e.push_back(static_cast<uint8_t>(l.padding & 0xFF));
+    e.push_back(0x5C);                        // misc
+    e.push_back(static_cast<uint8_t>(l.mp3gain < 0 ? (0x80 | -l.mp3gain) : l.mp3gain));
+    putBE16(e, static_cast<uint32_t>(l.preset));
+    const uint32_t frameSize = static_cast<uint32_t>(lengthOf(s, 0));
+    putBE32(e, frameSize + static_cast<uint32_t>(audio.size()));   // music length
+    putBE16(e, crc16(0, audio.data(), audio.size()));              // music CRC
+    first.insert(first.end(), e.begin(), e.end());
+    // the CRC of the tag covers the frame up to itself
+    first.push_back(0); first.push_back(0);
+    const uint16_t tagCrc = crc16(0, first.data(), first.size() - 2);
+    first[first.size() - 2] = static_cast<uint8_t>(tagCrc >> 8);
+    first[first.size() - 1] = static_cast<uint8_t>(tagCrc);
+    (void)xingPos; (void)ext;
+    first.resize(static_cast<size_t>(frameSize), 0);
+    if (tamperTag) first[xingPos + 120 + 10] ^= 0x01;   // the lowpass changes, the CRC does not
+    r.headerFrameSize = frameSize;
+    r.audioBytes = audio.size();
+    r.file = first;
+    r.file.insert(r.file.end(), audio.begin(), audio.end());
+    return r;
+}
+
+}  // namespace
+
+TEST_CASE("LAME tag: the CRC-16 of LAME (polynomial 8005, start value 0)", "[mpeg][spec][lame]")
+{
+    const char* check = "123456789";
+    CHECK(crc16(0, reinterpret_cast<const uint8_t*>(check), 9) == 0xFEE8);
+}
+
+TEST_CASE("LAME tag: all fields", "[mpeg][spec][lame]")
+{
+    ExactRead defaultRead(false);
+    Spec s;
+    s.mode = 1;
+    Lame l;
+    const LameFile f = lameFile(s, l, "Xing", 30);
+    auto p = writeTemp("mpegspec_lame.mp3", f.file);
+    REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+    CHECK(MPEGHasLameTagW() != 0);
+    CHECK(take(MPEGGetLameVersionW()) == L"LAME3.99r");
+    CHECK(take(MPEGGetEncoderW()) == L"LAME 3.99");
+    CHECK(MPEGGetLameRevisionW() == 1);
+    CHECK(MPEGGetLameVBRMethodW() == 4);
+    CHECK(MPEGGetLameLowpassW() == 19500);
+    CHECK(MPEGGetLameBitrateW() == 128);
+    CHECK(MPEGGetEncoderDelayW() == 576);
+    CHECK(MPEGGetEncoderPaddingW() == 1000);
+    CHECK(std::fabs(MPEGGetLamePeakSignalW() - 0.8f) < 0.0001f);
+    CHECK(std::fabs(MPEGGetLameRadioGainW() - (-6.3f)) < 0.001f);
+    CHECK(std::fabs(MPEGGetLameAudiophileGainW() - 2.5f) < 0.001f);
+    CHECK(MPEGGetLameMp3GainW() == -3);
+    CHECK(MPEGGetLamePresetW() == 1006);
+    CHECK(MPEGGetLameMusicLengthW() == static_cast<long>(f.headerFrameSize + f.audioBytes));
+    CHECK(MPEGIsLameTagCrcValidW() != 0);
+    CHECK(MPEGIsLameMusicCrcValidW() != 0);
+}
+
+TEST_CASE("LAME tag: changed data are noticed", "[mpeg][spec][lame]")
+{
+    ExactRead defaultRead(false);
+    Spec s;
+    Lame l;
+    SECTION("the tag was changed") {
+        const LameFile f = lameFile(s, l, "Xing", 30, true);
+        auto p = writeTemp("mpegspec_lame_tag.mp3", f.file);
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        CHECK(MPEGHasLameTagW() != 0);
+        CHECK(MPEGIsLameTagCrcValidW() == 0);
+        CHECK(MPEGIsLameMusicCrcValidW() != 0);
+    }
+    SECTION("the audio data were changed") {
+        LameFile f = lameFile(s, l, "Xing", 30);
+        f.file[f.headerFrameSize + 100] ^= 0x55;
+        auto p = writeTemp("mpegspec_lame_music.mp3", f.file);
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        CHECK(MPEGIsLameTagCrcValidW() != 0);
+        CHECK(MPEGIsLameMusicCrcValidW() == 0);
+    }
+    SECTION("tags in front of and behind the audio data do not matter") {
+        const LameFile f = lameFile(s, l, "Xing", 30);
+        Bytes file(2000, 0);          // an ID3v2 tag: 10 byte header, the size is the rest
+        file[0] = 'I'; file[1] = 'D'; file[2] = '3'; file[3] = 3; file[8] = 0x0F; file[9] = 0x46;   // 1990 bytes
+        file.insert(file.end(), f.file.begin(), f.file.end());
+        Bytes v1(128, 0);
+        v1[0] = 'T'; v1[1] = 'A'; v1[2] = 'G';
+        file.insert(file.end(), v1.begin(), v1.end());
+        auto p = writeTemp("mpegspec_lame_tags.mp3", file);
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        CHECK(MPEGHasLameTagW() != 0);
+        CHECK(MPEGIsLameTagCrcValidW() != 0);
+        CHECK(MPEGIsLameMusicCrcValidW() != 0);
+    }
+}
+
+TEST_CASE("LAME tag: position in every layout, Info tag", "[mpeg][spec][lame]")
+{
+    ExactRead defaultRead(false);
+    struct Layout { Version v; int mode; bool crc; const char* id; };
+    const Layout layouts[] = { { V1, 0, false, "Xing" }, { V1, 3, false, "Xing" }, { V1, 0, true, "Xing" }, { V2, 0, false, "Xing" }, { V2, 3, false, "Xing" },
+                               { V2, 3, true, "Xing" }, { V25, 3, false, "Xing" }, { V1, 0, false, "Info" }, { V2, 3, true, "Info" } };
+    for (const Layout& lay : layouts) {
+        Spec s;
+        s.version = lay.v; s.mode = lay.mode; s.crc = lay.crc;
+        s.bitrateIndex = lay.v == V1 ? 9 : 10;
+        Lame l;
+        l.method = std::string(lay.id) == "Info" ? 1 : 4;
+        INFO(std::string(lay.id) + " version " + std::to_string(lay.v) + " mode " + std::to_string(lay.mode) + (lay.crc ? " CRC" : ""));
+        const LameFile f = lameFile(s, l, lay.id, 30);
+        auto p = writeTemp("mpegspec_lame_layout.mp3", f.file);
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        CHECK(MPEGHasLameTagW() != 0);
+        CHECK(MPEGGetEncoderDelayW() == 576);
+        CHECK(MPEGGetLameLowpassW() == 19500);
+        CHECK(MPEGIsLameTagCrcValidW() != 0);
+        CHECK(MPEGIsLameMusicCrcValidW() != 0);
+        CHECK((MPEGIsVBRW() != 0) == (std::string(lay.id) == "Xing"));
+    }
+}
+
+TEST_CASE("LAME tag: not present", "[mpeg][spec][lame]")
+{
+    ExactRead defaultRead(false);
+    Spec s;
+    SECTION("an Xing header with another encoder string") {
+        Lame l;
+        l.version = "abcdefghi";
+        auto p = writeTemp("mpegspec_lame_none.mp3", lameFile(s, l, "Xing", 30).file);
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        CHECK(MPEGHasLameTagW() == 0);
+        CHECK(MPEGGetEncoderDelayW() == 0);
+        CHECK(MPEGGetLameLowpassW() == 0);
+        CHECK(take(MPEGGetLameVersionW()).empty());
+        CHECK(MPEGIsLameTagCrcValidW() == 0);
+        CHECK(MPEGIsLameMusicCrcValidW() == 0);
+    }
+    SECTION("a Xing header without all fields") {
+        Lame l;
+        l.flags = 0x3;     // frames and bytes only: the LAME tag does not follow
+        auto p = writeTemp("mpegspec_lame_flags.mp3", lameFile(s, l, "Xing", 30).file);
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        CHECK(MPEGHasLameTagW() == 0);
+    }
+    SECTION("a file without a header") {
+        auto p = writeTemp("mpegspec_lame_plain.mp3", framesOf(s, 30));
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        CHECK(MPEGHasLameTagW() == 0);
+    }
+}

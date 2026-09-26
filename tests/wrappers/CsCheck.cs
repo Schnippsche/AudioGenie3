@@ -36,6 +36,16 @@ public static class CsCheck
         Check("duration > 0", AudioGenie2.AUDIOGetDuration() > 0, "");
         Check("bit rate > 0", AudioGenie2.AUDIOGetBitrate() > 0, "");
         string md5 = AudioGenie2.AUDIOGetMD5Value();
+
+        // LAME tag: the functions can be called; without a tag they return 0 or an empty text
+        bool lame = AudioGenie2.MPEGHasLameTag();
+        Console.WriteLine("  LAME tag: " + lame + " " + AudioGenie2.MPEGGetLameVersion() + " delay=" + AudioGenie2.MPEGGetEncoderDelay() + " padding=" + AudioGenie2.MPEGGetEncoderPadding());
+        Check("LAME tag functions are consistent", lame || (AudioGenie2.MPEGGetEncoderDelay() == 0 && AudioGenie2.MPEGGetLameVersion() == "" && !AudioGenie2.MPEGIsLameTagCrcValid()), "");
+        Check("LAME tag values are in range", AudioGenie2.MPEGGetLameLowpass() >= 0 && AudioGenie2.MPEGGetLameBitrate() >= 0 && AudioGenie2.MPEGGetLamePreset() >= 0 && AudioGenie2.MPEGGetLameMusicLength() >= 0
+            && AudioGenie2.MPEGGetLameRevision() >= 0 && AudioGenie2.MPEGGetLameVBRMethod() >= 0 && AudioGenie2.MPEGGetLameMp3Gain() >= -127 && AudioGenie2.MPEGGetLamePeakSignal() >= 0f
+            && Math.Abs(AudioGenie2.MPEGGetLameRadioGain()) < 60f && Math.Abs(AudioGenie2.MPEGGetLameAudiophileGain()) < 60f, "");
+        bool musicCrc = AudioGenie2.MPEGIsLameMusicCrcValid();   // reads the audio data of the file
+        Check("LAME music checksum needs a LAME tag", lame || !musicCrc, "");
         Check("MD5 has 32 characters", md5.Length == 32, md5);
 
         string work = Path.Combine(Path.GetTempPath(), "cscheck_" + (Environment.Is64BitProcess ? "x64" : "x86") + ".mp3");

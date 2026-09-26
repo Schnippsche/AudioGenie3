@@ -39,6 +39,15 @@ Module VbCheck
         Dim md5 As String = AUDIOGetMD5Value()
         Check("MD5 has 32 characters", md5.Length = 32, md5)
 
+        ' LAME tag: the functions can be called; without a tag they return 0 or an empty text
+        Dim lame As Boolean = MPEGHasLameTag()
+        Console.WriteLine("  LAME tag: " & lame & " " & MPEGGetLameVersion() & " delay=" & MPEGGetEncoderDelay() & " padding=" & MPEGGetEncoderPadding())
+        Check("LAME tag functions are consistent", lame OrElse (MPEGGetEncoderDelay() = 0 AndAlso MPEGGetLameVersion() = "" AndAlso Not MPEGIsLameTagCrcValid()), "")
+        Check("LAME tag values are in range", MPEGGetLameLowpass() >= 0 AndAlso MPEGGetLameBitrate() >= 0 AndAlso MPEGGetLamePreset() >= 0 AndAlso MPEGGetLameMusicLength() >= 0 _
+              AndAlso MPEGGetLameRevision() >= 0 AndAlso MPEGGetLameVBRMethod() >= 0 AndAlso MPEGGetLameMp3Gain() >= -127 AndAlso MPEGGetLamePeakSignal() >= 0 _
+              AndAlso Math.Abs(MPEGGetLameRadioGain()) < 60 AndAlso Math.Abs(MPEGGetLameAudiophileGain()) < 60, "")
+        Check("LAME music checksum needs a LAME tag", lame OrElse Not MPEGIsLameMusicCrcValid(), "")
+
         ' write tags with special characters and read them back
         Dim work As String = Path.Combine(Path.GetTempPath(), "vbcheck_" & If(Environment.Is64BitProcess, "x64", "x86") & ".mp3")
         File.Copy(tagged, work, True)

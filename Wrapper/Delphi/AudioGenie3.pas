@@ -730,6 +730,22 @@ type
     function MPEGGetFrameSizeW: LongInt;
     function MPEGGetFramesW: LongInt;
     function MPEGGetLayerW: WideString;
+    function MPEGHasLameTagW: Boolean;
+    function MPEGGetLameVersionW: WideString;
+    function MPEGGetLameRevisionW: SmallInt;
+    function MPEGGetLameVBRMethodW: SmallInt;
+    function MPEGGetLameLowpassW: LongInt;
+    function MPEGGetLameBitrateW: LongInt;
+    function MPEGGetEncoderDelayW: LongInt;
+    function MPEGGetEncoderPaddingW: LongInt;
+    function MPEGGetLamePeakSignalW: Single;
+    function MPEGGetLameRadioGainW: Single;
+    function MPEGGetLameAudiophileGainW: Single;
+    function MPEGGetLameMp3GainW: SmallInt;
+    function MPEGGetLamePresetW: LongInt;
+    function MPEGGetLameMusicLengthW: LongInt;
+    function MPEGIsLameTagCrcValidW: Boolean;
+    function MPEGIsLameMusicCrcValidW: Boolean;
     function MPEGGetVersionW: WideString;
     function MPPGetFramesW: LongInt;
     function MPPGetStreamVersionW: SmallInt;
@@ -1787,6 +1803,22 @@ function AG3MPEGGetFramePositionW: LongInt; stdcall; external AudioGenie3DLL nam
 function AG3MPEGGetFrameSizeW: LongInt; stdcall; external AudioGenie3DLL name 'MPEGGetFrameSizeW';
 function AG3MPEGGetFramesW: LongInt; stdcall; external AudioGenie3DLL name 'MPEGGetFramesW';
 function AG3MPEGGetLayerW: PWideChar; stdcall; external AudioGenie3DLL name 'MPEGGetLayerW';
+function AG3MPEGHasLameTagW: SmallInt; stdcall; external AudioGenie3DLL name 'MPEGHasLameTagW';
+function AG3MPEGGetLameVersionW: PWideChar; stdcall; external AudioGenie3DLL name 'MPEGGetLameVersionW';
+function AG3MPEGGetLameRevisionW: SmallInt; stdcall; external AudioGenie3DLL name 'MPEGGetLameRevisionW';
+function AG3MPEGGetLameVBRMethodW: SmallInt; stdcall; external AudioGenie3DLL name 'MPEGGetLameVBRMethodW';
+function AG3MPEGGetLameLowpassW: LongInt; stdcall; external AudioGenie3DLL name 'MPEGGetLameLowpassW';
+function AG3MPEGGetLameBitrateW: LongInt; stdcall; external AudioGenie3DLL name 'MPEGGetLameBitrateW';
+function AG3MPEGGetEncoderDelayW: LongInt; stdcall; external AudioGenie3DLL name 'MPEGGetEncoderDelayW';
+function AG3MPEGGetEncoderPaddingW: LongInt; stdcall; external AudioGenie3DLL name 'MPEGGetEncoderPaddingW';
+function AG3MPEGGetLamePeakSignalW: Single; stdcall; external AudioGenie3DLL name 'MPEGGetLamePeakSignalW';
+function AG3MPEGGetLameRadioGainW: Single; stdcall; external AudioGenie3DLL name 'MPEGGetLameRadioGainW';
+function AG3MPEGGetLameAudiophileGainW: Single; stdcall; external AudioGenie3DLL name 'MPEGGetLameAudiophileGainW';
+function AG3MPEGGetLameMp3GainW: SmallInt; stdcall; external AudioGenie3DLL name 'MPEGGetLameMp3GainW';
+function AG3MPEGGetLamePresetW: LongInt; stdcall; external AudioGenie3DLL name 'MPEGGetLamePresetW';
+function AG3MPEGGetLameMusicLengthW: LongInt; stdcall; external AudioGenie3DLL name 'MPEGGetLameMusicLengthW';
+function AG3MPEGIsLameTagCrcValidW: SmallInt; stdcall; external AudioGenie3DLL name 'MPEGIsLameTagCrcValidW';
+function AG3MPEGIsLameMusicCrcValidW: SmallInt; stdcall; external AudioGenie3DLL name 'MPEGIsLameMusicCrcValidW';
 function AG3MPEGGetVersionW: PWideChar; stdcall; external AudioGenie3DLL name 'MPEGGetVersionW';
 function AG3MPEGIsCopyrightedW: SmallInt; stdcall; external AudioGenie3DLL name 'MPEGIsCopyrightedW';
 function AG3MPEGIsOriginalW: SmallInt; stdcall; external AudioGenie3DLL name 'MPEGIsOriginalW';
@@ -3592,6 +3624,86 @@ end;
 function TAudioGenie3.MPEGSetPrivateW(const FileName: WideString; const newValue: SmallInt): Boolean;
 begin
   result := AG3MPEGSetPrivateW(PWideChar(FileName), newValue) = AG_TRUE;
+end;
+
+function TAudioGenie3.MPEGHasLameTagW: Boolean;
+begin
+  result := AG3MPEGHasLameTagW() = AG_TRUE;
+end;
+
+function TAudioGenie3.MPEGGetLameVersionW: WideString;
+begin
+  result := ConvertString(AG3MPEGGetLameVersionW());
+end;
+
+function TAudioGenie3.MPEGGetLameRevisionW: SmallInt;
+begin
+  result := AG3MPEGGetLameRevisionW();
+end;
+
+function TAudioGenie3.MPEGGetLameVBRMethodW: SmallInt;
+begin
+  result := AG3MPEGGetLameVBRMethodW();
+end;
+
+function TAudioGenie3.MPEGGetLameLowpassW: LongInt;
+begin
+  result := AG3MPEGGetLameLowpassW();
+end;
+
+function TAudioGenie3.MPEGGetLameBitrateW: LongInt;
+begin
+  result := AG3MPEGGetLameBitrateW();
+end;
+
+function TAudioGenie3.MPEGGetEncoderDelayW: LongInt;
+begin
+  result := AG3MPEGGetEncoderDelayW();
+end;
+
+function TAudioGenie3.MPEGGetEncoderPaddingW: LongInt;
+begin
+  result := AG3MPEGGetEncoderPaddingW();
+end;
+
+function TAudioGenie3.MPEGGetLamePeakSignalW: Single;
+begin
+  result := AG3MPEGGetLamePeakSignalW();
+end;
+
+function TAudioGenie3.MPEGGetLameRadioGainW: Single;
+begin
+  result := AG3MPEGGetLameRadioGainW();
+end;
+
+function TAudioGenie3.MPEGGetLameAudiophileGainW: Single;
+begin
+  result := AG3MPEGGetLameAudiophileGainW();
+end;
+
+function TAudioGenie3.MPEGGetLameMp3GainW: SmallInt;
+begin
+  result := AG3MPEGGetLameMp3GainW();
+end;
+
+function TAudioGenie3.MPEGGetLamePresetW: LongInt;
+begin
+  result := AG3MPEGGetLamePresetW();
+end;
+
+function TAudioGenie3.MPEGGetLameMusicLengthW: LongInt;
+begin
+  result := AG3MPEGGetLameMusicLengthW();
+end;
+
+function TAudioGenie3.MPEGIsLameTagCrcValidW: Boolean;
+begin
+  result := AG3MPEGIsLameTagCrcValidW() = AG_TRUE;
+end;
+
+function TAudioGenie3.MPEGIsLameMusicCrcValidW: Boolean;
+begin
+  result := AG3MPEGIsLameMusicCrcValidW() = AG_TRUE;
 end;
 
 function TAudioGenie3.MPEGGetVersionW: WideString; 

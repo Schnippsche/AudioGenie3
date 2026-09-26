@@ -1899,6 +1899,251 @@ extern "C" long __stdcall MPEGGetFramesW()
 
 
 /**
+ * @brief returns -1 if the first frame has a LAME tag
+ *
+ * The LAME tag is the extension of the Xing or Info header that LAME (and encoders that write the same layout, for example ffmpeg)
+ * puts into the first frame: the encoder version, the settings, the encoder delay and padding, the replay gain and two checksums.
+ * The other MPEGGetLame... functions return 0 or an empty text if there is no LAME tag.
+ *
+ * @ingroup MPEG
+ * @since 3.3.0.0
+ * @return -1 if the tag exists, otherwise 0
+ */
+extern "C" short __stdcall MPEGHasLameTagW()
+{
+	return b2s(mpeg.HasLameTag());
+}
+
+
+/**
+ * @brief get the version string of the encoder from the LAME tag
+ *
+ * The string has 9 characters, for example LAME3.99r. See MPEGHasLameTagW.
+ *
+ * @ingroup MPEG
+ * @since 3.3.0.0
+ * @return version string or empty
+ */
+extern "C" BSTR __stdcall MPEGGetLameVersionW()
+{
+	return mpeg.GetLameVersion().AllocSysString();
+}
+
+
+/**
+ * @brief get the revision of the LAME tag
+ *
+ * See MPEGHasLameTagW.
+ *
+ * @ingroup MPEG
+ * @since 3.3.0.0
+ * @return revision (0 or 1)
+ */
+extern "C" short __stdcall MPEGGetLameRevisionW()
+{
+	return mpeg.GetLameRevision();
+}
+
+
+/**
+ * @brief get the method of the encoder from the LAME tag
+ *
+ * See MPEGHasLameTagW.
+ *
+ * @ingroup MPEG
+ * @since 3.3.0.0
+ * @return 0=unknown 1=constant bit rate 2=average bit rate (ABR) 3=VBR old 4=VBR new (mtrh) 5=VBR new (mt) 8=constant bit rate 2 pass 9=ABR 2 pass
+ */
+extern "C" short __stdcall MPEGGetLameVBRMethodW()
+{
+	return mpeg.GetLameVBRMethod();
+}
+
+
+/**
+ * @brief get the lowpass filter of the LAME tag
+ *
+ * See MPEGHasLameTagW.
+ *
+ * @ingroup MPEG
+ * @since 3.3.0.0
+ * @return frequency in Hz, 0 if unknown
+ */
+extern "C" long __stdcall MPEGGetLameLowpassW()
+{
+	return mpeg.GetLameLowpass();
+}
+
+
+/**
+ * @brief get the specified or minimal bit rate of the LAME tag
+ *
+ * The specified bit rate of an ABR file, otherwise the constant or minimal bit rate (255 means 255 or more). See MPEGHasLameTagW.
+ *
+ * @ingroup MPEG
+ * @since 3.3.0.0
+ * @return bit rate in kbit/s, 0 if unknown
+ */
+extern "C" long __stdcall MPEGGetLameBitrateW()
+{
+	return mpeg.GetLameBitrate();
+}
+
+
+/**
+ * @brief get the encoder delay from the LAME tag
+ *
+ * The number of samples that the encoder added at the start (for gapless playback). See MPEGHasLameTagW.
+ *
+ * @ingroup MPEG
+ * @since 3.3.0.0
+ * @return samples
+ */
+extern "C" long __stdcall MPEGGetEncoderDelayW()
+{
+	return mpeg.GetEncoderDelay();
+}
+
+
+/**
+ * @brief get the encoder padding from the LAME tag
+ *
+ * The number of samples that the encoder added at the end to complete the last frame (for gapless playback). See MPEGHasLameTagW.
+ *
+ * @ingroup MPEG
+ * @since 3.3.0.0
+ * @return samples
+ */
+extern "C" long __stdcall MPEGGetEncoderPaddingW()
+{
+	return mpeg.GetEncoderPadding();
+}
+
+
+/**
+ * @brief get the peak signal amplitude from the LAME tag
+ *
+ * 1.0 is the maximal amplitude that the decoding format can hold. See MPEGHasLameTagW.
+ *
+ * @ingroup MPEG
+ * @since 3.3.0.0
+ * @return peak amplitude, 0 if unknown
+ */
+extern "C" float __stdcall MPEGGetLamePeakSignalW()
+{
+	return mpeg.GetLamePeakSignal();
+}
+
+
+/**
+ * @brief get the radio replay gain from the LAME tag
+ *
+ * The adjustment that gives all tracks the same loudness. See MPEGHasLameTagW.
+ *
+ * @ingroup MPEG
+ * @since 3.3.0.0
+ * @return gain in dB, 0 if not set
+ */
+extern "C" float __stdcall MPEGGetLameRadioGainW()
+{
+	return mpeg.GetLameRadioGain();
+}
+
+
+/**
+ * @brief get the audiophile replay gain from the LAME tag
+ *
+ * The adjustment that gives the ideal listening loudness. See MPEGHasLameTagW.
+ *
+ * @ingroup MPEG
+ * @since 3.3.0.0
+ * @return gain in dB, 0 if not set
+ */
+extern "C" float __stdcall MPEGGetLameAudiophileGainW()
+{
+	return mpeg.GetLameAudiophileGain();
+}
+
+
+/**
+ * @brief get the MP3 gain from the LAME tag
+ *
+ * A tool such as mp3gain amplifies a file by 2^(x/4) without loss and logs the steps here. See MPEGHasLameTagW.
+ *
+ * @ingroup MPEG
+ * @since 3.3.0.0
+ * @return steps of 1.5 dB (-127 to 127)
+ */
+extern "C" short __stdcall MPEGGetLameMp3GainW()
+{
+	return mpeg.GetLameMp3Gain();
+}
+
+
+/**
+ * @brief get the preset of the LAME tag
+ *
+ * See MPEGHasLameTagW.
+ *
+ * @ingroup MPEG
+ * @since 3.3.0.0
+ * @return preset number (11 bits), 0 if unknown or none
+ */
+extern "C" long __stdcall MPEGGetLamePresetW()
+{
+	return mpeg.GetLamePreset();
+}
+
+
+/**
+ * @brief get the music length from the LAME tag
+ *
+ * The length in bytes from the first byte of the LAME tag frame to the last byte of the last frame at the time of the encoding.
+ * See MPEGHasLameTagW.
+ *
+ * @ingroup MPEG
+ * @since 3.3.0.0
+ * @return length in bytes, 0 if unknown
+ */
+extern "C" long __stdcall MPEGGetLameMusicLengthW()
+{
+	return mpeg.GetLameMusicLength();
+}
+
+
+/**
+ * @brief returns -1 if the checksum of the LAME tag is correct
+ *
+ * The checksum (CRC-16) covers the first frame in front of it. See MPEGHasLameTagW.
+ *
+ * @ingroup MPEG
+ * @since 3.3.0.0
+ * @return -1 if the checksum is correct, otherwise 0
+ */
+extern "C" short __stdcall MPEGIsLameTagCrcValidW()
+{
+	return b2s(mpeg.IsLameTagCrcValid());
+}
+
+
+/**
+ * @brief returns -1 if the music data are unchanged since the encoding
+ *
+ * The checksum (CRC-16) covers the frames behind the LAME tag frame up to the music length. This function reads that part of the
+ * last analyzed file, so it takes time for a large file. A file that was tagged again at its end is fine; a changed audio
+ * stream (for example by mp3gain) is not. See MPEGHasLameTagW.
+ *
+ * @ingroup MPEG
+ * @since 3.3.0.0
+ * @return -1 if the checksum is correct, otherwise 0
+ */
+extern "C" short __stdcall MPEGIsLameMusicCrcValidW()
+{
+	return b2s(mpeg.IsLameMusicCrcValid(lastFile));
+}
+
+
+/**
  * @brief get the layer
  *
  * @ingroup MPEG
@@ -3569,7 +3814,7 @@ extern "C" short __stdcall ID3V1GetGenresW()
  * The enhanced tag ("TAG+") is in front of the ID3v1 tag, see ID3V1SetTitleW.
  *
  * @ingroup ID3V1
- * @since 3.1.0.0
+ * @since 3.2.0.0
  * @return 0=not set  1=slow  2=medium  3=fast  4=hardcore
  */
 extern "C" short __stdcall ID3V1GetSpeedW()
@@ -3585,7 +3830,7 @@ extern "C" short __stdcall ID3V1GetSpeedW()
  * configuration value ID3V1MAXTEXTLENGTH in SetConfigValueW).
  *
  * @ingroup ID3V1
- * @since 3.1.0.0
+ * @since 3.2.0.0
  * @param speed 0=not set  1=slow  2=medium  3=fast  4=hardcore; another value means 0
  */
 extern "C" void __stdcall ID3V1SetSpeedW(short speed)
@@ -3600,7 +3845,7 @@ extern "C" void __stdcall ID3V1SetSpeedW(short speed)
  * This is a free text of up to 30 characters, not the genre number of the ID3v1 tag (see ID3V1GetGenreW).
  *
  * @ingroup ID3V1
- * @since 3.1.0.0
+ * @since 3.2.0.0
  * @return genre text
  */
 extern "C" BSTR __stdcall ID3V1GetEnhancedGenreW()
@@ -3615,7 +3860,7 @@ extern "C" BSTR __stdcall ID3V1GetEnhancedGenreW()
  * This is a free text of up to 30 characters, not the genre number of the ID3v1 tag (see ID3V1SetGenreW).
  *
  * @ingroup ID3V1
- * @since 3.1.0.0
+ * @since 3.2.0.0
  * @param textString genre text, an empty text removes it
  */
 extern "C" void __stdcall ID3V1SetEnhancedGenreW(LPCWSTR textString)
@@ -3628,7 +3873,7 @@ extern "C" void __stdcall ID3V1SetEnhancedGenreW(LPCWSTR textString)
  * @brief get the start time of the enhanced ID3v1 tag
  *
  * @ingroup ID3V1
- * @since 3.1.0.0
+ * @since 3.2.0.0
  * @return start time in the form mmm:ss or empty
  */
 extern "C" BSTR __stdcall ID3V1GetStartTimeW()
@@ -3643,7 +3888,7 @@ extern "C" BSTR __stdcall ID3V1GetStartTimeW()
  * The start time is the position at which the music starts, for example to skip a lead-in.
  *
  * @ingroup ID3V1
- * @since 3.1.0.0
+ * @since 3.2.0.0
  * @param textString time in the form mmm:ss (three digits, colon, seconds from 00 to 59), an empty text removes it;
  *        another text is ignored (the log contains a warning)
  */
@@ -3658,7 +3903,7 @@ extern "C" void __stdcall ID3V1SetStartTimeW(LPCWSTR textString)
  * @brief get the end time of the enhanced ID3v1 tag
  *
  * @ingroup ID3V1
- * @since 3.1.0.0
+ * @since 3.2.0.0
  * @return end time in the form mmm:ss or empty
  */
 extern "C" BSTR __stdcall ID3V1GetEndTimeW()
@@ -3673,7 +3918,7 @@ extern "C" BSTR __stdcall ID3V1GetEndTimeW()
  * The end time is the position at which the music ends, for example to skip a fade-out.
  *
  * @ingroup ID3V1
- * @since 3.1.0.0
+ * @since 3.2.0.0
  * @param textString time in the form mmm:ss (three digits, colon, seconds from 00 to 59), an empty text removes it;
  *        another text is ignored (the log contains a warning)
  */

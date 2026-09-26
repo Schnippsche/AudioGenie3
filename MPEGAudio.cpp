@@ -50,6 +50,9 @@ void CMPEGAudio::ResetData()
 {
 	/* Reset all variables */
 	memset(&FVBR, 0, sizeof(FVBR));
+	memset(&FLame, 0, sizeof(FLame));
+	lameHeaderStart = 0;
+	lameHeaderSize = 0;
 	memset(&Frame, 0, sizeof(Frame));
 	memset(&Data, 0, sizeof(Data));
 	memset(VendorID, 0, 10);
@@ -269,6 +272,107 @@ void CMPEGAudio::FindVBR(long Index, BYTE Data[])
 		GetXingInfo(Index, Data, false);
 	else if (memcmp(&Data[Index], "Info", 4) == 0)
 		GetXingInfo(Index, Data, true);
+}
+
+/* -------------------------------------------------------------------------- */
+
+// CRC-16 as LAME writes it: polynomial $8005, start value 0, most significant bit first
+static unsigned short LameCrc16(unsigned short crc, const BYTE *data, size_t length)
+{
+	for (size_t i = 0; i < length; i++)
+	{
+		crc ^= (unsigned short)(data[i] << 8);
+		for (int bit = 0; bit < 8; bit++)
+			crc = (unsigned short)((crc & 0x8000) ? ((crc << 1) ^ 0x8005) : (crc << 1));
+	}
+	return crc;
+}
+
+static unsigned long BigEndian32(const BYTE *p)
+{
+	return ((unsigned long)p[0] << 24) | ((unsigned long)p[1] << 16) | ((unsigned long)p[2] << 8) | p[3];
+}
+
+// gain field of the replay gain: 3 bits name (1 = radio, 2 = audiophile), 3 bits originator, 1 bit sign, 9 bits gain in 0.1 dB
+static float LameGain(const BYTE *p, int name)
+{
+	const int value = (p[0] << 8) | p[1];
+	if (((value >> 13) & 7) != name)
+		return 0.0f;
+	const float gain = (value & 0x1FF) / 10.0f;
+	return (value & 0x200) ? -gain : gain;
+}
+
+/* -------------------------------------------------------------------------- */
+
+// The LAME tag follows the fields of the Xing/Info header (which all have to be present, flags $0F): 9 characters encoder version,
+// revision and method, lowpass, replay gain, flags, bit rate, delay and padding, misc, MP3 gain, preset, music length, music CRC and
+// the CRC of the frame in front of it; together 36 bytes 120 bytes behind the beginning of the Xing/Info header.
+void CMPEGAudio::ParseLameTag(long frameIndex, long xingIndex, BYTE Data[])
+{
+	memset(&FLame, 0, sizeof(FLame));
+	if (!FVBR.Found || memcmp(FVBR.ID, VBR_ID_FHG, 4) == 0 || (Get4B(Data + xingIndex + 4) & 0x0F) != 0x0F)
+		return;
+	const long ext = xingIndex + 120;
+	if (ext + 36 > frameIndex + Frame.FrameSize)
+		return;
+	const BYTE *p = Data + ext;
+	if (memcmp(p, "LAME", 4) != 0 && memcmp(p, "Lavf", 4) != 0 && memcmp(p, "Lavc", 4) != 0 && memcmp(p, "GOGO", 4) != 0 && memcmp(p, "L3.9", 4) != 0)
+		return;
+	if ((p[9] >> 4) > 1)
+		return;   // unknown revision
+	FLame.Found = true;
+	for (int i = 0; i < 9; i++)
+		FLame.Version[i] = (p[i] >= 0x20 && p[i] < 0x7F) ? (char)p[i] : ' ';
+	for (int i = 8; i >= 0 && FLame.Version[i] == ' '; i--)
+		FLame.Version[i] = 0;
+	FLame.Revision = (BYTE)(p[9] >> 4);
+	FLame.VbrMethod = (BYTE)(p[9] & 0x0F);
+	FLame.Lowpass = p[10] * 100;
+	FLame.PeakSignal = (float)(BigEndian32(p + 11) / 8388608.0);   // fixed point with 23 fractional bits
+	FLame.RadioGain = LameGain(p + 15, 1);
+	FLame.AudiophileGain = LameGain(p + 17, 2);
+	FLame.Bitrate = p[20];
+	FLame.EncoderDelay = (p[21] << 4) | (p[22] >> 4);
+	FLame.EncoderPadding = ((p[22] & 0x0F) << 8) | p[23];
+	FLame.Mp3Gain = (short)((p[25] & 0x80) ? -(p[25] & 0x7F) : (p[25] & 0x7F));
+	FLame.Preset = ((p[26] & 0x07) << 8) | p[27];
+	FLame.MusicLength = (long)BigEndian32(p + 28);
+	FLame.MusicCrc = (unsigned short)((p[32] << 8) | p[33]);
+	// the CRC of the tag covers the frame from its first byte up to the CRC
+	FLame.TagCrcValid = (LameCrc16(0, Data + frameIndex, (size_t)(ext + 34 - frameIndex)) == (unsigned short)((p[34] << 8) | p[35]));
+	lameHeaderStart = Frame.FramePosition;
+	lameHeaderSize = Frame.FrameSize;
+}
+
+/* -------------------------------------------------------------------------- */
+
+// Checks the CRC-16 of the music data: from the frame behind the LAME tag frame up to the music length of the tag
+bool CMPEGAudio::IsLameMusicCrcValid(LPCWSTR FileName)
+{
+	if (!FLame.Found || FLame.MusicLength <= lameHeaderSize)
+		return false;
+	FILE *Stream = _wfsopen(FileName, READ_ONLY, _SH_DENYNO);
+	if (Stream == NULL)
+		return false;
+	const __int64 start = lameHeaderStart + lameHeaderSize;
+	__int64 remaining = (__int64)FLame.MusicLength - lameHeaderSize;
+	bool ok = (_fseeki64(Stream, 0, SEEK_END) == 0 && _ftelli64(Stream) >= start + remaining && _fseeki64(Stream, start, SEEK_SET) == 0);
+	unsigned short crc = 0;
+	BYTE *block = new BYTE[64 * 1024];
+	while (ok && remaining > 0)
+	{
+		const size_t want = (remaining > 64 * 1024) ? 64 * 1024 : (size_t)remaining;
+		const size_t got = fread(block, 1, want, Stream);
+		if (got != want)
+			ok = false;
+		crc = LameCrc16(crc, block, got);
+		remaining -= (__int64)got;
+		CTools::instance().doEvents();
+	}
+	delete [] block;
+	fclose(Stream);
+	return ok && crc == FLame.MusicCrc;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -566,8 +670,11 @@ bool CMPEGAudio::FindFrame()
 				Frame.FrameSize = GetFrameLength();
 				Frame.Xing = IsXing(Iterator + 4, Data);
 				// a CRC (2 bytes) is between the header and the side information if the protection bit is 0
-				FindVBR(Iterator + GetVBRDeviation() + (Frame.ProtectionBit ? 0 : 2), Data);
-				if (!FVBR.Found)
+				const long xingIndex = Iterator + GetVBRDeviation() + (Frame.ProtectionBit ? 0 : 2);
+				FindVBR(xingIndex, Data);
+				if (FVBR.Found)
+					ParseLameTag(Iterator, xingIndex, Data);
+				else
 					FindVBRI(Iterator + 4 + 32, Data);
 				break;
 			}

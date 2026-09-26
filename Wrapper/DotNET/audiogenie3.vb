@@ -1365,6 +1365,54 @@ Namespace AudioGenie
         Private Function MPEGGetLayerW() As <MarshalAs(UnmanagedType.BStr)> String
         End Function
         <DllImport("AudioGenie3.dll", CharSet:=CharSet.Unicode, SetLastError:=True, ExactSpelling:=True)> _
+        Private Function MPEGHasLameTagW() As Short
+        End Function
+        <DllImport("AudioGenie3.dll", CharSet:=CharSet.Unicode, SetLastError:=True, ExactSpelling:=True)> _
+        Private Function MPEGGetLameVersionW() As <MarshalAs(UnmanagedType.BStr)> String
+        End Function
+        <DllImport("AudioGenie3.dll", CharSet:=CharSet.Unicode, SetLastError:=True, ExactSpelling:=True)> _
+        Private Function MPEGGetLameRevisionW() As Short
+        End Function
+        <DllImport("AudioGenie3.dll", CharSet:=CharSet.Unicode, SetLastError:=True, ExactSpelling:=True)> _
+        Private Function MPEGGetLameVBRMethodW() As Short
+        End Function
+        <DllImport("AudioGenie3.dll", CharSet:=CharSet.Unicode, SetLastError:=True, ExactSpelling:=True)> _
+        Private Function MPEGGetLameLowpassW() As Integer
+        End Function
+        <DllImport("AudioGenie3.dll", CharSet:=CharSet.Unicode, SetLastError:=True, ExactSpelling:=True)> _
+        Private Function MPEGGetLameBitrateW() As Integer
+        End Function
+        <DllImport("AudioGenie3.dll", CharSet:=CharSet.Unicode, SetLastError:=True, ExactSpelling:=True)> _
+        Private Function MPEGGetEncoderDelayW() As Integer
+        End Function
+        <DllImport("AudioGenie3.dll", CharSet:=CharSet.Unicode, SetLastError:=True, ExactSpelling:=True)> _
+        Private Function MPEGGetEncoderPaddingW() As Integer
+        End Function
+        <DllImport("AudioGenie3.dll", CharSet:=CharSet.Unicode, SetLastError:=True, ExactSpelling:=True)> _
+        Private Function MPEGGetLamePeakSignalW() As Single
+        End Function
+        <DllImport("AudioGenie3.dll", CharSet:=CharSet.Unicode, SetLastError:=True, ExactSpelling:=True)> _
+        Private Function MPEGGetLameRadioGainW() As Single
+        End Function
+        <DllImport("AudioGenie3.dll", CharSet:=CharSet.Unicode, SetLastError:=True, ExactSpelling:=True)> _
+        Private Function MPEGGetLameAudiophileGainW() As Single
+        End Function
+        <DllImport("AudioGenie3.dll", CharSet:=CharSet.Unicode, SetLastError:=True, ExactSpelling:=True)> _
+        Private Function MPEGGetLameMp3GainW() As Short
+        End Function
+        <DllImport("AudioGenie3.dll", CharSet:=CharSet.Unicode, SetLastError:=True, ExactSpelling:=True)> _
+        Private Function MPEGGetLamePresetW() As Integer
+        End Function
+        <DllImport("AudioGenie3.dll", CharSet:=CharSet.Unicode, SetLastError:=True, ExactSpelling:=True)> _
+        Private Function MPEGGetLameMusicLengthW() As Integer
+        End Function
+        <DllImport("AudioGenie3.dll", CharSet:=CharSet.Unicode, SetLastError:=True, ExactSpelling:=True)> _
+        Private Function MPEGIsLameTagCrcValidW() As Short
+        End Function
+        <DllImport("AudioGenie3.dll", CharSet:=CharSet.Unicode, SetLastError:=True, ExactSpelling:=True)> _
+        Private Function MPEGIsLameMusicCrcValidW() As Short
+        End Function
+        <DllImport("AudioGenie3.dll", CharSet:=CharSet.Unicode, SetLastError:=True, ExactSpelling:=True)> _
         Private Function MPEGGetVersionW() As <MarshalAs(UnmanagedType.BStr)> String
         End Function
         <DllImport("AudioGenie3.dll", CharSet:=CharSet.Unicode, SetLastError:=True, ExactSpelling:=True)> _
@@ -4395,6 +4443,54 @@ Namespace AudioGenie
         End Function
         Public Function MPEGGetLayer() As String
             Return MPEGGetLayerW()
+        End Function
+        Public Function MPEGHasLameTag() As Boolean
+            Return Convert.ToBoolean(MPEGHasLameTagW())
+        End Function
+        Public Function MPEGGetLameVersion() As String
+            Return MPEGGetLameVersionW()
+        End Function
+        Public Function MPEGGetLameRevision() As Short
+            Return MPEGGetLameRevisionW()
+        End Function
+        Public Function MPEGGetLameVBRMethod() As Short
+            Return MPEGGetLameVBRMethodW()
+        End Function
+        Public Function MPEGGetLameLowpass() As Integer
+            Return MPEGGetLameLowpassW()
+        End Function
+        Public Function MPEGGetLameBitrate() As Integer
+            Return MPEGGetLameBitrateW()
+        End Function
+        Public Function MPEGGetEncoderDelay() As Integer
+            Return MPEGGetEncoderDelayW()
+        End Function
+        Public Function MPEGGetEncoderPadding() As Integer
+            Return MPEGGetEncoderPaddingW()
+        End Function
+        Public Function MPEGGetLamePeakSignal() As Single
+            Return MPEGGetLamePeakSignalW()
+        End Function
+        Public Function MPEGGetLameRadioGain() As Single
+            Return MPEGGetLameRadioGainW()
+        End Function
+        Public Function MPEGGetLameAudiophileGain() As Single
+            Return MPEGGetLameAudiophileGainW()
+        End Function
+        Public Function MPEGGetLameMp3Gain() As Short
+            Return MPEGGetLameMp3GainW()
+        End Function
+        Public Function MPEGGetLamePreset() As Integer
+            Return MPEGGetLamePresetW()
+        End Function
+        Public Function MPEGGetLameMusicLength() As Integer
+            Return MPEGGetLameMusicLengthW()
+        End Function
+        Public Function MPEGIsLameTagCrcValid() As Boolean
+            Return Convert.ToBoolean(MPEGIsLameTagCrcValidW())
+        End Function
+        Public Function MPEGIsLameMusicCrcValid() As Boolean
+            Return Convert.ToBoolean(MPEGIsLameMusicCrcValidW())
         End Function
         Public Function MPEGGetVersion() As String
             Return MPEGGetVersionW()

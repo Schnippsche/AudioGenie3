@@ -1150,6 +1150,39 @@ namespace AudioGenie
         [return: MarshalAs(UnmanagedType.BStr)]
         private static extern string MPEGGetLayerW();
         [DllImport("AudioGenie3.dll", CharSet = CharSet.Unicode, SetLastError = true, ExactSpelling = true)]
+        private static extern short MPEGHasLameTagW();
+        [DllImport("AudioGenie3.dll", CharSet = CharSet.Unicode, SetLastError = true, ExactSpelling = true)]
+        [return: MarshalAs(UnmanagedType.BStr)]
+        private static extern string MPEGGetLameVersionW();
+        [DllImport("AudioGenie3.dll", CharSet = CharSet.Unicode, SetLastError = true, ExactSpelling = true)]
+        private static extern short MPEGGetLameRevisionW();
+        [DllImport("AudioGenie3.dll", CharSet = CharSet.Unicode, SetLastError = true, ExactSpelling = true)]
+        private static extern short MPEGGetLameVBRMethodW();
+        [DllImport("AudioGenie3.dll", CharSet = CharSet.Unicode, SetLastError = true, ExactSpelling = true)]
+        private static extern int MPEGGetLameLowpassW();
+        [DllImport("AudioGenie3.dll", CharSet = CharSet.Unicode, SetLastError = true, ExactSpelling = true)]
+        private static extern int MPEGGetLameBitrateW();
+        [DllImport("AudioGenie3.dll", CharSet = CharSet.Unicode, SetLastError = true, ExactSpelling = true)]
+        private static extern int MPEGGetEncoderDelayW();
+        [DllImport("AudioGenie3.dll", CharSet = CharSet.Unicode, SetLastError = true, ExactSpelling = true)]
+        private static extern int MPEGGetEncoderPaddingW();
+        [DllImport("AudioGenie3.dll", CharSet = CharSet.Unicode, SetLastError = true, ExactSpelling = true)]
+        private static extern float MPEGGetLamePeakSignalW();
+        [DllImport("AudioGenie3.dll", CharSet = CharSet.Unicode, SetLastError = true, ExactSpelling = true)]
+        private static extern float MPEGGetLameRadioGainW();
+        [DllImport("AudioGenie3.dll", CharSet = CharSet.Unicode, SetLastError = true, ExactSpelling = true)]
+        private static extern float MPEGGetLameAudiophileGainW();
+        [DllImport("AudioGenie3.dll", CharSet = CharSet.Unicode, SetLastError = true, ExactSpelling = true)]
+        private static extern short MPEGGetLameMp3GainW();
+        [DllImport("AudioGenie3.dll", CharSet = CharSet.Unicode, SetLastError = true, ExactSpelling = true)]
+        private static extern int MPEGGetLamePresetW();
+        [DllImport("AudioGenie3.dll", CharSet = CharSet.Unicode, SetLastError = true, ExactSpelling = true)]
+        private static extern int MPEGGetLameMusicLengthW();
+        [DllImport("AudioGenie3.dll", CharSet = CharSet.Unicode, SetLastError = true, ExactSpelling = true)]
+        private static extern short MPEGIsLameTagCrcValidW();
+        [DllImport("AudioGenie3.dll", CharSet = CharSet.Unicode, SetLastError = true, ExactSpelling = true)]
+        private static extern short MPEGIsLameMusicCrcValidW();
+        [DllImport("AudioGenie3.dll", CharSet = CharSet.Unicode, SetLastError = true, ExactSpelling = true)]
         [return: MarshalAs(UnmanagedType.BStr)]
         private static extern string MPEGGetVersionW();
         [DllImport("AudioGenie3.dll", CharSet = CharSet.Unicode, SetLastError = true, ExactSpelling = true)]
@@ -3857,6 +3890,70 @@ namespace AudioGenie
         public static string MPEGGetLayer()
         {
             return MPEGGetLayerW();
+        }
+        public static bool MPEGHasLameTag()
+        {
+            return Convert.ToBoolean(MPEGHasLameTagW());
+        }
+        public static string MPEGGetLameVersion()
+        {
+            return MPEGGetLameVersionW();
+        }
+        public static short MPEGGetLameRevision()
+        {
+            return MPEGGetLameRevisionW();
+        }
+        public static short MPEGGetLameVBRMethod()
+        {
+            return MPEGGetLameVBRMethodW();
+        }
+        public static int MPEGGetLameLowpass()
+        {
+            return MPEGGetLameLowpassW();
+        }
+        public static int MPEGGetLameBitrate()
+        {
+            return MPEGGetLameBitrateW();
+        }
+        public static int MPEGGetEncoderDelay()
+        {
+            return MPEGGetEncoderDelayW();
+        }
+        public static int MPEGGetEncoderPadding()
+        {
+            return MPEGGetEncoderPaddingW();
+        }
+        public static float MPEGGetLamePeakSignal()
+        {
+            return MPEGGetLamePeakSignalW();
+        }
+        public static float MPEGGetLameRadioGain()
+        {
+            return MPEGGetLameRadioGainW();
+        }
+        public static float MPEGGetLameAudiophileGain()
+        {
+            return MPEGGetLameAudiophileGainW();
+        }
+        public static short MPEGGetLameMp3Gain()
+        {
+            return MPEGGetLameMp3GainW();
+        }
+        public static int MPEGGetLamePreset()
+        {
+            return MPEGGetLamePresetW();
+        }
+        public static int MPEGGetLameMusicLength()
+        {
+            return MPEGGetLameMusicLengthW();
+        }
+        public static bool MPEGIsLameTagCrcValid()
+        {
+            return Convert.ToBoolean(MPEGIsLameTagCrcValidW());
+        }
+        public static bool MPEGIsLameMusicCrcValid()
+        {
+            return Convert.ToBoolean(MPEGIsLameMusicCrcValidW());
         }
         public static string MPEGGetVersion()
         {

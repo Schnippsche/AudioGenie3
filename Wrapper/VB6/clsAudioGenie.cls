@@ -378,6 +378,22 @@ Private Declare Function MPEGGetFramePositionW Lib "AudioGenie3.dll" () As Long
 Private Declare Function MPEGGetFrameSizeW Lib "AudioGenie3.dll" () As Long
 Private Declare Function MPEGGetFramesW Lib "AudioGenie3.dll" () As Long
 Private Declare Function MPEGGetLayerW Lib "AudioGenie3.dll" () As String
+Private Declare Function MPEGHasLameTagW Lib "AudioGenie3.dll" () As Integer
+Private Declare Function MPEGGetLameVersionW Lib "AudioGenie3.dll" () As String
+Private Declare Function MPEGGetLameRevisionW Lib "AudioGenie3.dll" () As Integer
+Private Declare Function MPEGGetLameVBRMethodW Lib "AudioGenie3.dll" () As Integer
+Private Declare Function MPEGGetLameLowpassW Lib "AudioGenie3.dll" () As Long
+Private Declare Function MPEGGetLameBitrateW Lib "AudioGenie3.dll" () As Long
+Private Declare Function MPEGGetEncoderDelayW Lib "AudioGenie3.dll" () As Long
+Private Declare Function MPEGGetEncoderPaddingW Lib "AudioGenie3.dll" () As Long
+Private Declare Function MPEGGetLamePeakSignalW Lib "AudioGenie3.dll" () As Single
+Private Declare Function MPEGGetLameRadioGainW Lib "AudioGenie3.dll" () As Single
+Private Declare Function MPEGGetLameAudiophileGainW Lib "AudioGenie3.dll" () As Single
+Private Declare Function MPEGGetLameMp3GainW Lib "AudioGenie3.dll" () As Integer
+Private Declare Function MPEGGetLamePresetW Lib "AudioGenie3.dll" () As Long
+Private Declare Function MPEGGetLameMusicLengthW Lib "AudioGenie3.dll" () As Long
+Private Declare Function MPEGIsLameTagCrcValidW Lib "AudioGenie3.dll" () As Integer
+Private Declare Function MPEGIsLameMusicCrcValidW Lib "AudioGenie3.dll" () As Integer
 Private Declare Function MPEGGetVersionW Lib "AudioGenie3.dll" () As String
 Private Declare Function MPEGIsCopyrightedW Lib "AudioGenie3.dll" () As Integer
 Private Declare Function MPEGIsOriginalW Lib "AudioGenie3.dll" () As Integer
@@ -3703,6 +3719,70 @@ End Function
 
 Public Function MPEGGetLayer() As String
   MPEGGetLayer = StrConv(MPEGGetLayerW(), vbFromUnicode)
+End Function
+
+Public Function MPEGHasLameTag() As Integer
+  MPEGHasLameTag = MPEGHasLameTagW()
+End Function
+
+Public Function MPEGGetLameVersion() As String
+  MPEGGetLameVersion = StrConv(MPEGGetLameVersionW(), vbFromUnicode)
+End Function
+
+Public Function MPEGGetLameRevision() As Integer
+  MPEGGetLameRevision = MPEGGetLameRevisionW()
+End Function
+
+Public Function MPEGGetLameVBRMethod() As Integer
+  MPEGGetLameVBRMethod = MPEGGetLameVBRMethodW()
+End Function
+
+Public Function MPEGGetLameLowpass() As Long
+  MPEGGetLameLowpass = MPEGGetLameLowpassW()
+End Function
+
+Public Function MPEGGetLameBitrate() As Long
+  MPEGGetLameBitrate = MPEGGetLameBitrateW()
+End Function
+
+Public Function MPEGGetEncoderDelay() As Long
+  MPEGGetEncoderDelay = MPEGGetEncoderDelayW()
+End Function
+
+Public Function MPEGGetEncoderPadding() As Long
+  MPEGGetEncoderPadding = MPEGGetEncoderPaddingW()
+End Function
+
+Public Function MPEGGetLamePeakSignal() As Single
+  MPEGGetLamePeakSignal = MPEGGetLamePeakSignalW()
+End Function
+
+Public Function MPEGGetLameRadioGain() As Single
+  MPEGGetLameRadioGain = MPEGGetLameRadioGainW()
+End Function
+
+Public Function MPEGGetLameAudiophileGain() As Single
+  MPEGGetLameAudiophileGain = MPEGGetLameAudiophileGainW()
+End Function
+
+Public Function MPEGGetLameMp3Gain() As Integer
+  MPEGGetLameMp3Gain = MPEGGetLameMp3GainW()
+End Function
+
+Public Function MPEGGetLamePreset() As Long
+  MPEGGetLamePreset = MPEGGetLamePresetW()
+End Function
+
+Public Function MPEGGetLameMusicLength() As Long
+  MPEGGetLameMusicLength = MPEGGetLameMusicLengthW()
+End Function
+
+Public Function MPEGIsLameTagCrcValid() As Integer
+  MPEGIsLameTagCrcValid = MPEGIsLameTagCrcValidW()
+End Function
+
+Public Function MPEGIsLameMusicCrcValid() As Integer
+  MPEGIsLameMusicCrcValid = MPEGIsLameMusicCrcValidW()
 End Function
 
 Public Function MPEGGetVersion() As String
