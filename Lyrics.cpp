@@ -115,26 +115,29 @@ bool CLyrics::ReadHeader(FILE *Stream)
 	ID3v1AreaSize = 0;
 	memset(ID3v1Area, 0, sizeof(ID3v1Area));
 	const __int64 fileSize = _filelengthi64(_fileno(Stream));
-	/* the lyrics tag is in front of the id3v1 tag, which has to exist */
-	BYTE last[ID3V1_TAG_SIZE];
-	if (fileSize < ID3V1_TAG_SIZE || _fseeki64(Stream, fileSize - ID3V1_TAG_SIZE, SEEK_SET) != 0)
+	/* one read of the end of the file: the id3v1 data (up to 355 bytes), an APE footer in front of it and the end of the lyrics tag */
+	BYTE tail[512];
+	const size_t want = (size_t)(fileSize < (__int64)sizeof(tail) ? fileSize : (__int64)sizeof(tail));
+	if (want < ID3V1_TAG_SIZE || _fseeki64(Stream, fileSize - (__int64)want, SEEK_SET) != 0 || fread(tail, 1, want, Stream) != want)
 		return false;
-	if (fread(last, 1, ID3V1_TAG_SIZE, Stream) != ID3V1_TAG_SIZE || memcmp(last, ID3V1_ID, 3) != 0)
+	/* the lyrics tag is in front of the id3v1 tag, which has to exist */
+	if (memcmp(tail + want - ID3V1_TAG_SIZE, ID3V1_ID, 3) != 0)
 		return false;
 	/* an enhanced tag (TAG+) is part of the id3v1 data: the lyrics tag is in front of it */
 	int area = ID3V1_TAG_SIZE;
-	char plus[4];
-	if (fileSize >= ID3V1_TAG_SIZE + ID3V1_ENHANCED_SIZE && _fseeki64(Stream, fileSize - ID3V1_TAG_SIZE - ID3V1_ENHANCED_SIZE, SEEK_SET) == 0
-		&& fread(plus, 1, 4, Stream) == 4 && memcmp(plus, "TAG+", 4) == 0)
+	if (want >= (size_t)(ID3V1_TAG_SIZE + ID3V1_ENHANCED_SIZE) && memcmp(tail + want - (ID3V1_TAG_SIZE + ID3V1_ENHANCED_SIZE), "TAG+", 4) == 0)
 		area = ID3V1_TAG_SIZE + ID3V1_ENHANCED_SIZE;
-	if (_fseeki64(Stream, fileSize - area, SEEK_SET) != 0 || fread(ID3v1Area, 1, area, Stream) != (size_t)area)
-		return false;
+	memcpy(ID3v1Area, tail + want - area, area);
 	ID3v1AreaSize = area;
 	FFileSize = fileSize;
 	/* an APE tag (footer and items, header) can be between the lyrics tag and the id3v1 data */
 	__int64 end = fileSize - area;
 	BYTE footer[32];
-	if (end >= 32 && _fseeki64(Stream, end - 32, SEEK_SET) == 0 && fread(footer, 1, 32, Stream) == 32 && memcmp(footer, "APETAGEX", 8) == 0)
+	if (end >= 32 && want >= (size_t)area + 32)
+		memcpy(footer, tail + want - area - 32, 32);
+	else
+		memset(footer, 0, sizeof(footer));
+	if (memcmp(footer, "APETAGEX", 8) == 0)
 	{
 		const unsigned long version = footer[8] | (footer[9] << 8) | (footer[10] << 16) | ((unsigned long)footer[11] << 24);
 		const unsigned long size = footer[12] | (footer[13] << 8) | (footer[14] << 16) | ((unsigned long)footer[15] << 24);
@@ -147,9 +150,16 @@ bool CLyrics::ReadHeader(FILE *Stream)
 	FEndPosition = end - 9;
 	if (FEndPosition < 0)
 		return false;
-	_fseeki64(Stream, FEndPosition, SEEK_SET);
-	if (fread(FHeader, 1, 9, Stream) != 9)
-		return false;
+	const __int64 tailStart = fileSize - (__int64)want;
+	if (FEndPosition >= tailStart)
+		memcpy(FHeader, tail + (FEndPosition - tailStart), 9);
+	else
+	{
+		/* an APE tag is between the two: read the header there */
+		_fseeki64(Stream, FEndPosition, SEEK_SET);
+		if (fread(FHeader, 1, 9, Stream) != 9)
+			return false;
+	}
 	/* check if Lyrics-Tag exists */
 	if (memcmp(FHeader, LYRICS_BEGIN, 6) != 0)
 		return false;

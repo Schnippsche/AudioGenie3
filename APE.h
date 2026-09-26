@@ -83,7 +83,7 @@ public:
 	static bool FindHeadTag(FILE *Stream, __int64 &offset, __int64 &length);
 	// looks for the footer of a tag at the end of the file: directly in front of the ID3v1 data or in front of a Lyrics3 v2.00 tag
 	// that is between them (lyricsAfter = its size)
-	static bool FindTailFooter(FILE *Stream, int id3v1Size, __int64 &footerPos, __int64 &lyricsAfter);
+	static bool FindTailFooter(FILE *Stream, int id3v1Size, bool checkLyrics, __int64 &footerPos, __int64 &lyricsAfter);
 	void ResetData();
 	void Print();
 	bool ReadFromFile(FILE *Stream);

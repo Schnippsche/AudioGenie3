@@ -63,7 +63,7 @@ BYTE GetFileFormat(FILE *Stream)
 	}
 	// an APE tag at the beginning of the file (at the start or behind an ID3v2 tag): the audio data follow it
 	__int64 apeOffset, apeLength;
-	if (CAPE::FindHeadTag(Stream, apeOffset, apeLength))
+	if (header.IsApeHeader() && CAPE::FindHeadTag(Stream, apeOffset, apeLength))
 	{
 		CTools::APEHeadSize = (int)apeLength;
 		_fseeki64(Stream, apeOffset + apeLength, SEEK_SET);

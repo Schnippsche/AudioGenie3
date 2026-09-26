@@ -56,7 +56,7 @@ void CAPE::ResetData()
 
 /* -------------------------------------------------------------------------- */
 
-bool CAPE::FindTailFooter(FILE *Stream, int id3v1Size, __int64 &footerPos, __int64 &lyricsAfter)
+bool CAPE::FindTailFooter(FILE *Stream, int id3v1Size, bool checkLyrics, __int64 &footerPos, __int64 &lyricsAfter)
 {
 	const __int64 end = _filelengthi64(_fileno(Stream)) - id3v1Size;
 	BYTE id[8];
@@ -70,7 +70,7 @@ bool CAPE::FindTailFooter(FILE *Stream, int id3v1Size, __int64 &footerPos, __int
 	}
 	// a Lyrics3 v2.00 tag ends with its size (6 digits: LYRICSBEGIN and the fields) and "LYRICS200"
 	BYTE tail[15];
-	if (end >= 15 + APE_TAG_FOOTER_SIZE && _fseeki64(Stream, end - 15, SEEK_SET) == 0 && fread(tail, 1, 15, Stream) == 15 && memcmp(tail + 6, "LYRICS200", 9) == 0)
+	if (checkLyrics && end >= 15 + APE_TAG_FOOTER_SIZE && _fseeki64(Stream, end - 15, SEEK_SET) == 0 && fread(tail, 1, 15, Stream) == 15 && memcmp(tail + 6, "LYRICS200", 9) == 0)
 	{
 		__int64 size = 0;
 		int digits = 0;
@@ -97,7 +97,8 @@ bool CAPE::ReadFooter(FILE *Stream)
 {
 	/* Read footer data */
 	__int64 lyricsAfter;
-	if (!FindTailFooter(Stream, CTools::ID3v1Size, _footerPos, lyricsAfter))
+	// the Lyrics3 tag is read before this one: it is only looked for if there is one
+	if (!FindTailFooter(Stream, CTools::ID3v1Size, CTools::LyricsSize > 0, _footerPos, lyricsAfter))
 		return false;
 	_fseeki64(Stream, _footerPos, SEEK_SET);
 	return TagInfo.ReadFromFile(Stream);
@@ -113,7 +114,7 @@ bool CAPE::LocateTail(LPCWSTR FileName, __int64 &start, __int64 &total)
 		return false;
 	__int64 footerPos, lyricsAfter;
 	CApeTagInfo info;
-	bool found = FindTailFooter(Source, CID3V1::DetectSize(Source), footerPos, lyricsAfter) && lyricsAfter > 0;
+	bool found = FindTailFooter(Source, CID3V1::DetectSize(Source), true, footerPos, lyricsAfter) && lyricsAfter > 0;
 	if (found)
 	{
 		_fseeki64(Source, footerPos, SEEK_SET);
@@ -439,10 +440,9 @@ bool CAPE::SaveTag(LPCWSTR FileName)
 
 bool CAPE::ReadFromFile(FILE *Stream)
 {
-	// a tag at the beginning of the file has a header and is found first
-	__int64 headOffset, headLength;
-	if (FindHeadTag(Stream, headOffset, headLength))
-		return ReadHeadTag(Stream, headOffset, headLength);
+	// a tag at the beginning of the file has a header and was found when the format was detected
+	if (CTools::APEHeadSize > 0)
+		return ReadHeadTag(Stream, CTools::ID3v2Size, CTools::APEHeadSize);
 	/* Process data if loaded and footer is valid */
 	if (ReadFooter(Stream))
 	{

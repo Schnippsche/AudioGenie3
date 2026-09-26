@@ -669,9 +669,17 @@ bool CMPEGAudio::FindFrame()
 				Frame.FramePosition = StartPosition + (long)Iterator;
 				Frame.FrameSize = GetFrameLength();
 				Frame.Xing = IsXing(Iterator + 4, Data);
-				// a CRC (2 bytes) is between the header and the side information if the protection bit is 0
-				const long xingIndex = Iterator + GetVBRDeviation() + (Frame.ProtectionBit ? 0 : 2);
-				FindVBR(xingIndex, Data);
+				// a CRC (2 bytes) is between the header and the side information if the protection bit is 0; some encoders clear the bit
+				// without writing a CRC, so the position without the CRC is checked as well
+				long xingIndex = Iterator + GetVBRDeviation();
+				if (!Frame.ProtectionBit)
+				{
+					FindVBR(xingIndex + 2, Data);
+					if (FVBR.Found)
+						xingIndex += 2;
+				}
+				if (!FVBR.Found)
+					FindVBR(xingIndex, Data);
 				if (FVBR.Found)
 					ParseLameTag(Iterator, xingIndex, Data);
 				else

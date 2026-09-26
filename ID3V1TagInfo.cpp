@@ -85,34 +85,33 @@ bool CID3V1TagInfo::ReadFromFile(FILE *Stream)
 {
   errno = 0;
   _exists = false;
-  // first check that TAG does not point to APETAGEX (BUG 27.08.06)
-  _fseeki64(Stream, -131, SEEK_END);
-  tmp->FileRead(131, Stream);
-  if ( (tmp->GetLength() != 131)
-	  || (memcmp(tmp->m_pData, _T("APETAGEX"), 8) == 0)
-	  || (tmp->GetAt(3) != 'T' || tmp->GetAt(4) != 'A' || tmp->GetAt(5) != 'G') )
-	  return false;
-  
-  /*  old version
-  CAtlString st = tmp->GetStringAt(6, 124);
-  Title = st.Mid(0, 30).TrimRight();
-  Artist = st.Mid(30, 30).TrimRight();
-  Album = st.Mid(60, 30).TrimRight();
-  Year = st.Mid(90, 4).TrimRight(); 
-  Comment = st.Mid(94, 30).TrimRight(); 
-  */
-  // the enhanced tag "TAG+" is in front of the id3v1 tag
+  // one read of the end of the file: the id3v1 tag (128 bytes) and the enhanced tag (227 bytes) in front of it
+  CBlob tail;
   CBlob enhanced;
   _enhanced = false;
   memset(_enhancedRest, 0, sizeof(_enhancedRest));
-  if (_fseeki64(Stream, -(ID3V1_TAG_SIZE + ID3V1_ENHANCED_SIZE), SEEK_END) == 0)
+  size_t want = ID3V1_TAG_SIZE + ID3V1_ENHANCED_SIZE;
+  if (_fseeki64(Stream, -(__int64)want, SEEK_END) != 0)
   {
-    enhanced.FileRead(ID3V1_ENHANCED_SIZE, Stream);
-    if (enhanced.GetLength() == ID3V1_ENHANCED_SIZE && memcmp(enhanced.m_pData, "TAG+", 4) == 0)
-    {
-      _enhanced = true;
-      memcpy(_enhancedRest, enhanced.m_pData + 4 + 180, ID3V1_ENHANCED_REST);
-    }
+    want = 131;   // a smaller file: the id3v1 tag and the 3 bytes in front of it
+    _fseeki64(Stream, -(__int64)want, SEEK_END);
+  }
+  tail.FileRead(want, Stream);
+  const size_t length = tail.GetLength();
+  if (length < 131)
+    return false;
+  // the last 131 bytes: check that TAG does not point to APETAGEX (BUG 27.08.06)
+  tmp->Clear();
+  tmp->AddMemory(tail.m_pData + length - 131, 131);
+  if ( (memcmp(tmp->m_pData, _T("APETAGEX"), 8) == 0)
+	  || (tmp->GetAt(3) != 'T' || tmp->GetAt(4) != 'A' || tmp->GetAt(5) != 'G') )
+	  return false;
+  // the enhanced tag "TAG+" is in front of the id3v1 tag
+  if (length == ID3V1_TAG_SIZE + ID3V1_ENHANCED_SIZE && memcmp(tail.m_pData, "TAG+", 4) == 0)
+  {
+    _enhanced = true;
+    enhanced.AddMemory(tail.m_pData, ID3V1_ENHANCED_SIZE);
+    memcpy(_enhancedRest, tail.m_pData + 4 + 180, ID3V1_ENHANCED_REST);
   }
   CBlob *ext = _enhanced ? &enhanced : NULL;
   Title = ReadFieldWithExtension(tmp, 6, 30, ext, 4, 60);

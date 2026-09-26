@@ -583,3 +583,27 @@ TEST_CASE("LAME tag: not present", "[mpeg][spec][lame]")
         CHECK(MPEGHasLameTagW() == 0);
     }
 }
+
+TEST_CASE("Xing header: protection bit 0 without a CRC (as some encoders write it)", "[mpeg][spec][xing]")
+{
+    ExactRead defaultRead(false);
+    Spec s;
+    s.mode = 1;
+    s.crc = true;                       // the protection bit says "CRC", but the frame has none
+    const int audioFrames = 30;
+    Bytes first = headerOf(s, 0);
+    first.resize(first.size() + 32, 0);   // side information, the Xing tag follows directly
+    put(first, "Xing");
+    putBE32(first, 0x3);
+    putBE32(first, audioFrames);
+    const Bytes audioData = framesOf(s, audioFrames, 1);
+    putBE32(first, static_cast<uint32_t>(audioData.size()));
+    first.resize(static_cast<size_t>(lengthOf(s, 0)), 0);
+    Bytes file = first;
+    file.insert(file.end(), audioData.begin(), audioData.end());
+    auto p = writeTemp("mpegspec_xing_nocrc.mp3", file);
+    REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+    CHECK(MPEGGetFramesW() == audioFrames);
+    CHECK(MPEGIsVBRW() != 0);
+    CHECK(std::fabs(AUDIOGetDurationW() - audioFrames * 1152.0 / 44100) < 0.0005);
+}

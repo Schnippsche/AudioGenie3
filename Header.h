@@ -91,5 +91,7 @@ public:
 	CHeader();
 	virtual ~CHeader();
 	BYTE ReadFromFile(FILE *Stream);
+	// the bytes that were read start an APE tag (header of a tag at the beginning of the file)
+	bool IsApeHeader() { return memcmp(Buf, "APETAGEX", 8) == 0; }
 };
 
