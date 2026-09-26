@@ -1884,8 +1884,11 @@ extern "C" long __stdcall MPEGGetFrameSizeW()
 /**
  * @brief get the number of Frames
  *
- * The value comes from the Xing, Info or VBRI header (the frame that carries the header is not counted). Without a header it is
- * calculated from the file size (exact for constant bit rate files without additional data after the audio). If the configuration value MPEGEXACTREAD was set
+ * The value comes from the Xing, Info or VBRI header (the frame that carries the header is not counted). The header describes the
+ * file at the time of the encoding: if its number of bytes does not match the audio data (an Info header: at most 0.5 % of
+ * difference, and the frames have to fit to the bytes; a Xing or VBRI header: at most 25 %) the file was changed afterwards and the
+ * header is not used. Without a usable header the value is calculated from the file size (exact for constant bit rate files without
+ * additional data after the audio). If the configuration value MPEGEXACTREAD was set
  * before the analysis, the frames are counted one by one and the value is exact in every case, see SetConfigValueW().
  *
  * @ingroup MPEG

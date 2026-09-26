@@ -230,6 +230,7 @@ private:
 	void FindVBR(long Index, BYTE Data[]);
 	void FindVBRI(long Index, BYTE Data[]);
 	void ParseLameTag(long frameIndex, long xingIndex, BYTE Data[]);
+	bool IsHeaderPlausible();
 	void GetInternEncoder();
 	BYTE GetVBRDeviation();
 	BYTE GetVBREncoderID();

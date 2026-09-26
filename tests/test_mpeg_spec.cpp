@@ -250,7 +250,7 @@ TEST_CASE("Xing and Info header: position and fields", "[mpeg][spec][xing]")
                     const int bitrate = bitrateOf(s.version, 3, s.bitrateIndex);
                     const int rate = sampleRateOf(s.version, 0);
                     const int audioFrames = 30;
-                    const uint32_t bytes = static_cast<uint32_t>(lengthOf(s, 0)) * audioFrames;
+                    const uint32_t bytes = static_cast<uint32_t>(lengthOf(s, 0)) * (audioFrames + 1);   // with the header frame
                     INFO(std::string(lay.name) + (crc ? " CRC " : " ") + id + " flags " + std::to_string(flags));
 
                     // the first frame is the header frame: header, [CRC], side information (zero), Xing/Info tag
@@ -321,7 +321,7 @@ TEST_CASE("VBRI header: fixed position 32 bytes behind the header", "[mpeg][spec
         s.mode = mode;
         s.bitrateIndex = 9;
         const int audioFrames = 50;
-        const uint32_t bytes = static_cast<uint32_t>(lengthOf(s, 0)) * audioFrames;
+        const uint32_t bytes = static_cast<uint32_t>(lengthOf(s, 0)) * (audioFrames + 1);   // with the header frame
         Bytes first = headerOf(s, 0);
         first.resize(4 + 32, 0);   // the VBRI tag is always at offset 36
         put(first, "VBRI");
@@ -418,7 +418,7 @@ LameFile lameFile(const Spec& s, const Lame& l, const char* id, int audioFrames,
     putBE32(first, l.flags);
     putBE32(first, static_cast<uint32_t>(audioFrames));
     const Bytes audio = framesOf(s, audioFrames, 1);
-    putBE32(first, static_cast<uint32_t>(audio.size()));
+    putBE32(first, static_cast<uint32_t>(lengthOf(s, 0) + audio.size()));   // the bytes include the header frame
     first.insert(first.end(), 100, 0);
     putBE32(first, 78);                       // quality
     const size_t ext = first.size();          // 120 bytes behind the Xing tag
@@ -597,7 +597,7 @@ TEST_CASE("Xing header: protection bit 0 without a CRC (as some encoders write i
     putBE32(first, 0x3);
     putBE32(first, audioFrames);
     const Bytes audioData = framesOf(s, audioFrames, 1);
-    putBE32(first, static_cast<uint32_t>(audioData.size()));
+    putBE32(first, static_cast<uint32_t>(lengthOf(s, 0) + audioData.size()));
     first.resize(static_cast<size_t>(lengthOf(s, 0)), 0);
     Bytes file = first;
     file.insert(file.end(), audioData.begin(), audioData.end());
@@ -606,4 +606,79 @@ TEST_CASE("Xing header: protection bit 0 without a CRC (as some encoders write i
     CHECK(MPEGGetFramesW() == audioFrames);
     CHECK(MPEGIsVBRW() != 0);
     CHECK(std::fabs(AUDIOGetDurationW() - audioFrames * 1152.0 / 44100) < 0.0005);
+}
+
+TEST_CASE("Xing/Info header that does not match the audio data is not used", "[mpeg][spec][xing]")
+{
+    ExactRead defaultRead(false);
+    Spec s;
+    const int audioFrames = 40;
+    const uint32_t len = static_cast<uint32_t>(lengthOf(s, 0));
+    const uint32_t rightBytes = len * (audioFrames + 1);
+    auto build = [&](const char* id, uint32_t frames, uint32_t bytes) {
+        Bytes first = headerOf(s, 0);
+        first.resize(first.size() + 32, 0);
+        put(first, id);
+        putBE32(first, 0x3);
+        putBE32(first, frames);
+        putBE32(first, bytes);
+        first.resize(len, 0);
+        Bytes file = first;
+        const Bytes a = framesOf(s, audioFrames, 1);
+        file.insert(file.end(), a.begin(), a.end());
+        return writeTemp("mpegspec_xing_plaus.mp3", file);
+    };
+    const double estimate = (audioFrames + 1) * 1152.0 / 44100;   // from the size of the file
+
+    SECTION("a header of a file that was extended: the number of bytes is far too small") {
+        auto p = build("Xing", 5, len * 6);
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        CHECK(MPEGIsVBRW() == 0);
+        CHECK(std::fabs(AUDIOGetDurationW() - estimate) < estimate * 0.03);
+    }
+    SECTION("a header of a file that was cut: 3 % of difference") {
+        auto p = build("Info", audioFrames, rightBytes * 103 / 100);
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        CHECK(std::fabs(AUDIOGetDurationW() - estimate) < estimate * 0.03);
+    }
+    SECTION("a variable bit rate header is kept if the size differs by a few percent") {
+        auto p = build("Xing", audioFrames, rightBytes * 103 / 100);
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        CHECK(MPEGGetFramesW() == audioFrames);
+        CHECK(MPEGIsVBRW() != 0);
+    }
+    SECTION("Info: the frames do not fit to the bytes") {
+        auto p = build("Info", 60, rightBytes);
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        CHECK(std::fabs(AUDIOGetDurationW() - estimate) < estimate * 0.03);
+    }
+    SECTION("a matching header is used") {
+        auto p = build("Info", audioFrames, rightBytes);
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        CHECK(MPEGGetFramesW() == audioFrames);
+        CHECK(std::fabs(AUDIOGetDurationW() - audioFrames * 1152.0 / 44100) < 0.0005);
+    }
+}
+
+TEST_CASE("Xing header with the number of frames only: the average bit rate comes from the size", "[mpeg][spec][xing]")
+{
+    ExactRead defaultRead(false);
+    Spec header;
+    header.bitrateIndex = 1;      // the header frame has 32 kbit/s, the audio frames 128 kbit/s
+    Spec audioSpec;
+    const int audioFrames = 30;
+    Bytes first = headerOf(header, 0);
+    first.resize(first.size() + 32, 0);
+    put(first, "Xing");
+    putBE32(first, 0x1);
+    putBE32(first, audioFrames);
+    first.resize(static_cast<size_t>(lengthOf(header, 0)), 0);
+    Bytes file = first;
+    const Bytes a = framesOf(audioSpec, audioFrames, 1);
+    file.insert(file.end(), a.begin(), a.end());
+    auto p = writeTemp("mpegspec_xing_frames_only.mp3", file);
+    REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+    CHECK(MPEGGetFramesW() == audioFrames);
+    CHECK(MPEGIsVBRW() != 0);
+    CHECK(std::abs(AUDIOGetBitrateW() - 128) <= 1);
 }

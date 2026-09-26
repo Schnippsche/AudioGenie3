@@ -276,6 +276,37 @@ void CMPEGAudio::FindVBR(long Index, BYTE Data[])
 
 /* -------------------------------------------------------------------------- */
 
+// The frames and bytes of a Xing, Info or VBRI header describe the file at the time of the encoding. If the file was cut, extended or
+// joined afterwards they do not match the audio data any more: then the header is not used (the values are estimated from the size).
+bool CMPEGAudio::IsHeaderPlausible()
+{
+	const __int64 audioBytes = CTools::FileSize - CTools::ID3v1Size - CTools::LyricsSize - CTools::APESize - Frame.FramePosition;
+	if (audioBytes <= 0)
+		return true;   // the tags are not known: no statement
+	// the number of bytes (the audio data with the header frame). Constant bit rate (Info): the size gives the duration as well as the header,
+	// so at most 0.5 % of difference. Variable bit rate: the size says little (the bit rate of the header frame is not the average),
+	// so the header is only refused if the file is very different (25 %).
+	if (FVBR.Bytes > 0)
+	{
+		const __int64 difference = (FVBR.Bytes > audioBytes) ? (FVBR.Bytes - audioBytes) : (audioBytes - FVBR.Bytes);
+		if (difference * (FVBR.Cbr ? 200 : 4) > audioBytes)
+			return false;
+	}
+	// constant bit rate (Info): all frames have the length of the first one
+	if (FVBR.Cbr && FVBR.Frames > 0 && GetSampleRate() > 0)
+	{
+		const double expected = (double)FVBR.Frames * GetCoefficient() * GetBitRateID() * 1000.0 / GetSampleRate();
+		// the frames of the header do not contain the header frame itself (or they do): both are fine
+		const double withoutHeader = (double)(audioBytes - Frame.FrameSize);
+		const bool matches = (expected <= audioBytes * 1.02 && expected >= audioBytes * 0.98) || (expected <= withoutHeader * 1.02 && expected >= withoutHeader * 0.98);
+		if (!matches)
+			return false;
+	}
+	return true;
+}
+
+/* -------------------------------------------------------------------------- */
+
 // CRC-16 as LAME writes it: polynomial $8005, start value 0, most significant bit first
 static unsigned short LameCrc16(unsigned short crc, const BYTE *data, size_t length)
 {
@@ -410,8 +441,16 @@ long CMPEGAudio::GetBitRate()
 
 	/* Get bit rate, calculate average bit rate if VBR header found */
 	// an Info header belongs to a file with a constant bit rate, without the number of bytes there is no average
-	if (FVBR.Found && (FVBR.Cbr || (FVBR.Bytes <= 0 && scannedFrames == 0)))
+	if (FVBR.Found && FVBR.Cbr)
 		return GetBitRateID();
+	// without the number of bytes the average is calculated from the size of the audio data (without the header frame)
+	if (FVBR.Found && FVBR.Bytes <= 0 && scannedFrames == 0)
+	{
+		const __int64 audioBytes = CTools::FileSize - CTools::ID3v1Size - CTools::LyricsSize - CTools::APESize - Frame.FramePosition - Frame.FrameSize;
+		if (FVBR.Frames > 0 && audioBytes > 0 && GetSampleRate() > 0)
+			return (long)((double)audioBytes * 8.0 * GetSampleRate() / ((double)FVBR.Frames * GetSamplesPerFrame()) / 1000.0 + 0.5);
+		return GetBitRateID();
+	}
 	if (FVBR.Found && FVBR.Frames > 0)
 	{
 		if (CTools::configValues[CONFIG_MPEGEXACTREAD] != 0)
@@ -422,7 +461,8 @@ long CMPEGAudio::GetBitRate()
 				return 0;
 		}
 
-		Res1 = float(FVBR.Bytes) / (float) FVBR.Frames;
+		// the number of bytes contains the header frame, the number of frames does not
+		Res1 = (float(FVBR.Bytes) - (float)Frame.FrameSize) / (float) FVBR.Frames;
 		Res1 -= GetPadding();
 		Res2 = float(GetSampleRate() / GetCoefficient() / 1000.0f);
 		Res1 *= Res2;
@@ -684,6 +724,9 @@ bool CMPEGAudio::FindFrame()
 					ParseLameTag(Iterator, xingIndex, Data);
 				else
 					FindVBRI(Iterator + 4 + 32, Data);
+				// a header that does not match the audio data is not used
+				if (FVBR.Found && !IsHeaderPlausible())
+					memset(&FVBR, 0, sizeof(FVBR));
 				break;
 			}
 		}
