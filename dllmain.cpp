@@ -1590,7 +1590,7 @@ extern "C" BSTR __stdcall MP4GetTrackW()
  *
  * @ingroup MP4
  * @since 2.0.1.0
- * @param textString track
+ * @param textString track as "number" or "number/total"; both numbers are 16 bit (0..65535)
  */
 extern "C" void __stdcall MP4SetTrackW(LPCWSTR textString)
 {
