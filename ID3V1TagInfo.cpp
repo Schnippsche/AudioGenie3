@@ -92,8 +92,9 @@ bool CID3V1TagInfo::ReadFromFile(FILE *Stream)
   Album = ReadFixedField(tmp, 66, 30);
   Year = ReadFixedField(tmp, 96, 4);
   Comment = ReadFixedField(tmp, 100, 30);
-  if ((tmp->GetAt(128) == 0 && tmp->GetAt(129) != 0) ||
-      (tmp->GetAt(128) == 32 && tmp->GetAt(129) != 32))
+  // id3v1.1: the last byte of the comment is a track number if the byte before it is $00
+  // (a comment of 30 characters with a blank at position 29 is not a v1.1 tag)
+  if (tmp->GetAt(128) == 0 && tmp->GetAt(129) != 0)
     Track = tmp->GetAt(129);
   else
     Track = 0;
@@ -163,8 +164,9 @@ CAtlString CID3V1TagInfo::GetTrack()
 
 void CID3V1TagInfo::SetTrack(LPCWSTR newValue)
 {
-  Track = (BYTE)_wtoi(newValue);
-  if (Track < 0 || Track > 255) Track = 0;
+  // the track number is one byte: a value that does not fit means 'no track'
+  const int value = _wtoi(newValue);
+  Track = (value > 0 && value <= 255) ? (BYTE)value : 0;
 }
 
 void CID3V1TagInfo::SetGenre(LPCWSTR newValue)
@@ -174,4 +176,11 @@ void CID3V1TagInfo::SetGenre(LPCWSTR newValue)
   for (int i=0; i < MAX_MUSIC_GENRES; i++)
     if (vgl.CompareNoCase(MUSIC_GENRE[i]) == 0)
       Genre = (BYTE)i;
+  // names that version 3.0 used for three genres
+  if (Genre == DEFAULT_GENRE)
+  {
+    if (vgl.CompareNoCase(_T("Top")) == 0) Genre = 60;
+    else if (vgl.CompareNoCase(_T("Pop & Funk")) == 0) Genre = 62;
+    else if (vgl.CompareNoCase(_T("Trash Metal")) == 0) Genre = 144;
+  }
 }

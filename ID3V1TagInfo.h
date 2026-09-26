@@ -49,8 +49,8 @@ static const LPCWSTR MUSIC_GENRE[] =
 	_T("AlternRock"), _T("Bass"), _T("Soul"), _T("Punk"), _T("Space"), _T("Meditative"),
 	_T("Instrumental Pop"), _T("Instrumental Rock"), _T("Ethnic"), _T("Gothic"), _T("Darkwave"),
 	_T("Techno-Industrial"), _T("Electronic"), _T("Pop-Folk"), _T("Eurodance"), _T("Dream"),
-	_T("Southern Rock"), _T("Comedy"), _T("Cult"), _T("Gangsta"), _T("Top"), _T("Christian Rap"),
-	_T("Pop & Funk"), _T("Jungle"), _T("Native American"), _T("Cabaret"), _T("New Wave"),
+	_T("Southern Rock"), _T("Comedy"), _T("Cult"), _T("Gangsta"), _T("Top 40"), _T("Christian Rap"),
+	_T("Pop/Funk"), _T("Jungle"), _T("Native American"), _T("Cabaret"), _T("New Wave"),
 	_T("Psychedelic"), _T("Rave"), _T("Showtunes"), _T("Trailer"), _T("Lo-Fi"), _T("Tribal"),
 	_T("Acid Punk"), _T("Acid Jazz"), _T("Polka"), _T("Retro"), _T("Musical"), _T("Rock & Roll"),
 	_T("Hard Rock"), _T("Folk"), _T("Folk-Rock"), _T("National Folk"), _T("Swing"), _T("Fast Fusion"),
@@ -65,7 +65,7 @@ static const LPCWSTR MUSIC_GENRE[] =
 	_T("Indie"), _T("BritPop"), _T("Negerpunk"), _T("Polsk Punk"), _T("Beat"),
 	_T("Christian Gangsta Rap"), _T("Heavy Metal"), _T("Black Metal"), _T("Crossover"),
 	_T("Contemporary Christian"), _T("Christian Rock"), _T("Merengue"), _T("Salsa"),
-	_T("Trash Metal"), _T("Anime"), _T("JPop"), _T("Synthpop")
+	_T("Thrash Metal"), _T("Anime"), _T("JPop"), _T("Synthpop")
 };
 
 class CID3V1TagInfo

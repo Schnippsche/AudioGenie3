@@ -85,5 +85,7 @@ void CApeTagItem::Reset()
 
 bool CApeTagItem::isBinary()
 {
-  return ((Flags >> 1) != 0);
+  // bits 2..1 of the flags: 0 text, 1 binary, 2 locator (UTF-8 text as well), 3 reserved
+  const int type = (Flags >> 1) & 3;
+  return (type == 1 || type == 3);
 }

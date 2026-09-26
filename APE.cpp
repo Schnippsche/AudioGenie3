@@ -64,6 +64,22 @@ bool CAPE::ReadFooter(FILE *Stream)
 
 /* -------------------------------------------------------------------------- */
 
+// APE item keys: 2 to 255 characters in the range $20 to $7E; ID3, TAG, OggS and MP+ are not allowed
+static bool isValidKey(LPCWSTR key)
+{
+	const size_t length = (key == NULL) ? 0 : wcslen(key);
+	if (length < 2 || length > 255)
+		return false;
+	for (size_t i = 0; i < length; i++)
+		if (key[i] < 0x20 || key[i] > 0x7E)
+			return false;
+	static const LPCWSTR forbidden[] = { L"ID3", L"TAG", L"OggS", L"MP+" };
+	for (int i = 0; i < 4; i++)
+		if (_wcsicmp(key, forbidden[i]) == 0)
+			return false;
+	return true;
+}
+
 bool CAPE::SetTagItem(LPCWSTR FieldName, LPCWSTR Value)
 {
 	
@@ -85,13 +101,18 @@ bool CAPE::SetTagItem(LPCWSTR FieldName, LPCWSTR Value)
 			if (TagInfo.Version > APE_VERSION_1_0)
 				item->Value.AddEncodedString(TEXT_ENCODED_UTF8, Value, TEXT_WITHOUT_ENCODING, TEXT_WITHOUT_NULLBYTES);
 			else
-				item->Value.AddString(Value);
+				item->Value.AddEncodedString(TEXT_ENCODED_ANSI, Value, TEXT_WITHOUT_ENCODING, TEXT_WITHOUT_NULLBYTES);
 			return true;
 		}
 	}
 	/* not found, make a new entry if new Value != blank */
 	if (Value == 0 || wcslen(Value) == 0)
 		return true;
+	if (!isValidKey(FieldName))
+	{
+		CTools::instance().writeWarning(L"APE item '%s' ignored: a key has 2 to 255 characters from $20 to $7E and is not ID3, TAG, OggS or MP+", FieldName);
+		return false;
+	}
 
 	item = new CApeTagItem();
 	item->Key = FieldName;
@@ -190,8 +211,10 @@ void CAPE::BuildFooter()
 	CBlob tmpBlob;
 	size_t Iterator;
 	/* Build tag footer */
+	// a v1 tag stays a v1 tag (its values are ANSI), everything else is written as v2
+	const long version = (TagInfo.Version == APE_VERSION_1_0 || FVersion == APE_VERSION_1_0) ? APE_VERSION_1_0 : APE_VERSION_2_0;
 	TagInfo.Reset();
-	TagInfo.Version = APE_VERSION_2_0;
+	TagInfo.Version = version;
 	TagInfo.Size = APE_TAG_FOOTER_SIZE;
 	for (Iterator = 0; Iterator < _items.GetCount(); Iterator++)
 	{
@@ -214,9 +237,14 @@ bool CAPE::SaveTag(LPCWSTR FileName)
 	/* Build and write tag fields and footer to stream */
 	Data.Clear();
 	BuildFooter();
-	/* set flags to footer start */
-	TagInfo.Flags = (0xA0 << 24);
-	TagInfo.WriteToBlob(Data);
+	// v2: header and footer; v1: footer only, all flags are zero
+	const bool v2 = (TagInfo.Version > APE_VERSION_1_0);
+	if (v2)
+	{
+		/* set flags to footer start */
+		TagInfo.Flags = (0xA0 << 24);
+		TagInfo.WriteToBlob(Data);
+	}
 	Flags = 0;
 	CBlob tmpBlob;
 	for (Iterator = 0; Iterator < _items.GetCount(); Iterator++)
@@ -230,7 +258,7 @@ bool CAPE::SaveTag(LPCWSTR FileName)
 		Data.AddBlob(item->Value);		
 	}
 	/* set flags to footer end */
-	TagInfo.Flags = (0x80 << 24);
+	TagInfo.Flags = v2 ? (0x80 << 24) : 0;
 	TagInfo.WriteToBlob(Data);
 	/* Add created tag to file */
 	bool result = AddToFile(FileName);
@@ -303,7 +331,9 @@ bool CAPE::SaveToFile(LPCWSTR FileName)
 	if (result == false && CTools::instance().getLastError() != ERR_TAG_NOT_EXIST)
 		return false;
 	CTools::instance().setLastError(0);
-	if (tmpid3v1.GetSize() > 0)
+	// the ID3v1 tag is in front of the end of the file only if there was no APE tag: then it is moved behind the new APE tag.
+	// Otherwise RemoveFromFile has removed it together with the old APE tag.
+	if (!result && tmpid3v1.GetSize() > 0)
 		TruncateFile(FileName, 128);
 	return SaveTag(FileName);  
 }
