@@ -516,6 +516,7 @@ Public Enum AudioFormatID
   MP4M4A = 9
   TTA = 10
   WAVPACK = 11
+  OGGOPUS = 13
 End Enum
 
 Public Enum PictureType

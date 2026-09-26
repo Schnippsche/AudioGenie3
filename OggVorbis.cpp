@@ -96,7 +96,7 @@ __int64 COggVorbis::GetSamples(FILE *Source)
 	return 0;
 }
 
-// Reads the identification header and the packets of the comment header and the setup header.
+// Reads the identification header (Vorbis or Opus) and the packets of the comment header and, for Vorbis, the setup header.
 bool COggVorbis::GetInfo(FILE *Source, bool withComments)
 {
 	commentPacket.Clear();
@@ -116,16 +116,33 @@ bool COggVorbis::GetInfo(FILE *Source, bool withComments)
 	const __int64 bodyPos = pos + 27 + FPage.Segments;
 	_fseeki64(Source, bodyPos, SEEK_SET);
 	Parameters.Reset();
-	Parameters.ReadFromFile(Source);
-	if (memcmp(Parameters.ID, VORBIS_PARAMETERS_ID, 7) != 0 || bodyLength < 30)
-		return false;
+	opus = false;
+	preSkip = 0;
+	// Opus (RFC 7845): "OpusHead", version (4 bit major), channels, pre-skip (16 bit), input sample rate, output gain, channel mapping family
+	BYTE opusHead[19];
+	if (bodyLength >= 19 && fread(opusHead, 1, 19, Source) == 19 && memcmp(opusHead, "OpusHead", 8) == 0 && (opusHead[8] & 0xF0) == 0 && opusHead[9] > 0)
+	{
+		opus = true;
+		Parameters.ChannelMode = opusHead[9];
+		preSkip = opusHead[10] | (opusHead[11] << 8);
+		Parameters.SampleRate = 48000;   // Opus is always decoded with 48 kHz; the input sample rate in the header is only information
+	}
+	else
+	{
+		_fseeki64(Source, bodyPos, SEEK_SET);
+		Parameters.ReadFromFile(Source);
+		if (memcmp(Parameters.ID, VORBIS_PARAMETERS_ID, 7) != 0 || bodyLength < 30)
+			return false;
+	}
 	serial = (unsigned int)FPage.Serial;
 	firstPagePos = pos;
 	pos = bodyPos + bodyLength;
 	secondPagePos = pos;
 	// the pages of the comment header and the setup header
+	// Vorbis: comment header and setup header, Opus: only the comment header
+	const int packetsWanted = opus ? 1 : 2;
 	int packetsDone = 0;
-	while (packetsDone < 2)
+	while (packetsDone < packetsWanted)
 	{
 		_fseeki64(Source, pos, SEEK_SET);
 		COGGHeader page;
@@ -176,8 +193,8 @@ bool COggVorbis::GetInfo(FILE *Source, bool withComments)
 	}
 	// an incomplete file (cut inside the headers) can be read, but not written
 	headerEndPos = pos;
-	valid = (packetsDone == 2);
-	if (withComments && packetsDone >= 1 && commentPacket.GetLength() >= 7 && memcmp(commentPacket.m_pData, VORBIS_TAG_ID, 7) == 0)
+	valid = (packetsDone >= packetsWanted);
+	if (withComments && packetsDone >= 1 && commentPacket.GetLength() >= TagIdLength() && memcmp(commentPacket.m_pData, opus ? "OpusTags" : VORBIS_TAG_ID, TagIdLength()) == 0)
 		ReadTag(Source);
 	firstAudioPos = headerEndPos;
 	Samples = GetSamples(Source);
@@ -187,12 +204,18 @@ bool COggVorbis::GetInfo(FILE *Source, bool withComments)
 void COggVorbis::ReadTag(FILE *Source)
 {
 	Source;
-	AnalyzeVorbisComments(commentPacket.m_pData + 7, commentPacket.GetLength() - 7);
+	AnalyzeVorbisComments(commentPacket.m_pData + TagIdLength(), commentPacket.GetLength() - TagIdLength());
 }
 
 void COggVorbis::BuildTag()
 {
 	Data.Clear();
+	if (opus)
+	{
+		Data.AddMemory("OpusTags", 8);
+		BuildVorbisComments(Data);   // Opus has no framing bit
+		return;
+	}
 	Data.AddMemory(VORBIS_TAG_ID, 7);
 	BuildVorbisComments(Data);
 	Data.AddValue(1);   // the framing bit
@@ -377,16 +400,19 @@ void COggVorbis::ResetData()
 	lastHeaderFlags = 0;
 	multiplexed = false;
 	valid = false;
+	opus = false;
+	preSkip = 0;
 	CVorbisComment::ResetData();
 }
 
 float COggVorbis::FGetDuration()
 {
-	/* Calculate duration time: the granule position of the last page is the number of the samples */
+	/* Calculate duration time: the granule position of the last page is the number of the samples (Opus: without the pre-skip) */
 	if (FSamples > 0)
 	{
-		if (FSampleRate > 0)
-			return (float) ((double)FSamples / (double)FSampleRate);
+		const __int64 played = opus ? FSamples - preSkip : FSamples;
+		if (FSampleRate > 0 && played > 0)
+			return (float) ((double)played / (double)FSampleRate);
 		return 0.0f;
 	}
 	// without a granule position the nominal bit rate (kbit/s) and the size of the file give the duration
@@ -414,16 +440,20 @@ bool COggVorbis::FIsValid()
 		FGetBitRate() > 0);
 }
 
+void COggVorbis::ApplyParameters()
+{
+	FChannelModeID = Parameters.ChannelMode;
+	FSampleRate = Parameters.SampleRate;
+	FBitRateNominal = int(Parameters.BitRateNominal / 1000);
+	FSamples = Samples;
+}
+
 bool COggVorbis::ReadFromFile(FILE *Stream)
 {
 	/* Read data from file */
 	if (GetInfo(Stream, true))
 	{
-		/* Fill variables */
-		FChannelModeID = Parameters.ChannelMode;
-		FSampleRate = Parameters.SampleRate;
-		FBitRateNominal = int(Parameters.BitRateNominal / 1000);
-		FSamples = Samples;
+		ApplyParameters();
 		return true;
 	}
 	return false;
@@ -446,10 +476,7 @@ bool COggVorbis::SaveTag(LPCWSTR FileName)
 		}
 		if (Result)
 		{
-			FChannelModeID = Parameters.ChannelMode;
-			FSampleRate = Parameters.SampleRate;
-			FBitRateNominal = int(Parameters.BitRateNominal / 1000);
-			FSamples = Samples;
+			ApplyParameters();
 			/* Prepare tag data and save to file */
 			BuildTag();
 			Result = RebuildFile(FileName);

@@ -56,7 +56,8 @@ type
     AAC = 8,
     MP4M4A = 9,
     TTA = 10,
-    WAVPACK = 11
+    WAVPACK = 11,
+    OGGOPUS = 13
   );
 
   TPictureType = (
@@ -322,6 +323,7 @@ const
   AUDIOFORMAT_MP4M4A = 9;
   AUDIOFORMAT_TTA = 10;
   AUDIOFORMAT_WAVPACK = 11;
+  AUDIOFORMAT_OGGOPUS = 13;
 
   // Picture types
   PICTURE_OTHER = 0;

@@ -44,7 +44,7 @@ static std::string field(BSTR b)
 
 static bool isAudio(const fs::path& p)
 {
-    static const wchar_t* ext[] = { L".mp3", L".mp2", L".mp1", L".wma", L".m4a", L".ogg", L".flac", L".wav", L".ape", L".mpc", L".tta", L".wv", L".aac" };
+    static const wchar_t* ext[] = { L".mp3", L".mp2", L".mp1", L".wma", L".m4a", L".ogg", L".opus", L".flac", L".wav", L".ape", L".mpc", L".tta", L".wv", L".aac" };
     std::wstring e = p.extension().wstring();
     std::transform(e.begin(), e.end(), e.begin(), ::towlower);
     for (const wchar_t* x : ext)

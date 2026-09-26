@@ -544,3 +544,219 @@ TEST_CASE("Ogg Vorbis: damaged and foreign files", "[ogg][spec]")
         SUCCEED();
     }
 }
+
+// ---------------------------------------------------------------------------------------------------------------------------
+// Ogg Opus (RFC 7845): OpusHead on the first page, OpusTags (Vorbis comments without framing bit) ending a page, the audio behind it;
+// the granule positions count samples of 48 kHz, the first pre-skip samples are not played.
+
+namespace {
+
+struct OpusSpec {
+    int channels = 2;
+    int preSkip = 312;
+    uint32_t inputRate = 44100;
+    std::string vendor = "libopus 1.3.1";
+    std::vector<std::string> comments = { "TITLE=Voice", "ARTIST=Speaker", "ENCODER=Lavc" };
+    int audioPackets = 300;         // 20 ms each
+    int packetsPerPage = 50;
+    int mappingFamily = 0;
+};
+
+Bytes opusHead(const OpusSpec& s)
+{
+    Bytes b;
+    put(b, "OpusHead");
+    b.push_back(1);
+    b.push_back(static_cast<uint8_t>(s.channels));
+    b.push_back(static_cast<uint8_t>(s.preSkip & 0xFF)); b.push_back(static_cast<uint8_t>(s.preSkip >> 8));
+    le32(b, s.inputRate);
+    b.push_back(0); b.push_back(0);   // output gain
+    b.push_back(static_cast<uint8_t>(s.mappingFamily));
+    if (s.mappingFamily != 0) {
+        b.push_back(static_cast<uint8_t>(s.channels));   // streams
+        b.push_back(0);                                   // coupled streams
+        for (int i = 0; i < s.channels; i++) b.push_back(static_cast<uint8_t>(i));
+    }
+    return b;
+}
+
+Bytes opusTags(const std::string& vendor, const std::vector<std::string>& comments)
+{
+    Bytes b;
+    put(b, "OpusTags");
+    le32(b, static_cast<uint32_t>(vendor.size()));
+    put(b, vendor.c_str());
+    le32(b, static_cast<uint32_t>(comments.size()));
+    for (const std::string& c : comments) { le32(b, static_cast<uint32_t>(c.size())); put(b, c.c_str()); }
+    return b;
+}
+
+Bytes opusFile(const OpusSpec& s)
+{
+    const uint32_t serial = 0x0BADCAFE;
+    Bytes out = paginate({ Packet{ opusHead(s), 0, true } }, serial, 0, true, false);
+    put(out, paginate({ Packet{ opusTags(s.vendor, s.comments), 0, true } }, serial, 1, false, false));
+    std::vector<Packet> audio;
+    int64_t granule = s.preSkip;
+    for (int i = 0; i < s.audioPackets; i++) {
+        Packet p;
+        p.data.assign(80 + (i % 5) * 20, static_cast<uint8_t>(0x50 + (i & 0x1F)));
+        granule += 960;
+        const bool endOfPage = ((i + 1) % s.packetsPerPage == 0) || i + 1 == s.audioPackets;
+        p.granule = endOfPage ? granule : -1;
+        p.flushAfter = endOfPage;
+        audio.push_back(p);
+    }
+    put(out, paginate(audio, serial, 2, false, true));
+    return out;
+}
+
+// all container requirements of an Opus file: checksums, sequence numbers, flags, OpusHead first, OpusTags ends a page
+void checkOpusContainer(const Bytes& f)
+{
+    const auto pages = readPages(f);
+    REQUIRE(pages.size() >= 3);
+    size_t total = 0;
+    for (const PageInfo& p : pages) total += p.length;
+    CHECK(total == f.size());
+    for (size_t i = 0; i < pages.size(); i++) {
+        INFO("page " << i);
+        CHECK(pages[i].crcOk);
+        CHECK(pages[i].seq == i);
+        CHECK(((pages[i].flags & 2) != 0) == (i == 0));
+        CHECK(((pages[i].flags & 4) != 0) == (i + 1 == pages.size()));
+    }
+    const auto packets = readPackets(pages);
+    REQUIRE(packets.size() >= 3);
+    CHECK(std::memcmp(packets[0].data(), "OpusHead", 8) == 0);
+    CHECK(std::memcmp(packets[1].data(), "OpusTags", 8) == 0);
+    // the first audio packet starts on a new page
+    size_t headerPackets = 0;
+    for (size_t i = 0; i < pages.size(); i++)
+        for (size_t k = 0; k < pages[i].segments.size(); k++)
+            if (pages[i].lacing[k] < 255) {
+                headerPackets++;
+                if (headerPackets == 2) CHECK(k + 1 == pages[i].segments.size());
+            }
+}
+
+// the audio packets (everything behind OpusHead and OpusTags)
+std::vector<Bytes> opusAudio(const Bytes& f)
+{
+    auto packets = readPackets(readPages(f));
+    packets.erase(packets.begin(), packets.begin() + 2);
+    return packets;
+}
+
+Comments parseOpusComments(const Bytes& f)
+{
+    const auto packets = readPackets(readPages(f));
+    const Bytes& p = packets.at(1);
+    Comments c;
+    size_t pos = 8;
+    auto rd = [&](size_t at) { return static_cast<uint32_t>(p[at] | (p[at + 1] << 8) | (p[at + 2] << 16) | (static_cast<uint32_t>(p[at + 3]) << 24)); };
+    const uint32_t vl = rd(pos); pos += 4;
+    c.vendor.assign(p.begin() + static_cast<std::ptrdiff_t>(pos), p.begin() + static_cast<std::ptrdiff_t>(pos + vl)); pos += vl;
+    const uint32_t n = rd(pos); pos += 4;
+    for (uint32_t i = 0; i < n; i++) {
+        const uint32_t l = rd(pos); pos += 4;
+        c.list.emplace_back(p.begin() + static_cast<std::ptrdiff_t>(pos), p.begin() + static_cast<std::ptrdiff_t>(pos + l));
+        pos += l;
+    }
+    return c;
+}
+
+}  // namespace
+
+TEST_CASE("Ogg Opus: the builder and the checker of the tests agree", "[ogg][opus][spec][selftest]")
+{
+    const Bytes f = opusFile(OpusSpec());
+    checkOpusContainer(f);
+    CHECK(parseOpusComments(f).list.size() == 3);
+}
+
+TEST_CASE("Ogg Opus: format, sample rate, channels, duration without pre-skip and comments", "[ogg][opus][spec]")
+{
+    OpusSpec s;
+    auto p = writeTemp("opus_read.ogg", opusFile(s));
+    REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == OGGOPUS);
+    CHECK(AUDIOGetSampleRateW() == 48000);       // Opus is always decoded with 48 kHz, the input rate of the header is only information
+    CHECK(AUDIOGetChannelsW() == 2);
+    CHECK(std::fabs(AUDIOGetDurationW() - 300 * 960.0 / 48000) < 0.0005);   // 6 s, the pre-skip is not counted
+    CHECK(AUDIOGetBitrateW() > 0);
+    CHECK(take(OGGGetTitleW()) == L"Voice");
+    CHECK(take(OGGGetArtistW()) == L"Speaker");
+    CHECK(take(OGGGetVendorW()) == L"libopus 1.3.1");
+    CHECK(take(AUDIOGetTitleW()) == L"Voice");
+}
+
+TEST_CASE("Ogg Opus: mono, six channels (mapping family 1) and other pre-skip values", "[ogg][opus][spec]")
+{
+    OpusSpec s; s.channels = 1; s.preSkip = 3840;
+    auto p = writeTemp("opus_mono.ogg", opusFile(s));
+    REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == OGGOPUS);
+    CHECK(AUDIOGetChannelsW() == 1);
+    CHECK(std::fabs(AUDIOGetDurationW() - 6.0) < 0.0005);
+    OpusSpec m; m.channels = 6; m.mappingFamily = 1;
+    p = writeTemp("opus_51.ogg", opusFile(m));
+    REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == OGGOPUS);
+    CHECK(AUDIOGetChannelsW() == 6);
+}
+
+TEST_CASE("Ogg Opus: writing tags keeps the header and the audio, pages are numbered and checksummed", "[ogg][opus][spec][write]")
+{
+    OpusSpec s;
+    const Bytes f = opusFile(s);
+    const auto audio0 = opusAudio(f);
+    auto p = writeTemp("opus_write.ogg", f);
+    REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == OGGOPUS);
+    SECTION("a shorter and a longer tag") {
+        OGGSetTitleW(L"A");
+        REQUIRE(OGGSaveChangesW() != 0);
+        Bytes g = readFile(p);
+        checkOpusContainer(g);
+        CHECK(readPackets(readPages(g)).at(0) == readPackets(readPages(f)).at(0));
+        CHECK(opusAudio(g) == audio0);
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == OGGOPUS);
+        CHECK(take(OGGGetTitleW()) == L"A");
+        // a comment header over several pages (a cover as a Vorbis comment is a long base64 text)
+        const std::wstring big(70000, L'b');
+        OGGSetUserItemW(L"METADATA_BLOCK_PICTURE", big.c_str());
+        REQUIRE(OGGSaveChangesW() != 0);
+        g = readFile(p);
+        checkOpusContainer(g);
+        CHECK(opusAudio(g) == audio0);
+        CHECK(parseOpusComments(g).vendor == "libopus 1.3.1");
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == OGGOPUS);
+        CHECK(std::fabs(AUDIOGetDurationW() - 6.0) < 0.0005);
+        CHECK(take(OGGGetUserItemW(L"METADATA_BLOCK_PICTURE")).size() == 70000);
+    }
+    SECTION("the tag is removed, the vendor stays") {
+        REQUIRE(OGGRemoveTagW() != 0);
+        const Bytes g = readFile(p);
+        checkOpusContainer(g);
+        const Comments c = parseOpusComments(g);
+        CHECK(c.vendor == "libopus 1.3.1");
+        CHECK(c.list.empty());
+        CHECK(opusAudio(g) == audio0);
+    }
+    SECTION("the generic function writes too") {
+        AUDIOSetTitleW(L"Generic");
+        REQUIRE(AUDIOSaveChangesToFileW(p.c_str()) != 0);
+        const Bytes g = readFile(p);
+        checkOpusContainer(g);
+        bool found = false;
+        for (const std::string& line : parseOpusComments(g).list) if (line == "TITLE=Generic") found = true;
+        CHECK(found);
+    }
+}
+
+TEST_CASE("Ogg Opus: a cut file is no Vorbis file and a Vorbis file stays one", "[ogg][opus][spec]")
+{
+    const Bytes f = opusFile(OpusSpec());
+    const Bytes cut(f.begin(), f.begin() + 40);   // inside the first page
+    auto p = writeTemp("opus_cut.ogg", cut);
+    CHECK(AUDIOAnalyzeFileW(p.c_str()) != OGGVORBIS);
+    p = writeTemp("vorbis_after.ogg", oggFile(OggSpec()));
+    CHECK(AUDIOAnalyzeFileW(p.c_str()) == OGGVORBIS);
+}

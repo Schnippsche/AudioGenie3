@@ -30,7 +30,7 @@ version number now follows the name. The `@since` remarks in the API documentati
 | MP4 / M4A | MP4 atoms |
 | WMA | WMA fields |
 | FLAC | Vorbis comment, pictures |
-| OGG Vorbis | Vorbis comment |
+| OGG Vorbis, OGG Opus | Vorbis comment |
 | Monkey's Audio | APE |
 | WavPack | APE |
 | TTA | ID3v2 |

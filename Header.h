@@ -45,6 +45,7 @@ enum AUDIO_FORMAT {
 	AUDIO_FORMAT_TTA,	
 	AUDIO_FORMAT_WAVPACK,
 	AUDIO_FORMAT_ID3V2,
+	AUDIO_FORMAT_OGGOPUS,   // Ogg Opus: recognized in GetFileFormat by the header of the first page
 	AUDIO_FORMAT_INVALID=99
 };
 #define MAX_FILETYPES 31

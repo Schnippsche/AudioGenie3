@@ -105,7 +105,11 @@ static const unsigned int CRC_TABLE[] = {
 		BYTE lastHeaderFlags;
 		int headerPages;                                 /* number of pages of the comment and setup headers */
 		bool multiplexed;                                /* pages of another stream are between the headers */
-		bool valid;                                      /* the three headers were read */
+		bool valid;                                      /* the three headers were read (Opus: the two headers) */
+		bool opus;                                       /* Ogg Opus (RFC 7845) instead of Ogg Vorbis */
+		int preSkip;                                     /* Opus: samples (48 kHz) at the start that are not played */
+		void ApplyParameters();
+		size_t TagIdLength() { return opus ? 8 : 7; }   /* "OpusTags" or 3 + "vorbis" */
 		float FGetDuration();
 		int FGetBitRate();
 		bool FIsValid();
@@ -133,5 +137,6 @@ static const unsigned int CRC_TABLE[] = {
 		float GetDuration()      { return FGetDuration(); };    /* Duration (seconds) */
 		long GetBitRate()        { return FGetBitRate(); };     /* Average bit rate */
 		bool IsValid()           { return FIsValid(); };        /* True if file valid */  
+		bool IsOpus()            { return opus; };              /* True for Ogg Opus */
 		__int64 GetFirstAudioPosition() { return firstAudioPos; };
 	};

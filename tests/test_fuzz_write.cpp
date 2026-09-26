@@ -164,7 +164,7 @@ void formatEdits(long fmt, Rng& r)
         WAVSetDisplayTextW(pickText(r));
         WAVSaveChangesW();
         break;
-    case OGGVORBIS:
+    case OGGVORBIS: case OGGOPUS:
         OGGSetUserItemW(L"CUSTOM", pickText(r));
         AUDIOSaveChangesW();
         break;

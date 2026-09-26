@@ -42,6 +42,12 @@ extern "C" BOOL WINAPI DllMain(HINSTANCE hInstance, DWORD dwReason, LPVOID lpRes
 	return _AtlModule.DllMain(dwReason, lpReserved); 
 }
 
+// Ogg Vorbis and Ogg Opus share the class and the OGG functions
+static bool IsOggFormat(BYTE format)
+{
+	return format == AUDIO_FORMAT_OGGVORBIS || format == AUDIO_FORMAT_OGGOPUS;
+}
+
 BYTE GetFileFormat(FILE *Stream)
 {
 	CTools::APEHeadSize = 0;
@@ -68,6 +74,15 @@ BYTE GetFileFormat(FILE *Stream)
 		result = header.ReadFromFile(Stream);
 		if (result == AUDIO_FORMAT_INVALID)
 			result = AUDIO_FORMAT_UNKNOWN;
+	}
+	// Ogg: the first page tells Vorbis and Opus (the identification header "OpusHead" is the first packet)
+	if (result == AUDIO_FORMAT_OGGVORBIS)
+	{
+		BYTE page[27 + 255 + 8];
+		_fseeki64(Stream, CTools::ID3v2Size, SEEK_SET);
+		const size_t count = fread(page, 1, sizeof(page), Stream);
+		if (count >= 27 && page[26] > 0 && count >= (size_t)27 + page[26] + 8 && memcmp(page + 27 + page[26], "OpusHead", 8) == 0)
+			result = AUDIO_FORMAT_OGGOPUS;
 	}
 	return result;
 }
@@ -155,7 +170,7 @@ void ClearAllTags()
  * @ingroup AUDIO
  * @since 2.0.1.0
  * @param FileName name of the file
- * @return return value from 0 to 11 with the following meaning:
+ * @return return value from 0 to 13 with the following meaning:
  * @retval 0 unknown Format
  * @retval 1 MP3
  * @retval 2 WMA
@@ -168,6 +183,7 @@ void ClearAllTags()
  * @retval 9 MP4/M4A
  * @retval 10 TTA
  * @retval 11 wavpack
+ * @retval 13 OGG OPUS
  */
 extern "C" long __stdcall AUDIOAnalyzeFileW(LPCWSTR FileName)
 {
@@ -289,10 +305,10 @@ extern "C" long __stdcall AUDIOAnalyzeFileW(LPCWSTR FileName)
 			Composer = flac.GetUserItem(VORBIS_COMPOSER);
 			goto ende;
 		}
-		if (possibleFormat == AUDIO_FORMAT_OGGVORBIS && ogg.ReadFromFile(Source))
+		if ((possibleFormat == AUDIO_FORMAT_OGGVORBIS || possibleFormat == AUDIO_FORMAT_OGGOPUS) && ogg.ReadFromFile(Source))
 		{
-			Format = AUDIO_FORMAT_OGGVORBIS;
-			CTools::instance().writeInfo(_T("identified as ogg vorbis file"));
+			Format = ogg.IsOpus() ? AUDIO_FORMAT_OGGOPUS : AUDIO_FORMAT_OGGVORBIS;
+			CTools::instance().writeInfo(ogg.IsOpus() ? _T("identified as ogg opus file") : _T("identified as ogg vorbis file"));
 			audio = &ogg;
 			Album = ogg.GetUserItem(VORBIS_ALBUM);
 			Artist = ogg.GetUserItem(VORBIS_ARTIST);
@@ -441,7 +457,7 @@ ende:
  * | MONKEY | APE tag |
  * | FLAC | Vorbis Comment |
  * | WAV | wav chunk |
- * | OGG | Vorbis Comment |
+ * | OGG (Vorbis, Opus) | Vorbis Comment |
  * | MPP | ID3v2 tag |
  * | AAC | APE tag (an existing ID3v2 tag is left unchanged and takes precedence when reading) |
  * | MP4 | MP4 atoms |
@@ -485,6 +501,7 @@ extern "C" short __stdcall AUDIOSaveChangesToFileW(LPCWSTR FileName)
 		flac.SetUserItem(VORBIS_COMPOSER, Composer); 
 		return b2s(flac.SaveToFile(FileName));
 	case AUDIO_FORMAT_OGGVORBIS:
+	case AUDIO_FORMAT_OGGOPUS:
 		ogg.SetUserItem(VORBIS_ALBUM, Album);
 		ogg.SetUserItem(VORBIS_ARTIST, Artist);
 		ogg.SetUserItem(VORBIS_COMMENT, Comment);
@@ -580,7 +597,7 @@ extern "C" short __stdcall AUDIOSaveChangesToFileW(LPCWSTR FileName)
  * | MONKEY | APE tag |
  * | FLAC | Vorbis Comment |
  * | WAV | wav chunk |
- * | OGG | Vorbis Comment |
+ * | OGG (Vorbis, Opus) | Vorbis Comment |
  * | MPP | ID3v2 tag |
  * | AAC | APE tag (an existing ID3v2 tag is left unchanged and takes precedence when reading) |
  * | MP4 | MP4 atoms |
@@ -2738,7 +2755,7 @@ extern "C" void __stdcall OGGSetUserItemW(LPCWSTR ItemKey, LPCWSTR textString)
 extern "C" short __stdcall OGGSaveChangesToFileW(LPCWSTR FileName)
 {
 	FileName = getValidPointer(FileName);
-	if (GetFormat(FileName) == AUDIO_FORMAT_OGGVORBIS)
+	if (IsOggFormat(GetFormat(FileName)))
 		return b2s(ogg.SaveTag(FileName));
 	CTools::instance().setLastError(ERR_TAG_NOT_ALLOWED);
 	return b2s(false);
@@ -2768,7 +2785,7 @@ extern "C" short __stdcall OGGSaveChangesW()
 extern "C" short __stdcall OGGRemoveTagFromFileW(LPCWSTR FileName)
 {
 	FileName = getValidPointer(FileName);
-	if (GetFormat(FileName) == AUDIO_FORMAT_OGGVORBIS)
+	if (IsOggFormat(GetFormat(FileName)))
 		return b2s(ogg.RemoveTag(FileName));
 	return b2s(false);
 }
@@ -2782,7 +2799,7 @@ extern "C" short __stdcall OGGRemoveTagFromFileW(LPCWSTR FileName)
  */
 extern "C" short __stdcall OGGRemoveTagW()
 {
-	if (GetFormat(lastFile) == AUDIO_FORMAT_OGGVORBIS)
+	if (IsOggFormat(GetFormat(lastFile)))
 		return b2s(ogg.RemoveTag(lastFile));
 	return b2s(false);
 }

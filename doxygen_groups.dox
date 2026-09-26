@@ -36,8 +36,8 @@
 /** @defgroup MPP Musepack
  *  Properties of Musepack files (stream versions 4 to 8). */
 
-/** @defgroup OGG Ogg Vorbis
- *  Ogg Vorbis comments and stream properties. */
+/** @defgroup OGG Ogg Vorbis and Ogg Opus
+ *  Ogg Vorbis and Ogg Opus comments and stream properties (Opus files are reported with the format OGGOPUS = 13, sample rate 48000). */
 
 /** @defgroup UNIVERSAL Universal functions
  *  Library-wide helpers such as version, MD5 and configuration. */
