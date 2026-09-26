@@ -15,8 +15,7 @@ Attribute VB_Exposed = False
 ' ******* AUDIOGENIE DLL WRAPPER FOR VISUAL BASIC *******
 ' *******************************************************
 ' *   this class is a Wrapper for the audiogenie2.dll   *
-' *    written by Stefan Toengi, www.audiogenie.net     *
-' *  Visit my forum under http://forum.audiogenie.net   *
+' *    written by Stefan Toengi                         *
 ' * To use this class, copy this file in your project   *
 ' * and the audiogenie2.dll in the %Windows%\system32   *
 ' * folder(32bit) or %Windows%\SysWOW64 folder(64bit).  *

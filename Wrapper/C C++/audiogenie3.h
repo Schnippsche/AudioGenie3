@@ -2,8 +2,7 @@
 // *********** AUDIOGENIE DLL WRAPPER FOR C/C++ **********
 // *******************************************************
 // *   this class is a Wrapper for the audiogenie3.dll   *
-// *    written by Stefan Toengi, www.audiogenie.net     *
-// *  Visit my forum under http://forum.audiogenie.net   *
+// *    written by Stefan Toengi                         *
 // * To use the class, include this file in your project,*
 // * copy audiogenie3.dll in the %Windows%\%system32%    *
 // * folder. Don't forget to link the audiogenie3.lib.   *

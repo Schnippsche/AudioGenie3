@@ -15,7 +15,7 @@
 {                                                                                                  }
 { Contributors:                                                                                    }
 {   Ulrich Decker, http://www.udse.de                                                              }
-{   Stefan Töngi, http://www.audiogenie.net                                                        }
+{   Stefan Toengi                                                                                  }
 {                                                                                                  }
 {**************************************************************************************************}
 

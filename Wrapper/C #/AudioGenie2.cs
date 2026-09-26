@@ -2,9 +2,8 @@
 // ************ AUDIOGENIE DLL WRAPPER FOR C# ************
 // *******************************************************
 // * This is a Wrapper for the AudioGenie3.dll V2.0      *
-// * written by Stefan Toengi, www.audiogenie.net        *
+// * written by Stefan Toengi                            *
 // * Many thanks to Tobias Lindner for this file.        *
-// * Visit my forum under http://forum.audiogenie.net    *
 // * To use this class, copy this file in your project   *
 // * and the AudioGenie3.dll in the %Windows%\%system32% *
 // * (32bit OS) or %Windows%\SysWOW64 folder(64bit OS)   *
