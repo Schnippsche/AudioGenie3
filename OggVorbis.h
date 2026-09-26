@@ -83,41 +83,40 @@ static const unsigned int CRC_TABLE[] = {
 	0xBCB4666D, 0xB8757BDA, 0xB5365D03, 0xB1F740B4 };
 
 
-	/* Vorbis tag data */
-	struct VorbisTag
-	{  char ID[7];                                        /* Always #3 + "vorbis" */
-	int Fields;                                         /* Number of tag fields */
-	};
 
 	class COggVorbis: public CAudio, public CVorbisComment
 	{
 	private:
 		/* Private declarations */
-		COGGHeader FPage;        /* First, second and last page */
-		COGGHeader SPage;
+		COGGHeader FPage;        /* First and last page */
 		COGGHeader LPage;
 		CVorbisHeader Parameters;                        /* Vorbis parameter header */
-		VorbisTag Tag;                                   /* Vorbis tag data */
-		long Samples;                                   /* Total number of samples */
-		__int64 SPagePos;                                  /* Position of second Ogg page */
-		__int64 TagEndPos;                                 /* Tag end position */
+		__int64 Samples;                                 /* Total number of samples (granule position of the last page) */
 		BYTE FChannelModeID;
-		CBlob Data;
+		CBlob Data;                                      /* the new comment header */
+		CBlob commentPacket;                             /* the packet of the comment header as it was read */
+		CBlob setupLacing, setupData;                    /* segments of the setup header and the rest of the last header page */
 		int FSampleRate;
 		int FBitRateNominal;
-		long FSamples;
+		__int64 FSamples;
+		unsigned int serial;                             /* serial number of the stream */
+		__int64 firstPagePos, secondPagePos, headerEndPos;   /* first page, the page behind it, the end of the header pages */
+		__int64 lastHeaderGranule;
+		BYTE lastHeaderFlags;
+		int headerPages;                                 /* number of pages of the comment and setup headers */
+		bool multiplexed;                                /* pages of another stream are between the headers */
+		bool valid;                                      /* the three headers were read */
 		float FGetDuration();
 		int FGetBitRate();
 		bool FIsValid();
 		void ReadTag(FILE * Source);
-		void SetTagItem();
-		int GetSamples(FILE * Source);
+		__int64 GetSamples(FILE * Source);
 		bool GetInfo(FILE *Stream, bool withComments);
 		void BuildTag();
-		void SetLacingValues();
+		int BuildHeaderPages(CBlob &out);
+		bool CopyPages(FILE *Source, FILE *Destination, int delta);
 		unsigned long CalculateCRC(unsigned long CRC, BYTE Data[], long Size);
 		bool RebuildFile(LPCWSTR FileName);
-		void SetCRC(FILE *Destination);  
 		__int64 firstAudioPos;
 	public:
 		/* Public declarations */

@@ -2720,6 +2720,10 @@ extern "C" BSTR __stdcall OGGGetUserItemW(LPCWSTR ItemKey)
  *
  * use the method OGGGetItemKeysW for a list of all existing keys.
  *
+ * A field name has one or more characters from $20 to $7D without '=' (Vorbis comment specification); another key is ignored and the
+ * log contains a warning. The name is not case sensitive. If the file has several fields with the name (the specification allows it),
+ * the new value replaces all of them; an empty value removes all of them.
+ *
  * @ingroup OGG
  * @since 2.0.1.0
  * @param ItemKey the key you want to set
@@ -2733,6 +2737,10 @@ extern "C" void __stdcall OGGSetUserItemW(LPCWSTR ItemKey, LPCWSTR textString)
 
 /**
  * @brief stores the Ogg comments in a file
+ *
+ * The comment header and the setup header are written again on pages of their own. If the comments need more or fewer pages than before
+ * (a header of more than about 64 KB, for example with a picture), the sequence numbers and checksums of all following pages are
+ * written again; the audio packets and the granule positions stay unchanged.
  *
  * @ingroup OGG
  * @since 2.0.1.0

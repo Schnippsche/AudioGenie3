@@ -65,6 +65,9 @@ public:
 	void ResetData();
 	void BuildVorbisComments(CBlob &Data);
 	void AnalyzeVorbisComments(FILE * Stream);
+	void AnalyzeVorbisComments(const BYTE *data, size_t length);   // the comments in memory (behind the packet type of the Ogg comment header)
+	// a field name has the characters $20 to $7D without '=' and at least one character
+	static bool IsValidKey(LPCWSTR key);
 	CAtlString GetUserItem(LPCWSTR key);
 	void SetUserItem(LPCWSTR key, LPCWSTR value);
 	CAtlString GetAllKeys();

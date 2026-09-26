@@ -81,6 +81,62 @@ void CVorbisComment::BuildVorbisComments(CBlob &Data)
 	}
 }
 
+// the list of the comments as the specification defines it: vendor (length, UTF-8), number of the comments, the comments (length, UTF-8 "NAME=value")
+void CVorbisComment::AnalyzeVorbisComments(const BYTE *data, size_t length)
+{
+	auto read32 = [&](size_t pos) -> size_t { return (size_t)data[pos] | ((size_t)data[pos + 1] << 8) | ((size_t)data[pos + 2] << 16) | ((size_t)data[pos + 3] << 24); };
+	size_t pos = 0;
+	if (length < 4)
+		return;
+	size_t len = read32(0);
+	pos = 4;
+	if (len > length - pos)
+		return;
+	CBlob tmpBlob;
+	tmpBlob.AddMemory(data + pos, len);
+	VendorInfo = tmpBlob.ConvertToUnicodeString(TEXT_ENCODED_UTF8);
+	pos += len;
+	if (length - pos < 4)
+		return;
+	const size_t count = read32(pos);
+	pos += 4;
+	Fields = (int)count;
+	for (size_t i = 0; i < count; i++)
+	{
+		if (length - pos < 4)
+			return;   // the data end
+		len = read32(pos);
+		pos += 4;
+		const bool truncated = (len > length - pos);
+		if (truncated)
+			len = length - pos;
+		tmpBlob.Clear();
+		tmpBlob.AddMemory(data + pos, len);
+		pos += len;
+		CAtlString temp = tmpBlob.ConvertToUnicodeString(TEXT_ENCODED_UTF8);
+		const int separator = temp.Find(_T("="));
+		if (separator > 0)
+		{
+			item = new structField;
+			item->key = temp.Left(separator);
+			item->value = temp.Mid(separator + 1);
+			_items.Add(item);
+		}
+		if (truncated)
+			return;
+	}
+}
+
+bool CVorbisComment::IsValidKey(LPCWSTR key)
+{
+	if (key == NULL || key[0] == 0)
+		return false;
+	for (const wchar_t *c = key; *c != 0; c++)
+		if (*c < 0x20 || *c > 0x7D || *c == L'=')
+			return false;
+	return true;
+}
+
 void CVorbisComment::AnalyzeVorbisComments(FILE *Stream)
 {
 	long i, len = 0, Separator;
@@ -143,27 +199,36 @@ CAtlString CVorbisComment::GetUserItem(LPCWSTR key)
 	return result;
 }
 
+// Fields with the same name are allowed by the specification; setting a value replaces all of them, an empty value removes all of them.
 void CVorbisComment::SetUserItem(LPCWSTR key, LPCWSTR value)
 {
-	size_t counts = _items.GetCount();
-	for (size_t i = 0; i < counts; i++)
+	if (!IsValidKey(key))
+	{
+		CTools::instance().writeWarning(L"Vorbis comment '%s' ignored: a field name has the characters $20 to $7D without '='", key == NULL ? L"" : key);
+		return;
+	}
+	const bool empty = (value == 0 || wcslen(value) == 0);
+	bool found = false;
+	for (size_t i = 0; i < _items.GetCount(); )
 	{
 		item = _items.GetAt(i);
 		if (item->key.CompareNoCase(key) == 0)
 		{
-			item->value = value;
-			// if the value is empty, also remove the key
-			if (value == 0 || wcslen(value) == 0)
+			if (!found && !empty)
 			{
-				delete item;
-				_items.RemoveAt(i);
+				item->value = value;   // the first field is kept
+				found = true;
+				i++;
+				continue;
 			}
-			return ;
+			delete item;   // an empty value or another field of the same name
+			_items.RemoveAt(i);
+			continue;
 		}
+		i++;
 	}
-	// if the value is empty, leave the procedure
-	if (value == 0 || wcslen(value) == 0)
-		return ;
+	if (found || empty)
+		return;
 	item = new structField;
 	item->key = key;
 	item->value = value;
