@@ -3979,10 +3979,14 @@ extern "C" short __stdcall LYRICSSaveChangesW()
 /**
  * @brief get the text entry of an ID3v2 frame
  *
+ * The frame must be a text frame (T000 to TZZZ, except TXXX), also one that this library does not know. An ID3v2.4 text
+ * frame can contain several strings; this function returns the first one. All strings are kept when the tag is saved
+ * again (in an ID3v2.2 or ID3v2.3 tag they are separated by a slash).
+ *
  * @ingroup ID3V2
  * @since 2.0.1.0
  * @param FrameID the frame id
- * @return frame text
+ * @return frame text, empty if the frame does not exist or is not a text frame
  */
 extern "C" BSTR __stdcall ID3V2GetTextFrameW(u32 FrameID)
 {
@@ -4083,7 +4087,7 @@ extern "C" short __stdcall ID3V2DeleteSelectedFrameW(u32 FrameID, short Index)
  * @ingroup ID3V2
  * @since 2.0.1.0
  * @param format 0=existing format 1=id3v2.2  2=id3v2.3 3=id3v2.4
- * @param encoding 0= ISO-8859-1  1=UTF-16 with BOM  2=UTF-16 without BOM  3=UTF-8
+ * @param encoding 0= ISO-8859-1  1=UTF-16 with BOM  2=UTF-16BE without BOM  3=UTF-8
  * @return normally -1, 0 on error
  */
 extern "C" short __stdcall ID3V2SetFormatAndEncodingW(short format, short encoding)
@@ -4097,7 +4101,7 @@ extern "C" short __stdcall ID3V2SetFormatAndEncodingW(short format, short encodi
  * @ingroup ID3V2
  * @since 2.0.1.0
  * @param FrameID the ID of the frame
- * @return Encoding -1= FrameID not found  0= ISO-8859-1  1=UTF-16 with BOM  2=UTF-16 without BOM  3=UTF-8
+ * @return Encoding -1= FrameID not found  0= ISO-8859-1  1=UTF-16 with BOM  2=UTF-16BE without BOM  3=UTF-8
  */
 extern "C" short __stdcall ID3V2GetEncodingW(u32 FrameID)
 {
@@ -4256,6 +4260,8 @@ extern "C" short __stdcall ID3V2ExistsW()
 
 /**
  * @brief get the size of the tag in bytes
+ *
+ * The size includes the header, the extended header, the frames, the padding and the footer (ID3v2.4).
  *
  * @ingroup ID3V2
  * @since 2.0.1.0

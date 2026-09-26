@@ -499,6 +499,7 @@ Functions</h2></td></tr>
 </div><div class="memdoc">
 
 <p>get the text entry of an ID3v2 frame </p>
+<p>The frame must be a text frame (T000 to TZZZ, except TXXX), also one that this library does not know. An ID3v2.4 text frame can contain several strings; this function returns the first one. All strings are kept when the tag is saved again (in an ID3v2.2 or ID3v2.3 tag they are separated by a slash).</p>
 <dl class="section since"><dt>Since</dt><dd>2.0.1.0 </dd></dl>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
@@ -506,7 +507,7 @@ Functions</h2></td></tr>
   </table>
   </dd>
 </dl>
-<dl class="section return"><dt>Returns</dt><dd>frame text </dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>frame text, empty if the frame does not exist or is not a text frame </dd></dl>
 
 </div>
 </div>
@@ -709,7 +710,7 @@ Functions</h2></td></tr>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">format</td><td>0=existing format 1=id3v2.2 2=id3v2.3 3=id3v2.4 </td></tr>
-    <tr><td class="paramname">encoding</td><td>0= ISO-8859-1 1=UTF-16 with BOM 2=UTF-16 without BOM 3=UTF-8 </td></tr>
+    <tr><td class="paramname">encoding</td><td>0= ISO-8859-1 1=UTF-16 with BOM 2=UTF-16BE without BOM 3=UTF-8 </td></tr>
   </table>
   </dd>
 </dl>
@@ -740,7 +741,7 @@ Functions</h2></td></tr>
   </table>
   </dd>
 </dl>
-<dl class="section return"><dt>Returns</dt><dd>Encoding -1= FrameID not found 0= ISO-8859-1 1=UTF-16 with BOM 2=UTF-16 without BOM 3=UTF-8 </dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>Encoding -1= FrameID not found 0= ISO-8859-1 1=UTF-16 with BOM 2=UTF-16BE without BOM 3=UTF-8 </dd></dl>
 
 </div>
 </div>
@@ -879,6 +880,7 @@ Functions</h2></td></tr>
 </div><div class="memdoc">
 
 <p>get the size of the tag in bytes </p>
+<p>The size includes the header, the extended header, the frames, the padding and the footer (ID3v2.4).</p>
 <dl class="section since"><dt>Since</dt><dd>2.0.1.0 </dd></dl>
 <dl class="section return"><dt>Returns</dt><dd>the size in bytes </dd></dl>
 
