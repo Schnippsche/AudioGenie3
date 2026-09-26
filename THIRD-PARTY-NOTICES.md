@@ -5,6 +5,11 @@ version 2.1 or (at your option) any later version (see `LICENSE`).
 The following third-party code is included in the source tree and remains
 under its own license.
 
+## XProfan wrapper (`Wrapper/Profan/prfwrapper.inc`)
+
+Written by Dieter Zornow and included in this repository with his permission. It was checked and adapted to the current API
+by the AudioGenie3 project.
+
 ## hashlib++ (`md5.h`, `md5.cpp`)
 
 Copyright (c) 2007, 2008 Benjamin Grüdelbach

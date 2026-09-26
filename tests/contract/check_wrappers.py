@@ -124,6 +124,44 @@ def parse_vb6():
     return out
 
 
+def parse_profan():
+    """XProfan wrapper (Wrapper/Profan/prfwrapper.inc): the procedures call the exported functions by name (ImportDLL).
+    Checked: every called name is exported, the number of arguments is right, strings and buffers are passed as addr() / array#."""
+    path = W / "Profan/prfwrapper.inc"
+    if not path.exists():
+        return None
+    code_lines = []
+    for line in read(path).replace("\r\n", "\n").split("\n"):
+        out, quoted = "", False
+        for ch in line:
+            if ch == '"':
+                quoted = not quoted
+            if ch == "'" and not quoted:
+                break                    # comment
+            out += ch
+        code_lines.append(out)
+    code = "\n".join(code_lines)
+    out = {}
+    for m in re.finditer(r"\b([A-Za-z][A-Za-z0-9_]*W)\s*\(", code):
+        depth, j, args, cur = 1, m.end(), [], ""
+        while j < len(code) and depth > 0:
+            c = code[j]
+            depth += (c == "(") - (c == ")")
+            if depth == 0:
+                break
+            if c == "," and depth == 1:
+                args.append(cur.strip())
+                cur = ""
+            else:
+                cur += c
+            j += 1
+        if cur.strip():
+            args.append(cur.strip())
+        kinds = ["addr" if (a.lower().startswith("addr(") or a.endswith("#")) else "i32" for a in args]
+        out.setdefault(m.group(1), ("?", kinds))
+    return out
+
+
 # Known, harmless deviations (identical stack/register usage, value fits into 16 bits / is ignored).
 HARMLOS_RET = {"AUDIOAnalyzeFileW", "MP4DeletePictureW"}
 
@@ -139,16 +177,22 @@ def compatible(wrapper_lang, w, d, is_ret):
         return True                      # PWideChar return value; ConvertString frees the BSTR
     if not is_ret and {w, d} <= {"wstr", "bstr"}:
         return True                      # WideString/BSTR als Parameter = LPCWSTR
+    if wrapper_lang == "profan" and not is_ret:
+        return (w == "addr" and d in ("wstr", "ptr")) or (w == "i32" and d in ("i16", "i32", "u8"))
     return False
 
 
 def main():
     dll = parse_dll()
-    parsers = {"cpp": parse_cpp, "cs": parse_cs, "vbnet": parse_vb, "delphi": parse_delphi, "vb6": parse_vb6}
+    parsers = {"cpp": parse_cpp, "cs": parse_cs, "vbnet": parse_vb, "delphi": parse_delphi, "vb6": parse_vb6, "profan": parse_profan}
     problems = 0
     print(f"{len(dll)} exports in dllmain.cpp")
     for lang, fn in parsers.items():
         decl = fn()
+        if decl is None:
+            continue                     # the wrapper is not in this checkout
+        if lang == "profan":
+            decl = {k: (dll[k][0] if k in dll else "?", v[1]) for k, v in decl.items()}   # the return values are not checked
         issues = []
         for n in sorted(dll):
             if n not in decl:

@@ -2,7 +2,7 @@
 
 AudioGenie3 is a Windows DLL for analyzing audio files and for reading and writing their tags (metadata).
 It exports a plain `__stdcall` C interface with Unicode (`...W`) functions, so it can be used from C/C++, C#, VB.NET,
-Delphi and VB6 alike. Ready-made wrappers for these languages are in `Wrapper/`.
+Delphi, VB6 and XProfan alike. Ready-made wrappers for these languages are in `Wrapper/`.
 
 **Version 3.x** is the successor of version 2.0.4 (3.0.0 was the first release as open source). Earlier versions of the library were called AudioGenie and
 AudioGenie2; the 2.0.x version numbers were kept for a while after the DLL had been renamed to AudioGenie3, and the
@@ -152,6 +152,7 @@ Keep the DLL in a fixed folder, because the registration stores its path.
 | VB.NET | `Wrapper/DotNET/audiogenie3.vb` |
 | Delphi | `Wrapper/Delphi/AudioGenie3.pas` |
 | VB6 | `Wrapper/VB6/clsAudioGenie.cls` |
+| XProfan | `Wrapper/Profan/prfwrapper.inc` (by Dieter Zornow; the procedures call the DLL functions by name after `ImportDLL`) |
 
 ## Examples
 
