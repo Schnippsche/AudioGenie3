@@ -14,7 +14,7 @@ Attribute VB_Exposed = False
 ' *******************************************************
 ' ******* AUDIOGENIE DLL WRAPPER FOR VISUAL BASIC *******
 ' *******************************************************
-' *   this class is a Wrapper for the audiogenie2.dll   *
+' *   this class is a Wrapper for the audiogenie3.dll   *
 ' *    written by Stefan Toengi                         *
 ' * To use this class, copy this file in your project   *
 ' * and the audiogenie2.dll in the %Windows%\system32   *
@@ -26,7 +26,7 @@ Attribute VB_Exposed = False
 ' *******************************************************
 ' *******  Copyright 2007-2026 by Stefan Toengi   *******
 ' *******************************************************
-Option Explicit
+Option ExplicitOn
 Private Declare Function AACGetBitRateTypeW Lib "AudioGenie3.dll" () As String
 Private Declare Function AACGetHeaderTypeW Lib "AudioGenie3.dll" () As String
 Private Declare Function AACGetProfileW Lib "AudioGenie3.dll" () As String
