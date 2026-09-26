@@ -1887,8 +1887,8 @@ extern "C" long __stdcall MPEGGetFrameSizeW()
 /**
  * @brief get the number of Frames
  *
- * The value comes from the Xing or VBRI header. Without a header it is calculated from the file size (exact for
- * constant bit rate files without additional data after the audio). If the configuration value MPEGEXACTREAD was set
+ * The value comes from the Xing, Info or VBRI header (the frame that carries the header is not counted). Without a header it is
+ * calculated from the file size (exact for constant bit rate files without additional data after the audio). If the configuration value MPEGEXACTREAD was set
  * before the analysis, the frames are counted one by one and the value is exact in every case, see SetConfigValueW().
  *
  * @ingroup MPEG
@@ -1917,8 +1917,9 @@ extern "C" BSTR __stdcall MPEGGetLayerW()
 /**
  * @brief returns -1 if it is variable bitrate
  *
- * A file is recognized as VBR if it has a Xing or VBRI header. A VBR file without such a header is only recognized
- * if the configuration value MPEGEXACTREAD was set before the analysis, see SetConfigValueW().
+ * A file is recognized as VBR if it has a Xing or VBRI header. The Info header has the same layout as the Xing header, but it marks
+ * a file with a constant bit rate: its number of frames is used for the duration, the file is not VBR. A VBR file without a header
+ * is only recognized if the configuration value MPEGEXACTREAD was set before the analysis, see SetConfigValueW().
  *
  * @ingroup MPEG
  * @since 2.0.1.0

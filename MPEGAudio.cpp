@@ -103,7 +103,7 @@ WORD CMPEGAudio::GetCoefficient()
 	else
 	{
 		if (Frame.LayerID == MPEG_LAYER_I)
-			return 24;
+			return 48;   // 384 samples per frame in every version
 		else if (Frame.LayerID == MPEG_LAYER_II)
 			return 144;
 		else
@@ -145,10 +145,29 @@ int CMPEGAudio::GetPadding()
 
 /* -------------------------------------------------------------------------- */
 
+// samples per frame: layer 1 has 384, layer 2 has 1152, layer 3 has 1152 (MPEG 1) or 576 (MPEG 2 and 2.5)
+long CMPEGAudio::GetSamplesPerFrame()
+{
+	if (Frame.LayerID == MPEG_LAYER_I)
+		return 384;
+	if (Frame.LayerID == MPEG_LAYER_II || Frame.VersionID == MPEG_VERSION_1)
+		return 1152;
+	return 576;
+}
+
+/* -------------------------------------------------------------------------- */
+
 long CMPEGAudio::GetFrameLength()
 {
 	long Coefficient, BitRate, SampleRate, Padding;
 	/* Calculate MPEG frame length */
+	// layer 1: the slots have 4 bytes, the number of slots is rounded down before it is multiplied by 4
+	if (Frame.LayerID == MPEG_LAYER_I)
+	{
+		BitRate = GetBitRateID();
+		SampleRate = GetSampleRate();
+		return SampleRate > 0 ? ((12000l * BitRate / SampleRate) + (Frame.PaddingBit ? 1 : 0)) * 4 : 0;
+	}
 	Coefficient = GetCoefficient();
 	BitRate = GetBitRateID();
 	SampleRate = GetSampleRate();
@@ -197,17 +216,35 @@ bool CMPEGAudio::IsXing(long Index, BYTE Data[])
 
 /* -------------------------------------------------------------------------- */
 
-void CMPEGAudio::GetXingInfo(long Index, BYTE Data[])
+// Xing and Info header: ID, flags (4 bytes), then in this order the fields whose flag is set: frames (bit 0), bytes (bit 1),
+// table of contents with 100 bytes (bit 2), quality (bit 3, 4 bytes); the encoder string (for example LAME3.99r) follows
+void CMPEGAudio::GetXingInfo(long Index, BYTE Data[], bool info)
 {
 	memset(&FVBR, 0, sizeof(FVBR));
-	/* Extract Xing VBR info at given position */
 	FVBR.Found = true;
-	memcpy(&FVBR.ID, VBR_ID_XING, 4);
-	FVBR.Frames = Get4B(Data + Index + 8);
-	FVBR.Bytes = Get4B(Data + Index + 12);
-	FVBR.Scale = Data[Index + 119];
-	/*{ Vendor ID may not be present */
-	memcpy(&FVBR.VendorID, &Data[Index + 120], 8);
+	FVBR.Cbr = info;
+	memcpy(&FVBR.ID, info ? "Info" : VBR_ID_XING, 4);
+	const long flags = Get4B(Data + Index + 4);
+	long pos = Index + 8;
+	if (flags & 1)
+	{
+		FVBR.Frames = Get4B(Data + pos);
+		pos += 4;
+	}
+	if (flags & 2)
+	{
+		FVBR.Bytes = Get4B(Data + pos);
+		pos += 4;
+	}
+	if (flags & 4)
+		pos += 100;
+	if (flags & 8)
+	{
+		FVBR.Scale = Data[pos + 3];
+		pos += 4;
+	}
+	/* the encoder string may not be present */
+	memcpy(&FVBR.VendorID, &Data[pos], 8);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -227,10 +264,18 @@ void CMPEGAudio::GetFhgInfo(long Index, BYTE Data[])
 
 void CMPEGAudio::FindVBR(long Index, BYTE Data[])
 {
-	/* Check for VBR header at given position */
+	/* Check for a Xing or Info header at given position: behind the header, the CRC and the side information */
 	if (memcmp(&Data[Index], VBR_ID_XING, 4) == 0)
-		GetXingInfo(Index, Data);
+		GetXingInfo(Index, Data, false);
+	else if (memcmp(&Data[Index], "Info", 4) == 0)
+		GetXingInfo(Index, Data, true);
+}
 
+/* -------------------------------------------------------------------------- */
+
+void CMPEGAudio::FindVBRI(long Index, BYTE Data[])
+{
+	/* the VBRI header of Fraunhofer is always 32 bytes behind the frame header */
 	if (memcmp(&Data[Index], VBR_ID_FHG, 4) == 0)
 		GetFhgInfo(Index, Data);
 }
@@ -260,6 +305,9 @@ long CMPEGAudio::GetBitRate()
 	float Res1 = 0, Res2 = 0;
 
 	/* Get bit rate, calculate average bit rate if VBR header found */
+	// an Info header belongs to a file with a constant bit rate, without the number of bytes there is no average
+	if (FVBR.Found && (FVBR.Cbr || (FVBR.Bytes <= 0 && scannedFrames == 0)))
+		return GetBitRateID();
 	if (FVBR.Found && FVBR.Frames > 0)
 	{
 		if (CTools::configValues[CONFIG_MPEGEXACTREAD] != 0)
@@ -293,7 +341,7 @@ long CMPEGAudio::GetFrames()
 	if (scannedFrames > 0)
 		return scannedFrames;
 	/* Get total number of frames, calculate if VBR header not found */
-	if (FVBR.Found)
+	if (FVBR.Found && FVBR.Frames > 0)
 		return FVBR.Frames;
 	else
 	{
@@ -314,7 +362,7 @@ float CMPEGAudio::GetDuration()
 	if (scannedFrames > 0)
 		return (float)(scannedFrames * secPerFrame);
 	if (FVBR.Found && FVBR.Frames > 0)
-		return (float) FVBR.Frames * GetCoefficient() * 8.0f / GetSampleRate();
+		return (float) FVBR.Frames * GetSamplesPerFrame() / GetSampleRate();
 	MPEGSize = CTools::FileSize - CTools::ID3v1Size - Frame.FramePosition - CTools::LyricsSize - CTools::APESize;
 	return float(MPEGSize) / float(GetBitRate()) / 125.0f;
 }
@@ -517,7 +565,10 @@ bool CMPEGAudio::FindFrame()
 				Frame.FramePosition = StartPosition + (long)Iterator;
 				Frame.FrameSize = GetFrameLength();
 				Frame.Xing = IsXing(Iterator + 4, Data);
-				FindVBR(Iterator + GetVBRDeviation(), Data);				
+				// a CRC (2 bytes) is between the header and the side information if the protection bit is 0
+				FindVBR(Iterator + GetVBRDeviation() + (Frame.ProtectionBit ? 0 : 2), Data);
+				if (!FVBR.Found)
+					FindVBRI(Iterator + 4 + 32, Data);
 				break;
 			}
 		}
@@ -664,7 +715,10 @@ void CMPEGAudio::ReadAllFrames(FILE *Stream)
 	size_t blockLen = 0;
 	ATLTRACE(_T("Start Scanning at %I64d...\n"), StartPos);
 	totalBitrate = 0;
+	// the first frame is the frame of a Xing, Info or VBRI header, not an audio frame
+	const bool headerFrame = FVBR.Found;
 	FVBR.Found = false;
+	FVBR.Cbr = false;
 	while (StartPos < audioEnd)
 	{
 		if (StartPos < blockStart || StartPos + 4 > blockStart + (__int64)blockLen)
@@ -701,9 +755,14 @@ void CMPEGAudio::ReadAllFrames(FILE *Stream)
 	}
 	delete [] block;
 	Frame = firstFrame;
+	if (headerFrame && Count > 0)
+	{
+		Count--;
+		totalBitrate -= MPEG_BIT_RATE[firstFrame.VersionID][firstFrame.LayerID][firstFrame.BitRateID];
+	}
 	FVBR.Frames = Count;
 	scannedFrames = Count;
-	secPerFrame = (float)GetCoefficient() * 8.0f / (float)GetSampleRate(); // sec per frame
+	secPerFrame = (float)GetSamplesPerFrame() / (float)GetSampleRate(); // sec per frame
 	ATLTRACE(_T("Counts: %d Lost:%d Duration:%f sec\n"), Count, Lost, (float)(Count * secPerFrame));
 }
 

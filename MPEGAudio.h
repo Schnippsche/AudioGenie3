@@ -149,8 +149,9 @@ static BYTE Data[DATASIZE + 16]; // reserve: header checks read up to 4 bytes be
 
 struct VBRData
 {
-	BYTE ID[4];                                  /* Header ID: "Xing" or "VBRI" */
-	bool Found;                                  /* True if VBR header found */
+	BYTE ID[4];                                  /* Header ID: "Xing", "Info" or "VBRI" */
+	bool Found;                                  /* True if a Xing, Info or VBRI header was found */
+	bool Cbr;                                    /* True for the "Info" header: same layout as Xing, but the file has a constant bit rate */
 	long Frames;                                 /* Total number of frames */
 	long Bytes;                                  /* Total number of bytes */
 	BYTE Scale;                                  /* VBR scale (1..100) */
@@ -199,9 +200,11 @@ private:
 	void DecodeHeader(BYTE HeaderData[]);
 	bool ValidFrameAt(long Index, BYTE Data[] );
 	bool IsXing(long Index, BYTE Data[] );
-	void GetXingInfo(long Index, BYTE Data[] );
+	void GetXingInfo(long Index, BYTE Data[], bool info);
+	long GetSamplesPerFrame();
 	void GetFhgInfo(long Index, BYTE Data[]);
 	void FindVBR(long Index, BYTE Data[]);
+	void FindVBRI(long Index, BYTE Data[]);
 	void GetInternEncoder();
 	BYTE GetVBRDeviation();
 	BYTE GetVBREncoderID();
@@ -235,7 +238,7 @@ public:
 	bool GetCopyrightBit()    { return Frame.CopyrightBit; };
 	bool GetOriginalBit()     { return Frame.OriginalBit; };
 	bool GetPaddingBit()      { return Frame.PaddingBit; };
-	bool IsVBR()              { return FVBR.Found; };
+	bool IsVBR()              { return FVBR.Found && !FVBR.Cbr; };
 	bool SetPrivateBit(LPCWSTR FileName, bool neu);
 	bool SetCopyrightBit(LPCWSTR FileName, bool neu);
 	bool SetOriginalBit(LPCWSTR FileName, bool neu);
