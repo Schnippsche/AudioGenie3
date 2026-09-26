@@ -49,14 +49,16 @@ static const char *FIELD_LIST[] = {
 		__int64 FEndPosition;
 		CAtlString FField[LYRICS_FRAME_COUNT];
 		CBlob Data;
-		BYTE ID3v1Tag[ID3V1_TAG_SIZE];
+		BYTE ID3v1Area[ID3V1_TAG_SIZE + ID3V1_ENHANCED_SIZE];	// the id3v1 data at the end of the file: the id3v1 tag and the enhanced tag in front of it, if there is one
+		int ID3v1AreaSize;
+		CBlob FUnknown;		// fields that are not defined, as they were read
 		BYTE FHeader[12];/* 9 Bytes Version 3 Bytes 'TAG' */
 		BYTE FVersion;
 		bool RemoveTag(LPCWSTR FileName);
-		void SetTagItem(char ID[], long Pos, long DataSize);
+		bool SetTagItem(const char ID[], long Pos, long DataSize);
 		bool ReadHeader(FILE *Stream);
-		void ReadFramesOld(FILE *Stream, bool isDeleting);
-		void ReadFramesNew(FILE *Stream, bool isDeleting);
+		bool ReadFramesOld(FILE *Stream, bool isDeleting);
+		bool ReadFramesNew(FILE *Stream, bool isDeleting);
 		bool SaveTag(LPCWSTR FileName);
 	public:
 		CLyrics();

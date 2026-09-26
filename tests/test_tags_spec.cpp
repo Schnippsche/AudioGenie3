@@ -661,3 +661,231 @@ TEST_CASE("ID3v1 enhanced tag: configuration value ID3V1MAXTEXTLENGTH", "[tags][
         CHECK(GetConfigValueW(9) == 61);
     }
 }
+
+// ---- Lyrics3 v1.00 and v2.00 ----
+
+namespace {
+
+// index of the first difference of two byte vectors (the length if one is shorter), -1 if they are equal; keeps the output short
+long diffIndex(const Bytes& a, const Bytes& b)
+{
+    const size_t n = std::min(a.size(), b.size());
+    for (size_t i = 0; i < n; i++) if (a[i] != b[i]) return static_cast<long>(i);
+    return a.size() == b.size() ? -1 : static_cast<long>(n);
+}
+
+// Lyrics3 v2.00 field: ID (3), size (5 digits), data
+Bytes lyricsField(const char* id, const std::string& data)
+{
+    char size[8];
+    snprintf(size, sizeof(size), "%05u", static_cast<unsigned>(data.size()));
+    Bytes f = bytesOf(id);
+    put(f, size);
+    put(f, data.c_str());
+    return f;
+}
+
+// Lyrics3 v2.00 tag: "LYRICSBEGIN", fields, size (6 digits, LYRICSBEGIN and the fields), "LYRICS200"
+Bytes lyrics200(const std::vector<Bytes>& fields)
+{
+    Bytes t = bytesOf("LYRICSBEGIN");
+    for (const Bytes& f : fields) put(t, f);
+    char size[8];
+    snprintf(size, sizeof(size), "%06u", static_cast<unsigned>(t.size()));
+    put(t, size);
+    put(t, "LYRICS200");
+    return t;
+}
+
+Bytes lyrics100(const std::string& text)
+{
+    Bytes t = bytesOf("LYRICSBEGIN");
+    put(t, text.c_str());
+    put(t, "LYRICSEND");
+    return t;
+}
+
+// built on first use: the helper uses REQUIRE, which must not run during static initialization
+const Bytes& kV1() { static const Bytes t = id3v1("Title", "Artist", "Album", "2001", pad30("comment"), 17); return t; }
+
+}  // namespace
+
+TEST_CASE("Lyrics3 v2.00: reading all defined fields", "[tags][spec][lyrics]")
+{
+    const std::string lyricsText = "[00:01]First line\r\n[00:05]Second line";
+    const Bytes tag = lyrics200({ lyricsField("IND", "11"), lyricsField("LYR", lyricsText), lyricsField("INF", "some\r\ninformation"),
+                                  lyricsField("AUT", "the author"), lyricsField("EAL", "extended album"), lyricsField("EAR", "extended artist"),
+                                  lyricsField("ETT", "extended title"), lyricsField("IMG", "cover.jpg||the cover||[00:00]") });
+    const std::wstring md5 = md5OfAudio(writeParts("lyr_plain.mp3", Bytes(), kV1()));
+    auto p = writeParts("lyr_read.mp3", Bytes(), concat({ tag, kV1() }));
+    REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+    CHECK(LYRICSExistsW() != 0);
+    CHECK(take(LYRICSGetVersionW()) == L"2.00");
+    CHECK(take(LYRICSGetIndicationW()) == L"11");
+    CHECK(take(LYRICSGetLyricsW()) == wide(lyricsText));
+    CHECK(take(LYRICSGetInformationW()) == L"some\r\ninformation");
+    CHECK(take(LYRICSGetAuthorW()) == L"the author");
+    CHECK(take(LYRICSGetAlbumW()) == L"extended album");
+    CHECK(take(LYRICSGetArtistW()) == L"extended artist");
+    CHECK(take(LYRICSGetTitleW()) == L"extended title");
+    CHECK(take(LYRICSGetImageLinkW()) == L"cover.jpg||the cover||[00:00]");
+    CHECK(LYRICSGetSizeW() == static_cast<long>(tag.size()));   // the whole tag: LYRICSBEGIN, fields, size and LYRICS200
+    CHECK(LYRICSGetStartPositionW() == static_cast<long>(audio().size()));
+    CHECK(take(ID3V1GetTitleW()) == L"Title");
+    CHECK(take(AUDIOGetMD5ValueW()) == md5);
+}
+
+TEST_CASE("Lyrics3 v1.00: reading", "[tags][spec][lyrics]")
+{
+    SECTION("a text") {
+        const std::string text = "Line one\r\nLine two";
+        auto p = writeParts("lyr_v1.mp3", Bytes(), concat({ lyrics100(text), kV1() }));
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        CHECK(take(LYRICSGetVersionW()) == L"1.00");
+        CHECK(take(LYRICSGetLyricsW()) == wide(text));
+        CHECK(LYRICSGetSizeW() == static_cast<long>(11 + text.size() + 9));
+        CHECK(LYRICSGetStartPositionW() == static_cast<long>(audio().size()));
+    }
+    SECTION("the longest text of 5100 bytes") {
+        const std::string text(5100, 'x');
+        auto p = writeParts("lyr_v1_max.mp3", Bytes(), concat({ lyrics100(text), kV1() }));
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        CHECK((take(LYRICSGetLyricsW()) == wide(text)));
+        CHECK(LYRICSGetStartPositionW() == static_cast<long>(audio().size()));
+    }
+    SECTION("a change writes a v2.00 tag and keeps the ID3v1 tag") {
+        auto p = writeParts("lyr_v1_upgrade.mp3", Bytes(), concat({ lyrics100("old text"), kV1() }));
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        LYRICSSetLyricsW(L"new text");
+        REQUIRE(LYRICSSaveChangesW() != 0);
+        CHECK(diffIndex(readFile(p), concat({ audio(), lyrics200({ lyricsField("LYR", "new text") }), kV1() })) == -1);
+    }
+}
+
+TEST_CASE("Lyrics3 v2.00: layout of a written tag", "[tags][spec][lyrics]")
+{
+    auto p = writeParts("lyr_write.mp3", Bytes(), kV1());
+    REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+    CHECK(LYRICSExistsW() == 0);
+    // the fields are written in the order IND, LYR, INF, AUT, EAL, EAR, ETT, IMG: the indication is the first field
+    LYRICSSetImageLinkW(L"cover.jpg");
+    LYRICSSetTitleW(L"title");
+    LYRICSSetLyricsW(L"lyrics");
+    LYRICSSetIndicationW(L"10");
+    LYRICSSetAuthorW(L"author");
+    REQUIRE(LYRICSSaveChangesW() != 0);
+    const Bytes expected = concat({ audio(), lyrics200({ lyricsField("IND", "10"), lyricsField("LYR", "lyrics"), lyricsField("AUT", "author"),
+                                                          lyricsField("ETT", "title"), lyricsField("IMG", "cover.jpg") }), kV1() });
+    CHECK(diffIndex(readFile(p), expected) == -1);
+    REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+    CHECK(take(LYRICSGetLyricsW()) == L"lyrics");
+    CHECK(take(ID3V1GetTitleW()) == L"Title");
+}
+
+TEST_CASE("Lyrics3 v2.00: limits of the fields, line breaks and the indication", "[tags][spec][lyrics]")
+{
+    auto p = writeParts("lyr_limits.mp3", Bytes(), kV1());
+    REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+
+    SECTION("a field has at most 99999 characters (LYR, INF, IMG) or 250 characters (AUT, EAL, EAR, ETT)") {
+        LYRICSSetLyricsW(wide(std::string(100000, 'l')).c_str());
+        LYRICSSetAuthorW(wide(std::string(300, 'a')).c_str());
+        REQUIRE(LYRICSSaveChangesW() != 0);
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        CHECK((take(LYRICSGetLyricsW()) == wide(std::string(99999, 'l'))));
+        CHECK(take(LYRICSGetAuthorW()) == wide(std::string(250, 'a')));
+        CHECK(take(ID3V1GetTitleW()) == L"Title");
+        CHECK(audioDiff(readFile(p)) == -1);
+    }
+    SECTION("line breaks are CR LF") {
+        LYRICSSetLyricsW(L"one\ntwo\rthree\r\nfour");
+        REQUIRE(LYRICSSaveChangesW() != 0);
+        CHECK(diffIndex(readFile(p), concat({ audio(), lyrics200({ lyricsField("LYR", "one\r\ntwo\r\nthree\r\nfour") }), kV1() })) == -1);
+    }
+    SECTION("the indication has two characters, 0 or 1") {
+        LYRICSSetLyricsW(L"text");
+        LYRICSSetIndicationW(L"1x");
+        REQUIRE(LYRICSSaveChangesW() != 0);
+        CHECK(diffIndex(readFile(p), concat({ audio(), lyrics200({ lyricsField("LYR", "text") }), kV1() })) == -1);
+    }
+}
+
+TEST_CASE("Lyrics3 v2.00: unknown fields are kept", "[tags][spec][lyrics]")
+{
+    const Bytes tag = lyrics200({ lyricsField("LYR", "text"), lyricsField("XYZ", "unknown data"), lyricsField("AUT", "me") });
+    auto p = writeParts("lyr_unknown.mp3", Bytes(), concat({ tag, kV1() }));
+    REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+    CHECK(take(LYRICSGetAuthorW()) == L"me");
+    LYRICSSetAuthorW(L"you");
+    REQUIRE(LYRICSSaveChangesW() != 0);
+    const Bytes f = readFile(p);
+    CHECK(findBytes(f, lyricsField("XYZ", "unknown data")) != static_cast<size_t>(-1));
+    REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+    CHECK(take(LYRICSGetAuthorW()) == L"you");
+    CHECK(take(LYRICSGetLyricsW()) == L"text");
+}
+
+TEST_CASE("Lyrics3: removing the tag and a missing ID3v1 tag", "[tags][spec][lyrics]")
+{
+    SECTION("remove") {
+        auto p = writeParts("lyr_remove.mp3", Bytes(), concat({ lyrics200({ lyricsField("LYR", "text") }), kV1() }));
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        REQUIRE(LYRICSRemoveTagFromFileW(p.c_str()) != 0);
+        CHECK(diffIndex(readFile(p), concat({ audio(), kV1() })) == -1);
+    }
+    SECTION("a Lyrics3 tag needs an ID3v1 tag") {
+        auto p = writeParts("lyr_nov1.mp3", Bytes());
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        LYRICSSetLyricsW(L"text");
+        CHECK(LYRICSSaveChangesW() == 0);
+        CHECK(diffIndex(readFile(p), audio()) == -1);
+    }
+}
+
+TEST_CASE("Lyrics3: together with the enhanced ID3v1 tag", "[tags][spec][lyrics][enhanced]")
+{
+    const Bytes plus = enhancedTag("more title", "", "", 2, "Rock", "000:10", "003:00");
+    const Bytes v1 = id3v1(std::string(30, 't'), "A", "B", "2001", pad30("c"), 17);
+    const Bytes tag = lyrics200({ lyricsField("LYR", "text"), lyricsField("AUT", "me") });
+    auto p = writeParts("lyr_enh.mp3", Bytes(), concat({ tag, plus, v1 }));
+    const std::wstring md5 = md5OfAudio(writeParts("lyr_enh_plain.mp3", Bytes()));
+    REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+    CHECK(take(LYRICSGetLyricsW()) == L"text");
+    CHECK(take(ID3V1GetTitleW()) == wide(std::string(30, 't') + "more title"));
+    CHECK(take(AUDIOGetMD5ValueW()) == md5);
+    LYRICSSetAuthorW(L"you");
+    REQUIRE(LYRICSSaveChangesW() != 0);
+    CHECK(diffIndex(readFile(p), concat({ audio(), lyrics200({ lyricsField("LYR", "text"), lyricsField("AUT", "you") }), plus, v1 })) == -1);
+}
+
+TEST_CASE("Lyrics3 v2.00: damaged tags", "[tags][spec][lyrics]")
+{
+    SECTION("the size of a field reaches beyond the tag") {
+        Bytes tag = lyrics200({ lyricsField("LYR", "text"), lyricsField("AUT", "me") });
+        // the size of the last field (5 digits behind its ID) is changed to 99999; the size of the tag stays the same
+        const size_t i = findBytes(tag, bytesOf("AUT"));
+        REQUIRE(i != static_cast<size_t>(-1));
+        for (size_t k = 0; k < 5; k++) tag[i + 3 + k] = '9';
+        auto p = writeParts("lyr_bad1.mp3", Bytes(), concat({ tag, kV1() }));
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        CHECK(take(LYRICSGetLyricsW()) == L"text");
+        CHECK(take(LYRICSGetAuthorW()).empty());
+    }
+    SECTION("a field size that is not a number does not stop the analysis") {
+        Bytes tag = lyrics200({ lyricsField("LYR", "text"), lyricsField("AUT", "me") });
+        const size_t i = findBytes(tag, bytesOf("AUT"));
+        tag[i + 3] = '-'; tag[i + 4] = '1'; tag[i + 5] = 'x'; tag[i + 6] = 'x'; tag[i + 7] = 'x';
+        auto p = writeParts("lyr_bad2.mp3", Bytes(), concat({ tag, kV1() }));
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        CHECK(take(LYRICSGetLyricsW()) == L"text");
+    }
+    SECTION("the size of the tag does not lead to LYRICSBEGIN") {
+        Bytes tag = lyrics200({ lyricsField("LYR", "text") });
+        const size_t n = tag.size();
+        tag[n - 15] = '0'; tag[n - 14] = '0'; tag[n - 13] = '0'; tag[n - 12] = '0'; tag[n - 11] = '9'; tag[n - 10] = '9';   // 000099: too small
+        auto p = writeParts("lyr_bad3.mp3", Bytes(), concat({ tag, kV1() }));
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        CHECK(LYRICSExistsW() == 0);
+        CHECK(take(LYRICSGetLyricsW()).empty());
+    }
+}

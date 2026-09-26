@@ -32,6 +32,12 @@
 //////////////////////////////////////////////////////////////////////
 CLyrics::CLyrics()
 {
+	FStartPosition = 0;
+	FEndPosition = 0;
+	FVersion = LYRICS_VERSION_UNKNOWN;
+	ID3v1AreaSize = 0;
+	memset(ID3v1Area, 0, sizeof(ID3v1Area));
+	memset(FHeader, 0, sizeof(FHeader));
 }
 CLyrics::~CLyrics()
 {
@@ -46,7 +52,9 @@ void CLyrics::ResetData()
 		FField[i].Empty();
 
 	Data.Clear();
-	memset(ID3v1Tag, 0, ID3V1_TAG_SIZE);
+	FUnknown.Clear();
+	memset(ID3v1Area, 0, sizeof(ID3v1Area));
+	ID3v1AreaSize = 0;
 	FVersion = LYRICS_VERSION_UNKNOWN;
 	FStartPosition = 0;
 	FEndPosition = 0;
@@ -64,29 +72,32 @@ bool CLyrics::RemoveTag(LPCWSTR FileName)
 		return false;
 	}
 
-	/* Save the ID3 Tag */
-	_lseek(fh, -ID3V1_TAG_SIZE, SEEK_END);
-	_read(fh, ID3v1Tag, ID3V1_TAG_SIZE);
-	_lseeki64(fh, FStartPosition, SEEK_SET);
-	/* write the ID3 Tag */
-	_write(fh, ID3v1Tag, ID3V1_TAG_SIZE);
-	_chsize_s(fh, FStartPosition + ID3V1_TAG_SIZE);
+	/* Save the ID3 tag (with the enhanced tag in front of it, if there is one) */
+	const int area = ID3v1AreaSize;
+	bool ok = (area > 0 && _lseeki64(fh, -area, SEEK_END) >= 0 && _read(fh, ID3v1Area, area) == area);
+	/* write the ID3 tag in place of the lyrics tag and cut the file */
+	if (ok)
+		ok = (_lseeki64(fh, FStartPosition, SEEK_SET) >= 0 && _write(fh, ID3v1Area, area) == area && _chsize_s(fh, FStartPosition + area) == 0);
 	_close(fh);
-	return true;
+	if (!ok)
+		CTools::instance().setLastError(errno != 0 ? errno : EIO);
+	return ok;
 }
 
 /* -------------------------------------------------------------------------- */
 
-void CLyrics::SetTagItem(char ID[], long Pos, long DataSize)
+// stores the data of a defined field; returns false if the field is not defined
+bool CLyrics::SetTagItem(const char ID[], long Pos, long DataSize)
 {
 	for (int Iterator = 0; Iterator < LYRICS_FRAME_COUNT; Iterator++)
 	{
 		if (memcmp(ID, FIELD_LIST[Iterator], 3) == 0)
 		{
 			FField[Iterator] = Data.GetStringAt(Pos, DataSize);
-			break;
+			return true;
 		}
 	}
+	return false;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -94,15 +105,31 @@ void CLyrics::SetTagItem(char ID[], long Pos, long DataSize)
 bool CLyrics::ReadHeader(FILE *Stream)
 {
 	FVersion = LYRICS_VERSION_UNKNOWN;
+	ID3v1AreaSize = 0;
+	memset(ID3v1Area, 0, sizeof(ID3v1Area));
+	const __int64 fileSize = _filelengthi64(_fileno(Stream));
+	/* the lyrics tag is in front of the id3v1 tag, which has to exist */
+	BYTE last[ID3V1_TAG_SIZE];
+	if (fileSize < ID3V1_TAG_SIZE || _fseeki64(Stream, fileSize - ID3V1_TAG_SIZE, SEEK_SET) != 0)
+		return false;
+	if (fread(last, 1, ID3V1_TAG_SIZE, Stream) != ID3V1_TAG_SIZE || memcmp(last, ID3V1_ID, 3) != 0)
+		return false;
+	/* an enhanced tag (TAG+) is part of the id3v1 data: the lyrics tag is in front of it */
+	int area = ID3V1_TAG_SIZE;
+	char plus[4];
+	if (fileSize >= ID3V1_TAG_SIZE + ID3V1_ENHANCED_SIZE && _fseeki64(Stream, fileSize - ID3V1_TAG_SIZE - ID3V1_ENHANCED_SIZE, SEEK_SET) == 0
+		&& fread(plus, 1, 4, Stream) == 4 && memcmp(plus, "TAG+", 4) == 0)
+		area = ID3V1_TAG_SIZE + ID3V1_ENHANCED_SIZE;
+	if (_fseeki64(Stream, fileSize - area, SEEK_SET) != 0 || fread(ID3v1Area, 1, area, Stream) != (size_t)area)
+		return false;
+	ID3v1AreaSize = area;
 	/* Read header and get Version & Size */
-	FEndPosition = CTools::FileSize - ID3V1_TAG_SIZE - 9;
+	FEndPosition = fileSize - area - 9;
 	if (FEndPosition < 0)
 		return false;
-	_fseeki64(Stream, FEndPosition, SEEK_SET); 
-	//_fseeki64(Stream, - (ID3V1_TAG_SIZE + 9), SEEK_END);
-	//FEndPosition = _ftelli64(Stream);
-	fread(FHeader, 1, 9, Stream);
-	fread(ID3v1Tag, 1, 128, Stream);
+	_fseeki64(Stream, FEndPosition, SEEK_SET);
+	if (fread(FHeader, 1, 9, Stream) != 9)
+		return false;
 	/* check if Lyrics-Tag exists */
 	if (memcmp(FHeader, LYRICS_BEGIN, 6) != 0)
 		return false;
@@ -123,67 +150,90 @@ bool CLyrics::ReadHeader(FILE *Stream)
 
 /* -------------------------------------------------------------------------- */
 
-void CLyrics::ReadFramesOld(FILE *Stream, bool isDeleting)
+// Lyrics3 v1.00: "LYRICSBEGIN", the text (up to 5100 bytes), "LYRICSEND"
+bool CLyrics::ReadFramesOld(FILE *Stream, bool isDeleting)
 {
-	__int64 StartPosition;
-	long DataSize, Iterator;
-	StartPosition = FEndPosition - 5100;
+	__int64 StartPosition = FEndPosition - (5100 + 11);
 	if (StartPosition < 0)
 		StartPosition = 0;
-	DataSize = (long)(FEndPosition - StartPosition);
+	const long DataSize = (long)(FEndPosition - StartPosition);
 	Data.Clear();
-	/* Get information from Lyrics (Version 1.00) */
+	if (!isDeleting)
+		FUnknown.Clear();
 	_fseeki64(Stream, StartPosition, SEEK_SET);
 	Data.FileRead(DataSize, Stream);
-	/* Search for Begin */
-	for (Iterator = 0; Iterator < (long)Data.GetLength() - 11; Iterator++)
+	/* Search for Begin: the last one belongs to the tag */
+	for (long Iterator = (long)Data.GetLength() - 11; Iterator >= 0; Iterator--)
 	{
 		if (memcmp(Data.m_pData + Iterator, LYRICS_BEGIN, 11) == 0)
 		{
 			FStartPosition = StartPosition + Iterator;
-
-			CTools::LyricsSize = DataSize - Iterator - 11;
-			if (isDeleting)
-				return;
-			SetTagItem("LYR", Iterator + 11, CTools::LyricsSize);
+			if (!isDeleting)
+			{
+				CTools::LyricsSize = (int)(FEndPosition + 9 - FStartPosition);   // the whole tag including LYRICSBEGIN and LYRICSEND
+				FField[1] = Data.GetStringAt(Iterator + 11, DataSize - Iterator - 11);
+			}
+			return true;
 		}
 	}
+	return false;
 }
 
 /* -------------------------------------------------------------------------- */
 
-void CLyrics::ReadFramesNew(FILE *Stream,bool isDeleting)
+// Lyrics3 v2.00: "LYRICSBEGIN", fields (ID, size with 5 digits, data), size of "LYRICSBEGIN" and the fields (6 digits), "LYRICS200"
+bool CLyrics::ReadFramesNew(FILE *Stream, bool isDeleting)
 {
-	long Transferred, DataSize, Iterator;
-	char Buffer[10];
-	memset(Buffer, 0, 10);
+	char Buffer[8];
+	memset(Buffer, 0, sizeof(Buffer));
 	Data.Clear();
-	Transferred = 0;
+	if (!isDeleting)
+		FUnknown.Clear();
 	/* Get information from Lyrics (Version 2.00) */
 	_fseeki64(Stream, FEndPosition - 6, SEEK_SET);
-	Transferred = (long)fread(Buffer, 1, 6, Stream);
-	/* Convert from Char into Size */
-	DataSize = atoi(Buffer);
-	if (DataSize <= 0 || (FEndPosition - DataSize <= 0))
-		return;
-
-	CTools::LyricsSize = DataSize;
-	FStartPosition = FEndPosition - 6 - DataSize;  
-	if (isDeleting)
-		return;
+	if (fread(Buffer, 1, 6, Stream) != 6)
+		return false;
+	/* Convert from Char into Size: six digits */
+	long DataSize = 0;
+	for (int i = 0; i < 6; i++)
+	{
+		if (Buffer[i] < '0' || Buffer[i] > '9')
+			return false;
+		DataSize = DataSize * 10 + (Buffer[i] - '0');
+	}
+	if (DataSize < 11 || (FEndPosition - 6 - DataSize) < 0)
+		return false;
+	FStartPosition = FEndPosition - 6 - DataSize;
 	_fseeki64(Stream, FStartPosition, SEEK_SET);
 	Data.FileRead(DataSize, Stream);
-	if (memcmp(Data.m_pData, LYRICS_BEGIN, 11) == 0)
+	/* the tag has to begin with LYRICSBEGIN */
+	if ((long)Data.GetLength() != DataSize || memcmp(Data.m_pData, LYRICS_BEGIN, 11) != 0)
 	{
-		Iterator = 11;
-		while (Iterator < (long)Data.GetLength())
-		{
-			memcpy(Buffer, Data.m_pData + Iterator, 8);
-			Transferred = atoi(Buffer + 3);
-			SetTagItem(Buffer, Iterator + 8, Transferred);
-			Iterator += Transferred + 8;
-		}
+		Data.Clear();
+		return false;
 	}
+	if (isDeleting)
+		return true;
+	CTools::LyricsSize = DataSize + 6 + 9;   // the whole tag: LYRICSBEGIN, fields, size and LYRICS200
+	long Iterator = 11;
+	while (Iterator + 8 <= DataSize)
+	{
+		const char *field = (const char *)Data.m_pData + Iterator;
+		long fieldSize = 0;
+		int digits = 0;
+		while (digits < 5 && field[3 + digits] >= '0' && field[3 + digits] <= '9')
+		{
+			fieldSize = fieldSize * 10 + (field[3 + digits] - '0');
+			digits++;
+		}
+		/* a damaged field: the fields read so far are kept */
+		if (digits < 5 || Iterator + 8 + fieldSize > DataSize)
+			break;
+		if (!SetTagItem(field, Iterator + 8, fieldSize))
+			FUnknown.AddMemory(field, 8 + fieldSize);   // unknown fields are written again when the tag is saved
+		Iterator += 8 + fieldSize;
+	}
+	return true;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -194,11 +244,9 @@ void CLyrics::ReadFromFile(FILE *Stream)
 	if (ReadHeader(Stream))
 	{
 		/* Get information from frames if version supported */
-		if (FVersion == LYRICS_VERSION_200)
-			ReadFramesNew(Stream, false);
-		else
-			ReadFramesOld(Stream, false);
-		return;
+		const bool valid = (FVersion == LYRICS_VERSION_200) ? ReadFramesNew(Stream, false) : ReadFramesOld(Stream, false);
+		if (valid)
+			return;
 	}
 	ResetData();
 }
@@ -207,21 +255,19 @@ void CLyrics::ReadFromFile(FILE *Stream)
 
 bool CLyrics::RemoveFromFile(LPCWSTR FileName)
 {
-	bool Result = false;
 	FILE *Stream;
 	if ( (Stream = _wfsopen(FileName, READ_ONLY, _SH_DENYNO)) != NULL)
-	{ Result = ReadHeader(Stream);
-	if (FVersion == LYRICS_VERSION_200)
-		ReadFramesNew(Stream, true);
-	if (FVersion == LYRICS_VERSION_100)
-		ReadFramesOld(Stream, true);
-	fclose(Stream);
-	if (!Result) 
 	{
-		CTools::instance().setLastError(ERR_TAG_NOT_EXIST);
-		return false; 
-	}
-	return RemoveTag(FileName);    
+		bool Result = ReadHeader(Stream);
+		if (Result)
+			Result = (FVersion == LYRICS_VERSION_200) ? ReadFramesNew(Stream, true) : ReadFramesOld(Stream, true);
+		fclose(Stream);
+		if (!Result)
+		{
+			CTools::instance().setLastError(ERR_TAG_NOT_EXIST);
+			return false;
+		}
+		return RemoveTag(FileName);
 	}
 	CTools::instance().setLastError(errno);
 	return false;
@@ -229,36 +275,92 @@ bool CLyrics::RemoveFromFile(LPCWSTR FileName)
 
 /* -------------------------------------------------------------------------- */
 
+// the longest field in bytes; the indication has two characters, the lyrics, the information and the image links have 99999
+static const int FIELD_MAX_SIZE[LYRICS_FRAME_COUNT] = { 2, 99999, 99999, 250, 250, 250, 250, 99999, 250 };
+// fields with several lines: the lines are separated by CR LF
+static const bool FIELD_MULTILINE[LYRICS_FRAME_COUNT] = { false, true, true, false, false, false, false, true, false };
+
+static CAtlString NormalizeLineBreaks(const CAtlString &text)
+{
+	CAtlString result;
+	const int length = text.GetLength();
+	for (int i = 0; i < length; i++)
+	{
+		const TCHAR c = text[i];
+		if (c == _T('\r'))
+		{
+			result += _T("\r\n");
+			if (i + 1 < length && text[i + 1] == _T('\n'))
+				i++;
+		}
+		else if (c == _T('\n'))
+			result += _T("\r\n");
+		else
+			result += c;
+	}
+	return result;
+}
+
 bool CLyrics::SaveTag(LPCWSTR FileName)
 {
-	long Iterator, FrameSize;
 	char Buffer[16];
 	Data.Clear();
 	FILE *Stream;
 	Data.AddMemory(LYRICS_BEGIN, 11);
-	for (Iterator = 0; Iterator < LYRICS_FRAME_COUNT; Iterator++)
+	for (long Iterator = 0; Iterator < LYRICS_FRAME_COUNT; Iterator++)
 	{
-		FrameSize = FField[Iterator].GetLength();
-		if (FrameSize > 0)
+		CAtlString text = FField[Iterator];
+		if (text.GetLength() == 0)
+			continue;
+		/* the indication field consists of two characters, 0 or 1 */
+		if (Iterator == 0 && !((text == _T("00")) || (text == _T("01")) || (text == _T("10")) || (text == _T("11"))))
 		{
-			Data.AddMemory(FIELD_LIST[Iterator], 3);
-			sprintf_s(Buffer, 16, "%05i", FrameSize);
-			//sprintf(Buffer, "%05i", FrameSize);
-			Data.AddMemory(&Buffer, 5);
-			Data.AddEncodedString(TEXT_ENCODED_ANSI, FField[Iterator], TEXT_WITHOUT_ENCODING, TEXT_WITHOUT_NULLBYTES);
+			CTools::instance().writeWarning(L"lyrics3 indication '%s' ignored: it has two characters, 0 or 1", (LPCTSTR)text);
+			continue;
 		}
+		if (FIELD_MULTILINE[Iterator])
+			text = NormalizeLineBreaks(text);
+		CBlob encoded;
+		encoded.AddEncodedString(TEXT_ENCODED_ANSI, text, TEXT_WITHOUT_ENCODING, TEXT_WITHOUT_NULLBYTES);
+		/* a field is limited: cut the text */
+		while ((int)encoded.GetLength() > FIELD_MAX_SIZE[Iterator] && text.GetLength() > 0)
+		{
+			text = text.Left(text.GetLength() - max(1, (int)encoded.GetLength() - FIELD_MAX_SIZE[Iterator]));
+			encoded.Clear();
+			encoded.AddEncodedString(TEXT_ENCODED_ANSI, text, TEXT_WITHOUT_ENCODING, TEXT_WITHOUT_NULLBYTES);
+		}
+		if (encoded.GetLength() == 0)
+			continue;
+		/* the byte value 255 must not occur in the text */
+		for (size_t i = 0; i < encoded.GetLength(); i++)
+			if (encoded.m_pData[i] == 0xFF)
+				encoded.m_pData[i] = '?';
+		Data.AddMemory(FIELD_LIST[Iterator], 3);
+		sprintf_s(Buffer, 16, "%05i", (int)encoded.GetLength());
+		Data.AddMemory(&Buffer, 5);
+		Data.AddBlob(encoded);
+	}
+	/* fields that are not defined are written as they were read */
+	if (FUnknown.GetLength() > 0 && Data.GetLength() + FUnknown.GetLength() <= 999999)
+		Data.AddBlob(FUnknown);
+	/* no field: a lyrics tag needs at least one, so there is no tag */
+	if (Data.GetLength() == 11)
+	{
+		Data.Clear();
+		FVersion = LYRICS_VERSION_UNKNOWN;
+		CTools::LyricsSize = 0;
+		return true;
 	}
 	sprintf_s(Buffer, 16, "%06iLYRICS200", (int)Data.GetLength());
-	//sprintf(Buffer, "%06iLYRICS200", Data.GetLength());
 	Data.AddMemory(Buffer, 15);
-	CTools::LyricsSize = (int)Data.GetLength() - 15;
+	CTools::LyricsSize = (int)Data.GetLength();
 
 	FVersion = LYRICS_VERSION_200;
 	if ( (Stream = _wfsopen(FileName, READ_AND_WRITE, _SH_DENYWR)) != NULL)
 	{
-		_fseeki64(Stream, -ID3V1_TAG_SIZE, SEEK_END);
+		_fseeki64(Stream, -ID3v1AreaSize, SEEK_END);
 		Data.FileWrite(Data.GetLength(), Stream);
-		fwrite(ID3v1Tag, 1, ID3V1_TAG_SIZE, Stream); // the ID3v1 tag has already been filled
+		fwrite(ID3v1Area, 1, ID3v1AreaSize, Stream); // the ID3v1 tag has already been filled
 		fflush(Stream);
 		fclose(Stream);
 		return true;
@@ -279,7 +381,7 @@ bool CLyrics::SaveToFile(LPCWSTR FileName)
 		ReadHeader(Stream);
 		fclose(Stream);
 		/*  ID3v1-Tag must exist! */
-		if (memcmp(ID3v1Tag, ID3V1_ID, 3) != 0)
+		if (ID3v1AreaSize == 0)
 		{
 			CTools::instance().setLastError(ERR_V1TAG_MISSING);
 			return false;
@@ -296,10 +398,9 @@ bool CLyrics::SaveToFile(LPCWSTR FileName)
 
 CAtlString CLyrics::GetTagVersion()
 {
-	_TCHAR Buf[16]; 
+	_TCHAR Buf[16];
 	if (FVersion == LYRICS_VERSION_UNKNOWN)
 		return EMPTY;
 	_stprintf_s(Buf, 16, _T("%i.00"), FVersion);
 	return CAtlString(Buf);
 }
-

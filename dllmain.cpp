@@ -3798,6 +3798,10 @@ extern "C" short __stdcall LYRICSExistsW()
 /**
  * @brief get the size of the tag in bytes
  *
+ * This is the size of the whole tag: "LYRICSBEGIN", the fields, the size and "LYRICS200" (version 2.00) or "LYRICSBEGIN", the
+ * text and "LYRICSEND" (version 1.00). Up to version 3.1.0 the size did not contain the six digits and "LYRICS200" (15 bytes) or
+ * "LYRICSEND" (9 bytes).
+ *
  * @ingroup LYRICS
  * @since 2.0.1.0
  * @return size in bytes
@@ -4123,6 +4127,11 @@ extern "C" short __stdcall LYRICSSaveChangesToFileW(LPCWSTR FileName)
 
 /**
  * @brief stores the Lyrics tag in the last analyzed file
+ *
+ * The tag is always written as Lyrics3 v2.00 in front of the ID3v1 tag (and its enhanced tag), which has to exist. Fields
+ * that this library does not know are kept. The indication has two characters (0 or 1, otherwise it is not written); the lyrics,
+ * the information and the image links have at most 99999 bytes, the other fields 250; longer texts are cut. Line breaks are
+ * written as CR LF. If all fields are empty the tag is removed.
  *
  * @ingroup LYRICS
  * @since 2.0.1.0
