@@ -49,8 +49,8 @@ void CVorbisComment::ResetData()
 	_items.RemoveAll();	
 }
 
-// fields of this size (bytes) are kept as they were read
-static const size_t RAW_FIELD_MIN_SIZE = 1024;
+// fields of this size (bytes) are kept as they were read (all: a value that is not valid UTF-8 or larger than the text buffer must not change either)
+static const size_t RAW_FIELD_MIN_SIZE = 1;
 
 void CVorbisComment::BuildVorbisComments(CBlob &Data)
 {

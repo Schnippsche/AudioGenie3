@@ -50,7 +50,7 @@ struct structField
 {
 	CAtlString key;
 	CAtlString value;
-	// the field as it was read ("NAME=value", UTF-8) if it is large: the text buffer (MAXTEXTBUFFER) can shorten the value, the unchanged field is written as it was
+	// the field as it was read ("NAME=value", UTF-8): the text buffer (MAXTEXTBUFFER) can shorten the value and invalid UTF-8 is replaced, the unchanged field is written as it was
 	CBlob raw;
 };
 
