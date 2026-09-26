@@ -49,6 +49,9 @@ void CVorbisComment::ResetData()
 	_items.RemoveAll();	
 }
 
+// fields of this size (bytes) are kept as they were read
+static const size_t RAW_FIELD_MIN_SIZE = 1024;
+
 void CVorbisComment::BuildVorbisComments(CBlob &Data)
 {
 	/* Build Comments into Blob */
@@ -70,12 +73,14 @@ void CVorbisComment::BuildVorbisComments(CBlob &Data)
 	for (Index = 0; Index < Fields; Index++)
 	{
 		item = _items.GetAt(Index);	
-		content = item->key + L"=" + item->value;
-		//content = item->key;
-		//content+=_T("=");
-		//content+=item->value;
 		str.Clear();
-		str.AddEncodedString(TEXT_ENCODED_UTF8, content, false, false);
+		if (item->raw.GetLength() > 0)
+			str.AddBlob(item->raw);   // a large field that was not changed
+		else
+		{
+			content = item->key + L"=" + item->value;
+			str.AddEncodedString(TEXT_ENCODED_UTF8, content, false, false);
+		}
 		Data.AddR4B((int)str.GetLength());
 		Data.AddBlob(str);		
 	}
@@ -110,16 +115,23 @@ void CVorbisComment::AnalyzeVorbisComments(const BYTE *data, size_t length)
 		const bool truncated = (len > length - pos);
 		if (truncated)
 			len = length - pos;
-		tmpBlob.Clear();
-		tmpBlob.AddMemory(data + pos, len);
+		// "NAME=value": the name has ASCII characters, so the separator is found in the bytes (a value that is larger than the text
+		// buffer cannot be converted, but the field must not get lost)
+		const BYTE *field = data + pos;
 		pos += len;
-		CAtlString temp = tmpBlob.ConvertToUnicodeString(TEXT_ENCODED_UTF8);
-		const int separator = temp.Find(_T("="));
-		if (separator > 0)
+		size_t separator = 0;
+		while (separator < len && field[separator] != '=')
+			separator++;
+		if (separator > 0 && separator < len)
 		{
 			item = new structField;
-			item->key = temp.Left(separator);
-			item->value = temp.Mid(separator + 1);
+			for (size_t k = 0; k < separator; k++)
+				item->key += (wchar_t)field[k];
+			tmpBlob.Clear();
+			tmpBlob.AddMemory(field + separator + 1, len - separator - 1);
+			item->value = tmpBlob.ConvertToUnicodeString(TEXT_ENCODED_UTF8);
+			if (len >= RAW_FIELD_MIN_SIZE)
+				item->raw.AddMemory(field, len);   // see structField
 			_items.Add(item);
 		}
 		if (truncated)
@@ -216,7 +228,11 @@ void CVorbisComment::SetUserItem(LPCWSTR key, LPCWSTR value)
 		{
 			if (!found && !empty)
 			{
-				item->value = value;   // the first field is kept
+				if (item->value != value)
+				{
+					item->value = value;   // the first field is kept
+					item->raw.Clear();
+				}
 				found = true;
 				i++;
 				continue;

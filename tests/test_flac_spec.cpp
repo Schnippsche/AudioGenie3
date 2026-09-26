@@ -543,3 +543,33 @@ TEST_CASE("FLAC: a Vorbis comment block does not read into the next block", "[fl
     CHECK(FLACGetPictureCountW() == 1);
     CHECK(std::fabs(AUDIOGetDurationW() - 10.0) < 0.0005);
 }
+
+TEST_CASE("FLAC: comment fields larger than the text buffer are not lost when other fields are written", "[flac][spec][write]")
+{
+    // MAXTEXTBUFFER (256 KB) limits the text that the getters return; the field itself has to stay in the file as it was
+    const std::string big(400000, 'L');
+    const std::string medium(70000, 'M');
+    FlacSpec s;
+    s.comments = { "TITLE=Song", "COMMENT=" + big, "LYRICS=" + medium, "ARTIST=Band" };
+    s.padding = 0;
+    const Bytes f = flacFile(s);
+    auto p = writeTemp("flac_big_fields.flac", f);
+    REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == FLAC);
+    FLACSetUserItemW(L"TITLE", L"Changed");
+    REQUIRE(FLACSaveChangesW() != 0);
+    const Bytes g = readFile(p);
+    checkMetadata(g, f);
+    const auto list = commentsOf(g);
+    REQUIRE(list.size() == 4);
+    CHECK(list[0] == "TITLE=Changed");
+    CHECK(list[1] == "COMMENT=" + big);
+    CHECK(list[2] == "LYRICS=" + medium);
+    CHECK(list[3] == "ARTIST=Band");
+    // a field that is set is replaced
+    REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == FLAC);
+    FLACSetUserItemW(L"COMMENT", L"short");
+    REQUIRE(FLACSaveChangesW() != 0);
+    bool found = false;
+    for (const std::string& c : commentsOf(readFile(p))) if (c == "COMMENT=short") found = true;
+    CHECK(found);
+}
