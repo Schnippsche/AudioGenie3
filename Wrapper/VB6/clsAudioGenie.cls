@@ -26,7 +26,7 @@ Attribute VB_Exposed = False
 ' *******************************************************
 ' *******  Copyright 2007-2026 by Stefan Toengi   *******
 ' *******************************************************
-Option ExplicitOn
+Option Explicit
 Private Declare Function AACGetBitRateTypeW Lib "AudioGenie3.dll" () As String
 Private Declare Function AACGetHeaderTypeW Lib "AudioGenie3.dll" () As String
 Private Declare Function AACGetProfileW Lib "AudioGenie3.dll" () As String
