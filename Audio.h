@@ -39,7 +39,7 @@ public:
 	virtual CAtlString GetChannelMode();
 	virtual CAtlString GetFileVersion() { return L"";   };
 	virtual bool IsValid()           { return false;     };
-	virtual __int64 GetFirstAudioPosition() { return CTools::ID3v2Size; };
+	virtual __int64 GetFirstAudioPosition() { return CTools::audioStart(); };
 	virtual __int64 GetLastAudioPosition()  { return CTools::FileSize - 1; };
 };
 

@@ -110,7 +110,7 @@ long CWavPack::GetChannels()
 bool CWavPack::ReadFromFile(FILE *Stream)
 {
 	/* Read header data */
-	_fseeki64(Stream, CTools::ID3v2Size, SEEK_SET);
+	_fseeki64(Stream, CTools::audioStart(), SEEK_SET);
 	_header.FileRead(32, Stream);
 	if (_header.GetAt(0) == 'w' && _header.GetAt(1) == 'v' && _header.GetAt(2) == 'p' && _header.GetAt(3) == 'k')
 	{

@@ -67,6 +67,20 @@ static CAtlString ReadFixedField(CBlob *blob, size_t pos, size_t len)
 	return text.TrimRight();
 }
 
+// Fixed field of the id3v1 tag; a field that is full continues in the enhanced tag (ext, may be NULL)
+static CAtlString ReadFieldWithExtension(CBlob *blob, size_t pos, size_t len, CBlob *ext, size_t extPos, size_t extLen)
+{
+  CAtlString raw = blob->GetStringAt(pos, len);
+  bool full = ((size_t)raw.GetLength() >= len);
+  for (int i = 0; full && i < raw.GetLength(); i++)
+    if (raw[i] == 0)
+      full = false;
+  CAtlString text((LPCTSTR)raw);
+  if (full && ext != NULL)
+    text += CAtlString((LPCTSTR)ext->GetStringAt(extPos, extLen));
+  return text.TrimRight();
+}
+
 bool CID3V1TagInfo::ReadFromFile(FILE *Stream)
 {
   errno = 0;
@@ -87,9 +101,23 @@ bool CID3V1TagInfo::ReadFromFile(FILE *Stream)
   Year = st.Mid(90, 4).TrimRight(); 
   Comment = st.Mid(94, 30).TrimRight(); 
   */
-  Title = ReadFixedField(tmp, 6, 30);
-  Artist = ReadFixedField(tmp, 36, 30);
-  Album = ReadFixedField(tmp, 66, 30);
+  // the enhanced tag "TAG+" is in front of the id3v1 tag
+  CBlob enhanced;
+  _enhanced = false;
+  memset(_enhancedRest, 0, sizeof(_enhancedRest));
+  if (_fseeki64(Stream, -(ID3V1_TAG_SIZE + ID3V1_ENHANCED_SIZE), SEEK_END) == 0)
+  {
+    enhanced.FileRead(ID3V1_ENHANCED_SIZE, Stream);
+    if (enhanced.GetLength() == ID3V1_ENHANCED_SIZE && memcmp(enhanced.m_pData, "TAG+", 4) == 0)
+    {
+      _enhanced = true;
+      memcpy(_enhancedRest, enhanced.m_pData + 4 + 180, ID3V1_ENHANCED_REST);
+    }
+  }
+  CBlob *ext = _enhanced ? &enhanced : NULL;
+  Title = ReadFieldWithExtension(tmp, 6, 30, ext, 4, 60);
+  Artist = ReadFieldWithExtension(tmp, 36, 30, ext, 64, 60);
+  Album = ReadFieldWithExtension(tmp, 66, 30, ext, 124, 60);
   Year = ReadFixedField(tmp, 96, 4);
   Comment = ReadFixedField(tmp, 100, 30);
   // id3v1.1: the last byte of the comment is a track number if the byte before it is $00
@@ -104,10 +132,29 @@ bool CID3V1TagInfo::ReadFromFile(FILE *Stream)
   return true;
 }
 
+bool CID3V1TagInfo::needsEnhanced()
+{
+  if (Title.GetLength() > 30 || Artist.GetLength() > 30 || Album.GetLength() > 30)
+    return true;
+  for (int i = 0; i < ID3V1_ENHANCED_REST; i++)
+    if (_enhancedRest[i] != 0)
+      return true;
+  return false;
+}
+
 bool CID3V1TagInfo::WriteToFile(FILE *Stream)
 {
   errno = 0;
   tmp->Clear();
+  if (needsEnhanced())
+  {
+    // the parts of title, artist and album behind the 30th character (up to 60 more), then speed, genre and times as they were
+    tmp->AddMemory("TAG+", 4);
+    tmp->AddFixedAnsiString(Title.Mid(30), 60);
+    tmp->AddFixedAnsiString(Artist.Mid(30), 60);
+    tmp->AddFixedAnsiString(Album.Mid(30), 60);
+    tmp->AddMemory(_enhancedRest, ID3V1_ENHANCED_REST);
+  }
   tmp->AddMemory(ID3V1_ID, 3);
   tmp->AddFixedAnsiString(Title ,30);
   tmp->AddFixedAnsiString(Artist, 30);
@@ -122,7 +169,7 @@ bool CID3V1TagInfo::WriteToFile(FILE *Stream)
   else
     tmp->AddFixedAnsiString(Comment, 30);
   tmp->AddValue(Genre);
-  tmp->FileWrite(ID3V1_TAG_SIZE, Stream);
+  tmp->FileWrite(tmp->GetLength(), Stream);
   return (errno == 0);
 }
 
@@ -136,6 +183,8 @@ void CID3V1TagInfo::Reset()
   Year.Empty();
   Track = 0;
   Genre = DEFAULT_GENRE;
+  _enhanced = false;
+  memset(_enhancedRest, 0, sizeof(_enhancedRest));
 }
 
 bool CID3V1TagInfo::exists()

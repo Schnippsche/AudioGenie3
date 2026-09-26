@@ -107,7 +107,7 @@ float CAAC::GetDuration()
 	/* Calculate duration time */
 	if (FBitRate == 0)
 		return 0.0f;
-	return 8.0f * (CTools::FileSize - CTools::ID3v2Size) / FBitRate;
+	return 8.0f * (CTools::FileSize - CTools::audioStart()) / FBitRate;
 }
 
 /* --------------------------------------------------------------------------- */
@@ -127,7 +127,7 @@ BYTE CAAC::RecognizeHeaderType(FILE *Source)
 {
 	BYTE Header[6];
 	/* Get header type of the file */
-	_fseeki64(Source, CTools::ID3v2Size, SEEK_SET);
+	_fseeki64(Source, CTools::audioStart(), SEEK_SET);
 	fread(Header, 1, 4, Source);
 	if (memcmp(Header, ADIF, 4) == 0)
 		return AAC_HEADER_TYPE_ADIF;
@@ -142,7 +142,7 @@ void CAAC::ReadADIF(FILE *Source)
 {
 	long Position;
 	/* Read ADIF header data */
-	Position = CTools::ID3v2Size * 8 + 32;
+	Position = (long)(CTools::audioStart() * 8 + 32);
 	if (ReadBits(Source, Position, 1) == 0)
 		Position += 3l;
 	else
@@ -182,7 +182,7 @@ void CAAC::ReadADTS(FILE *Source)
 	size_t totalBitrate = 0;
 	do
 	{
-		Position = (CTools::ID3v2Size + TotalSize) * 8l;
+		Position = (long)((CTools::audioStart() + TotalSize) * 8l);
 		if (ReadBits(Source, Position, 12) != 0xFFF)
 			break;
 		Frames++;
@@ -218,7 +218,7 @@ void CAAC::ReadADTS(FILE *Source)
 			//break;
 		}   
 	}
-	while (CTools::FileSize > (CTools::ID3v2Size + TotalSize));
+	while (CTools::FileSize > (CTools::audioStart() + TotalSize));
 	if (Frames > 0)
 		FBitRate = long(totalBitrate / Frames * 1024.0 + 0.5);	
 		//FBitRate = long(8.0 * TotalSize / 1024.0 * FSampleRate / Frames + 0.5 );

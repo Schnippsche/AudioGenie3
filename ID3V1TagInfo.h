@@ -36,6 +36,10 @@ static const char *ID3V1_ID = "TAG";
 
 /* Size constants */
 #define ID3V1_TAG_SIZE      128        
+/* the enhanced tag "TAG+" (227 bytes) is in front of the id3v1 tag: title, artist, album (60 characters each, they continue the
+   fields of the id3v1 tag), speed (1), genre (30), start time (6), end time (6) */
+#define ID3V1_ENHANCED_SIZE 227
+#define ID3V1_ENHANCED_REST 43		/* speed, genre, start time and end time */
 
 static const LPCWSTR MUSIC_GENRE[] =
 {
@@ -84,11 +88,15 @@ public:
 	CAtlString Year;
 	BYTE Genre;
 	BYTE Track;
+	bool _enhanced;								// an enhanced tag (TAG+) was read
+	BYTE _enhancedRest[ID3V1_ENHANCED_REST];	// speed, genre, start time and end time of the enhanced tag, kept as they are
 	// methods
 	bool ReadFromFile(FILE *Stream);
 	bool WriteToFile(FILE *Stream);
 	void Reset();
 	bool exists();
+	bool needsEnhanced();		// texts longer than 30 characters or data of an enhanced tag
+	int GetSize() { return needsEnhanced() ? ID3V1_TAG_SIZE + ID3V1_ENHANCED_SIZE : ID3V1_TAG_SIZE; }
 	CAtlString GetTagVersion();
 	CAtlString GetTrack();
 	void SetTrack(LPCWSTR newValue);

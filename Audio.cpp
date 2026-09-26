@@ -43,7 +43,7 @@ long CAudio::GetBitRate()
 {
   float Duration = GetDuration();
   if (Duration > 0)
-    return (long)((CTools::FileSize - CTools::ID3v1Size - CTools::ID3v2Size - CTools::LyricsSize - CTools::APESize ) / 125 / Duration + 0.5) ;
+    return (long)((CTools::FileSize - CTools::ID3v1Size - CTools::audioStart() - CTools::LyricsSize - CTools::APESize ) / 125 / Duration + 0.5) ;
   else
     return 0;
 }

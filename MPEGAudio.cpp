@@ -538,10 +538,10 @@ bool CMPEGAudio::ReadFromFile(FILE *Stream)
 	long Transferred;
 	bool result;
 	__int64 maxSearch;
-	maxSearch = CTools::ID3v2Size + CTools::FileSize / 2;
+	maxSearch = CTools::audioStart() + CTools::FileSize / 2;
 	/* Open file, read first block of data and search for a frame */
 	ResetData();
-	StartPosition = CTools::ID3v2Size;
+	StartPosition = CTools::audioStart();
 	_fseeki64(Stream, StartPosition, SEEK_SET);
 	Transferred = (long)fread(Data, 1, DATASIZE, Stream);
 	if (Transferred < 0)

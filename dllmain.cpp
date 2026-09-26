@@ -46,6 +46,7 @@ extern "C" BOOL WINAPI DllMain(HINSTANCE hInstance, DWORD dwReason, LPVOID lpRes
 
 BYTE GetFileFormat(FILE *Stream)
 {
+	CTools::APEHeadSize = 0;
 	BYTE result = header.ReadFromFile(Stream);
 	if (result == AUDIO_FORMAT_ID3V2)
 	{
@@ -59,6 +60,16 @@ BYTE GetFileFormat(FILE *Stream)
 				result = AUDIO_FORMAT_UNKNOWN;   // bugfix for mpeg headers that do not directly follow the id3v2 tag
 		}
 		v2.ResetData();
+	}
+	// an APE tag at the beginning of the file (at the start or behind an ID3v2 tag): the audio data follow it
+	__int64 apeOffset, apeLength;
+	if (CAPE::FindHeadTag(Stream, apeOffset, apeLength))
+	{
+		CTools::APEHeadSize = (int)apeLength;
+		_fseeki64(Stream, apeOffset + apeLength, SEEK_SET);
+		result = header.ReadFromFile(Stream);
+		if (result == AUDIO_FORMAT_INVALID)
+			result = AUDIO_FORMAT_UNKNOWN;
 	}
 	return result;
 }
@@ -323,7 +334,7 @@ extern "C" long __stdcall AUDIOAnalyzeFileW(LPCWSTR FileName)
 			}
 			Composer = id3v2.GetText(F_TCOM);
 		}
-		else if (CTools::APESize > 0)
+		else if (ape.Exists())
 		{
 			Album = ape.GetTagItem(APE_ALBUM);
 			Artist = ape.GetTagItem(APE_ARTIST);
@@ -405,12 +416,12 @@ extern "C" long __stdcall AUDIOAnalyzeFileW(LPCWSTR FileName)
 			audio = &mpeg;
 			// determine the last audio position from the tags
 			__int64 last = CTools::FileSize - 1;
-			if (ape.Exists() )
+			if (CTools::APESize > 0)
 				last = min(last, CTools::FileSize - CTools::APESize - 32 - CTools::ID3v1Size - 1);
 			if (lyrics.Exists() )
 				last = min(last, lyrics.GetStartPosition() - 1);
 			if (id3v1.Exists() )
-				last = min(last, CTools::FileSize - 128 - 1);
+				last = min(last, CTools::FileSize - CTools::ID3v1Size - 1);
 			mpeg.setLastAudioPosition(last);
 		}
 
@@ -3163,6 +3174,10 @@ extern "C" long __stdcall APEGetSizeW()
 /**
  * @brief returns -1 if the APE tag exists
  *
+ * The tag is looked for at the end of the file (in front of an ID3v1 tag) and at the beginning of the file (at the start or
+ * behind an ID3v2 tag, then it begins with a header). A tag at the beginning is written again at the same place when it is
+ * saved or removed, which rewrites the file. A new tag is always written at the end of the file.
+ *
  * @ingroup APE
  * @since 2.0.1.0
  * @return -1 if APE tag exists, otherwise 0
@@ -3345,6 +3360,10 @@ extern "C" BSTR __stdcall ID3V1GetAlbumW()
 /**
  * @brief set the album
  *
+ * The id3v1 tag has 30 characters for this field. A longer text (up to 90 characters) is stored with the enhanced tag
+ * ("TAG+", 227 bytes in front of the id3v1 tag, the file then has 355 bytes of id3v1 data); reading joins both parts. Speed,
+ * genre and start and end time of an existing enhanced tag are kept when the tag is written.
+ *
  * @ingroup ID3V1
  * @since 2.0.1.0
  * @param textString album
@@ -3370,6 +3389,10 @@ extern "C" BSTR __stdcall ID3V1GetArtistW()
 
 /**
  * @brief set the artist
+ *
+ * The id3v1 tag has 30 characters for this field. A longer text (up to 90 characters) is stored with the enhanced tag
+ * ("TAG+", 227 bytes in front of the id3v1 tag, the file then has 355 bytes of id3v1 data); reading joins both parts. Speed,
+ * genre and start and end time of an existing enhanced tag are kept when the tag is written.
  *
  * @ingroup ID3V1
  * @since 2.0.1.0
@@ -3422,6 +3445,10 @@ extern "C" BSTR __stdcall ID3V1GetTitleW()
 
 /**
  * @brief set the title
+ *
+ * The id3v1 tag has 30 characters for this field. A longer text (up to 90 characters) is stored with the enhanced tag
+ * ("TAG+", 227 bytes in front of the id3v1 tag, the file then has 355 bytes of id3v1 data); reading joins both parts. Speed,
+ * genre and start and end time of an existing enhanced tag are kept when the tag is written.
  *
  * @ingroup ID3V1
  * @since 2.0.1.0

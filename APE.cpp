@@ -151,11 +151,15 @@ CAtlString CAPE::GetTagItem(LPCWSTR FieldName)
 
 /* -------------------------------------------------------------------------- */
 
-bool CAPE::ReadFields(FILE *Stream)
+bool CAPE::ReadFields(FILE *Stream, __int64 headOffset)
 {
 	CAtlString FieldName;
 	long Iterator;
-	_fseeki64(Stream, -CTools::ID3v1Size - TagInfo.Size, SEEK_END);
+	// the items of a tag at the beginning follow its header, the items of a tag at the end are counted back from the end of the file
+	if (headOffset >= 0)
+		_fseeki64(Stream, headOffset + APE_TAG_HEADER_SIZE, SEEK_SET);
+	else
+		_fseeki64(Stream, -CTools::ID3v1Size - TagInfo.Size, SEEK_END);
 	/* Read all stored fields */
 	for (Iterator = 0; Iterator < TagInfo.Fields; Iterator++)
 	{
@@ -167,8 +171,99 @@ bool CAPE::ReadFields(FILE *Stream)
 			return false;
 		}
 		_items.Add(item);
+		if (headOffset >= 0 && _ftelli64(Stream) > headOffset + APE_TAG_HEADER_SIZE + TagInfo.Size)
+		{
+			ResetData();	// the items reach beyond the tag
+			return false;
+		}
 	}
 	return true;
+}
+
+/* -------------------------------------------------------------------------- */
+
+bool CAPE::FindHeadTag(FILE *Stream, __int64 &offset, __int64 &length)
+{
+	BYTE id3[10];
+	offset = 0;
+	length = 0;
+	const __int64 fileSize = _filelengthi64(_fileno(Stream));
+	if (_fseeki64(Stream, 0, SEEK_SET) != 0)
+		return false;
+	// behind an ID3v2 tag: the size field is synchsafe, a footer (v2.4) has 10 bytes
+	if (fread(id3, 1, 10, Stream) == 10 && id3[0] == 'I' && id3[1] == 'D' && id3[2] == '3' && id3[3] < 0xFF && id3[4] < 0xFF
+		&& ((id3[6] | id3[7] | id3[8] | id3[9]) & 0x80) == 0)
+	{
+		offset = 10 + ((__int64)id3[6] << 21) + ((__int64)id3[7] << 14) + ((__int64)id3[8] << 7) + id3[9];
+		if (id3[3] == 4 && (id3[5] & 0x10) != 0)
+			offset += 10;
+	}
+	if (offset + APE_TAG_HEADER_SIZE > fileSize || _fseeki64(Stream, offset, SEEK_SET) != 0)
+		return false;
+	CBlob tmp;
+	tmp.FileRead(APE_TAG_HEADER_SIZE, Stream);
+	if (tmp.GetLength() != APE_TAG_HEADER_SIZE || memcmp(tmp.m_pData, APE_ID, 8) != 0)
+		return false;
+	const DWORD version = (DWORD)tmp.GetR4B(8);
+	const DWORD size = (DWORD)tmp.GetR4B(12);
+	const DWORD flags = (DWORD)tmp.GetR4B(20);
+	// only a tag with a header (bit 29 of the flags) can be at the beginning; the size includes the footer, but not the header
+	if (version < APE_VERSION_2_0 || (flags & 0x20000000u) == 0 || size < APE_TAG_FOOTER_SIZE || offset + APE_TAG_HEADER_SIZE + (__int64)size > fileSize
+		|| (__int64)size + APE_TAG_HEADER_SIZE > 0x7FFFFFFF)
+		return false;
+	length = APE_TAG_HEADER_SIZE + (__int64)size;
+	return true;
+}
+
+/* -------------------------------------------------------------------------- */
+
+bool CAPE::ReadHeadTag(FILE *Stream, __int64 offset, __int64 length)
+{
+	_fseeki64(Stream, offset, SEEK_SET);
+	if (!TagInfo.ReadFromFile(Stream))
+	{
+		ResetData();
+		return false;
+	}
+	FVersion = TagInfo.Version;
+	CTools::APEHeadSize = (int)length;
+	return ReadFields(Stream, offset);
+}
+
+/* -------------------------------------------------------------------------- */
+
+// writes the file again: the data before the region, the new data (may be NULL) and the data behind the old region
+bool CAPE::RewriteRegion(LPCWSTR FileName, __int64 offset, __int64 oldLength, CBlob *data)
+{
+	FILE *Source;
+	FILE *Destination;
+	CAtlString NewFileName(FileName);
+	if ( (Source = _wfsopen(FileName, READ_ONLY, _SH_DENYNO)) == NULL)
+	{
+		CTools::instance().setLastError(errno);
+		return false;
+	}
+	NewFileName += TILDE;
+	if ( (Destination = _wfsopen(NewFileName, READ_AND_WRITENEW, _SH_DENYWR)) == NULL)
+	{
+		CTools::instance().setLastError(errno);
+		fclose(Source);
+		return false;
+	}
+	bool ok = CTools::copyStream(Source, Destination, offset);
+	if (ok && data != NULL && data->GetLength() > 0)
+		ok = (data->FileWrite(data->GetLength(), Destination) == data->GetLength());
+	if (ok)
+		ok = (_fseeki64(Source, offset + oldLength, SEEK_SET) == 0) && CTools::copyStream(Source, Destination, -1);
+	if (!ok)
+	{
+		fclose(Destination);
+		fclose(Source);
+		_wremove(NewFileName);
+		CTools::instance().setLastError(EIO);
+		return false;
+	}
+	return CTools::finishRewrite(Source, Destination, NewFileName, FileName);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -230,11 +325,11 @@ void CAPE::BuildFooter()
 
 /* -------------------------------------------------------------------------- */
 
-bool CAPE::SaveTag(LPCWSTR FileName)
+void CAPE::BuildTagData()
 {
 	size_t Iterator;
 	long ValueSize, Flags;
-	/* Build and write tag fields and footer to stream */
+	/* Build tag header, fields and footer */
 	Data.Clear();
 	BuildFooter();
 	// v2: header and footer; v1: footer only, all flags are zero
@@ -260,6 +355,13 @@ bool CAPE::SaveTag(LPCWSTR FileName)
 	/* set flags to footer end */
 	TagInfo.Flags = v2 ? (0x80 << 24) : 0;
 	TagInfo.WriteToBlob(Data);
+}
+
+/* -------------------------------------------------------------------------- */
+
+bool CAPE::SaveTag(LPCWSTR FileName)
+{
+	BuildTagData();
 	/* Add created tag to file */
 	bool result = AddToFile(FileName);
 	// take an ID3v1 tag into account if present
@@ -272,13 +374,17 @@ bool CAPE::SaveTag(LPCWSTR FileName)
 
 bool CAPE::ReadFromFile(FILE *Stream)
 {
+	// a tag at the beginning of the file has a header and is found first
+	__int64 headOffset, headLength;
+	if (FindHeadTag(Stream, headOffset, headLength))
+		return ReadHeadTag(Stream, headOffset, headLength);
 	/* Process data if loaded and footer is valid */
 	if (ReadFooter(Stream))
 	{
 		CTools::APESize = TagInfo.Size;
 		FVersion = TagInfo.Version;
 		/* Get information from fields */
-		return ReadFields(Stream);    
+		return ReadFields(Stream, -1);
 	}
 	ResetData();
 	return false;
@@ -289,6 +395,19 @@ bool CAPE::ReadFromFile(FILE *Stream)
 bool CAPE::RemoveFromFile(LPCWSTR FileName, bool saveID3v1Tag)
 { /* Remove tag from file if found */
 	FILE *Source;
+	// a tag at the beginning of the file: the rest of the file is written again
+	if ( (Source = _wfsopen(FileName, READ_ONLY, _SH_DENYNO)) != NULL)
+	{
+		__int64 headOffset, headLength;
+		const bool head = FindHeadTag(Source, headOffset, headLength);
+		fclose(Source);
+		if (head)
+		{
+			const bool removed = RewriteRegion(FileName, headOffset, headLength, NULL);
+			TagInfo.Reset();
+			return removed;
+		}
+	}
 	if ( (Source = _wfsopen(FileName, READ_ONLY, _SH_DENYWR)) != NULL)
 	{
 		// read and remember the ID3v1 tag
@@ -325,6 +444,19 @@ bool CAPE::SaveToFile(LPCWSTR FileName)
 {
 	/* Delete old tag if exists and write new tag */
 	CTools::instance().setLastError(0);
+	// a tag at the beginning of the file is written again at the same place
+	FILE *Source = _wfsopen(FileName, READ_ONLY, _SH_DENYNO);
+	if (Source != NULL)
+	{
+		__int64 headOffset, headLength;
+		const bool head = FindHeadTag(Source, headOffset, headLength);
+		fclose(Source);
+		if (head)
+		{
+			BuildTagData();
+			return RewriteRegion(FileName, headOffset, headLength, &Data);
+		}
+	}
 	// delete APE and ID3v1 tag
 	bool result = RemoveFromFile(FileName, false);
 	// a missing tag is not an error in this case
@@ -334,7 +466,7 @@ bool CAPE::SaveToFile(LPCWSTR FileName)
 	// the ID3v1 tag is in front of the end of the file only if there was no APE tag: then it is moved behind the new APE tag.
 	// Otherwise RemoveFromFile has removed it together with the old APE tag.
 	if (!result && tmpid3v1.GetSize() > 0)
-		TruncateFile(FileName, 128);
+		TruncateFile(FileName, tmpid3v1.GetSize());
 	return SaveTag(FileName);  
 }
 

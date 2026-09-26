@@ -28,6 +28,7 @@ int CTools::ID3v1Size;
 long CTools::ID3v2Size;
 int CTools::LyricsSize;
 int CTools::APESize;
+int CTools::APEHeadSize;
 __int64 CTools::firstMpegAudioPos;
 long CTools::configValues[MAX_CONFIG_VALUES];
 bool CTools::lossyText = false;
@@ -82,6 +83,7 @@ void CTools::reset()
 	ID3v2Size = 0;
 	LyricsSize = 0;
 	APESize = 0;
+	APEHeadSize = 0;
 	lastError = 0;
 	lastErrorText.Empty();
 	firstMpegAudioPos = 0;

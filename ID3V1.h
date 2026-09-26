@@ -68,6 +68,7 @@ private:
 	bool AddTag(LPCWSTR FileName);
 	void CloseFile();
 	FILE *Stream;
+	bool fileEnhanced;	// the file has an enhanced tag (TAG+) in front of the id3v1 tag
 	CID3V1TagInfo id3v1tag;
 };
 

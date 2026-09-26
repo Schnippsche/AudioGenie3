@@ -44,7 +44,7 @@ CMPEGPlus::~CMPEGPlus()
 bool CMPEGPlus::ReadHeader(FILE *Stream)
 {
   FIsSV8 = false;
-  _fseeki64(Stream, CTools::ID3v2Size, SEEK_SET);
+  _fseeki64(Stream, CTools::audioStart(), SEEK_SET);
   /* Read header and get file size */
   memset(Header.ByteArray, 0, sizeof(Header.ByteArray));
   fread(Header.ByteArray, 1, 12, Stream);
@@ -88,7 +88,7 @@ bool CMPEGPlus::ReadHeaderSV8(FILE *Stream)
   bool haveSH = false, midSideUsed = false;
   BYTE profileIndex = 0;
 
-  _fseeki64(Stream, CTools::ID3v2Size + 4, SEEK_SET);
+  _fseeki64(Stream, CTools::audioStart() + 4, SEEK_SET);
   for (int packet = 0; packet < 32; packet++)
   {
     BYTE head[2 + 9];
@@ -306,7 +306,7 @@ long CMPEGPlus::GetBitRate()
 {
   __int64 CompressedSize;
   /* Calculate bit rate if not given */
-  CompressedSize = CTools::FileSize - CTools::ID3v2Size - CTools::ID3v1Size - CTools::APESize;
+  CompressedSize = CTools::FileSize - CTools::audioStart() - CTools::ID3v1Size - CTools::APESize;
   if (FIsSV8)
   {
     // SV8: exact duration from the sample count, bit rate = compressed size * 8 / duration

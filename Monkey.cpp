@@ -167,7 +167,7 @@ float CMonkey::GetCompressionRatio()
   /* Get compression ratio */
   if (!IsValid())
     return 0.0f;
-  __int64 compressedSize = CTools::FileSize - CTools::ID3v2Size - CTools::ID3v1Size - CTools::APESize;
+  __int64 compressedSize = CTools::FileSize - CTools::audioStart() - CTools::ID3v1Size - CTools::APESize;
   long uncompressedSize = GetSamples() * GetChannels() * GetBits() / 8l;
   return (float) compressedSize / ( uncompressedSize + Header.HeaderDataBytes);
   //return FileSize /
@@ -188,7 +188,7 @@ long CMonkey::GetBitRate()
 bool CMonkey::ReadFromFile(FILE *Stream)
 {
   /* Read Monkey"s Audio header data */
-  _fseeki64(Stream, CTools::ID3v2Size, SEEK_SET);
+  _fseeki64(Stream, CTools::audioStart(), SEEK_SET);
   Header.ReadFromFile(Stream);
   if (Header.exists())
   {

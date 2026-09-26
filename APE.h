@@ -61,7 +61,10 @@ private:
 	CApeTagItem* item;
 	CBlob Data;
 	bool ReadFooter(FILE *Stream);
-	bool ReadFields(FILE *Stream);
+	bool ReadFields(FILE *Stream, __int64 headOffset);
+	bool ReadHeadTag(FILE *Stream, __int64 offset, __int64 length);
+	bool RewriteRegion(LPCWSTR FileName, __int64 offset, __int64 oldLength, CBlob *data);
+	void BuildTagData();
 	bool TruncateFile(LPCWSTR FileName, int Offset);
 	bool SaveTag(LPCWSTR FileName);
 	void BuildFooter();
@@ -72,7 +75,10 @@ public:
 	virtual ~CAPE();
 	bool SetTagItem(LPCWSTR FieldName, LPCWSTR Value);
 	CAtlString GetTagItem(LPCWSTR key);
-	bool Exists()          { return (CTools::APESize > 0); };
+	// a tag at the end of the file or at the beginning (behind an ID3v2 tag)
+	bool Exists()          { return (CTools::APESize > 0 || (CTools::APEHeadSize > 0 && TagInfo.Version != 0)); };
+	// looks for a tag at the beginning of the file: directly at the start or behind an ID3v2 tag; it begins with a header
+	static bool FindHeadTag(FILE *Stream, __int64 &offset, __int64 &length);
 	void ResetData();
 	void Print();
 	bool ReadFromFile(FILE *Stream);

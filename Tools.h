@@ -150,6 +150,9 @@ public:
 	static long ID3v2Size;
 	static int LyricsSize;
 	static int APESize;
+	static int APEHeadSize;		// size of an APE tag at the beginning of the file (behind an ID3v2 tag), 0 if there is none
+	// position of the first byte behind the tags at the beginning of the file (ID3v2 tag, APE tag)
+	static __int64 audioStart() { return (__int64)ID3v2Size + APEHeadSize; }
 	static __int64 firstMpegAudioPos;
 	static long configValues[MAX_CONFIG_VALUES];
 	// set by CBlob::AddEncodedString if a character could not be converted into the ANSI code page (see CID3_Frame::getSize)

@@ -38,6 +38,8 @@
 
 CID3V1::CID3V1()
 {
+	Stream = NULL;
+	fileEnhanced = false;
 }
 
 CID3V1::~CID3V1()
@@ -58,6 +60,7 @@ bool CID3V1::OpenFile(LPCWSTR FileName, bool WriteModus)
 	else
 		modus = READ_ONLY;
 	id3v1tag._exists = false;			
+	fileEnhanced = false;
 	if ( (Stream = _wfsopen(FileName, modus, _SH_DENYNO)) != NULL)
   {
 		/* Read tag */
@@ -72,7 +75,13 @@ bool CID3V1::OpenFile(LPCWSTR FileName, bool WriteModus)
 		{
 			id3v1tag._exists = true;
 		}
-		_fseeki64(Stream, -ID3V1_TAG_SIZE, SEEK_END);
+		// enhanced tag "TAG+" in front of the id3v1 tag
+		if (id3v1tag._exists && _fseeki64(Stream, -(ID3V1_TAG_SIZE + ID3V1_ENHANCED_SIZE), SEEK_END) == 0)
+		{
+			char plus[4];
+			fileEnhanced = (fread(plus, 1, 4, Stream) == 4 && memcmp(plus, "TAG+", 4) == 0);
+		}
+		_fseeki64(Stream, -(fileEnhanced ? ID3V1_TAG_SIZE + ID3V1_ENHANCED_SIZE : ID3V1_TAG_SIZE), SEEK_END);
 		return true;
 	}
 	CTools::instance().setLastError(errno);
@@ -91,7 +100,7 @@ void CID3V1::ReadFromFile(FILE *Stream)
 	//_fseeki64(Stream, -ID3V1_TAG_SIZE, SEEK_END);
 	if (id3v1tag.ReadFromFile(Stream))
 	{
-		CTools::ID3v1Size = ID3V1_TAG_SIZE;		
+		CTools::ID3v1Size = id3v1tag._enhanced ? ID3V1_TAG_SIZE + ID3V1_ENHANCED_SIZE : ID3V1_TAG_SIZE;
 		return;
 	}
 	//ResetData();
@@ -119,7 +128,7 @@ bool CID3V1::RemoveTag(LPCWSTR FileName)
 	/* Open a file */
 	if (_wsopen_s(&fh, FileName, _O_WRONLY | _O_BINARY, _SH_DENYWR, _S_IWRITE) == 0)
 	{
-		long ln = _filelength(fh) - 128;
+		long ln = _filelength(fh) - (fileEnhanced ? ID3V1_TAG_SIZE + ID3V1_ENHANCED_SIZE : ID3V1_TAG_SIZE);
 		if (ln > 0)
 			_chsize_s(fh, ln);
 		_close(fh);
@@ -165,9 +174,18 @@ bool CID3V1::SaveToFile(LPCWSTR FileName)
 	// replace if it exists
 	if (Result && id3v1tag.exists())
 	{
-		_fseeki64(Stream, -128, SEEK_END);
-		Result = id3v1tag.WriteToFile(Stream);
-		CloseFile();
+		if (id3v1tag.needsEnhanced() == fileEnhanced)
+		{
+			_fseeki64(Stream, -id3v1tag.GetSize(), SEEK_END);
+			Result = id3v1tag.WriteToFile(Stream);
+			CloseFile();
+		}
+		else
+		{
+			// the size of the tag changes (the enhanced tag is added or removed): write it again at the end of the file
+			CloseFile();
+			Result = RemoveTag(FileName) && AddTag(FileName);
+		}
 	}
 	else
 	{
