@@ -438,6 +438,7 @@ public:
 	static u32 findUniqueFrameID(u32 oldID) ;
 	static u32 findFrameClassType(u32 oldID);
 	static u32 findTagForVersion(u32 uniqueID);	
+	static bool isKnownFrameID(u32 uniqueID);
 protected:
 	CID3_FrameFactory();
 	virtual ~CID3_FrameFactory();

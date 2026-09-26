@@ -77,6 +77,7 @@ void CID3F_WXXX::decode()
 	{	
 		if (isUnsynchronized())
 			resync();
+		isDecoded = true;
 		if (_blob.GetLength() < 2)
 		{
 			_url.Empty();

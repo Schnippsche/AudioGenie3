@@ -447,6 +447,13 @@ void CBlob::AddString(const LPCWSTR string)
 	ConcatInPlace(wcslen(string) * 2, string);
 }
 
+// code page of ISO-8859-1 / ANSI strings (configuration ANSICODEPAGE, 0 = code page of the system)
+static UINT ansiCodePage()
+{
+	const long codePage = CTools::configValues[CONFIG_ANSICODEPAGE];
+	return (codePage > 0) ? (UINT)codePage : CP_ACP;
+}
+
 CAtlString CBlob::getNextString(BYTE encoding, int& startPos)
 {
 	if (m_CurrentLength == 0 || m_pData == NULL || startPos < 0 || (size_t)startPos > m_CurrentLength)
@@ -481,7 +488,7 @@ CAtlString CBlob::getNextString(BYTE encoding, int& startPos)
 	switch (encoding) // Encoding ID
 	{
 	case TEXT_ENCODED_ANSI: // ANSI or ISO-8859-1
-		if (MultiByteToWideChar(CP_ACP, 0, (const char*)(m_pData + startPos), -1, po, (int)maxBuffer) > 0)
+		if (MultiByteToWideChar(ansiCodePage(), 0, (const char*)(m_pData + startPos), -1, po, (int)maxBuffer) > 0)
 			result = CAtlString(po);
 		else
 		{
@@ -592,7 +599,19 @@ void CBlob::AddEncodedString(BYTE encoding, const CAtlString source, bool withEn
 	switch (encoding) // Encoding ID
 	{
 	case TEXT_ENCODED_ANSI: // ANSI or ISO-8859-1
-		Size = WideCharToMultiByte(CP_ACP,0, source, source.GetLength(), buf, maxBuffer, 0, 0);
+		{
+			// WC_NO_BEST_FIT_CHARS: a character that is not in the code page is reported instead of being replaced by a similar one
+			BOOL usedDefault = FALSE;
+			const UINT codePage = ansiCodePage();
+			Size = WideCharToMultiByte(codePage, WC_NO_BEST_FIT_CHARS, source, source.GetLength(), buf, maxBuffer, 0, &usedDefault);
+			if (Size == 0 && GetLastError() == ERROR_INVALID_FLAGS)
+			{
+				usedDefault = FALSE;
+				Size = WideCharToMultiByte(codePage, 0, source, source.GetLength(), buf, maxBuffer, 0, 0);
+			}
+			if (usedDefault)
+				CTools::lossyText = true;
+		}
 		if (Size > 0)
 			ConcatInPlace(Size, buf);
 		else

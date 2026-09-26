@@ -130,10 +130,12 @@ enum CONFIGKEYS {
 	CONFIG_DOEVENTSMILLIS,
 	CONFIG_MAXTEXTBUFFER,
 	CONFIG_WMAPADDINGSIZE,
-	CONFIG_MP4PADDINGSIZE
+	CONFIG_MP4PADDINGSIZE,
+	CONFIG_ANSICODEPAGE,           // code page of ISO-8859-1 / ANSI strings, 0 = code page of the system
+	CONFIG_ID3V2LINKEDPICTURES     // 1 = read pictures that an ID3v2 APIC frame links to (MIME type -->) from disk
 };
 
-#define MAX_CONFIG_VALUES 7
+#define MAX_CONFIG_VALUES 9
 
 class CTools
 {
@@ -150,6 +152,8 @@ public:
 	static int APESize;
 	static __int64 firstMpegAudioPos;
 	static long configValues[MAX_CONFIG_VALUES];
+	// set by CBlob::AddEncodedString if a character could not be converted into the ANSI code page (see CID3_Frame::getSize)
+	static bool lossyText;
 	static wchar_t* wcTextPuffer;
 	static char* cTextPuffer;
 	static void doEvents();

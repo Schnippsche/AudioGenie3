@@ -67,7 +67,15 @@ void CID3F_PCNT::decode()
 		}
 		else
 		{
-			_counter = _blob.Get4B(0);
+			// the counter has at least 4 bytes; a longer one is saturated at 32 bit
+			unsigned __int64 value = 0;
+			for (size_t i = 0; i < _blob.GetLength(); i++)
+			{
+				value = (value << 8) | _blob.GetAt(i);
+				if (value > 0xFFFFFFFFui64)
+					value = 0xFFFFFFFFui64;
+			}
+			_counter = (u32)value;
 		}		
 		isDecoded = true;
 	}	

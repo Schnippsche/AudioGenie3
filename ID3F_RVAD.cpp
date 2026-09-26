@@ -213,6 +213,15 @@ void CID3F_RVAD::encode()
 	}
 }
 
+// RVAD (v2.2, v2.3) and RVA2 (v2.4) have different layouts and cannot be converted into each other: a frame read from a file is
+// only written into a tag of the same layout family. Frames created through the API are written in the layout of the new version.
+bool CID3F_RVAD::canStoreFor(BYTE version)
+{
+	if (!_loaded)
+		return true;
+	return (_oldID == F_RVA2) ? (version == TAG_VERSION_2_4) : (version != TAG_VERSION_2_4);
+}
+
 CAtlString CID3F_RVAD::getIdentification()
 {
 	decode();

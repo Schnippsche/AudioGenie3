@@ -112,7 +112,7 @@ void CID3F_USER::encode()
 		decode();
 		_blob.Clear();
 		_blob.AddValue(encodingID);
-		_blob.AddFixedAnsiString(_language, 3);
+		_blob.AddFixedAnsiString(_language.IsEmpty() ? CAtlString(_T("XXX")) : _language, 3);   // XXX = language not known
 		_blob.AddEncodedString(encodingID, _text, TEXT_WITHOUT_ENCODING, TEXT_WITHOUT_NULLBYTES);
 		mustRebuild = false;
 	}

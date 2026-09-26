@@ -30,6 +30,7 @@ int CTools::LyricsSize;
 int CTools::APESize;
 __int64 CTools::firstMpegAudioPos;
 long CTools::configValues[MAX_CONFIG_VALUES];
+bool CTools::lossyText = false;
 wchar_t *CTools::wcTextPuffer = 0;
 char *CTools::cTextPuffer = 0;
 CAtlString CTools::lastErrorText;
@@ -57,6 +58,8 @@ CTools::CTools(void)
 	configValues[CONFIG_WMAPADDINGSIZE] = 4096;
 	configValues[CONFIG_DOEVENTSMILLIS] = 250;
 	configValues[CONFIG_MP4PADDINGSIZE] = 4096;
+	configValues[CONFIG_ANSICODEPAGE] = 1252;         // Windows-1252, a superset of ISO-8859-1
+	configValues[CONFIG_ID3V2LINKEDPICTURES] = 0;
 	setConfigValue(CONFIG_MAXTEXTBUFFER, 0x40000l); // default 256 KB
 }
 
@@ -321,6 +324,14 @@ void CTools::setConfigValue(long key, long value)
 			else if (value > 0x4000000l)
 				value = 0x4000000l;
 		}
+		if (key == CONFIG_ANSICODEPAGE)
+		{
+			// 0 = code page of the system, otherwise an installed single byte code page (no Unicode code pages)
+			if (value != 0 && (value < 0 || !IsValidCodePage((UINT)value) || value == 1200 || value == 1201 || value == 12000 || value == 12001 || value == 65000 || value == 65001))
+				return;
+		}
+		if (key == CONFIG_ID3V2LINKEDPICTURES)
+			value = (value != 0) ? 1 : 0;
 		configValues[key] = value;
 	}
 }

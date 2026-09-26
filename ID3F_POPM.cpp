@@ -98,7 +98,15 @@ void CID3F_POPM::decode()
 			int start = 0;
 			_email = _blob.getNextString(TEXT_ENCODED_ANSI, start);
 			_rating = _blob.GetAt(start++);
-			_counter = _blob.Get4B(start);
+			// the counter is optional and can be longer than 4 bytes (saturated at 32 bit)
+			unsigned __int64 value = 0;
+			for (size_t i = start; i < _blob.GetLength(); i++)
+			{
+				value = (value << 8) | _blob.GetAt(i);
+				if (value > 0xFFFFFFFFui64)
+					value = 0xFFFFFFFFui64;
+			}
+			_counter = (u32)value;
 		}		
 		isDecoded = true;
 	}	

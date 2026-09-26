@@ -106,7 +106,18 @@ u32 CID3_FrameFactory::findTagForVersion(u32 uniqueID)
 		if (ID3_FRAMECODES[row][0] == uniqueID)
 			return ID3_FRAMECODES[row][CTools::ID3V2newTagVersion];		
 	}
-	return F_NONE;
+	// a frame that is not in the table keeps its ID, if the tag version can hold it (v2.2: three characters, v2.3/v2.4: four)
+	if (CTools::ID3V2newTagVersion == TAG_VERSION_2_2)
+		return (uniqueID <= 0xFFFFFF) ? uniqueID : F_NONE;
+	return (uniqueID > 0xFFFFFF) ? uniqueID : F_NONE;
+}
+
+bool CID3_FrameFactory::isKnownFrameID(u32 uniqueID)
+{
+	for (int row = 0; row < anzKnownFrames; row++)
+		if (ID3_FRAMECODES[row][0] == uniqueID)
+			return true;
+	return false;
 }
 
 CID3_Frame* CID3_FrameFactory::createFrame(unsigned int oldID) 

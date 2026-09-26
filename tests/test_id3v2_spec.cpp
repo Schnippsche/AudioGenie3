@@ -326,3 +326,314 @@ TEST_CASE("ID3v2: frame flags and additional header fields are kept and converte
         CHECK(Bytes(f.begin() + static_cast<std::ptrdiff_t>(i) + 10, f.begin() + static_cast<std::ptrdiff_t>(i) + 10 + static_cast<std::ptrdiff_t>(data.size())) == data);
     }
 }
+
+// ---------------------------------------------------------------- conversion between the tag versions
+
+TEST_CASE("ID3v2: dates are converted between the tag versions", "[id3v2][spec][convert]")
+{
+    SECTION("v2.3 to v2.4: TYER, TDAT, TIME and TORY become TDRC and TDOR") {
+        Bytes body = frame("TYER", { 0x00, '1', '9', '9', '9' }, 0, 3);
+        put(body, frame("TDAT", { 0x00, '1', '7', '0', '5' }, 0, 3));   // DDMM
+        put(body, frame("TIME", { 0x00, '2', '1', '3', '0' }, 0, 3));   // HHMM
+        put(body, frame("TORY", { 0x00, '1', '9', '9', '8' }, 0, 3));
+        auto p = writeTagged("spec_dates_23_24.mp3", tagBytes(3, 0, body, 100));
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        saveAsV24(3);
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        CHECK(take(ID3V2GetTextFrameW(ID3F_TDRC)) == L"1999-05-17T21:30");
+        CHECK(take(ID3V2GetTextFrameW(ID3F_TDOR)) == L"1998");
+        CHECK(ID3V2GetFrameCountW(ID3F_TYER) == 0);
+        CHECK(ID3V2GetFrameCountW(ID3F_TDAT) == 0);
+        CHECK(ID3V2GetFrameCountW(ID3F_TIME) == 0);
+        CHECK(ID3V2GetFrameCountW(ID3F_TORY) == 0);
+    }
+    SECTION("v2.4 to v2.3: TDRC and TDOR become TYER, TDAT, TIME and TORY") {
+        Bytes body = frame("TDRC", { 0x03, '1', '9', '9', '9', '-', '0', '5', '-', '1', '7', 'T', '2', '1', ':', '3', '0' });
+        put(body, frame("TDOR", { 0x03, '1', '9', '9', '8' }));
+        auto p = writeTagged("spec_dates_24_23.mp3", tagBytes(4, 0, body, 100));
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        REQUIRE(ID3V2SetFormatAndEncodingW(2, 1) != 0);
+        ID3V2SetTextFrameW(ID3F_TPE1, L"x");
+        REQUIRE(ID3V2SaveChangesW() != 0);
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        CHECK(take(ID3V2GetTextFrameW(ID3F_TYER)) == L"1999");
+        CHECK(take(ID3V2GetTextFrameW(ID3F_TDAT)) == L"1705");
+        CHECK(take(ID3V2GetTextFrameW(ID3F_TIME)) == L"2130");
+        CHECK(take(ID3V2GetTextFrameW(ID3F_TORY)) == L"1998");
+    }
+    SECTION("v2.4 to v2.3: a year alone gives TYER only") {
+        auto p = writeTagged("spec_dates_year.mp3", tagBytes(4, 0, frame("TDRC", { 0x03, '2', '0', '0', '1' }), 100));
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        REQUIRE(ID3V2SetFormatAndEncodingW(2, 0) != 0);
+        ID3V2SetTextFrameW(ID3F_TPE1, L"x");
+        REQUIRE(ID3V2SaveChangesW() != 0);
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        CHECK(take(ID3V2GetTextFrameW(ID3F_TYER)) == L"2001");
+        CHECK(ID3V2GetFrameCountW(ID3F_TDAT) == 0);
+        CHECK(ID3V2GetFrameCountW(ID3F_TIME) == 0);
+    }
+}
+
+TEST_CASE("ID3v2: volume adjustment and equalisation are not written in the layout of another version", "[id3v2][spec][convert]")
+{
+    const Bytes rvad = { 0x03, 0x10, 0x01, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00 };   // v2.3 layout
+    const Bytes equa = { 0x10, 0x00, 0x64, 0x01, 0x00 };
+    Bytes rva2 = bytesOf("track");                                                         // v2.4 layout
+    rva2.push_back(0);
+    for (uint8_t b : { 0x01, 0x04, 0x00, 0x00 }) rva2.push_back(b);
+    Bytes equ2 = { 0x01 };
+    put(equ2, "eq");
+    equ2.push_back(0);
+    for (uint8_t b : { 0x00, 0x64, 0x04, 0x00 }) equ2.push_back(b);
+
+    SECTION("v2.3 to v2.4: dropped") {
+        Bytes body = frame("RVAD", rvad, 0, 3);
+        put(body, frame("EQUA", equa, 0, 3));
+        put(body, frame("TIT2", { 0x00, 'k', 'e', 'e', 'p' }, 0, 3));
+        auto p = writeTagged("spec_rva_23_24.mp3", tagBytes(3, 0, body, 100));
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        saveAsV24(3);
+        const Bytes f = readFile(p);
+        CHECK(findBytes(f, bytesOf("RVA2")) == static_cast<size_t>(-1));
+        CHECK(findBytes(f, bytesOf("RVAD")) == static_cast<size_t>(-1));
+        CHECK(findBytes(f, bytesOf("EQU2")) == static_cast<size_t>(-1));
+        CHECK(findBytes(f, bytesOf("EQUA")) == static_cast<size_t>(-1));
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        CHECK(take(ID3V2GetTextFrameW(ID3F_TIT2)) == L"keep");
+    }
+    SECTION("v2.3 to v2.3: kept unchanged") {
+        Bytes body = frame("RVAD", rvad, 0, 3);
+        put(body, frame("EQUA", equa, 0, 3));
+        auto p = writeTagged("spec_rva_23_23.mp3", tagBytes(3, 0, body, 100));
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        REQUIRE(ID3V2SetFormatAndEncodingW(2, 1) != 0);
+        ID3V2SetTextFrameW(ID3F_TPE1, L"x");
+        REQUIRE(ID3V2SaveChangesW() != 0);
+        const Bytes f = readFile(p);
+        CHECK(findBytes(f, rvad) != static_cast<size_t>(-1));
+        CHECK(findBytes(f, equa) != static_cast<size_t>(-1));
+    }
+    SECTION("v2.4 to v2.3: dropped, v2.4 to v2.4: kept") {
+        Bytes body = frame("RVA2", rva2);
+        put(body, frame("EQU2", equ2));
+        auto p = writeTagged("spec_rva_24.mp3", tagBytes(4, 0, body, 100));
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        saveAsV24(3);
+        Bytes f = readFile(p);
+        CHECK(findBytes(f, rva2) != static_cast<size_t>(-1));
+        CHECK(findBytes(f, equ2) != static_cast<size_t>(-1));
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        REQUIRE(ID3V2SetFormatAndEncodingW(2, 1) != 0);
+        ID3V2SetTextFrameW(ID3F_TIT2, L"y");
+        REQUIRE(ID3V2SaveChangesW() != 0);
+        f = readFile(p);
+        CHECK(findBytes(f, bytesOf("RVAD")) == static_cast<size_t>(-1));
+        CHECK(findBytes(f, bytesOf("EQUA")) == static_cast<size_t>(-1));
+    }
+}
+
+// ---------------------------------------------------------------- text encodings
+
+namespace {
+
+// sets the code page for ISO-8859-1 / ANSI strings (configuration key 7), restores the default afterwards
+struct CodePage {
+    explicit CodePage(long codePage) { SetConfigValueW(7, codePage); }
+    ~CodePage() { SetConfigValueW(7, 1252); }
+};
+
+}  // namespace
+
+TEST_CASE("ID3v2: text that ISO-8859-1 cannot represent is stored as Unicode", "[id3v2][spec][encoding]")
+{
+    auto p = writeTagged("spec_lossy.mp3", tagBytes(4, 0, frame("TIT2", { 0x03, 'x' }), 100));
+    REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+    REQUIRE(ID3V2SetFormatAndEncodingW(3, 0) != 0);
+    ID3V2SetTextFrameW(ID3F_TIT2, L"\x041F\x0440\x0438\x0432\x0435\x0442 \x20AC");
+    ID3V2SetTextFrameW(ID3F_TALB, L"Gr\x00FC\x00DF" L"e");   // fits into ISO-8859-1
+    REQUIRE(ID3V2SaveChangesW() != 0);
+    const Bytes f = readFile(p);
+    const size_t title = findBytes(f, bytesOf("TIT2"));
+    const size_t album = findBytes(f, bytesOf("TALB"));
+    REQUIRE(title != static_cast<size_t>(-1));
+    REQUIRE(album != static_cast<size_t>(-1));
+    CHECK(f[title + 10] != 0x00);   // not ISO-8859-1
+    CHECK(f[album + 10] == 0x00);   // stays ISO-8859-1
+    REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+    CHECK(take(ID3V2GetTextFrameW(ID3F_TIT2)) == L"\x041F\x0440\x0438\x0432\x0435\x0442 \x20AC");
+    CHECK(take(ID3V2GetTextFrameW(ID3F_TALB)) == L"Gr\x00FC\x00DF" L"e");
+}
+
+TEST_CASE("ID3v2: encoding $00 uses the configured code page", "[id3v2][spec][encoding]")
+{
+    auto p = writeTagged("spec_codepage.mp3", tagBytes(4, 0, frame("TIT2", { 0x00, 0xE4, 0x93 }), 100));
+    SECTION("default: Windows-1252, independent of the system settings") {
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        const std::wstring t = take(ID3V2GetTextFrameW(ID3F_TIT2));
+        REQUIRE(t.size() == 2);
+        CHECK(t[0] == 0x00E4);
+        CHECK(t[1] == 0x201C);
+    }
+    SECTION("28591: strict ISO-8859-1") {
+        CodePage cp(28591);
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        const std::wstring t = take(ID3V2GetTextFrameW(ID3F_TIT2));
+        REQUIRE(t.size() == 2);
+        CHECK(t[0] == 0x00E4);
+        CHECK(t[1] == 0x0093);
+        REQUIRE(ID3V2SetFormatAndEncodingW(3, 0) != 0);
+        ID3V2SetTextFrameW(ID3F_TIT2, L"\x00E4");
+        REQUIRE(ID3V2SaveChangesW() != 0);
+        const Bytes f = readFile(p);
+        const size_t i = findBytes(f, bytesOf("TIT2"));
+        REQUIRE(i != static_cast<size_t>(-1));
+        CHECK(f[i + 10] == 0x00);
+        CHECK(f[i + 11] == 0xE4);
+    }
+    SECTION("1251: Cyrillic") {
+        CodePage cp(1251);
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        const std::wstring t = take(ID3V2GetTextFrameW(ID3F_TIT2));
+        REQUIRE(!t.empty());
+        CHECK(t[0] == 0x0434);
+    }
+    SECTION("0: the code page of the system") {
+        CodePage cp(0);
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        CHECK(take(ID3V2GetTextFrameW(ID3F_TIT2)).size() == 2);
+    }
+}
+
+TEST_CASE("ID3v2: genre (TCON) in all notations", "[id3v2][spec][text]")
+{
+    struct Form { const char* tcon; const wchar_t* genre; };
+    const Form forms[] = {
+        { "(21)", L"Ska" }, { "21", L"Ska" }, { "(RX)", L"Remix" }, { "(CR)", L"Cover" }, { "(21)Custom", L"Custom" },
+        { "(21)(22)", L"Ska" }, { "((Text", L"(Text" }, { "Eurodisco", L"Eurodisco" }, { "", L"" },
+    };
+    for (const Form& f : forms) {
+        DYNAMIC_SECTION("TCON " << f.tcon) {
+            Bytes d = { 0x00 };
+            put(d, f.tcon);
+            auto p = writeTagged("spec_tcon.mp3", tagBytes(4, 0, frame("TCON", d), 100));
+            REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+            CHECK(take(AUDIOGetGenreW()) == f.genre);
+        }
+    }
+}
+
+// ---------------------------------------------------------------- counters, buffer size, language, linked pictures
+
+TEST_CASE("ID3v2: counters of any length and optional fields", "[id3v2][spec][frames]")
+{
+    SECTION("PCNT longer than four bytes") {
+        auto p = writeTagged("spec_pcnt.mp3", tagBytes(4, 0, frame("PCNT", { 0x00, 0x00, 0x00, 0x00, 0x00, 0x07 }), 100));
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        CHECK(ID3V2GetPlayCounterW() == 7);
+    }
+    SECTION("POPM without a counter") {
+        Bytes d = bytesOf("a@b.c");
+        d.push_back(0);
+        d.push_back(200);
+        auto p = writeTagged("spec_popm0.mp3", tagBytes(4, 0, frame("POPM", d), 100));
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        CHECK(ID3V2GetPopularimeterRatingW(1) == 200);
+        CHECK(ID3V2GetPopularimeterCounterW(1) == 0);
+    }
+    SECTION("POPM with a five byte counter") {
+        Bytes d = bytesOf("a@b.c");
+        d.push_back(0);
+        d.push_back(100);
+        for (uint8_t b : { 0x00, 0x00, 0x00, 0x00, 0x09 }) d.push_back(b);
+        auto p = writeTagged("spec_popm5.mp3", tagBytes(4, 0, frame("POPM", d), 100));
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        CHECK(ID3V2GetPopularimeterCounterW(1) == 9);
+    }
+    SECTION("RBUF without the offset to the next tag") {
+        auto p = writeTagged("spec_rbuf.mp3", tagBytes(4, 0, frame("RBUF", { 0x00, 0x10, 0x00, 0x01 }), 100));
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        CHECK(ID3V2GetRecommendedBufferSizeValueW() == 4096);
+        CHECK(ID3V2GetRecommendedBufferSizeFlagW() == 1);
+        CHECK(ID3V2GetRecommendedBufferSizeOffsetW() == 0);
+    }
+}
+
+TEST_CASE("ID3v2: an unknown language is written as XXX", "[id3v2][spec][frames]")
+{
+    auto p = writeTagged("spec_lang.mp3", tagBytes(4, 0, frame("TIT2", { 0x03, 'x' }), 100));
+    REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+    REQUIRE(ID3V2SetFormatAndEncodingW(3, 3) != 0);
+    ID3V2AddCommentW(L"", L"d", L"text");
+    REQUIRE(ID3V2SaveChangesW() != 0);
+    const Bytes f = readFile(p);
+    const size_t i = findBytes(f, bytesOf("COMM"));
+    REQUIRE(i != static_cast<size_t>(-1));
+    CHECK(Bytes(f.begin() + static_cast<std::ptrdiff_t>(i) + 11, f.begin() + static_cast<std::ptrdiff_t>(i) + 14) == bytesOf("XXX"));
+}
+
+TEST_CASE("ID3v2: linked pictures are not read from disk unless configured", "[id3v2][spec][frames]")
+{
+    auto pic = writeTemp("spec_linked_picture.bin", Bytes(10, 0x42));
+    Bytes apic = { 0x00 };
+    put(apic, "-->");
+    apic.push_back(0);
+    apic.push_back(3);
+    apic.push_back(0);
+    put(apic, pic.string().c_str());
+    auto p = writeTagged("spec_link.mp3", tagBytes(4, 0, frame("APIC", apic), 100));
+    SECTION("default") {
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        REQUIRE(ID3V2GetFrameCountW(ID3F_APIC) == 1);
+        CHECK(ID3V2GetPictureSizeW(1) == 0);
+    }
+    SECTION("configured") {
+        SetConfigValueW(8, 1);
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        CHECK(ID3V2GetPictureSizeW(1) == 10);
+        SetConfigValueW(8, 0);
+    }
+}
+
+// ---------------------------------------------------------------- frames the DLL does not know
+
+TEST_CASE("ID3v2: unknown frames are preserved when the tag is saved", "[id3v2][spec][flags]")
+{
+    const Bytes payload = { 0x01, 0x02, 0x03, 0x04 };
+    SECTION("v2.4 to v2.4") {
+        Bytes body = frame("XABC", payload);
+        put(body, frame("TXYZ", { 0x03, 'a', 'b' }));
+        auto p = writeTagged("spec_unknown_keep.mp3", tagBytes(4, 0, body, 100));
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        saveAsV24(3);
+        const Bytes f = readFile(p);
+        const size_t i = findBytes(f, bytesOf("XABC"));
+        REQUIRE(i != static_cast<size_t>(-1));
+        CHECK(Bytes(f.begin() + static_cast<std::ptrdiff_t>(i) + 10, f.begin() + static_cast<std::ptrdiff_t>(i) + 14) == payload);
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        CHECK(take(ID3V2GetTextFrameW(frameId("TXYZ"))) == L"ab");
+    }
+    SECTION("v2.4 to v2.3 and back") {
+        auto p = writeTagged("spec_unknown_23.mp3", tagBytes(4, 0, frame("XABC", payload), 100));
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        REQUIRE(ID3V2SetFormatAndEncodingW(2, 1) != 0);
+        ID3V2SetTextFrameW(ID3F_TPE1, L"x");
+        REQUIRE(ID3V2SaveChangesW() != 0);
+        CHECK(findBytes(readFile(p), bytesOf("XABC")) != static_cast<size_t>(-1));
+    }
+    SECTION("a frame with the flag 'discard if the tag is altered' is dropped") {
+        auto p = writeTagged("spec_unknown_drop.mp3", tagBytes(4, 0, frame("XABC", payload, 0x4000), 100));
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        saveAsV24(3);
+        CHECK(findBytes(readFile(p), bytesOf("XABC")) == static_cast<size_t>(-1));
+    }
+    SECTION("v2.2 tags cannot hold a four character frame ID") {
+        auto p = writeTagged("spec_unknown_22.mp3", tagBytes(4, 0, frame("XABC", payload), 100));
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        REQUIRE(ID3V2SetFormatAndEncodingW(1, 0) != 0);
+        ID3V2SetTextFrameW(ID3F_TPE1, L"x");
+        REQUIRE(ID3V2SaveChangesW() != 0);
+        CHECK(findBytes(readFile(p), bytesOf("XABC")) == static_cast<size_t>(-1));
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        CHECK(take(ID3V2GetTextFrameW(ID3F_TPE1)) == L"x");
+    }
+}

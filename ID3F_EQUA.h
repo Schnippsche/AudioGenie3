@@ -34,6 +34,7 @@ public:
 	void encode();
 	BYTE getFormat();
 	CAtlString getIdentification();
+	bool canStoreFor(BYTE version);
 	BYTE getAdjustmentBits();
 private:
 	BYTE _format, _bits;

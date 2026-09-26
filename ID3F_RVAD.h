@@ -33,6 +33,7 @@ public:
 	void decode();
 	void encode();
 	CAtlString getIdentification();	
+	bool canStoreFor(BYTE version);
 private:
 	CAtlString _identification;
 	long _oldID;

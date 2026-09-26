@@ -242,8 +242,48 @@ bool CID3V2::SaveToFile(LPCWSTR FileName)
 }
 
 
+// The date frames differ between the versions: v2.2/v2.3 TYER (year), TDAT (DDMM), TIME (HHMM), TORY (original year); v2.4 TDRC
+// (timestamp yyyy-MM-ddTHH:mm) and TDOR. The frames of the other version are created before the tag is written.
+void CID3V2::convertFramesForVersion()
+{
+	if (CTools::ID3V2newTagVersion == TAG_VERSION_2_4)
+	{
+		const CAtlString tyer = GetText(F_TYER), tdat = GetText(F_TDAT), tim = GetText(F_TIME), tory = GetText(F_TORY);
+		if (findFrame(F_TDRC) == NULL && tyer.GetLength() >= 4)
+		{
+			CAtlString timestamp = tyer.Left(4);
+			if (tdat.GetLength() >= 4)
+			{
+				timestamp += _T("-") + tdat.Mid(2, 2) + _T("-") + tdat.Left(2);
+				if (tim.GetLength() >= 4)
+					timestamp += _T("T") + tim.Left(2) + _T(":") + tim.Mid(2, 2);
+			}
+			SetText(F_TDRC, timestamp);
+		}
+		if (findFrame(F_TDOR) == NULL && tory.GetLength() >= 4)
+			SetText(F_TDOR, tory.Left(4));
+	}
+	else
+	{
+		const CAtlString tdrc = GetText(F_TDRC), tdor = GetText(F_TDOR);
+		if (findFrame(F_TYER) == NULL && tdrc.GetLength() >= 4)
+		{
+			SetText(F_TYER, tdrc.Left(4));
+			if (tdrc.GetLength() >= 10 && tdrc.GetAt(4) == '-' && tdrc.GetAt(7) == '-')
+			{
+				SetText(F_TDAT, tdrc.Mid(8, 2) + tdrc.Mid(5, 2));
+				if (tdrc.GetLength() >= 16 && tdrc.GetAt(10) == 'T' && tdrc.GetAt(13) == ':')
+					SetText(F_TIME, tdrc.Mid(11, 2) + tdrc.Mid(14, 2));
+			}
+		}
+		if (findFrame(F_TORY) == NULL && tdor.GetLength() >= 4)
+			SetText(F_TORY, tdor.Left(4));
+	}
+}
+
 bool CID3V2::SaveTag(LPCWSTR FileName)
 {
+	convertFramesForVersion();
 	u32 tagSize = calcTagSize();
 	bool needRebuild = false;
 	long paddingSize = 0;
@@ -591,27 +631,53 @@ u32 CID3V2::calcTagSize()
 	{
 		frame = _frames[i];
 		id = CID3_FrameFactory::instance().findTagForVersion(frame->_frameID);
-		if (id != F_NONE)
+		if (id != F_NONE && frame->canStoreFor(CTools::ID3V2newTagVersion))
 			TagSize+= frame->getStoredSize() + wide;		
 	}
 	return TagSize;
 }
 
+// One reference of the genre frame: a number of the ID3v1 list, the keywords RX (remix) and CR (cover) or free text
+static CAtlString resolveGenreReference(const CAtlString &reference)
+{
+	if (reference.Compare(_T("RX")) == 0)
+		return CAtlString(_T("Remix"));
+	if (reference.Compare(_T("CR")) == 0)
+		return CAtlString(_T("Cover"));
+	if (reference.GetLength() > 0 && reference.GetLength() <= 3 && reference.SpanIncluding(_T("0123456789")).GetLength() == reference.GetLength())
+	{
+		const int number = _wtoi(reference);
+		if (number >= 0 && number < MAX_MUSIC_GENRES)
+			return CAtlString(MUSIC_GENRE[number]);
+	}
+	return reference;
+}
+
+// v2.3: "(21)", "(RX)", "(21)(22)Refinement", "((" is a literal "("; v2.4: numbers and keywords as separate strings or free text
 CAtlString CID3V2::GetGenre()
 {
 	CAtlString genre = GetText(F_TCON);
-	// special case: if the number is in parentheses, get the genre from the ID3V1 tag info
-	if (genre.GetLength() == 0 || genre.GetAt(0) != '(' )
+	if (genre.GetLength() == 0)
 		return genre;
-	char Buffer[4];
-	memset(Buffer, 0, 4);
-	int endPos = genre.Find(')', 1);
-	for (int i = 1; i < endPos && i < 4; i++)
-		Buffer[i - 1] = (char)genre.GetAt(i);
-	int zahl = atoi(Buffer);
-	if (zahl >= 0 && zahl < MAX_MUSIC_GENRES)
-		genre = MUSIC_GENRE[zahl];
-	return genre;
+	if (genre.GetLength() >= 2 && genre.GetAt(0) == '(' && genre.GetAt(1) == '(')
+		return genre.Mid(1);
+	int pos = 0;
+	CAtlString first;
+	while (pos < genre.GetLength() && genre.GetAt(pos) == '(' && !(pos + 1 < genre.GetLength() && genre.GetAt(pos + 1) == '('))
+	{
+		const int end = genre.Find(')', pos + 1);
+		if (end < 0)
+			break;
+		if (first.IsEmpty())
+			first = resolveGenreReference(genre.Mid(pos + 1, end - pos - 1));
+		pos = end + 1;
+	}
+	if (pos == 0)
+		return resolveGenreReference(genre);
+	CAtlString refinement = genre.Mid(pos);
+	if (refinement.GetLength() >= 2 && refinement.GetAt(0) == '(' && refinement.GetAt(1) == '(')
+		refinement = refinement.Mid(1);
+	return refinement.IsEmpty() ? first : refinement;
 }
 bool CID3V2::parseCueFile(LPCWSTR FileName)
 {

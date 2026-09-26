@@ -153,7 +153,7 @@ void CID3F_EQUA::decode()
 		{
 			_identification.Empty();
 			_format = 0;				
-			if (_blob.GetLength() < 6)
+			if (_blob.GetLength() < 2)   // adjustment bits and at least one byte of data
 			{
 				_bits = 0;
 			}
@@ -188,6 +188,14 @@ void CID3F_EQUA::encode()
 		mustRebuild = false;
 		lastTag = CTools::ID3V2newTagVersion;		
 	}
+}
+
+// EQUA (v2.2, v2.3) and EQU2 (v2.4) have different layouts and cannot be converted into each other, see CID3F_RVAD::canStoreFor
+bool CID3F_EQUA::canStoreFor(BYTE version)
+{
+	if (!_loaded)
+		return true;
+	return (_oldID == F_EQU2) ? (version == TAG_VERSION_2_4) : (version != TAG_VERSION_2_4);
 }
 
 BYTE CID3F_EQUA::getFormat()

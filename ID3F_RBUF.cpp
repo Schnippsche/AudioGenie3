@@ -88,7 +88,7 @@ void CID3F_RBUF::decode()
 	{	
 		if (isUnsynchronized())
 			resync();
-		if (_blob.GetLength() < 8)
+		if (_blob.GetLength() < 4)
 		{
 			_buffer = 0;
 			_offset = 0;
@@ -98,7 +98,7 @@ void CID3F_RBUF::decode()
 		{
 			_buffer = (_blob.GetAt(0) << 16) + (_blob.GetAt(1) << 8) + _blob.GetAt(2);
 			_flag = _blob.GetAt(3);
-			_offset = _blob.Get4B(4);
+			_offset = (_blob.GetLength() >= 8) ? _blob.Get4B(4) : 0;   // the offset to the next tag is optional
 		}		
 		isDecoded = true;
 	}	

@@ -54,7 +54,7 @@ void CID3_Frame::init(unsigned int frameID)
 	encodingID = 255;
 	useTextEncoding = false;
 	flags = 0;
-	_discardOnTagAlter = _discardOnFileAlter = _readOnly = _grouped = _compressed = _encrypted = _hasDataLength = _unsyncResolved = false;
+	_discardOnTagAlter = _discardOnFileAlter = _readOnly = _grouped = _compressed = _encrypted = _hasDataLength = _unsyncResolved = _loaded = false;
 	_groupId = _encryptionMethod = 0;
 	_dataLength = 0;
 }
@@ -71,6 +71,12 @@ static long extraFieldsSize(CID3_Frame *f, BYTE version)
 	if (version != TAG_VERSION_2_3 && version != TAG_VERSION_2_4)
 		return 0;
 	return (f->_grouped ? 1 : 0) + (f->_encrypted ? 1 : 0) + ((f->_compressed || (f->_encrypted && f->_hasDataLength)) ? 4 : 0);
+}
+
+// An unknown frame is written again with its ID, unless its flag says that it is to be discarded when the tag is altered
+bool CID3_Frame::canStoreFor(BYTE version)
+{
+	return !(_discardOnTagAlter && !CID3_FrameFactory::instance().isKnownFrameID(_frameID));
 }
 
 long CID3_Frame::getStoredSize()
@@ -90,7 +96,15 @@ long CID3_Frame::getSize()
 			mustRebuild = true;
 		}
 	}
+	CTools::lossyText = false;
 	encode();
+	// ISO-8859-1 (code page) cannot represent every character: store such a frame as UTF-16 instead of replacing characters by ?
+	if (useTextEncoding && encodingID == TEXT_ENCODED_ANSI && CTools::lossyText)
+	{
+		encodingID = TEXT_ENCODED_UTF16BOM;
+		mustRebuild = true;
+		encode();
+	}
 	return (long)_blob.GetLength();
 }
 
@@ -112,6 +126,7 @@ static u32 readSynchsafe(const BYTE *p)
 void CID3_Frame::load(BYTE* source, long size)
 {
 	const BYTE version = CTools::ID3V2oldTagVersion;
+	_loaded = true;
 	_discardOnTagAlter = statusFlag(flags, 0x8000, 0x4000);
 	_discardOnFileAlter = statusFlag(flags, 0x4000, 0x2000);
 	_readOnly = statusFlag(flags, 0x2000, 0x1000);
@@ -208,6 +223,11 @@ bool CID3_Frame::setData(BYTE *source, unsigned int maxLen)
 void CID3_Frame::storeFrame(CBlob *tmp)
 {
 	u32 id = CID3_FrameFactory::instance().findTagForVersion(_frameID);
+	if (id != F_NONE && !canStoreFor(CTools::ID3V2newTagVersion))
+	{
+		CTools::instance().writeWarning(L"frame '%s' ignored because its data cannot be converted into id3v2.%i", (LPCTSTR)getFrameIDString(), CTools::ID3V2newTagVersion);
+		return;
+	}
 	if (id != F_NONE)
 	{
 		const BYTE version = CTools::ID3V2newTagVersion;

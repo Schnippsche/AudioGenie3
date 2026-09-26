@@ -155,8 +155,13 @@ void CID3F_APIC::decode()
 			{
 				_isLink = true;
 				_pictureLink = _blob.getNextString(TEXT_ENCODED_ANSI, start);
-				FILE *tmpSource;
-				if ( (tmpSource = _wfsopen(_pictureLink, READ_ONLY, _SH_DENYNO)) != NULL)
+				// the link comes from the tag of the file: it is only followed if this is configured (LINKEDPICTURES)
+				FILE *tmpSource = NULL;
+				if (CTools::configValues[CONFIG_ID3V2LINKEDPICTURES] == 0)
+				{
+					// the link is kept, the picture is not loaded
+				}
+				else if ( (tmpSource = _wfsopen(_pictureLink, READ_ONLY, _SH_DENYNO)) != NULL)
 				{
 					_data.FileRead(_filelength(_fileno(tmpSource)), tmpSource);
 					fclose(tmpSource);

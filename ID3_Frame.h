@@ -48,6 +48,7 @@ public:
 	bool useTextEncoding;
 	// Frame header flags in a version independent form: read according to the version of the tag in the file (load), written
 	// according to the version of the new tag (storeFrame), so that a frame keeps its meaning when the tag version changes.
+	bool _loaded;                        // the frame was read from a file (load)
 	bool _discardOnTagAlter, _discardOnFileAlter, _readOnly, _grouped, _compressed, _encrypted, _hasDataLength, _unsyncResolved;
 	BYTE _groupId, _encryptionMethod;
 	u32 _dataLength;                     // decompressed size or data length indicator
@@ -72,6 +73,8 @@ public:
 	bool isDataLenIndicator();	
 	// the generic getters of CID3V2 check these before they use a frame as text or URL frame
 	virtual bool isTextFrame() { return false; }
+	// false if the frame cannot be written into a tag of this version, e.g. because its data have the layout of another version
+	virtual bool canStoreFor(BYTE version);
 	virtual bool isUrlFrame() { return false; }
 };
 

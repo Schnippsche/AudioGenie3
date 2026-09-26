@@ -86,6 +86,7 @@ public:
 	void storeFrames(CBlob *blob);
 	CAtlString getAllFrameIDs();
 	u32 calcTagSize();
+	void convertFramesForVersion();
 	void parseTags(CBlob* data);
 	bool isValid;
 	void ResetData();
