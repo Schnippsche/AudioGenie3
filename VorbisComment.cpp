@@ -1,0 +1,285 @@
+/* AudioGenie is a Library for analyzing and tagging audio files.
+   Copyright (C) 2001-2026
+   Stefan Toengi.
+   This file is part of the AudioGenie Library.
+   Contributed by Stefan Toengi.
+
+   The AudioGenie Library is free software; you can redistribute it and/or
+   modify it under the terms of the GNU Lesser General Public
+   License as published by the Free Software Foundation; either
+   version 2.1 of the License, or (at your option) any later version.
+
+   The AudioGenie Library is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   Lesser General Public License for more details.
+
+   You should have received a copy of the GNU Lesser General Public
+   License along with the AudioGenie Library; if not, see <http://www.gnu.org/licenses/>.
+*/
+
+// VorbisComment.cpp: implementation of class CVorbisComment.
+//
+//////////////////////////////////////////////////////////////////////
+
+#include "stdafx.h"
+#include "VorbisComment.h"
+#include "Tools.h"
+
+//////////////////////////////////////////////////////////////////////
+// Construction/Destruction
+//////////////////////////////////////////////////////////////////////
+
+CVorbisComment::CVorbisComment()
+{
+	_items.SetCount(0, 20);	
+}
+
+CVorbisComment::~CVorbisComment()
+{
+	ResetData();
+}
+
+void CVorbisComment::ResetData()
+{
+	Fields = 0;
+	VendorInfo = DEFAULT_VENDOR;
+	for (size_t i = 0; i < _items.GetCount(); i++)
+		delete _items.GetAt(i);
+	_items.RemoveAll();	
+}
+
+// fields of this size (bytes) are kept as they were read (all: a value that is not valid UTF-8 or larger than the text buffer must not change either)
+static const size_t RAW_FIELD_MIN_SIZE = 1;
+
+void CVorbisComment::BuildVorbisComments(CBlob &Data)
+{
+	/* Build Comments into Blob */
+	CBlob str;
+	int Index;
+	// Build Vorbis tag
+	Fields = 0;
+	content.Empty();
+	//int maxLen = VendorInfo.GetLength();
+	Fields = (int)_items.GetCount();
+	// vendor info and number of fields
+	str.AddEncodedString(TEXT_ENCODED_UTF8, VendorInfo, false,false);
+	Data.AddR4B((int)str.GetLength());
+	Data.AddBlob(str); 
+	Data.AddR4B(Fields);
+	// Write tag fields
+	if (Fields == 0)
+		return;
+	for (Index = 0; Index < Fields; Index++)
+	{
+		item = _items.GetAt(Index);	
+		str.Clear();
+		if (item->raw.GetLength() > 0)
+			str.AddBlob(item->raw);   // a large field that was not changed
+		else
+		{
+			content = item->key + L"=" + item->value;
+			str.AddEncodedString(TEXT_ENCODED_UTF8, content, false, false);
+		}
+		Data.AddR4B((int)str.GetLength());
+		Data.AddBlob(str);		
+	}
+}
+
+// the list of the comments as the specification defines it: vendor (length, UTF-8), number of the comments, the comments (length, UTF-8 "NAME=value")
+// Vorbis comments are UTF-8. Old encoders wrote them in the ANSI code page (for example German umlauts as ISO-8859-1): the text that is not valid
+// UTF-8 is converted as ANSI text (the field itself is kept as it was read, see structField) and does not count as an error.
+static CAtlString ConvertVorbisText(CBlob &blob)
+{
+	const int oldError = CTools::getLastError();
+	const CAtlString oldText = CTools::GetLastErrorText();
+	CAtlString text = blob.ConvertToUnicodeString(TEXT_ENCODED_UTF8);
+	if (text.IsEmpty() && blob.GetLength() > 0 && CTools::getLastError() == ERR_TEXTCONVERT)
+	{
+		CAtlString ansi = blob.ConvertToUnicodeString(TEXT_ENCODED_ANSI);
+		if (!ansi.IsEmpty())
+		{
+			CTools::restoreLastError(oldError, oldText);
+			return ansi;
+		}
+	}
+	return text;
+}
+
+void CVorbisComment::AnalyzeVorbisComments(const BYTE *data, size_t length)
+{
+	auto read32 = [&](size_t pos) -> size_t { return (size_t)data[pos] | ((size_t)data[pos + 1] << 8) | ((size_t)data[pos + 2] << 16) | ((size_t)data[pos + 3] << 24); };
+	size_t pos = 0;
+	if (length < 4)
+		return;
+	size_t len = read32(0);
+	pos = 4;
+	if (len > length - pos)
+		return;
+	CBlob tmpBlob;
+	tmpBlob.AddMemory(data + pos, len);
+	VendorInfo = ConvertVorbisText(tmpBlob);
+	pos += len;
+	if (length - pos < 4)
+		return;
+	const size_t count = read32(pos);
+	pos += 4;
+	Fields = (int)count;
+	for (size_t i = 0; i < count; i++)
+	{
+		if (length - pos < 4)
+			return;   // the data end
+		len = read32(pos);
+		pos += 4;
+		const bool truncated = (len > length - pos);
+		if (truncated)
+			len = length - pos;
+		// "NAME=value": the name has ASCII characters, so the separator is found in the bytes (a value that is larger than the text
+		// buffer cannot be converted, but the field must not get lost)
+		const BYTE *field = data + pos;
+		pos += len;
+		size_t separator = 0;
+		while (separator < len && field[separator] != '=')
+			separator++;
+		if (separator > 0 && separator < len)
+		{
+			item = new structField;
+			for (size_t k = 0; k < separator; k++)
+				item->key += (wchar_t)field[k];
+			tmpBlob.Clear();
+			tmpBlob.AddMemory(field + separator + 1, len - separator - 1);
+			item->value = ConvertVorbisText(tmpBlob);
+			if (len >= RAW_FIELD_MIN_SIZE)
+				item->raw.AddMemory(field, len);   // see structField
+			_items.Add(item);
+		}
+		if (truncated)
+			return;
+	}
+}
+
+bool CVorbisComment::IsValidKey(LPCWSTR key)
+{
+	if (key == NULL || key[0] == 0)
+		return false;
+	for (const wchar_t *c = key; *c != 0; c++)
+		if (*c < 0x20 || *c > 0x7D || *c == L'=')
+			return false;
+	return true;
+}
+
+void CVorbisComment::AnalyzeVorbisComments(FILE *Stream)
+{
+	long i, len = 0, Separator;
+	CBlob tmpBlob;
+	CAtlString temp;
+	// Vendor
+	tmpBlob.FileRead(4, Stream);
+	if (tmpBlob.GetLength() < 4)
+		return;
+	len = tmpBlob.GetR4B(0);
+	if (len < 0 || len > CTools::FileSize)
+		return;
+	tmpBlob.FileRead(len, Stream);
+	VendorInfo = tmpBlob.ConvertToUnicodeString(TEXT_ENCODED_UTF8);  
+	// continue with the number of fields
+	tmpBlob.FileRead(4, Stream);
+	if (tmpBlob.GetLength() < 4)
+		return;
+	Fields = tmpBlob.GetR4B(0);
+	if (Fields <= 0)
+		return;
+
+	for (i = 0; i < Fields ; i++)
+	{
+		tmpBlob.FileRead(4, Stream);
+		if (tmpBlob.GetLength() < 4) // end of file reached
+			return;
+		len = tmpBlob.GetR4B(0);
+		if (len < 0 || len > CTools::FileSize)
+			return;
+		tmpBlob.FileRead(len, Stream);
+		bool truncated = (tmpBlob.GetLength() < (size_t)len);
+		temp = tmpBlob.ConvertToUnicodeString(TEXT_ENCODED_UTF8);
+		if ((Separator = temp.Find(_T("="))) > 0)
+		{
+			item = new structField;
+			item->key = temp.Left(Separator);
+			item->value = temp.Mid(Separator + 1);
+			_items.Add(item);
+		}
+		if (truncated)
+			return;
+	} 
+}
+
+CAtlString CVorbisComment::GetUserItem(LPCWSTR key)
+{
+	CAtlString result;
+	size_t counts = _items.GetCount();
+	for (size_t i = 0; i < counts; i++)
+	{
+		item = _items.GetAt(i);
+		if (item->key.CompareNoCase(key) == 0)
+		{
+			if (result.GetLength() > 0)
+				result+=_T("|");
+			result+=item->value;
+		}
+	}
+	return result;
+}
+
+// Fields with the same name are allowed by the specification; setting a value replaces all of them, an empty value removes all of them.
+void CVorbisComment::SetUserItem(LPCWSTR key, LPCWSTR value)
+{
+	if (!IsValidKey(key))
+	{
+		CTools::instance().writeWarning(L"Vorbis comment '%s' ignored: a field name has the characters $20 to $7D without '='", key == NULL ? L"" : key);
+		return;
+	}
+	const bool empty = (value == 0 || wcslen(value) == 0);
+	bool found = false;
+	for (size_t i = 0; i < _items.GetCount(); )
+	{
+		item = _items.GetAt(i);
+		if (item->key.CompareNoCase(key) == 0)
+		{
+			if (!found && !empty)
+			{
+				if (item->value != value)
+				{
+					item->value = value;   // the first field is kept
+					item->raw.Clear();
+				}
+				found = true;
+				i++;
+				continue;
+			}
+			delete item;   // an empty value or another field of the same name
+			_items.RemoveAt(i);
+			continue;
+		}
+		i++;
+	}
+	if (found || empty)
+		return;
+	item = new structField;
+	item->key = key;
+	item->value = value;
+	_items.Add(item);
+}
+
+CAtlString CVorbisComment::GetAllKeys()
+{
+	CAtlString result;
+	/* search all stored fields for key */
+	size_t counts = _items.GetCount();
+	for (size_t i = 0; i < counts; i++)
+	{
+		if (result.GetLength() > 0)
+			result+=",";
+		result+=_items.GetAt(i)->key;		
+	}
+	return result;
+} 

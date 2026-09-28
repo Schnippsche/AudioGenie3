@@ -1,0 +1,15 @@
+# graphify: source code and tests only, no generated documentation, no audio fixtures, no third-party code
+docs/
+tests/fixtures/
+tests/fixtures_local/
+tests/third_party/
+tests/out/
+build-asan/
+*.bak
+*.bmp
+*.gif
+*.jpg
+*.png
+*.ico
+*.txt
+*.md

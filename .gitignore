@@ -1,0 +1,35 @@
+# Visual Studio / Build-Ausgaben
+.vs/
+ipch/
+Debug/
+Release/
+x64/
+*.obj
+*.pdb
+*.ilk
+*.iobj
+*.ipdb
+*.tlog/
+*.suo
+*.user
+*.aps
+*.VC.db
+*.VC.opendb
+_UpgradeReport_Files/
+
+# Test-Ausgaben
+tests/out/
+
+# Claude Code / graphify
+.claude/
+graphify-out/
+
+# Legacy artifacts in the example projects
+bin/
+obj/
+*.log
+_UpgradeReport.htm
+build-asan/
+AudioGenie3.asan.vcxproj
+tests/fixtures_local/
+doxygen-warnings.txt

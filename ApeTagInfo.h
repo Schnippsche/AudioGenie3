@@ -1,0 +1,52 @@
+/* AudioGenie is a Library for analyzing and tagging audio files.
+   Copyright (C) 2001-2026
+   Stefan Toengi.
+   This file is part of the AudioGenie Library.
+   Contributed by Stefan Toengi.
+
+   The AudioGenie Library is free software; you can redistribute it and/or
+   modify it under the terms of the GNU Lesser General Public
+   License as published by the Free Software Foundation; either
+   version 2.1 of the License, or (at your option) any later version.
+
+   The AudioGenie Library is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   Lesser General Public License for more details.
+
+   You should have received a copy of the GNU Lesser General Public
+   License along with the AudioGenie Library; if not, see <http://www.gnu.org/licenses/>.
+*/
+
+
+// ApeTagInfo.h: interface for class ApeTagInfo.
+//
+//////////////////////////////////////////////////////////////////////
+#pragma once
+
+#include "Blob.h"
+
+static const char *APE_ID = "APETAGEX";                                   // APE
+
+#define APE_TAG_FOOTER_SIZE  32                                // APE tag footer
+#define APE_TAG_HEADER_SIZE  32                                // APE tag header
+
+class CApeTagInfo
+{
+
+public:
+	CApeTagInfo()  { Reset(); };
+	~CApeTagInfo() {};
+	// Data structure
+	long Version;                                             // Tag version
+	long Size;                                                // Tag size including footer
+	long Fields;                                              // Number of fields
+	long Flags;                                               // Tag flags
+	// char Reserved[8];                                      // Reserved for later use
+	// methods
+	bool ReadFromFile(FILE *Stream);
+	//bool WriteToFile(FILE *Stream);
+	void WriteToBlob(CBlob &blob);
+	void Reset();	
+};
+

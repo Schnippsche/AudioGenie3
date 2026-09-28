@@ -1,0 +1,42 @@
+/* AudioGenie is a Library for analyzing and tagging audio files.
+   Copyright (C) 2001-2026
+   Stefan Toengi.
+   This file is part of the AudioGenie Library.
+   Contributed by Stefan Toengi.
+
+   The AudioGenie Library is free software; you can redistribute it and/or
+   modify it under the terms of the GNU Lesser General Public
+   License as published by the Free Software Foundation; either
+   version 2.1 of the License, or (at your option) any later version.
+
+   The AudioGenie Library is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   Lesser General Public License for more details.
+
+   You should have received a copy of the GNU Lesser General Public
+   License along with the AudioGenie Library; if not, see <http://www.gnu.org/licenses/>.
+*/
+
+#pragma once
+#include "wma_object.h"
+
+const IID CDECL WMA_FILE_PROPERTIES_ID =
+{ 0x8CABDCA1, 0xA947, 0x11CF, { 0x8E,0xE4,0x00,0xC0,0x0C,0x20,0x53,0x65 } };
+
+class CWMA_FileProperties:public CWMA_Object
+{
+public:
+	CWMA_FileProperties(void);
+	~CWMA_FileProperties(void);
+	bool load(FILE *Stream, size_t maxLen);	
+	long getBitRate() { return MaxBitrate / 1000; };
+	// the play duration (100 ns) contains the preroll (ms); a live stream (broadcast flag) has no duration
+	float getDuration() { const double d = PlayDuration / 10000000.0 - Preroll / 1000.0; return (d > 0.0 && (Flags & 1) == 0) ? (float)d : 0.0f; };
+	long getMaxBitRate() { return MaxBitrate; };
+	// the file size in the header changes with the size of the header
+	void addToFileSize(__int64 delta);
+private:
+	u64 PlayDuration, Preroll;
+	u32 Flags, MaxBitrate;
+};

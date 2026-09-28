@@ -1,0 +1,84 @@
+/** @defgroup AUDIO Generic audio functions
+ *  Analyze a file and read or write the common fields (title, artist, album ...) independent of the format. */
+
+/** @defgroup AAC AAC
+ *  Properties of AAC files (ADTS/ADIF). With ADTS the duration is the number of the frames (1024 samples per raw data block) divided by the sample rate,
+ *  with ADIF (no frame headers) it is estimated from the bit rate in the header. LATM/LOAS streams are not supported. */
+
+/** @defgroup APE APE tag
+ *  Read and write APEv2 tags (used by Monkey's Audio, WavPack, TTA, Musepack and AAC). */
+
+/** @defgroup FLAC FLAC
+ *  FLAC metadata: Vorbis comments and pictures. */
+
+/** @defgroup ID3V1 ID3v1 tag
+ *  Read and write the 128 byte ID3v1 tag. */
+
+/** @defgroup ID3V2 ID3v2 tag
+ *  Read and write ID3v2 tags (v2.2, v2.3, v2.4): text, URL, comment, lyrics, pictures, chapters and further frames. */
+
+/** @defgroup LYRICS Lyrics3 tag
+ *  Read and write Lyrics3 tags. */
+
+/** @defgroup MONKEY Monkey's Audio
+ *  Properties of Monkey's Audio (APE) files. */
+
+/** @defgroup MP4 MP4 / M4A
+ *  MP4 metadata (ilst atoms, pictures, iTunes frames). */
+
+/** @defgroup MPEG MPEG audio (MP1/MP2/MP3)
+ *  Properties of MPEG audio files.
+ *
+ *  <b>Variable bit rate (VBR):</b> the duration, the number of frames and the average bit rate of a VBR file are exact
+ *  if the file has a Xing or VBRI header. Without such a header they can only be estimated (the file is treated as
+ *  constant bit rate). The configuration value MPEGEXACTREAD (see SetConfigValueW(), set before AUDIOAnalyzeFileW())
+ *  makes the analysis read all frames, which gives exact values for these files, but takes much longer. */
+
+/** @defgroup MPP Musepack
+ *  Properties of Musepack files (stream versions 7, 7.1 and 8). With SV7 the duration is (frames - 1) * 1152 plus the last frame length of the header,
+ *  with SV8 the sample count of the stream header without the beginning silence. */
+
+/** @defgroup OGG Ogg Vorbis and Ogg Opus
+ *  Ogg Vorbis and Ogg Opus comments and stream properties (Opus files are reported with the format OGGOPUS = 13, sample rate 48000). In an Ogg file with video (Theora, VP8) the first Vorbis or Opus stream is read;
+ *  such a file is not written. Vorbis comments that are not valid UTF-8 are read as ANSI text and written back unchanged. */
+
+/** @defgroup UNIVERSAL Universal functions
+ *  Library-wide helpers such as version, MD5 and configuration. */
+
+/** @defgroup WAV WAV
+ *  RIFF/WAV info chunks, display and cart chunks. Files of 4 GB or more (RF64, EBU Tech 3306) are read and written; the format stays
+ *  RF64 once a file was read as one, even if it is small. RIFX, the big endian variant of RIFF used by old Mac/SGI tools, is also read
+ *  and written; the format stays RIFX once a file was read as one. */
+
+/** @defgroup WMA WMA
+ *  Windows Media Audio fields and pictures (ASF). The properties are those of the first audio stream; the duration is the play duration minus the
+ *  preroll (a live stream without a duration is estimated from the size and the bit rate). When the header grows, the file size in the file properties
+ *  is updated. Saving twice in a row without analyzing the file again keeps the extended fields (WM/Composer and the like) and large pictures. */
+
+/** @page picturetypes Picture types
+ *  Values for the picture type parameter of the picture functions (ID3v2 APIC types, also used by FLAC, MP4, WMA and others):
+ *
+ *  | Value | Meaning |
+ *  |---|---|
+ *  | 0 | Other |
+ *  | 1 | 32*32 pixels file icon |
+ *  | 2 | Other file icon |
+ *  | 3 | Cover front |
+ *  | 4 | Cover back |
+ *  | 5 | Leaflet page |
+ *  | 6 | Media (label side of CD) |
+ *  | 7 | Lead artist/soloist |
+ *  | 8 | Artist/Performer |
+ *  | 9 | Conductor |
+ *  | 10 | Band/Orchestra |
+ *  | 11 | Composer |
+ *  | 12 | Lyricist/text writer |
+ *  | 13 | Recording location |
+ *  | 14 | During recording |
+ *  | 15 | During performance |
+ *  | 16 | Movie/video screen capture |
+ *  | 17 | A bright coloured fish |
+ *  | 18 | Illustration |
+ *  | 19 | Band/artist logotype |
+ *  | 20 | Publisher/Studio logotype |
+ */

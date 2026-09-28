@@ -1,0 +1,25 @@
+var group___m_p4 =
+[
+    [ "MP4GetAllFrameIDsW", "group___m_p4.html#ga030536775633a34d7226adea7a32844c", null ],
+    [ "MP4GetTextFrameW", "group___m_p4.html#ga47007aeabe5c732a11bdb8db9027a081", null ],
+    [ "MP4SetTextFrameW", "group___m_p4.html#ga8deb6af40c4960a8d5676e5d5f618b1b", null ],
+    [ "MP4GetiTuneFrameW", "group___m_p4.html#ga329b21e7c73460e8b367e21459550914", null ],
+    [ "MP4SetiTuneFrameW", "group___m_p4.html#ga9fa878a77c2ba417f6c1c81baa7d0542", null ],
+    [ "MP4GetVersionW", "group___m_p4.html#ga32ffbadd3fcb9fa1aa0a42cfff414aa0", null ],
+    [ "MP4GetGenreW", "group___m_p4.html#ga8e9ccb18e0c7c12aead15d69045408e5", null ],
+    [ "MP4SetGenreW", "group___m_p4.html#ga7edc510c47b0c686e4d567e4fa63b45e", null ],
+    [ "MP4GetPictureCountW", "group___m_p4.html#ga1365aa06ff288cdafcbe0a3a35fb9029", null ],
+    [ "MP4GetTrackW", "group___m_p4.html#ga3c8a19042b9af2164253b53b1036fb78", null ],
+    [ "MP4SetTrackW", "group___m_p4.html#ga1124f8a596d1e37c0bbac09664de34c8", null ],
+    [ "MP4GetPictureFileW", "group___m_p4.html#ga372f577a6d783affcee908f52714f334", null ],
+    [ "MP4GetPictureArrayW", "group___m_p4.html#gabaed201e3db54ba902d9aa716ecb9f84", null ],
+    [ "MP4GetPictureMimeW", "group___m_p4.html#ga395eb40071f3b0d9e8bb67937fde5e58", null ],
+    [ "MP4GetPictureSizeW", "group___m_p4.html#ga6e5719751c9f35b7c3e4bf28e6ebe5b3", null ],
+    [ "MP4AddPictureArrayW", "group___m_p4.html#gaacb62de3d184abfc79af73825fb0091e", null ],
+    [ "MP4AddPictureFileW", "group___m_p4.html#ga0de7c8ef909c11f18c6753e6752f612c", null ],
+    [ "MP4DeletePicturesW", "group___m_p4.html#ga1a8fb5e3b8f50bd57675474d659774f2", null ],
+    [ "MP4DeletePictureW", "group___m_p4.html#gaf38903d37c657c8262d3c23cc7198b64", null ],
+    [ "MP4DeleteEntriesW", "group___m_p4.html#gabb6d0f98c2b26c77943656a5b4f9f11b", null ],
+    [ "MP4SaveChangesToFileW", "group___m_p4.html#ga10121b58156bb2d5e57a17555628266e", null ],
+    [ "MP4SaveChangesW", "group___m_p4.html#gaf2f2039850b756790a41afd26ba34106", null ]
+];

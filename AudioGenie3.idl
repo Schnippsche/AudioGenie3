@@ -1,0 +1,18 @@
+// AudioGenie3.idl : IDL source for AudioGenie3
+//
+
+// This file is processed by the MIDL tool
+// to generate the type library (AudioGenie3.tlb) and the marshalling code.
+
+import "oaidl.idl";
+import "ocidl.idl";
+
+[
+	uuid(6108400A-D5CA-46E4-950F-915F3AC12341),
+	version(1.0),
+	helpstring("AudioGenie3 1.0-Typbibliothek")
+]
+library AudioGenie3Lib
+{
+	importlib("stdole2.tlb");
+};

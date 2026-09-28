@@ -1,0 +1,65 @@
+/* AudioGenie is a Library for analyzing and tagging audio files.
+   Copyright (C) 2001-2026
+   Stefan Toengi.
+   This file is part of the AudioGenie Library.
+   Contributed by Stefan Toengi.
+
+   The AudioGenie Library is free software; you can redistribute it and/or
+   modify it under the terms of the GNU Lesser General Public
+   License as published by the Free Software Foundation; either
+   version 2.1 of the License, or (at your option) any later version.
+
+   The AudioGenie Library is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   Lesser General Public License for more details.
+
+   You should have received a copy of the GNU Lesser General Public
+   License along with the AudioGenie Library; if not, see <http://www.gnu.org/licenses/>.
+*/
+
+#pragma once
+#include "Blob.h"
+#include "atlcoll.h"
+
+typedef unsigned __int32  u32;
+typedef unsigned __int64  u64;
+
+class CMP4Atom
+{
+public:
+	CMP4Atom(void);
+	CMP4Atom(unsigned int frameID);
+	virtual ~CMP4Atom(void);   // is deleted through a base pointer (CMP4_Container::remove)
+	virtual CMP4Atom* copy();
+	virtual CMP4Atom* find(CAtlString atomID);
+	void init(unsigned int frameID);
+	virtual u64 getSize();
+	CBlob _blob;
+	CAtlString _txtid;
+	void print();
+	virtual void replaceAtom(CMP4Atom* atom) { atom; } ;
+	virtual void load(FILE *stream, u64 offset, u64 size);
+	virtual void save(FILE *stream);
+	virtual void Empty();
+	virtual void remove() { };
+	virtual bool removeAtom(CAtlString atomID);
+	virtual void addAtom(CMP4Atom* atom)  { atom; } ;
+	virtual bool removeAtom(CMP4Atom* atom);
+	CAtlString getId();
+	void setParent(CAtlString parent);
+	void setFrameID(unsigned int frameID);
+	void setParent(CMP4Atom* parentAtom) { _parentAtom = parentAtom; };
+	CMP4Atom* getParent() { return _parentAtom; };
+	CAtlString getPath();
+	u32 getFrameID() { return _frameID; };
+	u32 getDataLen();
+	u32 getVersion();
+	bool _extended;		// the box has a 64 bit size (header of 16 bytes)
+	u32 headerSize() { return _extended ? 16 : 8; }
+	CAtlString _parent;
+	CMP4Atom* _parentAtom;
+	CAtlArray<CMP4Atom *> _children;
+private:
+	unsigned int _frameID;
+};

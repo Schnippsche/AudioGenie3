@@ -1,0 +1,112 @@
+/* AudioGenie is a Library for analyzing and tagging audio files.
+   Copyright (C) 2001-2026
+   Stefan Toengi.
+   This file is part of the AudioGenie Library.
+   Contributed by Stefan Toengi.
+
+   The AudioGenie Library is free software; you can redistribute it and/or
+   modify it under the terms of the GNU Lesser General Public
+   License as published by the Free Software Foundation; either
+   version 2.1 of the License, or (at your option) any later version.
+
+   The AudioGenie Library is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   Lesser General Public License for more details.
+
+   You should have received a copy of the GNU Lesser General Public
+   License along with the AudioGenie Library; if not, see <http://www.gnu.org/licenses/>.
+*/
+
+
+/* FLAC.h          for use with FLAC.cpp                                      */
+/* by Stefan Toengi (c) 2003                                                  */
+#pragma once
+
+#include "Blob.h"
+#include "Audio.h"
+#include "vorbiscomment.h"
+#include "FlacCover.h"
+#include "atlcoll.h"
+
+typedef unsigned __int32  u32;
+
+static const char* FLAC_ID = "fLaC";
+
+#define METADATA_BLOCK_STREAMINFO 0
+#define METADATA_BLOCK_PADDING 1
+#define METADATA_BLOCK_APPLICATION 2
+#define METADATA_BLOCK_SEEKTABLE 3
+#define METADATA_BLOCK_COMMENT 4
+#define METADATA_BLOCK_CUESHEET 5
+#define METADATA_BLOCK_PICTURE 6
+
+struct strBlockHeader
+{
+  bool lastBlock;
+  BYTE Type;
+  int Size;
+};
+
+class CFLAC : public CAudio, public CVorbisComment
+{
+private:
+  CBlob Daten, neu;
+  CBlob BlockStreamInfo, BlockComment, BlockOther, BlockCover;
+  BYTE tmpHdr[4];
+  int Channels;
+  long SampleRate;
+  int BitsPerSample;
+  __int64 Samples;                                 // total number of samples (36 bits in the STREAMINFO)
+  int minBlockSize;
+  int maxBlockSize;
+  long minFrameSize;
+  long maxFrameSize;
+  long VendorLength;
+  long anzComments;
+  long oldLen;
+  __int64 firstAudioPosition;
+  bool mustRebuild;
+  bool metadataComplete;                              // the metadata blocks were read up to the last block
+  bool commentRead;                                // the first Vorbis comment block was read
+  strBlockHeader BlockHeader;
+  bool ReadBlockHeader(FILE *Stream);
+  bool ReadBlock(FILE *Stream, bool first);
+  __int64 SamplesOfLastFrame(FILE *Stream);
+  void AnalyzeComment();
+  void AnalyzeStreamInfo();
+  void BuildComment();
+  bool CurrentMetadataSize(LPCWSTR FileName, long &size);
+  bool RebuildFile(LPCWSTR FileName);
+  bool ReplaceTag(LPCWSTR FileName);
+  void BuildBlockHeader(int Len, BYTE typ);
+  bool BuildFrame(bool withComment);
+public:
+  CFLAC();
+  virtual ~CFLAC();
+  void ResetData();
+  bool ReadFromFile(FILE *Stream);
+  bool SaveToFile(LPCWSTR FileName);
+  bool IsValid();
+  CAtlArray<CFlacCover *> covers;
+  long GetBitRate();
+  float GetDuration();
+  float GetRatio();
+  void DeletePictures();
+  bool DeletePicture(short Index);
+  CFlacCover* GetCover(short Index);
+  bool Exists()                     { return (anzComments > 0); };
+  long GetChannels()                { return Channels;      };
+  long GetSampleRate()              { return SampleRate;    };
+  int GetBitsPerSample()            { return BitsPerSample; };
+  long GetSamples()                 { return Samples > 0x7FFFFFFF ? 0x7FFFFFFF : (long)Samples; };   /* the API has 32 bit */
+  int GetMinBlockSize()             { return minBlockSize;  };
+  int GetMaxBlockSize()             { return maxBlockSize;  };
+  long GetMinFrameSize()            { return minFrameSize;  };
+  long GetMaxFrameSize()            { return maxFrameSize;  };  
+  CAtlString GetTagVersion()        { return EMPTY;         };
+  __int64 GetFirstAudioPosition()      { return firstAudioPosition; };
+  short GetPictureCount()			{ return (short)covers.GetCount();  };  
+  bool replaceCover(CFlacCover *cover);
+  
+};

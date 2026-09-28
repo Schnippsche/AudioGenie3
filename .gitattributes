@@ -1,0 +1,61 @@
+# Line endings: text is stored with LF in the repository and checked out as CRLF on Windows.
+* text=auto
+
+# Always check out Windows sources and batch files with CRLF (VB6 files, batch and Visual Studio require it)
+*.cpp  text eol=crlf
+*.h    text eol=crlf
+*.c    text eol=crlf
+*.def  text eol=crlf
+*.idl  text eol=crlf
+*.rc   text eol=crlf
+*.bas  text eol=crlf
+*.cls  text eol=crlf
+*.frm  text eol=crlf
+*.vbp  text eol=crlf
+*.vb   text eol=crlf
+*.cs   text eol=crlf
+*.pas  text eol=crlf
+*.bat  text eol=crlf
+*.ps1  text eol=crlf
+*.vcxproj text eol=crlf
+*.filters text eol=crlf
+*.slnx text eol=crlf
+
+# Scripts and documentation: LF
+*.py   text eol=lf
+*.md   text eol=lf
+
+# Configuration files and the license text: LF
+.editorconfig text eol=lf
+.gitattributes text eol=lf
+.gitignore text eol=lf
+.graphifyignore text eol=lf
+Doxyfile text eol=lf
+LICENSE text eol=lf
+
+# Binaerdateien nie umwandeln (Audio-Fixtures, Bibliotheken, Bilder, Archive)
+*.dll binary
+*.lib binary
+*.exe binary
+*.obj binary
+*.zip binary
+*.bmp binary
+*.gif binary
+*.jpg binary
+*.png binary
+*.ico binary
+*.mp3 binary
+*.wav binary
+*.flac binary
+*.ogg binary
+*.m4a binary
+*.wma binary
+*.wv binary
+*.tta binary
+*.ape binary
+*.mpc binary
+*.aac binary
+*.bin binary
+
+# Generated Doxygen documentation: store unchanged, mark as generated in diffs
+docs/** -text linguist-generated

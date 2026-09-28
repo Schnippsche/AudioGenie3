@@ -1,0 +1,102 @@
+/* AudioGenie is a Library for analyzing and tagging audio files.
+   Copyright (C) 2001-2026
+   Stefan Toengi.
+   This file is part of the AudioGenie Library.
+   Contributed by Stefan Toengi.
+
+   The AudioGenie Library is free software; you can redistribute it and/or
+   modify it under the terms of the GNU Lesser General Public
+   License as published by the Free Software Foundation; either
+   version 2.1 of the License, or (at your option) any later version.
+
+   The AudioGenie Library is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   Lesser General Public License for more details.
+
+   You should have received a copy of the GNU Lesser General Public
+   License along with the AudioGenie Library; if not, see <http://www.gnu.org/licenses/>.
+*/
+
+#include "StdAfx.h"
+#include "MP4_MainContainer.h"
+#include "mp4_atomfactory.h"
+#include "mp4atom.h"
+
+CMP4_MainContainer::CMP4_MainContainer(void)
+{
+	setFrameID(0);
+	_parent = EMPTY;
+}
+
+CMP4_MainContainer::~CMP4_MainContainer(void)
+{
+	remove();
+}
+
+CMP4Atom* CMP4_MainContainer::find(CAtlString atomID, int count)
+{
+	CMP4_AtomFactory::count = count;
+	CMP4Atom *atom = NULL;
+	size_t counts = _children.GetCount(); 
+	for (size_t i = 0; i < counts; i++)
+	{
+		atom = _children[i]->find(atomID);
+		if (atom != NULL)
+			return atom;
+	}
+	return NULL;
+}
+
+void CMP4_MainContainer::adjustPadding(__int64 size)
+{
+	// size = payload of the padding box (the box has 8 bytes more); negative: no padding wanted, delete the padding atom
+	if (size < 0)
+	{
+		this->removeAtom(L"free");
+		return;
+	}
+	// look for a padding atom and adjust it if present
+	// otherwise create a new padding atom
+	CMP4Atom* atom = find(_T("free"));
+	if (atom != NULL)
+	{
+		atom->_blob.AddValue(0, (size_t)size);
+		return;
+	}
+	// no padding present, create a new one
+	// look for the mdat container and put the padding in front of it
+	size_t counts = _children.GetCount();
+	for (size_t i = 0; i < counts; i++)
+	{
+		atom = _children[i]->find(_T("mdat"));
+		if (atom != NULL)
+		{
+			atom = CMP4_AtomFactory::instance()->createAtom('free');
+			atom->_blob.AddValue(0, (size_t)size);
+			_children.InsertAt(i, atom);
+			return;
+		}
+	}
+}
+
+void CMP4_MainContainer::save(FILE *stream)
+{
+	size_t counts = _children.GetCount();
+	for (size_t i = 0; i < counts; i++)
+	{
+		_children[i]->save(stream);		
+	}	
+}
+
+void CMP4_MainContainer::checkMetaBox()
+{
+// checks whether a meta box exists; if not, a meta box and an hdlr box (mandatory box) are created
+	CMP4Atom* atom;
+	if (find(_T("moov.udta.meta")) == NULL)
+	{
+		atom = CMP4_AtomFactory::instance()->createAtom(MP4_HDLR);
+		atom->setParent(_T("moov.udta.meta"));
+		addAtom(atom);
+	}
+}
