@@ -114,10 +114,13 @@ TEST_CASE("MPEG: VBR file without header: exact read counts all frames", "[mpeg]
     auto p = writeTemp("vbr_noheader.mp3", makeVbrWithoutHeader(rounds));
     const double exactDuration = 3 * rounds * 1152.0 / 44100.0;
 
-    {   // normal: treated as CBR with the bit rate of the first frame (64 kbit/s)
+    {   // normal: the changing bit rate at the start of the file is noticed, so the frames are counted as well
         ExactRead off(false);
         REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
-        CHECK(AUDIOGetBitrateW() == 64);
+        CHECK(MPEGIsVBRW() != 0);
+        CHECK(MPEGGetFramesW() == 3 * rounds);
+        CHECK(AUDIOGetBitrateW() == 128);
+        CHECK(AUDIOGetDurationW() == Catch::Approx(exactDuration).margin(0.05));
     }
     {
         ExactRead on(true);

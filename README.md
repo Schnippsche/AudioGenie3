@@ -129,11 +129,14 @@ type must be marshalled as `BStr`, otherwise the process crashes on x64. The wra
 ### MP3 files with a variable bit rate (VBR)
 
 The duration, the number of frames and the average bit rate of an MP3 file are exact if the file has a Xing or VBRI
-header, and for files with a constant bit rate (CBR) that have no additional data after the audio. A VBR file **without**
-such a header can only be estimated from its size and the bit rate of the first frame, and is then treated as CBR; the
-same estimate is too long for a CBR file with junk after the last frame.
+header, and for files with a constant bit rate (CBR). Data after the last frame (up to 128 KB of junk or tags that are not
+recognized) is found without reading the whole file and does not count. If a Xing or VBRI header does not match the file
+(for example after cutting), the frames are counted. A VBR file **without** such a header can only be estimated from its
+size and the bit rate of the first frame; such a file is noticed if the bit rate differs between the first and the last frames
+(they are read anyway): then all frames are counted and `MPEGIsVBRW()` returns -1. A bit rate that changes only in the middle
+of the file is not noticed (the file is treated as CBR).
 
-For such files set the configuration value `MPEGEXACTREAD` **before** the analysis:
+To get exact values for every file set the configuration value `MPEGEXACTREAD` **before** the analysis:
 
 ```cpp
 SetConfigValueW(0, 1);                    // key 0 = MPEGEXACTREAD
@@ -169,6 +172,7 @@ repeatedly, keep the results in your application and analyze only new or changed
 |---|---|---|
 | MPEG frame scan (`MPEGEXACTREAD`) | The file is read in 64 KB blocks instead of one read per frame; the scan stops in front of the tags at the end of the file (data that is not a frame was skipped byte by byte, including a large APE tag); the properties of the first frame are kept | 40 MB of frames: 181 ms -> 6 ms; 1 MB of non-frame data at the end: 446 ms -> about 1 ms |
 | MPEG frame scan | With `MPEGEXACTREAD` the counted frames are used for CBR files too | correct length of files with data after the last frame |
+| MPEG duration without Xing/Info header | Encoders that never set the padding bit (11 % of the test library, frames 417 instead of 417.96 bytes) are recognized in the first frames; the frames are counted by their length instead of the bit rate. The end of the last frames is searched in the block at the end of the file that was read anyway (up to 128 KB more only if it has no frames); a VBR header that does not match the file counts all frames; a different bit rate in the blocks at the start and at the end of the file (VBR without header, 0.2 % of the files) counts all frames too; the frame scan only counts frames that are followed by the next frame, so junk no longer adds frames or makes a constant bit rate file VBR (70 of 7335 files); a single frame with a damaged header between two valid frames does not interrupt the frames but is not counted | files with up to 128 KB of data after the last frame no longer 0.5 s too long (1.7 % of a 7300 file library); 7335 MP3 files: 910 -> 37 files with a duration error above 0.1 s, 26 -> 5 above 1 s; about 1.8 us (2.5 %) more per file |
 | MD5 (`AUDIOGetMD5ValueW`, `GetMD5ValueFromFileW`) | All blocks of a read are processed in one call, the words are read directly, 64 KB read blocks | 560 -> 670 MB/s |
 | MD5 | Round 2 with delayed addition (shorter dependency chain) | 670 -> 745 MB/s (5 MB song: about 7 ms) |
 

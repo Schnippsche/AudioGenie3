@@ -724,7 +724,8 @@ extern "C" long __stdcall AUDIOGetChannelsW()
 /**
  * @brief get the duration in seconds
  *
- * For MPEG audio files with a variable bit rate (VBR) the value is only exact if the file has a Xing or VBRI header
+ * For MPEG audio files with a variable bit rate (VBR) the value is only exact if the file has a Xing or VBRI header,
+ * if the bit rate differs between the first and the last frames of the file (then all frames are counted automatically)
  * or if the configuration value MPEGEXACTREAD was set before the analysis, see SetConfigValueW().
  *
  * @ingroup AUDIO
@@ -765,7 +766,8 @@ extern "C" long __stdcall AUDIOGetSampleRateW()
  * @brief get the bit rate in kbps
  *
  * For MPEG audio files with a variable bit rate (VBR) this is the average bit rate. It is only exact if the file has a
- * Xing or VBRI header or if the configuration value MPEGEXACTREAD was set before the analysis, see SetConfigValueW().
+ * Xing or VBRI header, if the bit rate differs between the first and the last frames of the file (then all frames are
+ * counted automatically) or if the configuration value MPEGEXACTREAD was set before the analysis, see SetConfigValueW().
  *
  * @ingroup AUDIO
  * @since 2.0.1.0
@@ -1999,7 +2001,7 @@ extern "C" long __stdcall MPEGGetFrameSizeW()
  * file at the time of the encoding: if its number of bytes does not match the audio data (an Info header: at most 0.5 % of
  * difference, and the frames have to fit to the bytes; a Xing or VBRI header: at most 25 %) the file was changed afterwards and the
  * header is not used. Without a usable header the value is calculated from the file size (exact for constant bit rate files without
- * additional data after the audio). If the configuration value MPEGEXACTREAD was set
+ * additional data of more than 128 KB after the audio). If the configuration value MPEGEXACTREAD was set
  * before the analysis, the frames are counted one by one and the value is exact in every case, see SetConfigValueW().
  *
  * @ingroup MPEG
@@ -4681,9 +4683,13 @@ extern "C" short __stdcall ID3V2GetEncodingW(u32 FrameID)
  *
  * By default the duration, the number of frames and the bit rate are taken from a Xing or VBRI header, if the file has one.
  * For files without such a header they are calculated from the file size and the bit rate of the first frame. This is exact
- * for files with a constant bit rate (CBR) unless there is additional data after the last frame, which makes the duration
- * too long. For files with a variable bit rate (VBR) that lack the header, the values are only an estimate, and the file
- * is treated as CBR (MPEGIsVBRW() returns 0).
+ * for files with a constant bit rate (CBR); an encoder that never sets the padding bit is recognized from the first frames and
+ * the frames are counted by their length. Additional data after the last frame (up to 128 KB, junk or tags that are not
+ * recognized) is found without reading the whole file; if there is more, the duration is too long. A file with a variable
+ * bit rate (VBR) that lacks the header is noticed if the bit rate differs between the first frames and the last frames of the
+ * file (they are read anyway): then all frames are counted as with MPEGEXACTREAD (MPEGIsVBRW() returns -1). If the bit rate
+ * changes only in the middle of the file it is not noticed: the values are an estimate and the file is treated as CBR
+ * (MPEGIsVBRW() returns 0).
  *
  * With MPEGEXACTREAD not equal to 0 the analysis reads the whole file frame by frame instead:
  * - MPEGGetFramesW(), AUDIOGetDurationW() and AUDIOGetBitrateW() are exact for VBR files, even without a header,
@@ -4695,12 +4701,16 @@ extern "C" short __stdcall ID3V2GetEncodingW(u32 FrameID)
  *   for a large collection on a slow disk or a network drive. Without the setting only a few small blocks at the
  *   beginning and at the end of the file are read, regardless of the file size.
  * - Data that is not an MPEG frame (for example damaged parts) is skipped byte by byte; the tags at the end of the file
- *   (ID3v1, Lyrics3, APE) are not scanned.
+ *   (ID3v1, Lyrics3, APE) are not scanned. A frame only counts if the next frame follows at the calculated distance (or it
+ *   is the last one) and if it has the version, layer and sample rate of the first frame, so junk that contains bytes like a
+ *   frame header neither adds frames nor makes a constant bit rate file variable. A single frame with a damaged header (bit
+ *   errors in the sync bits) between two valid frames does not interrupt the frames but is not counted.
  * - The properties of the first frame (padding, private, copyright and original bit, channel mode extension) are
  *   kept; they are not overwritten by the last frame.
  *
- * Recommendation: leave the setting off for scanning large collections. Switch it on if the duration of VBR files
- * without a header must be correct, e.g. before you show or compare durations.
+ * Recommendation: leave the setting off for scanning large collections, the automatic detection described above is
+ * enough for nearly all files. Switch it on if the duration and the bit rate must be exact for every file, e.g. before
+ * you show or compare durations.
  *
  * @ingroup UNIVERSAL
  * @since 2.0.1.0

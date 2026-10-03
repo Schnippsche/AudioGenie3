@@ -56,6 +56,13 @@ void CMPEGAudio::ResetData()
 	totalBitrate = 0;
 	secPerFrame = 0;
 	scannedFrames = 0;
+	// state of the estimate without Xing/Info/VBRI header: data behind the last frame, rejected header, padding, bit rates at the start and at the end
+	trailingBytes = 0;
+	headerFrameSeen = false;
+	headerRejectedVbr = false;
+	noPadding = false;
+	headBitrates = 0;
+	tailBitrates = 0;
 	firstAudioPos = 0;
 	lastAudioPos = 0;
 	Encoder.Empty();
@@ -418,7 +425,8 @@ long CMPEGAudio::GetBitRate()
 	}
 	if (FVBR.Found && FVBR.Frames > 0)
 	{
-		if (CTools::configValues[CONFIG_MPEGEXACTREAD] != 0)
+		// the frames were counted: with MPEGEXACTREAD, or by the automatic scan (VBR header that does not match the file, changing bit rate)
+		if (CTools::configValues[CONFIG_MPEGEXACTREAD] != 0 || scannedFrames > 0)
 		{
 			if (totalBitrate > 0 && FVBR.Frames > 0)
 				return totalBitrate / FVBR.Frames;
@@ -452,7 +460,8 @@ long CMPEGAudio::GetFrames()
 		return FVBR.Frames;
 	else
 	{
-		MPEGSize = CTools::FileSize - CTools::ID3v1Size - StartPosition - CTools::LyricsSize - CTools::APESize;
+		// without the data behind the last frame (trailingBytes, found without a frame scan)
+		MPEGSize = CTools::FileSize - CTools::ID3v1Size - StartPosition - CTools::LyricsSize - CTools::APESize - trailingBytes;
 		tmp = (float)MPEGSize / float(GetFrameLength()) + 0.9f;
 		return long( tmp );
 	}
@@ -469,7 +478,11 @@ float CMPEGAudio::GetDuration()
 		return (float)(scannedFrames * secPerFrame);
 	if (FVBR.Found && FVBR.Frames > 0)
 		return (float) FVBR.Frames * GetSamplesPerFrame() / GetSampleRate();
-	MPEGSize = CTools::FileSize - CTools::ID3v1Size - Frame.FramePosition - CTools::LyricsSize - CTools::APESize;
+	// without the data behind the last frame (trailingBytes, found without a frame scan)
+	MPEGSize = CTools::FileSize - CTools::ID3v1Size - Frame.FramePosition - CTools::LyricsSize - CTools::APESize - trailingBytes;
+	// an encoder without padding writes frames that are shorter than the bit rate says: the duration follows from the number of frames
+	if (noPadding && Frame.FrameSize > 0 && GetSampleRate() > 0)
+		return (float)((double)MPEGSize / Frame.FrameSize * GetSamplesPerFrame() / GetSampleRate());
 	return float(MPEGSize) / float(GetBitRate()) / 125.0f;
 }
 
@@ -652,6 +665,7 @@ bool CMPEGAudio::FindFrame()
 				Frame.Found = true;
 				Frame.FramePosition = StartPosition + (long)Iterator;
 				Frame.FrameSize = GetFrameLength();
+				CheckPadding(Iterator, Data);   // padding bit and bit rates of the frames in this block
 				Frame.Xing = IsXing(Iterator + 4, Data);
 				// a CRC (2 bytes) is between the header and the side information if the protection bit is 0; some encoders clear the bit
 				// without writing a CRC, so the position without the CRC is checked as well
@@ -669,8 +683,14 @@ bool CMPEGAudio::FindFrame()
 				else
 					FindVBRI(Iterator + 4 + 32, Data);
 				// a header that does not match the audio data is not used
+				// the first frame carries the header: the frame scan must not count it as an audio frame, even if the header is not used
+				if (FVBR.Found)
+					headerFrameSeen = true;
 				if (FVBR.Found && !IsHeaderPlausible())
+				{
+					headerRejectedVbr = !FVBR.Cbr;   // for a VBR file the size says nothing: ReadFromFile counts the frames
 					memset(&FVBR, 0, sizeof(FVBR));
+				}
 				break;
 			}
 		}
@@ -719,16 +739,29 @@ bool CMPEGAudio::ReadFromFile(FILE *Stream)
 	/* Search for vendor ID at the end if CBR encoded */
 	if (Frame.Found)
 	{ 
+		// without the frame scan, the block at the end of the file also shows data behind the last frame
+		bool scanAll = CTools::configValues[CONFIG_MPEGEXACTREAD] != 0 || headerRejectedVbr;
 		if (!FVBR.Found)
 		{
 			vendorValues.Clear();
 			if (_fseeki64(Stream, -DATASIZE - CTools::ID3v1Size - CTools::LyricsSize, SEEK_END) != 0)
 				_fseeki64(Stream, 0, SEEK_SET); // file is smaller than the search range
+			const __int64 tailStart = _ftelli64(Stream);
 			vendorValues.FileRead(DATASIZE, Stream);
+			if (!scanAll)
+			{
+				FindTrailingBytes(Stream, tailStart);
+				// a different bit rate at the start and at the end (or inside the blocks): a VBR file without header. The size and the bit rate
+				// of the first frame say nothing about its duration, so the frames are counted (only about 0.2 % of the files)
+				const unsigned long bitrates = headBitrates | tailBitrates;
+				if ((bitrates & (bitrates - 1)) != 0)
+					scanAll = true;
+			}
 		}
 		GetInternEncoder();
 
-		if (CTools::configValues[CONFIG_MPEGEXACTREAD] != 0)
+		// MPEGEXACTREAD, a VBR header that does not match the file (cut, joined) or a bit rate that changes: all frames are counted
+		if (scanAll)
 			ReadAllFrames(Stream);
 		return true;
 	}
@@ -793,32 +826,174 @@ bool CMPEGAudio::IsValid()
 		Frame.EmphasisID != MPEG_EMPHASIS_UNKNOWN);
 }
 
+// A constant bit rate encoder has to set the padding bit in a part of the frames, so that the average frame length is the one of the bit
+// rate (for example 417.96 bytes at 128 kbit/s and 44.1 kHz). Some encoders never set it: all frames are 417 bytes and the size says
+// 0.2 % too much duration. Following the frames at the start of the data shows this: if the frames would have to be padded (the
+// fraction of the frame length times the number of frames is more than 1.5) but none is, the encoder does not use the padding bit.
+void CMPEGAudio::CheckPadding(long start, BYTE Data[])
+{
+	const tagFrameData first = Frame;   // DecodeHeader overwrites Frame
+	long p = start;
+	int count = 0;
+	bool padded = false;
+	noPadding = false;
+	headBitrates = 0;
+	while (p + 4 <= DATASIZE)
+	{
+		BYTE header[4];
+		memcpy(header, Data + p, 4);
+		if (!IsFrameHeader(header) || ((header[1] >> 3) & 3) != first.VersionID || ((header[1] >> 1) & 3) != first.LayerID || ((header[2] >> 2) & 3) != first.SampleRateID)
+			break;
+		DecodeHeader(header);
+		headBitrates |= 1ul << Frame.BitRateID;
+		if (Frame.PaddingBit)
+			padded = true;
+		const long frameLength = GetFrameLength();
+		if (frameLength < 1)
+			break;
+		count++;
+		p += frameLength;
+	}
+	Frame = first;
+	if (padded || count < 2 || GetSampleRate() <= 0)
+		return;
+	// frame length from the bit rate (layer 1: slots of 4 bytes) and the part behind the decimal point
+	const double slot = (Frame.LayerID == MPEG_LAYER_I) ? 4.0 : 1.0;
+	const double exact = (Frame.LayerID == MPEG_LAYER_I ? 12000.0 : (double)GetCoefficient() * 1000.0) * GetBitRateID() / GetSampleRate();
+	const double fraction = (exact - (long)exact) * slot;
+	if (fraction * count >= 1.5)
+		noPadding = true;
+}
+
+// Searches a buffer for the last run of at least 3 consecutive frames with the version, layer and sample rate of the first frame.
+// Returns the absolute position behind the run, -1 if there is no run. openEnd: the run reaches the end of the buffer.
+__int64 CMPEGAudio::LastFrameRunEnd(const BYTE *buffer, size_t length, __int64 bufferStart, bool &openEnd, unsigned long &bitrates)
+{
+	const tagFrameData first = Frame;   // DecodeHeader overwrites Frame
+	__int64 result = -1;
+	size_t i = 0;
+	openEnd = false;
+	bitrates = 0;
+	while (i + 4 <= length)
+	{
+		if (buffer[i] != 0xFF || (buffer[i + 1] & 0xE0) != 0xE0)
+		{
+			i++;   // no sync bits: the quick test is enough for most bytes
+			continue;
+		}
+		size_t p = i;
+		int count = 0;
+		bool open = false;
+		unsigned long runBitrates = 0;
+		for (;;)
+		{
+			if (p + 4 > length)
+			{
+				open = true;
+				break;
+			}
+			BYTE header[4];
+			memcpy(header, buffer + p, 4);
+			if (!IsFrameHeader(header) || ((header[1] >> 3) & 3) != first.VersionID || ((header[1] >> 1) & 3) != first.LayerID || ((header[2] >> 2) & 3) != first.SampleRateID)
+				break;
+			DecodeHeader(header);
+			const long frameLength = GetFrameLength();
+			if (frameLength < 1)
+				break;
+			runBitrates |= 1ul << Frame.BitRateID;
+			count++;
+			p += frameLength;
+		}
+		if (count >= 3)
+		{
+			result = bufferStart + (__int64)(p < length ? p : length);
+			openEnd = open;
+			bitrates = runBitrates;
+			if (open)
+				break;
+			i = p;
+		}
+		else
+			i++;
+	}
+	Frame = first;
+	return result;
+}
+
+// Without Xing, Info or VBRI header the duration is estimated from the size of the audio data. Data behind the last frame (junk, tags
+// that are not recognized) would make it too long, so the end of the last frames is searched in the block at the end of the file, which
+// was read anyway (no additional read). Only if there is no run of frames in it, up to 128 KB are read in front of it.
+void CMPEGAudio::FindTrailingBytes(FILE *Stream, __int64 tailStart)
+{
+	const __int64 audioEnd = CTools::FileSize - CTools::ID3v1Size - CTools::LyricsSize - CTools::APESize;
+	const __int64 audioStart = Frame.FramePosition + Frame.FrameSize;
+	__int64 length = audioEnd - tailStart;
+	bool open;
+	trailingBytes = 0;
+	tailBitrates = 0;
+	if (length < 4 || tailStart < 0)
+		return;
+	if (length > (__int64)vendorValues.GetLength())
+		return;   // the block does not reach the end of the audio data
+	__int64 end = LastFrameRunEnd(vendorValues.m_pData, (size_t)length, tailStart, open, tailBitrates);
+	if (end < 0)
+	{
+		const __int64 sizes[] = { 32 * 1024, 128 * 1024 };
+		for (int s = 0; s < 2 && end < 0; s++)
+		{
+			__int64 start = audioEnd - sizes[s];
+			if (start < audioStart)
+				start = audioStart;
+			if (audioEnd - start < 4 || _fseeki64(Stream, start, SEEK_SET) != 0)
+				return;
+			BYTE *buffer = new BYTE[(size_t)(audioEnd - start)];
+			const size_t read = fread(buffer, 1, (size_t)(audioEnd - start), Stream);
+			end = LastFrameRunEnd(buffer, read, start, open, tailBitrates);
+			delete [] buffer;
+			if (start == audioStart)
+				break;   // everything was searched
+		}
+	}
+	if (end >= 0 && !open && end < audioEnd)
+		trailingBytes = audioEnd - end;
+}
+
 void CMPEGAudio::ReadAllFrames(FILE *Stream)
 {
 	// Scans the audio data frame by frame. The file is read in blocks (one read per frame would be very slow, especially
 	// on network drives). The scan stops in front of the tags at the end of the file; data that is not a frame is skipped byte by byte.
+	// A frame only counts if the next frame follows at the calculated distance (or it is the last one, or the previous frame has confirmed it) and if it
+	// has the version, layer and sample rate of the first frame: junk that contains bytes like a frame header does not count.
+	// A single frame with a damaged header (bit errors in the sync bits) does not interrupt the frames: the valid frame behind it follows at the
+	// distance of a frame. The damaged frame itself is not counted (a player does not play it either).
 	// Measured (SSD, file in the cache): 40 MB of frames 181 ms -> 6 ms; 1 MB of non-frame data at the end 446 ms -> about 1 ms.
 	const size_t SCAN_BLOCK_SIZE = 64 * 1024;
 	long FrameLength, Count = 0, Lost = 0;
 	__int64 StartPos = Frame.FramePosition;
 	__int64 audioEnd = CTools::FileSize - CTools::ID3v1Size - CTools::LyricsSize - CTools::APESize;
 	long oldBitrate = 0, newBitrate = 0;
+	__int64 confirmedPos = -1;   // position of the frame that the frame before has confirmed
 	// DecodeHeader overwrites Frame with every frame; the properties of the first frame are restored after the scan
 	const tagFrameData firstFrame = Frame;
 	BYTE *block = new BYTE[SCAN_BLOCK_SIZE];
 	__int64 blockStart = 0;
 	size_t blockLen = 0;
 	ATLTRACE(_T("Start Scanning at %I64d...\n"), StartPos);
+	// frame header with the version, layer and sample rate of the first frame
+	auto sameStream = [&](const BYTE *h) {
+		return IsFrameHeader(const_cast<BYTE *>(h)) && ((h[1] >> 3) & 3) == firstFrame.VersionID && ((h[1] >> 1) & 3) == firstFrame.LayerID && ((h[2] >> 2) & 3) == firstFrame.SampleRateID;
+	};
 	totalBitrate = 0;
 	// the first frame is the frame of a Xing, Info or VBRI header, not an audio frame
-	const bool headerFrame = FVBR.Found;
+	const bool headerFrame = FVBR.Found || headerFrameSeen;
 	FVBR.Found = false;
 	FVBR.Cbr = false;
 	while (StartPos < audioEnd)
 	{
-		if (StartPos < blockStart || StartPos + 4 > blockStart + (__int64)blockLen)
+		// the header of the frame and the header of the next frame have to be in the block (unless it is the end of the file)
+		if (StartPos < blockStart || StartPos + 4 > blockStart + (__int64)blockLen || (blockLen == SCAN_BLOCK_SIZE && StartPos + 4 * MAX_MPEG_FRAME_LENGTH > blockStart + (__int64)blockLen))
 		{
-			// the 4 header bytes are not in the current block: read the next block starting at this position
+			// not in the current block: read the next block starting at this position
 			blockStart = StartPos;
 			blockLen = 0;
 			if (_fseeki64(Stream, StartPos, SEEK_SET) == 0)
@@ -827,13 +1002,44 @@ void CMPEGAudio::ReadAllFrames(FILE *Stream)
 				break; // end of the file or read error
 		}
 		BYTE *HeaderData = block + (StartPos - blockStart);
-		if (IsFrameHeader(HeaderData))
+		bool accepted = false, damaged = false;
+		if (sameStream(HeaderData))
 		{
-			Count++;
 			DecodeHeader(HeaderData);
 			FrameLength = GetFrameLength();
 			if (FrameLength < 1)
 				FrameLength = 1; // a frame length of 0 would never advance
+			__int64 next = StartPos + FrameLength;
+			const bool last = next + 4 > audioEnd;
+			__int64 follow = -1;   // position of the next frame
+			if (!last)
+			{
+				if ((next - blockStart) + 4 <= (__int64)blockLen && sameStream(block + (next - blockStart)))
+					follow = next;
+				else
+				{
+					// the header of the next frame is damaged: the frame behind it follows at the length of the frame (with or without padding)
+					const long slot = (firstFrame.LayerID == MPEG_LAYER_I) ? 4 : 1;
+					const long unpadded = FrameLength - GetPadding();
+					for (long extra = 0; extra <= slot && follow < 0; extra += slot)
+					{
+						const __int64 candidate = next + unpadded + extra;
+						if ((candidate - blockStart) + 4 <= (__int64)blockLen && candidate + 4 <= audioEnd && sameStream(block + (candidate - blockStart)))
+						{
+							follow = candidate;
+							damaged = true;
+						}
+					}
+				}
+			}
+			accepted = last || follow >= 0 || StartPos == confirmedPos;
+			confirmedPos = follow;
+			if (damaged && follow >= 0)
+				FrameLength = (long)(follow - StartPos);   // skip the frame with the damaged header
+		}
+		if (accepted)
+		{
+			Count++;
 			newBitrate = GetBitRateID();
 			totalBitrate += newBitrate;
 			if (oldBitrate != 0 && newBitrate != oldBitrate)

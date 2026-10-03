@@ -210,6 +210,12 @@ private:
 	long totalBitrate;
 	float secPerFrame;
 	long scannedFrames;                                                /* number of frames counted by ReadAllFrames, 0 = no scan */
+	__int64 trailingBytes;                                             /* bytes without audio frames behind the last frame (before the tags) */
+	bool headerFrameSeen;                                              /* the first frame belongs to a Xing, Info or VBRI header (also if it was not used) */
+	bool headerRejectedVbr;                                            /* a VBR header was found but does not match the file */
+	unsigned long headBitrates;                                        /* bit rate indices (one bit each) of the frames at the start of the audio */
+	unsigned long tailBitrates;                                        /* bit rate indices of the last run of frames at the end of the audio */
+	bool noPadding;                                                    /* a constant bit rate encoder that never sets the padding bit (frames of the same length, shorter than the bit rate says) */
 	VBRData FVBR;
 	LameData FLame;
 	__int64 lameHeaderStart;                                          /* position of the frame with the LAME tag */
@@ -239,6 +245,9 @@ private:
 	WORD GetBitRateID();
 	void FindVendorID();
 	bool FindFrame();
+	__int64 LastFrameRunEnd(const BYTE *buffer, size_t length, __int64 bufferStart, bool &openEnd, unsigned long &bitrates);
+	void FindTrailingBytes(FILE *Stream, __int64 tailStart);
+	void CheckPadding(long start, BYTE Data[]);
 	bool SetBit(LPCWSTR FileName, int HdrPos, BYTE BitPos, bool neu);
 	__int64 firstAudioPos, lastAudioPos;
 public:

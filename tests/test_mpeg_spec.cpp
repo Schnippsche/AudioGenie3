@@ -156,9 +156,13 @@ TEST_CASE("MPEG frame headers: version, layer, bit rate, sample rate, length and
                                 CHECK(std::fabs(AUDIOGetDurationW() - expected) < 0.0005);
                                 CHECK(MPEGIsVBRW() == 0);
                             } else {
-                                // without a VBR header the duration is calculated from the size and the bit rate
+                                // without a VBR header the duration is calculated from the size and the bit rate; frames that are never padded
+                                // (an encoder that does not set the padding bit) are counted by their length instead
                                 const double estimate = static_cast<double>(fs::file_size(p)) * 8.0 / (bitrate * 1000.0);
-                                CHECK(std::fabs(AUDIOGetDurationW() - estimate) < 0.0005);
+                                if (pad == 0)
+                                    CHECK((std::fabs(AUDIOGetDurationW() - estimate) < 0.0005 || std::fabs(AUDIOGetDurationW() - expected) < 0.0005));
+                                else
+                                    CHECK(std::fabs(AUDIOGetDurationW() - estimate) < 0.0005);
                                 CHECK(std::fabs(AUDIOGetDurationW() - expected) < expected * 0.15);   // the frames are rounded down to slots: layer 1 at 32 kbit/s is 12 % off
                             }
                         }
@@ -365,6 +369,236 @@ TEST_CASE("MPEG: a real VBR file is recognized when the frame scan is on", "[mpe
     CHECK(MPEGIsVBRW() != 0);
     CHECK(AUDIOGetBitrateW() == sum / count);
     CHECK(std::fabs(AUDIOGetDurationW() - count * 1152.0 / 44100) < 0.0005);
+}
+
+TEST_CASE("MPEG: data behind the last frame does not make the estimated duration too long", "[mpeg][spec][frames]")
+{
+    // no Xing/Info header: the duration is estimated from the size, so the end of the last frames is searched
+    ExactRead defaultRead(false);
+    Spec s;
+    const int frames = 300;
+    const double expected = frames * 1152.0 / 44100;   // frames of 417 bytes that are never padded: counted by their length
+    auto build = [&](size_t junkSize, bool id3v1) {
+        Bytes file = framesOf(s, frames);
+        for (size_t i = 0; i < junkSize; i++) file.push_back(i % 5 == 0 ? 0x20 : static_cast<uint8_t>(i % 200));
+        if (id3v1) {
+            Bytes tag(128, 0);
+            tag[0] = 'T'; tag[1] = 'A'; tag[2] = 'G';
+            file.insert(file.end(), tag.begin(), tag.end());
+        }
+        return writeTemp("mpegspec_trailing.mp3", file);
+    };
+
+    SECTION("no data behind the last frame") {
+        auto p = build(0, false);
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        CHECK(std::fabs(AUDIOGetDurationW() - expected) < 0.0005);
+        CHECK(MPEGGetFramesW() == frames);
+    }
+    SECTION("a few bytes before an ID3v1 tag") {
+        auto p = build(100, true);
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        CHECK(std::fabs(AUDIOGetDurationW() - expected) < 0.0005);
+        CHECK(MPEGGetFramesW() == frames);
+    }
+    SECTION("junk in the block at the end of the file (3 KB)") {
+        auto p = build(3000, false);
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        CHECK(std::fabs(AUDIOGetDurationW() - expected) < 0.0005);
+    }
+    SECTION("junk that is longer than the block at the end of the file (20 KB)") {
+        auto p = build(20000, true);
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        CHECK(std::fabs(AUDIOGetDurationW() - expected) < 0.0005);
+    }
+    SECTION("junk of 100 KB") {
+        auto p = build(100000, false);
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        CHECK(std::fabs(AUDIOGetDurationW() - expected) < 0.0005);
+    }
+    SECTION("a damaged place in the middle is not the end of the audio") {
+        Bytes file = framesOf(s, 100);
+        for (int i = 0; i < 700; i++) file.push_back(0x20);
+        const Bytes rest = framesOf(s, 200);
+        file.insert(file.end(), rest.begin(), rest.end());
+        auto p = writeTemp("mpegspec_trailing_gap.mp3", file);
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        const double withGap = file.size() / static_cast<double>(lengthOf(s, 0)) * 1152.0 / 44100;
+        CHECK(std::fabs(AUDIOGetDurationW() - withGap) < 0.0005);   // 300 frames and the gap: the audio reaches the end of the file
+    }
+}
+
+TEST_CASE("MPEG: a VBR header that does not match the file: all frames are counted", "[mpeg][spec][xing]")
+{
+    // a header of a file that was cut: the size says nothing about the duration, the first frame (48 kbit/s) is not the average
+    ExactRead defaultRead(false);
+    Spec first;
+    first.bitrateIndex = 3;   // 48 kbit/s
+    const int rates[] = { 9, 11, 12, 9, 10 };
+    const int audioFrames = 80;
+    Bytes file = headerOf(first, 0);
+    file.resize(file.size() + 32, 0);
+    put(file, "Xing");
+    putBE32(file, 0x3);
+    putBE32(file, 5000);          // frames of the original file
+    putBE32(file, 5000 * 600);    // bytes of the original file
+    file.resize(static_cast<size_t>(lengthOf(first, 0)), 0);
+    int sum = 0;
+    for (int i = 0; i < audioFrames; i++) {
+        Spec s;
+        s.bitrateIndex = rates[i % 5];
+        const Bytes f = frameOf(s, 0);
+        file.insert(file.end(), f.begin(), f.end());
+        sum += bitrateOf(V1, 3, s.bitrateIndex);
+    }
+    auto p = writeTemp("mpegspec_xing_cut.mp3", file);
+    REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+    CHECK(MPEGGetFramesW() == audioFrames);
+    CHECK(std::fabs(AUDIOGetDurationW() - audioFrames * 1152.0 / 44100) < 0.0005);
+    CHECK(std::abs(AUDIOGetBitrateW() - sum / audioFrames) <= 1);
+}
+
+TEST_CASE("MPEG: estimated duration of an encoder without padding and with padding", "[mpeg][spec][frames]")
+{
+    ExactRead defaultRead(false);
+    Spec s;   // 128 kbit/s, 44.1 kHz: 417.96 bytes per frame on average
+    const int frames = 400;
+    const double expected = frames * 1152.0 / 44100;
+
+    SECTION("the padding bit is never set: the frames are counted by their length (not 0.2 % too long)") {
+        auto p = writeTemp("mpegspec_nopad.mp3", framesOf(s, frames));
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        CHECK(std::fabs(AUDIOGetDurationW() - expected) < 0.0005);
+        CHECK(AUDIOGetBitrateW() == 128);
+    }
+    SECTION("the padding bit is set as the bit rate requires (96 % of the frames): the size and the bit rate give the duration") {
+        Bytes file;
+        for (int i = 0; i < frames; i++) {
+            const int pad = static_cast<int>((i + 1) * 0.96) - static_cast<int>(i * 0.96);
+            Bytes f = headerOf(s, pad);
+            f.resize(static_cast<size_t>(417 + pad), 0);
+            file.insert(file.end(), f.begin(), f.end());
+        }
+        auto p = writeTemp("mpegspec_pad.mp3", file);
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        CHECK(std::fabs(AUDIOGetDurationW() - expected) < 0.005);
+    }
+    SECTION("48 kHz: the frame length is a whole number, no padding is needed") {
+        s.sampleRateIndex = 1;
+        auto p = writeTemp("mpegspec_nopad48.mp3", framesOf(s, frames));
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        CHECK(std::fabs(AUDIOGetDurationW() - frames * 1152.0 / 48000) < 0.0005);
+    }
+}
+
+TEST_CASE("MPEG: a VBR file without header is noticed in the blocks at the start and at the end", "[mpeg][spec][frames]")
+{
+    ExactRead defaultRead(false);
+    Spec lo, hi;
+    lo.bitrateIndex = 5;    // 64 kbit/s
+    hi.bitrateIndex = 11;   // 192 kbit/s
+    const int count = 700;
+    const double expected = (count * 2) * 1152.0 / 44100;
+
+    SECTION("the bit rate is the same at the start but changes at the end of the file") {
+        Bytes file = framesOf(lo, count);
+        const Bytes b = framesOf(hi, count);
+        file.insert(file.end(), b.begin(), b.end());
+        auto p = writeTemp("mpegspec_vbr_tail.mp3", file);
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        CHECK(MPEGIsVBRW() != 0);
+        CHECK(MPEGGetFramesW() == count * 2);
+        CHECK(std::fabs(AUDIOGetDurationW() - expected) < 0.0005);
+        CHECK(AUDIOGetBitrateW() == 128);
+    }
+    SECTION("the bit rate changes within the first frames") {
+        Bytes file;
+        for (int i = 0; i < count * 2; i++) {
+            const Bytes f = frameOf(i < 3 ? hi : (i % 2 ? hi : lo), 0);
+            file.insert(file.end(), f.begin(), f.end());
+        }
+        auto p = writeTemp("mpegspec_vbr_head.mp3", file);
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        CHECK(MPEGIsVBRW() != 0);
+        CHECK(MPEGGetFramesW() == count * 2);
+    }
+    SECTION("a constant bit rate stays a constant bit rate (no scan, IsVBR 0)") {
+        auto p = writeTemp("mpegspec_cbr.mp3", framesOf(lo, count * 2));
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        CHECK(MPEGIsVBRW() == 0);
+        CHECK(AUDIOGetBitrateW() == 64);
+    }
+    SECTION("junk with frames of another bit rate behind the audio does not make it VBR") {
+        Bytes file = framesOf(lo, count * 2);
+        for (int i = 0; i < 3000; i++) file.push_back(0x20);
+        auto p = writeTemp("mpegspec_cbr_junk.mp3", file);
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        CHECK(MPEGIsVBRW() == 0);
+    }
+}
+
+TEST_CASE("MPEG: the frame scan ignores junk that looks like frame headers", "[mpeg][spec][frames]")
+{
+    ExactRead er(true);
+    Spec s;       // 128 kbit/s
+    Spec other;
+    other.bitrateIndex = 11;   // 192 kbit/s
+    const int count = 200;
+    Bytes junk(3000, 0x20);
+    // isolated headers of the same stream (also with another bit rate), no frame follows at the calculated distance
+    const Bytes h1 = headerOf(s, 0), h2 = headerOf(other, 0);
+    std::copy(h1.begin(), h1.end(), junk.begin() + 500);
+    std::copy(h2.begin(), h2.end(), junk.begin() + 1500);
+    std::copy(h1.begin(), h1.end(), junk.begin() + 2500);
+
+    SECTION("junk in the middle") {
+        Bytes file = framesOf(s, count);
+        file.insert(file.end(), junk.begin(), junk.end());
+        const Bytes rest = framesOf(s, count);
+        file.insert(file.end(), rest.begin(), rest.end());
+        auto p = writeTemp("mpegspec_scan_junk.mp3", file);
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        CHECK(MPEGGetFramesW() == count * 2);
+        CHECK(MPEGIsVBRW() == 0);
+        CHECK(AUDIOGetBitrateW() == 128);
+    }
+    SECTION("junk behind the last frame") {
+        Bytes file = framesOf(s, count);
+        file.insert(file.end(), junk.begin(), junk.end());
+        auto p = writeTemp("mpegspec_scan_junk_end.mp3", file);
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        CHECK(MPEGGetFramesW() == count);
+        CHECK(MPEGIsVBRW() == 0);
+    }
+    SECTION("a frame with damaged sync bits is not counted, the frames next to it are") {
+        // every 10th frame has bit errors in the sync bits (0xFF 0xFB -> 0xF7 0xF3), the audio data is there
+        Bytes file;
+        for (int i = 0; i < count; i++) {
+            Bytes f = frameOf(s, 0);
+            if (i % 10 == 5) { f[0] = 0xF7; f[1] = 0xF3; }
+            file.insert(file.end(), f.begin(), f.end());
+        }
+        auto p = writeTemp("mpegspec_scan_damaged.mp3", file);
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        const int intact = count - count / 10;
+        CHECK(MPEGGetFramesW() == intact);
+        CHECK(MPEGIsVBRW() == 0);
+        CHECK(std::fabs(AUDIOGetDurationW() - intact * 1152.0 / 44100) < 0.0005);
+        CHECK(AUDIOGetBitrateW() == 128);
+    }
+    SECTION("two damaged frames in a row: junk, not counted either") {
+        Bytes file = framesOf(s, count);
+        const size_t len = static_cast<size_t>(lengthOf(s, 0));
+        for (int i = 100; i < 102; i++) { file[len * i] = 0xF7; file[len * i + 1] = 0xF3; }
+        auto p = writeTemp("mpegspec_scan_damaged2.mp3", file);
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        CHECK(MPEGGetFramesW() == count - 2);
+    }
+    SECTION("the last frame counts although no frame follows") {
+        auto p = writeTemp("mpegspec_scan_last.mp3", framesOf(s, count));
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        CHECK(MPEGGetFramesW() == count);
+    }
 }
 
 // ---- LAME tag (extension of the Xing / Info header) ----
