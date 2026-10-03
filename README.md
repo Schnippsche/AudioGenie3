@@ -160,10 +160,11 @@ first access to the file, not by the CPU.
 | | local SSD (7339 files, cached) | network drive (16000 files, first access) |
 |---|---|---|
 | time per file | 0.11 ms (AudioGenie 2.0.4: 0.14 ms) | about 33 ms (2.0.4: about 32 ms) |
-| read calls per file | 8.4 (2.0.4: 15.7) | 10.2 (2.0.4: 12.2) |
+| read calls per file | 8.6 (2.0.4: 15.7) | 10.2 (2.0.4: 12.2) |
 
-The 32 and the 64 bit DLL are equally fast and return identical results. For 4000 files the length, bit rate and all tags are identical to
-the results of version 2.0.4. On a network drive the cost of the first access to each file dominates; if you scan large libraries
+The 32 and the 64 bit DLL are equally fast and return identical results. The tags and the technical data are the same as in version 2.0.4, except
+where the duration and bit rate of MP3 files are deliberately more accurate now (data behind the last frame, encoders without the padding bit,
+VBR files without a header; see the release notes of 3.0.1 and 3.0.2). On a network drive the cost of the first access to each file dominates; if you scan large libraries
 repeatedly, keep the results in your application and analyze only new or changed files.
 
 ### Optimizations

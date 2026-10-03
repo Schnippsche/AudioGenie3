@@ -25,7 +25,7 @@
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">AudioGenie3<span id="projectnumber">&#160;3.0.1</span>
+   <div id="projectname">AudioGenie3<span id="projectnumber">&#160;3.0.2</span>
    </div>
    <div id="projectbrief">Library for analyzing and tagging audio files (DLL API)</div>
   </td>
@@ -214,9 +214,9 @@ Analyzing files (<span class="tt">AUDIOAnalyzeFileW</span>)</h2>
 <tr class="markdownTableRowOdd">
 <td class="markdownTableBodyNone">time per file  </td><td class="markdownTableBodyNone">0.11 ms (AudioGenie 2.0.4: 0.14 ms)  </td><td class="markdownTableBodyNone">about 33 ms (2.0.4: about 32 ms)  </td></tr>
 <tr class="markdownTableRowEven">
-<td class="markdownTableBodyNone">read calls per file  </td><td class="markdownTableBodyNone">8.4 (2.0.4: 15.7)  </td><td class="markdownTableBodyNone">10.2 (2.0.4: 12.2)  </td></tr>
+<td class="markdownTableBodyNone">read calls per file  </td><td class="markdownTableBodyNone">8.6 (2.0.4: 15.7)  </td><td class="markdownTableBodyNone">10.2 (2.0.4: 12.2)  </td></tr>
 </table>
-<p>The 32 and the 64 bit DLL are equally fast and return identical results. For 4000 files the length, bit rate and all tags are identical to the results of version 2.0.4. On a network drive the cost of the first access to each file dominates; if you scan large libraries repeatedly, keep the results in your application and analyze only new or changed files.</p>
+<p>The 32 and the 64 bit DLL are equally fast and return identical results. The tags and the technical data are the same as in version 2.0.4, except where the duration and bit rate of MP3 files are deliberately more accurate now (data behind the last frame, encoders without the padding bit, VBR files without a header; see the release notes of 3.0.1 and 3.0.2). On a network drive the cost of the first access to each file dominates; if you scan large libraries repeatedly, keep the results in your application and analyze only new or changed files.</p>
 <h2 class="doxsection"><a class="anchor" id="autotoc_md9"></a>
 Optimizations</h2>
 <table class="markdownTable">
