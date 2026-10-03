@@ -34,7 +34,7 @@ public:
 	CID3V1();
 	~CID3V1();
 	void ResetData();
-	void ReadFromFile(FILE *Stream);
+	void ReadFromFile(FILE *file);
 	bool Exists()              { return (CTools::ID3v1Size > 0);          };
 	/* Getter */
 	CAtlString GetAlbum()         { return id3v1tag.Album;           };

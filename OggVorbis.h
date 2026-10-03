@@ -119,7 +119,7 @@ static const unsigned int CRC_TABLE[] = {
 		void BuildTag();
 		int BuildHeaderPages(CBlob &out);
 		bool CopyPages(FILE *Source, FILE *Destination, int delta);
-		unsigned long CalculateCRC(unsigned long CRC, BYTE Data[], long Size);
+		unsigned long CalculateCRC(unsigned long CRC, BYTE buffer[], long Size);
 		bool RebuildFile(LPCWSTR FileName);
 		__int64 firstAudioPos;
 	public:

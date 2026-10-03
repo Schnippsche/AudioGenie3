@@ -105,7 +105,7 @@ void CMP4Atom::load(FILE *Stream, u64 offset, u64 size)
 {
 	offset;
 	//_fseeki64(Stream, offset, SEEK_SET); not needed
-	_blob.FileRead(size, Stream);
+	_blob.FileRead((size_t)size, Stream);
 }
 
 void CMP4Atom::save(FILE *stream)

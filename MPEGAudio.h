@@ -145,7 +145,7 @@ static const char *VENDOR_ID_GOGO_OLD = "MPGE";                   /* For GoGo (O
 static const BYTE ZERO[6] = { 0,0,0,0,0,0 };
 
 #define DATASIZE  3460                        /* ca MAX_MPEG_FRAME_LENGTH * 2 */
-static BYTE Data[DATASIZE + 16]; // reserve: header checks read up to 4 bytes beyond DATASIZE
+static BYTE FrameData[DATASIZE + 16]; // reserve: header checks read up to 4 bytes beyond DATASIZE
 
 /* Extension of the Xing/Info header written by LAME (and encoders with the same layout) */
 struct LameData

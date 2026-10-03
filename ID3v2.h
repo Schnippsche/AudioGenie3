@@ -55,7 +55,7 @@ public:
 	CID3V2(void);
 	virtual ~CID3V2(void);
 	BYTE buf[16];
-	u32 ID, FrameID;
+	u32 TagID, FrameID;
 	u32 FrameSize, Size, oldTagSize;
 	u32 TagDataSize;                      // size field of the header: extended header, frames and padding (without header and footer)
 	u16 FrameFlags;
@@ -91,6 +91,6 @@ public:
 	bool isValid;
 	void ResetData();
 	bool parseCueFile(LPCWSTR FileName);
-	short getEncoding(u32 FrameID);
+	short getEncoding(u32 frameID);
 	CAtlArray<CID3_Frame *> _frames;
 };

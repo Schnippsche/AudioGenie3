@@ -239,12 +239,12 @@ void COggVorbis::BuildTag()
 	Data.AddValue(1);   // the framing bit
 }
 
-unsigned long COggVorbis::CalculateCRC(unsigned long CRC, BYTE Data[], long Size)
+unsigned long COggVorbis::CalculateCRC(unsigned long CRC, BYTE buffer[], long Size)
 {
 	long Index;
 	// Calculate CRC through data
 	for (Index = 0; Index < Size; Index++)
-		CRC = (CRC << 8) XOR CRC_TABLE[((CRC >> 24) &0xff ) XOR Data[Index]];
+		CRC = (CRC << 8) XOR CRC_TABLE[((CRC >> 24) &0xff ) XOR buffer[Index]];
 
 	return CRC;
 }
@@ -253,7 +253,7 @@ unsigned long COggVorbis::CalculateCRC(unsigned long CRC, BYTE Data[], long Size
 // segments, the headers end on a page. Sequence numbers start with 1, the checksums are set.
 int COggVorbis::BuildHeaderPages(CBlob &out)
 {
-	CBlob lacing, content;
+	CBlob lacing, contentBlob;
 	long n = (long)Data.GetLength();
 	while (n >= 255)
 	{
@@ -261,9 +261,9 @@ int COggVorbis::BuildHeaderPages(CBlob &out)
 		n -= 255;
 	}
 	lacing.AddValue((BYTE)n);
-	content.AddBlob(Data);
+	contentBlob.AddBlob(Data);
 	lacing.AddBlob(setupLacing);
-	content.AddBlob(setupData);
+	contentBlob.AddBlob(setupData);
 	const size_t total = lacing.GetLength();
 	size_t index = 0;
 	size_t dataPos = 0;
@@ -290,7 +290,7 @@ int COggVorbis::BuildHeaderPages(CBlob &out)
 		page.AddR4B(0);   // the checksum is set below
 		page.AddValue((BYTE)count);
 		page.AddMemory(lacing.m_pData + index, count);
-		page.AddMemory(content.m_pData + dataPos, bodyLength);
+		page.AddMemory(contentBlob.m_pData + dataPos, bodyLength);
 		const unsigned long crc = CalculateCRC(0, page.m_pData, (long)page.GetLength());
 		page.m_pData[22] = (BYTE)(crc & 0xFF);
 		page.m_pData[23] = (BYTE)((crc >> 8) & 0xFF);

@@ -106,11 +106,11 @@ void CID3V1::CloseFile()
 		fclose(Stream);
 }
 
-void CID3V1::ReadFromFile(FILE *Stream)
+void CID3V1::ReadFromFile(FILE *file)
 {
 	/* Reset and load tag data from file to variable */
 	//_fseeki64(Stream, -ID3V1_TAG_SIZE, SEEK_END);
-	if (id3v1tag.ReadFromFile(Stream))
+	if (id3v1tag.ReadFromFile(file))
 	{
 		CTools::ID3v1Size = id3v1tag._enhanced ? ID3V1_TAG_SIZE + ID3V1_ENHANCED_SIZE : ID3V1_TAG_SIZE;
 		return;

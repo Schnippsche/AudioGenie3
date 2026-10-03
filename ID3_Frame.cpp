@@ -78,7 +78,7 @@ static long extraFieldsSize(CID3_Frame *f, BYTE version)
 }
 
 // An unknown frame is written again with its ID, unless its flag says that it is to be discarded when the tag is altered
-bool CID3_Frame::canStoreFor(BYTE version)
+bool CID3_Frame::canStoreFor(BYTE /*version*/)
 {
 	return !(_discardOnTagAlter && !CID3_FrameFactory::instance().isKnownFrameID(_frameID));
 }

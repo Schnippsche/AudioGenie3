@@ -114,7 +114,7 @@ void CID3F_Chapter::convertBlobToFrames()
 	if (_data.GetLength() == 0)
 		return;
 	size_t start = 0;
-	short flags = 0;
+	short frameFlags = 0;
 	bool foundTitle = false, foundDescription = false;
 	u32 frameID, frameSize;
 	CID3_Frame *frame;
@@ -125,7 +125,7 @@ void CID3F_Chapter::convertBlobToFrames()
 			frameSize = (u32)_data.GetS4B(start + 4);
 		else
 			frameSize = (u32)_data.Get4B(start + 4);
-		flags = _data.Get2B(start + 8);
+		frameFlags = _data.Get2B(start + 8);
 		start+=10;
 		// safety check on the size of the frame
 		if (frameSize > (u32)CTools::ID3v2Size)
@@ -135,7 +135,7 @@ void CID3F_Chapter::convertBlobToFrames()
 		else
 		{
 			frame = CID3_FrameFactory::instance().createFrame(frameID);
-			frame->flags = flags;
+			frame->flags = frameFlags;
 			frame->load(_data.m_pData + start, frameSize);
 			frame->print();
 			if (!foundTitle && frameID == F_TIT2)

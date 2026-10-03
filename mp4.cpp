@@ -604,12 +604,12 @@ bool CMP4::SaveToFile(LPCWSTR FileName)
 		newData->save(Destination);
 		_flushall();
 		/* if mdat position is different and stco is present, then adjust the stco atom */
-		CMP4_MDAT* mdat = cMDAT(newData->find(MDAT_PFAD));
+		CMP4_MDAT* newMdat = cMDAT(newData->find(MDAT_PFAD));
 		bool offsetsOk = true;
 		// adjust the chunk offsets of all tracks: 32 bit tables (stco) and 64 bit tables (co64)
-		if (mdat != NULL && mdat->getPosition() != oldMDATPosition)
+		if (newMdat != NULL && newMdat->getPosition() != oldMDATPosition)
 		{
-			const __int64 delta = (__int64)mdat->getPosition() - (__int64)oldMDATPosition;
+			const __int64 delta = (__int64)newMdat->getPosition() - (__int64)oldMDATPosition;
 			for (int track = 1; offsetsOk; track++)
 			{
 				CMP4_STCO* table = cSTCO(newData->find(STCO_PFAD, track));

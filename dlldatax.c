@@ -35,3 +35,6 @@
 #include "AudioGenie3_p.c"
 
 #endif //_MERGE_PROXYSTUB
+
+/* keeps the translation unit from being empty if _MERGE_PROXYSTUB is not defined (warning C4206) */
+typedef int ag3_dlldatax_not_empty;

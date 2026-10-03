@@ -64,7 +64,7 @@ bool CWMA_Header_Extension::load(FILE *Stream, size_t maxLen)
 		}
 		totalSize-= Size;
 		Size-=24;			
-		if (Size < 0 || Size > maxLen)
+		if (Size < 0 || (unsigned __int64)Size > maxLen)
 		{
 			CTools::instance().setLastError(ERR_WMA_PARSE);
 			_data.Clear();

@@ -313,7 +313,7 @@ extern "C" long __stdcall AUDIOAnalyzeFileW(LPCWSTR FileName)
 		}
 		if ((possibleFormat == AUDIO_FORMAT_OGGVORBIS || possibleFormat == AUDIO_FORMAT_OGGOPUS) && ogg.ReadFromFile(Source))
 		{
-			Format = ogg.IsOpus() ? AUDIO_FORMAT_OGGOPUS : AUDIO_FORMAT_OGGVORBIS;
+			Format = (short)(ogg.IsOpus() ? AUDIO_FORMAT_OGGOPUS : AUDIO_FORMAT_OGGVORBIS);
 			CTools::instance().writeInfo(ogg.IsOpus() ? _T("identified as ogg opus file") : _T("identified as ogg vorbis file"));
 			audio = &ogg;
 			Album = ogg.GetUserItem(VORBIS_ALBUM);
@@ -5543,15 +5543,15 @@ extern "C" short __stdcall ID3V2GetCommercialFrameReceivedAsW(short Index)
  * @par ID3v2 frame
  *   CTOC
  * @param ID the unique id of the element
- * @param Title the title of the element
+ * @param title the title of the element
  * @param Description the description of the element
  * @param isOrdered non-zero (e.g. -1) if the child elements are ordered, 0 if they are not ordered
  * @return -1 if the frame was replaced, 0 if it was added
  */
-extern "C" short __stdcall ID3V2AddTableOfContentW(LPCWSTR ID, LPCWSTR Title, LPCWSTR Description, short isOrdered)
+extern "C" short __stdcall ID3V2AddTableOfContentW(LPCWSTR ID, LPCWSTR title, LPCWSTR Description, short isOrdered)
 {
 	// if no CTOC exists yet, set the ROOT flag to true
-	CID3F_CTOC *f = new CID3F_CTOC(getValidPointer(ID), getValidPointer(Title), getValidPointer(Description), (isOrdered != 0));
+	CID3F_CTOC *f = new CID3F_CTOC(getValidPointer(ID), getValidPointer(title), getValidPointer(Description), (isOrdered != 0));
 	if (id3v2.findFrame(F_CTOC) == NULL)
 		f->setRoot(true);
 	return b2s(id3v2.replaceFrame(f));
@@ -5567,15 +5567,15 @@ extern "C" short __stdcall ID3V2AddTableOfContentW(LPCWSTR ID, LPCWSTR Title, LP
  * @par ID3v2 frame
  *   CHAP
  * @param ID the unique id
- * @param Title the title
+ * @param title the title
  * @param Description the description
  * @param startTime the start time in milliseconds
  * @param endTime the end time in milliseconds
  * @return -1 if the frame was replaced, 0 if it was added
  */
-extern "C" short __stdcall ID3V2AddChapterW(LPCWSTR ID, LPCWSTR Title, LPCWSTR Description, u32 startTime, u32 endTime)
+extern "C" short __stdcall ID3V2AddChapterW(LPCWSTR ID, LPCWSTR title, LPCWSTR Description, u32 startTime, u32 endTime)
 {
-	CID3F_CHAP *f = new CID3F_CHAP(getValidPointer(ID), getValidPointer(Title), getValidPointer(Description));
+	CID3F_CHAP *f = new CID3F_CHAP(getValidPointer(ID), getValidPointer(title), getValidPointer(Description));
 	f->setTimes(startTime, endTime);
 	return b2s(id3v2.replaceFrame(f));
 }
@@ -7320,12 +7320,12 @@ extern "C" short __stdcall ID3V2GetSignatureFrameGroupSymbolW(short Index)
  *   SYTC
  * @param arr pointer to the byte array
  * @param length of array in bytes
- * @param Format Timestamp format 1=frames as unit  2=milliseconds as unit
+ * @param format Timestamp format 1=frames as unit  2=milliseconds as unit
  * @return -1 if frame was replaced, 0 if frame was added
  */
-extern "C" short __stdcall ID3V2AddSynchronizedTempoW(BYTE *arr, u32 length, short Format)
+extern "C" short __stdcall ID3V2AddSynchronizedTempoW(BYTE *arr, u32 length, short format)
 {
-	CID3F_SYTC *f = new CID3F_SYTC((BYTE)Format);
+	CID3F_SYTC *f = new CID3F_SYTC((BYTE)format);
 	f->setData(arr, length);
 	return b2s(id3v2.replaceFrame(f));
 }

@@ -38,12 +38,12 @@ CID3V2::~CID3V2(void)
 	ResetData();
 }
 
-short CID3V2::getEncoding(u32 FrameID)
+short CID3V2::getEncoding(u32 frameID)
 {
 	size_t counts = _frames.GetCount();
 	for (size_t i = 0; i < counts; i++)
 	{
-		if (_frames[i]->_frameID == FrameID)
+		if (_frames[i]->_frameID == frameID)
 		{
 			_frames[i]->decode();
 			return _frames[i]->encodingID;
@@ -98,7 +98,7 @@ bool CID3V2::ReadHeader(FILE *Stream)
 			Size = 0;			
 		}
 		buf[3] = 0; buf[4] = 0;
-		ID = (buf[0] << 16) + (buf[1] << 8) + buf[2]; 
+		TagID = (buf[0] << 16) + (buf[1] << 8) + buf[2]; 
 		return true;
 	}
 	return false;
@@ -110,7 +110,7 @@ void CID3V2::ResetData()
 	Revision = 0;
 	CTools::ID3V2Flags = 0;
 	Size = 0;
-	ID = 0;
+	TagID = 0;
 	size_t cnt = _frames.GetCount();
 	if (cnt > 0)
 	{
@@ -144,7 +144,7 @@ void CID3V2::ReadFromFile(FILE *Stream)
 	ReadHeader(Stream);	
 	oldTagSize = Size;
 	CTools::ID3v2Size = Size;
-	if (Size > 0 && ID == ID3V2_TAGID && Version >= TAG_VERSION_2_2 && Version <= TAG_VERSION_2_4 )
+	if (Size > 0 && TagID == ID3V2_TAGID && Version >= TAG_VERSION_2_2 && Version <= TAG_VERSION_2_4 )
 	{
 		CTools::instance().writeDebug(_T("id3v2.%i tag found"), Version);
 		CTools::ID3V2oldTagVersion = Version;
@@ -627,8 +627,8 @@ short CID3V2::deleteAllFrames(CAtlString ID)
 	{
 		if (_frames[count]->equals(F_CTOC) || _frames[count]->equals(F_CHAP))
 		{		
-			CID3F_Chapter* result = cCHAPTER(_frames[count]);
-			if (result->getID().Compare(ID) == 0)
+			CID3F_Chapter* chapter = cCHAPTER(_frames[count]);
+			if (chapter->getID().Compare(ID) == 0)
 			{
 				delete _frames[count];
 				_frames.RemoveAt(count);

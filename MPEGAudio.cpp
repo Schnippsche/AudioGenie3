@@ -51,7 +51,7 @@ void CMPEGAudio::ResetData()
 	lameHeaderStart = 0;
 	lameHeaderSize = 0;
 	memset(&Frame, 0, sizeof(Frame));
-	memset(&Data, 0, sizeof(Data));
+	memset(&FrameData, 0, sizeof(FrameData));
 	memset(VendorID, 0, 10);
 	totalBitrate = 0;
 	secPerFrame = 0;
@@ -692,7 +692,7 @@ bool CMPEGAudio::FindFrame()
 	long Iterator;
 
 	/* Search for valid frame */
-	memcpy(&HeaderData, &Data, 4);
+	memcpy(&HeaderData, &FrameData, 4);
 
 	for (Iterator = 0; Iterator < MAX_MPEG_FRAME_LENGTH; Iterator++)
 	{
@@ -701,28 +701,28 @@ bool CMPEGAudio::FindFrame()
 		{
 			DecodeHeader(HeaderData);
 			/* Check for next frame and try to find VBR header */
-			if (FrameChainValid((long)Iterator, Data))
+			if (FrameChainValid((long)Iterator, FrameData))
 			{
 				Frame.Found = true;
 				Frame.FramePosition = StartPosition + (long)Iterator;
 				Frame.FrameSize = GetFrameLength();
-				CheckPadding(Iterator, Data);   // padding bit and bit rates of the frames in this block
-				Frame.Xing = IsXing(Iterator + 4, Data);
+				CheckPadding(Iterator, FrameData);   // padding bit and bit rates of the frames in this block
+				Frame.Xing = IsXing(Iterator + 4, FrameData);
 				// a CRC (2 bytes) is between the header and the side information if the protection bit is 0; some encoders clear the bit
 				// without writing a CRC, so the position without the CRC is checked as well
 				long xingIndex = Iterator + GetVBRDeviation();
 				if (!Frame.ProtectionBit)
 				{
-					FindVBR(xingIndex + 2, Data);
+					FindVBR(xingIndex + 2, FrameData);
 					if (FVBR.Found)
 						xingIndex += 2;
 				}
 				if (!FVBR.Found)
-					FindVBR(xingIndex, Data);
+					FindVBR(xingIndex, FrameData);
 				if (FVBR.Found)
-					ParseLameTag(Iterator, xingIndex, Data);
+					ParseLameTag(Iterator, xingIndex, FrameData);
 				else
-					FindVBRI(Iterator + 4 + 32, Data);
+					FindVBRI(Iterator + 4 + 32, FrameData);
 				// a header that does not match the audio data is not used
 				// the first frame carries the header: the frame scan must not count it as an audio frame, even if the header is not used
 				if (FVBR.Found)
@@ -740,7 +740,7 @@ bool CMPEGAudio::FindFrame()
 		HeaderData[0] = HeaderData[1];
 		HeaderData[1] = HeaderData[2];
 		HeaderData[2] = HeaderData[3];
-		HeaderData[3] = Data[Iterator + 4];
+		HeaderData[3] = FrameData[Iterator + 4];
 	}
 	return true;
 }
@@ -755,10 +755,10 @@ bool CMPEGAudio::ReadFromFile(FILE *Stream)
 	ResetData();
 	StartPosition = CTools::audioStart();
 	_fseeki64(Stream, StartPosition, SEEK_SET);
-	Transferred = (long)fread(Data, 1, DATASIZE, Stream);
+	Transferred = (long)fread(FrameData, 1, DATASIZE, Stream);
 	if (Transferred < 0)
 		Transferred = 0;
-	memset(Data + Transferred, 0, sizeof(Data) - Transferred); // do not evaluate remains of the last block
+	memset(FrameData + Transferred, 0, sizeof(FrameData) - Transferred); // do not evaluate remains of the last block
 	result = FindFrame();
 	firstAudioPos = Frame.FramePosition;
 	CTools::firstMpegAudioPos = firstAudioPos; 
@@ -769,10 +769,10 @@ bool CMPEGAudio::ReadFromFile(FILE *Stream)
 		CTools::instance().doEvents();
 		StartPosition += MAX_MPEG_FRAME_LENGTH;
 		_fseeki64(Stream, StartPosition, SEEK_SET);
-		Transferred = (long)fread(Data, 1, DATASIZE, Stream);
+		Transferred = (long)fread(FrameData, 1, DATASIZE, Stream);
 	if (Transferred < 0)
 		Transferred = 0;
-	memset(Data + Transferred, 0, sizeof(Data) - Transferred); // do not evaluate remains of the last block
+	memset(FrameData + Transferred, 0, sizeof(FrameData) - Transferred); // do not evaluate remains of the last block
 		result = FindFrame();
 		firstAudioPos = Frame.FramePosition;
 	}
@@ -1041,7 +1041,7 @@ void CMPEGAudio::ReadAllFrames(FILE *Stream)
 	// distance of a frame. The damaged frame itself is not counted (a player does not play it either).
 	// Measured (SSD, file in the cache): 40 MB of frames 181 ms -> 6 ms; 1 MB of non-frame data at the end 446 ms -> about 1 ms.
 	const size_t SCAN_BLOCK_SIZE = 64 * 1024;
-	long FrameLength, Count = 0, Lost = 0;
+	long FrameLength = 1, Count = 0, Lost = 0;
 	__int64 StartPos = Frame.FramePosition;
 	__int64 audioEnd = CTools::FileSize - CTools::ID3v1Size - CTools::LyricsSize - CTools::APESize;
 	long oldBitrate = 0, newBitrate = 0;

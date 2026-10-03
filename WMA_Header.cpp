@@ -55,7 +55,7 @@ bool CWMA_Header::load(FILE *Stream, size_t maxLen)
 	
 	__int64 HeaderSize = loadHeaderOnly(Stream);
 	_data.FileRead(6, Stream);
-	if (_data.GetLength() != 6 || HeaderSize == 0 || HeaderSize > maxLen)
+	if (_data.GetLength() != 6 || HeaderSize == 0 || HeaderSize < 0 || (unsigned __int64)HeaderSize > maxLen)
 	{
 		CTools::instance().setLastError(ERR_WMA_PARSE);
 		_data.Clear();

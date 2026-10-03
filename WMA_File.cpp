@@ -161,7 +161,7 @@ bool CWMA_File::SaveToFile(LPCWSTR FileName)
 		fclose(Stream);
 		return false;
 	}
-	long DataPosition = CTools::ID3v2Size + oldHeaderSize;
+	long audioPos = CTools::ID3v2Size + oldHeaderSize;
 	CWMA_Object *obj = NULL;
 	// save the current objects, if present
 	CWMA_MetadataLibrary *newMetas = NULL;
@@ -185,7 +185,7 @@ bool CWMA_File::SaveToFile(LPCWSTR FileName)
 	}
 	if ((obj = header.findObject(WMA_HEADER_EXTENSION_ID)) != NULL)
 	{
-		CWMA_Header_Extension* he = static_cast<CWMA_Header_Extension*>(obj);
+		// (the header extension object itself is not needed: a new metadata library object replaces its content)
 		// same reasoning as for the extended content fields above: a fresh object always reflects the current tagdatas list
 		newMetas = new CWMA_MetadataLibrary();
 		if (newMetas->getData()->GetLength() == 0)
@@ -268,7 +268,7 @@ bool CWMA_File::SaveToFile(LPCWSTR FileName)
 		}
 		bool copied = newHeader.FileWrite(newHeader.GetLength(), Destination) == newHeader.GetLength();
 		// the rest of the file: the data object and everything behind it
-		_fseeki64(Stream, DataPosition, SEEK_SET);
+		_fseeki64(Stream, audioPos, SEEK_SET);
 		copied = copied && CTools::copyStream(Stream, Destination, -1);
 		if (!copied)
 		{
@@ -284,10 +284,10 @@ bool CWMA_File::SaveToFile(LPCWSTR FileName)
 	{
 		ATLTRACE(L"rewrite file...\n");
 		// insert suitable padding
-		u32 newPaddingSize = oldHeaderSize - newHeader.GetLength() - 24;
+		const __int64 newPaddingSize = (__int64)oldHeaderSize - (__int64)newHeader.GetLength() - 24;
 		if (newPaddingSize > 0)
 		{
-			newPadding = new CWMA_Padding(oldHeaderSize - newHeader.GetLength() - 24);
+			newPadding = new CWMA_Padding((u32)newPaddingSize);
 			header.replaceObject(newPadding);
 		}
 		newHeader.Clear();
