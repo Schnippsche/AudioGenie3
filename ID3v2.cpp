@@ -253,6 +253,13 @@ void CID3V2::parseTags(CBlob* data)
 			// is Data Length Indicator set?
 
 			isValid = ( ALLOWED[data->GetAt(DataPosition)] && ALLOWED[data->GetAt(DataPosition+1)] && ALLOWED[data->GetAt(DataPosition+2)] && ALLOWED[data->GetAt(DataPosition+3)] );			
+			// some taggers (e.g. old iTunes versions) write the 3 character IDs of v2.2 into the 10 byte frame header of v2.3, padded with a
+			// zero byte ("TT2" + zero byte): the frame is read with its v2.2 ID
+			if (!isValid && (FrameID & 0xFF) == 0 && ALLOWED[data->GetAt(DataPosition)] && ALLOWED[data->GetAt(DataPosition+1)] && ALLOWED[data->GetAt(DataPosition+2)])
+			{
+				FrameID >>= 8;
+				isValid = true;
+			}
 		}
 		if (FrameID == 0) // 4 zero bytes: padding area
 			break;

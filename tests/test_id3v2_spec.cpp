@@ -904,3 +904,53 @@ TEST_CASE("ID3v2.3: writing an ordinary tag does not set the unsynchronisation f
     const Bytes f = readFile(s.path);
     CHECK((f[5] & 0x80) == 0);
 }
+
+TEST_CASE("ID3v2.3: 3 character v2.2 frame IDs padded with a zero byte are read", "[id3v2][spec][header]")
+{
+    // written by old iTunes versions: a v2.3 header and 10 byte frame headers, but the IDs are those of v2.2 ("TT2", "TP1") plus a zero byte
+    auto oldFrame = [](const char* id, const char* text) {
+        Bytes data = { 0x00 };
+        put(data, text);
+        Bytes f = frame(id, data, 0, 3);
+        f.insert(f.begin() + 3, 0);
+        return f;
+    };
+    Bytes body = oldFrame("TT2", "Black Or White");
+    put(body, oldFrame("TP1", "Michael Jackson"));
+    put(body, oldFrame("TAL", "Dangerous"));
+    put(body, frame("TRCK", { 0x00, '3' }, 0, 3));   // a regular frame in the same tag
+    auto p = writeTagged("spec_v22_ids_in_v23.mp3", tagBytes(3, 0, body, 20));
+    REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+    CHECK(take(AUDIOGetTitleW()) == L"Black Or White");
+    CHECK(take(AUDIOGetArtistW()) == L"Michael Jackson");
+    CHECK(take(AUDIOGetAlbumW()) == L"Dangerous");
+    CHECK(take(AUDIOGetTrackW()) == L"3");
+
+    SECTION("saving writes regular v2.3 frame IDs and keeps all frames and the audio") {
+        REQUIRE(AUDIOSaveChangesW() != 0);
+        const Bytes saved = readFile(p);
+        CHECK(audioIntact(p));
+        CHECK(findBytes(saved, { 'T', 'T', '2', 0 }) == static_cast<size_t>(-1));
+        CHECK(findBytes(saved, { 'T', 'P', '1', 0 }) == static_cast<size_t>(-1));
+        CHECK(findBytes(saved, { 'T', 'A', 'L', 0 }) == static_cast<size_t>(-1));
+        CHECK(findBytes(saved, { 'T', 'I', 'T', '2' }) != static_cast<size_t>(-1));
+        CHECK(findBytes(saved, { 'T', 'P', 'E', '1' }) != static_cast<size_t>(-1));
+        CHECK(findBytes(saved, { 'T', 'A', 'L', 'B' }) != static_cast<size_t>(-1));
+        CHECK(findBytes(saved, { 'T', 'R', 'C', 'K' }) != static_cast<size_t>(-1));
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        CHECK(take(AUDIOGetTitleW()) == L"Black Or White");
+        CHECK(take(AUDIOGetArtistW()) == L"Michael Jackson");
+        CHECK(take(AUDIOGetAlbumW()) == L"Dangerous");
+        CHECK(take(AUDIOGetTrackW()) == L"3");
+    }
+    SECTION("a changed field is saved with the regular ID, the other fields stay") {
+        AUDIOSetTitleW(L"Changed");
+        REQUIRE(AUDIOSaveChangesW() != 0);
+        CHECK(audioIntact(p));
+        CHECK(findBytes(readFile(p), { 'T', 'T', '2', 0 }) == static_cast<size_t>(-1));
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        CHECK(take(AUDIOGetTitleW()) == L"Changed");
+        CHECK(take(AUDIOGetArtistW()) == L"Michael Jackson");
+        CHECK(take(AUDIOGetAlbumW()) == L"Dangerous");
+    }
+}

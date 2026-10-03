@@ -216,6 +216,11 @@ private:
 	unsigned long headBitrates;                                        /* bit rate indices (one bit each) of the frames at the start of the audio */
 	unsigned long tailBitrates;                                        /* bit rate indices of the last run of frames at the end of the audio */
 	bool noPadding;                                                    /* a constant bit rate encoder that never sets the padding bit (frames of the same length, shorter than the bit rate says) */
+	bool headPadded;                                                   /* a frame at the start of the audio has the padding bit */
+	int headFrames;                                                    /* number of frames checked at the start of the audio */
+	bool tailPadded;                                                   /* a frame of the last run of frames at the end has the padding bit */
+	int tailFrames;                                                    /* number of frames in the last run of frames at the end */
+	bool tailRunMissing;                                               /* no run of frames in the last 128 KB: the end of the file is not audio data */
 	VBRData FVBR;
 	LameData FLame;
 	__int64 lameHeaderStart;                                          /* position of the frame with the LAME tag */
@@ -229,6 +234,7 @@ private:
 	long GetFrameLength();
 	void DecodeHeader(BYTE HeaderData[]);
 	bool ValidFrameAt(long Index, BYTE Data[] );
+	bool FrameChainValid(long Index, BYTE Data[]);
 	bool IsXing(long Index, BYTE Data[] );
 	void GetXingInfo(long Index, BYTE Data[], bool info);
 	long GetSamplesPerFrame();
@@ -248,6 +254,7 @@ private:
 	__int64 LastFrameRunEnd(const BYTE *buffer, size_t length, __int64 bufferStart, bool &openEnd, unsigned long &bitrates);
 	void FindTrailingBytes(FILE *Stream, __int64 tailStart);
 	void CheckPadding(long start, BYTE Data[]);
+	bool PaddingRequired(int count);
 	bool SetBit(LPCWSTR FileName, int HdrPos, BYTE BitPos, bool neu);
 	__int64 firstAudioPos, lastAudioPos;
 public:

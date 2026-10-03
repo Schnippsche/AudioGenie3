@@ -63,6 +63,11 @@ void CMPEGAudio::ResetData()
 	noPadding = false;
 	headBitrates = 0;
 	tailBitrates = 0;
+	headPadded = false;
+	headFrames = 0;
+	tailPadded = false;
+	tailFrames = 0;
+	tailRunMissing = false;
 	firstAudioPos = 0;
 	lastAudioPos = 0;
 	Encoder.Empty();
@@ -199,6 +204,42 @@ bool CMPEGAudio::ValidFrameAt(long Index, BYTE Data[])
 	if (IsFrameHeader(HeaderData))
 		return true;
 	return false;
+}
+
+// true if the frame at Index (already decoded in Frame) is followed by frames with the same version, layer and sample rate: up to 3
+// frames are checked as far as they are in the buffer. A single following header is not enough: garbage at the start of the audio
+// (damaged recordings) often contains a byte pattern that looks like a frame and by chance a second one at the calculated distance
+bool CMPEGAudio::FrameChainValid(long Index, BYTE Data[])
+{
+	const tagFrameData first = Frame;   // DecodeHeader overwrites Frame
+	bool result = false;
+	int verified = 0;
+	long p = Index;
+	for (;;)
+	{
+		const long frameLength = GetFrameLength();
+		if (frameLength < 1)
+			break;
+		p += frameLength;
+		if (p + 4 > DATASIZE)
+		{
+			result = verified > 0;   // the next frame is not in the buffer any more
+			break;
+		}
+		BYTE header[4];
+		memcpy(header, Data + p, 4);
+		if (!IsFrameHeader(header) || ((header[1] >> 3) & 3) != first.VersionID || ((header[1] >> 1) & 3) != first.LayerID || ((header[2] >> 2) & 3) != first.SampleRateID)
+			break;
+		verified++;
+		if (verified >= 3)
+		{
+			result = true;
+			break;
+		}
+		DecodeHeader(header);
+	}
+	Frame = first;
+	return result;
 }
 
 bool CMPEGAudio::IsXing(long Index, BYTE Data[])
@@ -660,7 +701,7 @@ bool CMPEGAudio::FindFrame()
 		{
 			DecodeHeader(HeaderData);
 			/* Check for next frame and try to find VBR header */
-			if (ValidFrameAt((long)Iterator + GetFrameLength(), Data))
+			if (FrameChainValid((long)Iterator, Data))
 			{
 				Frame.Found = true;
 				Frame.FramePosition = StartPosition + (long)Iterator;
@@ -756,6 +797,12 @@ bool CMPEGAudio::ReadFromFile(FILE *Stream)
 				const unsigned long bitrates = headBitrates | tailBitrates;
 				if ((bitrates & (bitrates - 1)) != 0)
 					scanAll = true;
+				// the estimate from the size is useless if the end of the file is not audio data (more than 128 KB of junk), or if the padding
+				// differs between the start and the end of the file (joined files of different encoders): the frames are counted
+				if (tailRunMissing)
+					scanAll = true;
+				if (noPadding ? tailPadded : (headPadded && !tailPadded && PaddingRequired(tailFrames)))
+					scanAll = true;
 			}
 		}
 		GetInternEncoder();
@@ -838,6 +885,8 @@ void CMPEGAudio::CheckPadding(long start, BYTE Data[])
 	bool padded = false;
 	noPadding = false;
 	headBitrates = 0;
+	headPadded = false;
+	headFrames = 0;
 	while (p + 4 <= DATASIZE)
 	{
 		BYTE header[4];
@@ -855,14 +904,23 @@ void CMPEGAudio::CheckPadding(long start, BYTE Data[])
 		p += frameLength;
 	}
 	Frame = first;
-	if (padded || count < 2 || GetSampleRate() <= 0)
-		return;
+	headPadded = padded;
+	headFrames = count;
+	if (!padded && PaddingRequired(count))
+		noPadding = true;
+}
+
+// true if at least 'count' frames of the bit rate and sample rate of Frame have to contain a padded frame (the fraction of the frame length
+// times the number of frames is more than 1.5)
+bool CMPEGAudio::PaddingRequired(int count)
+{
+	if (count < 2 || GetSampleRate() <= 0)
+		return false;
 	// frame length from the bit rate (layer 1: slots of 4 bytes) and the part behind the decimal point
 	const double slot = (Frame.LayerID == MPEG_LAYER_I) ? 4.0 : 1.0;
 	const double exact = (Frame.LayerID == MPEG_LAYER_I ? 12000.0 : (double)GetCoefficient() * 1000.0) * GetBitRateID() / GetSampleRate();
 	const double fraction = (exact - (long)exact) * slot;
-	if (fraction * count >= 1.5)
-		noPadding = true;
+	return fraction * count >= 1.5;
 }
 
 // Searches a buffer for the last run of at least 3 consecutive frames with the version, layer and sample rate of the first frame.
@@ -885,6 +943,7 @@ __int64 CMPEGAudio::LastFrameRunEnd(const BYTE *buffer, size_t length, __int64 b
 		int count = 0;
 		bool open = false;
 		unsigned long runBitrates = 0;
+		bool runPadded = false;
 		for (;;)
 		{
 			if (p + 4 > length)
@@ -901,6 +960,8 @@ __int64 CMPEGAudio::LastFrameRunEnd(const BYTE *buffer, size_t length, __int64 b
 			if (frameLength < 1)
 				break;
 			runBitrates |= 1ul << Frame.BitRateID;
+			if (Frame.PaddingBit)
+				runPadded = true;
 			count++;
 			p += frameLength;
 		}
@@ -909,6 +970,8 @@ __int64 CMPEGAudio::LastFrameRunEnd(const BYTE *buffer, size_t length, __int64 b
 			result = bufferStart + (__int64)(p < length ? p : length);
 			openEnd = open;
 			bitrates = runBitrates;
+			tailPadded = runPadded;
+			tailFrames = count;
 			if (open)
 				break;
 			i = p;
@@ -931,11 +994,15 @@ void CMPEGAudio::FindTrailingBytes(FILE *Stream, __int64 tailStart)
 	bool open;
 	trailingBytes = 0;
 	tailBitrates = 0;
+	tailPadded = false;
+	tailFrames = 0;
+	tailRunMissing = false;
 	if (length < 4 || tailStart < 0)
 		return;
 	if (length > (__int64)vendorValues.GetLength())
 		return;   // the block does not reach the end of the audio data
 	__int64 end = LastFrameRunEnd(vendorValues.m_pData, (size_t)length, tailStart, open, tailBitrates);
+	bool searchedAll = false;
 	if (end < 0)
 	{
 		const __int64 sizes[] = { 32 * 1024, 128 * 1024 };
@@ -951,8 +1018,14 @@ void CMPEGAudio::FindTrailingBytes(FILE *Stream, __int64 tailStart)
 			end = LastFrameRunEnd(buffer, read, start, open, tailBitrates);
 			delete [] buffer;
 			if (start == audioStart)
+			{
+				searchedAll = true;
 				break;   // everything was searched
+			}
 		}
+		// no frames in the last 128 KB: a lot of data that is not audio (junk, a foreign tag) is behind the audio, the estimate from the size is useless
+		if (end < 0 && !searchedAll)
+			tailRunMissing = true;
 	}
 	if (end >= 0 && !open && end < audioEnd)
 		trailingBytes = audioEnd - end;

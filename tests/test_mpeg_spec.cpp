@@ -916,3 +916,67 @@ TEST_CASE("Xing header with the number of frames only: the average bit rate come
     CHECK(MPEGIsVBRW() != 0);
     CHECK(std::abs(AUDIOGetBitrateW() - 128) <= 1);
 }
+
+TEST_CASE("Garbage that looks like a frame before the audio is not taken as the first frame", "[mpeg][spec][sync]")
+{
+    ExactRead defaultRead(false);
+    // damaged recordings start with bytes that form a valid header (MPEG 1 layer 2, 80 kbit/s, 32 kHz: 360 bytes) with another
+    // valid header at the calculated distance; the real audio (MPEG 1 layer 3, 128 kbit/s, 44.1 kHz) follows
+    Bytes file = { 0xFF, 0xFD, 0x58, 0x00 };
+    file.resize(360, 0x11);
+    file.insert(file.end(), { 0xFF, 0xFD, 0x58, 0x00 });
+    file.resize(360 + 360, 0x22);
+    Spec s;
+    const int audioFrames = 40;
+    const Bytes a = framesOf(s, audioFrames);
+    const size_t audioStart = file.size();
+    file.insert(file.end(), a.begin(), a.end());
+    auto p = writeTemp("mpegspec_garbage_start.mp3", file);
+    REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+    CHECK(AUDIOGetSampleRateW() == 44100);
+    CHECK(AUDIOGetBitrateW() == 128);
+    CHECK(MPEGGetFramePositionW() == static_cast<long>(audioStart));
+    CHECK(std::fabs(AUDIOGetDurationW() - audioFrames * 1152.0 / 44100) < 0.01);
+}
+
+TEST_CASE("Estimated duration: padding that differs between the start and the end of the file", "[mpeg][spec][padding]")
+{
+    ExactRead defaultRead(false);
+    const int frames = 300;
+    SECTION("no padding bit at the start, padded frames at the end (joined files)") {
+        Spec s0, s1;
+        s0.paddingPattern = 0;
+        s1.paddingPattern = 1;
+        Bytes file = framesOf(s0, frames);
+        const Bytes b = framesOf(s1, frames);
+        file.insert(file.end(), b.begin(), b.end());
+        auto p = writeTemp("mpegspec_padding_joined_a.mp3", file);
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        CHECK(std::fabs(AUDIOGetDurationW() - 2 * frames * 1152.0 / 44100) < 0.0005);
+    }
+    SECTION("padded frames at the start, no padding bit at the end") {
+        Spec s0, s1;
+        s0.paddingPattern = 1;
+        s1.paddingPattern = 0;
+        Bytes file = framesOf(s0, frames);
+        const Bytes b = framesOf(s1, frames);
+        file.insert(file.end(), b.begin(), b.end());
+        auto p = writeTemp("mpegspec_padding_joined_b.mp3", file);
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        CHECK(std::fabs(AUDIOGetDurationW() - 2 * frames * 1152.0 / 44100) < 0.0005);
+    }
+}
+
+TEST_CASE("Estimated duration: more than 128 KB of data that is not audio behind the last frame", "[mpeg][spec][trailing]")
+{
+    ExactRead defaultRead(false);
+    Spec s;
+    s.paddingPattern = 2;
+    const int audioFrames = 120;
+    Bytes file = framesOf(s, audioFrames);
+    file.insert(file.end(), 300 * 1024, 0x11);   // truncated rip with garbage behind the audio
+    auto p = writeTemp("mpegspec_big_trailing_junk.mp3", file);
+    REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+    CHECK(MPEGGetFramesW() == audioFrames);
+    CHECK(std::fabs(AUDIOGetDurationW() - audioFrames * 1152.0 / 44100) < 0.0005);
+}
