@@ -22,59 +22,112 @@
 #include "Tools.h"
 #include "share.h"
 #include <io.h>
+#include <memory>
+#include <new>
 
 int CTools::lastError;
 __int64 CTools::FileSize;
 FILE *CTools::analysisStream = NULL;
-BYTE CTools::headCache[CTools::HEAD_CACHE_SIZE];
+static std::unique_ptr<BYTE[]> g_headBuffer;   // the cache of the start of the file
+static size_t g_headCapacity = 0;
 size_t CTools::headCacheLength = 0;
+bool CTools::streamAtStart = false;
+bool CTools::streamAtHeadEnd = false;
 BYTE CTools::tailCache[CTools::TAIL_CACHE_SIZE];
 size_t CTools::tailCacheLength = 0;
 
-static_assert(CTools::HEAD_CACHE_SIZE == CTools::TAIL_CACHE_SIZE, "readAt checks the length against one size for both caches");
+// makes room for count bytes in the cache of the start of the file, the bytes that are in it stay
+static bool reserveHead(size_t count)
+{
+	if (count <= g_headCapacity)
+		return true;
+	std::unique_ptr<BYTE[]> bigger(new (std::nothrow) BYTE[count]);
+	if (!bigger)
+		return false;
+	if (CTools::headCacheLength != 0)
+		memcpy(bigger.get(), g_headBuffer.get(), CTools::headCacheLength);
+	g_headBuffer = std::move(bigger);
+	g_headCapacity = count;
+	return true;
+}
 
 size_t CTools::readAt(FILE *Stream, __int64 pos, void *destination, size_t length)
 {
 	if (Stream == NULL || length == 0)
 		return 0;
-	if (Stream == analysisStream && pos >= 0 && length <= HEAD_CACHE_SIZE)
+	if (Stream == analysisStream && pos >= 0)
 	{
-		// the start of the file (the whole file if it is small)
-		const __int64 headEnd = FileSize < (__int64)HEAD_CACHE_SIZE ? FileSize : (__int64)HEAD_CACHE_SIZE;
+		// the start of the file: the first HEAD_CACHE_SIZE bytes (the whole file if it is small), or what extendHeadCache has read
+		const __int64 headEnd = headCacheLength != 0 ? (__int64)headCacheLength : (FileSize < (__int64)HEAD_CACHE_SIZE ? FileSize : (__int64)HEAD_CACHE_SIZE);
 		if (pos + (__int64)length <= headEnd)
 		{
-			if (headCacheLength == 0)
+			if (headCacheLength == 0 && reserveHead((size_t)headEnd))
 			{
 				const size_t count = (size_t)headEnd;
-				if (_fseeki64(Stream, 0, SEEK_SET) == 0 && fread(headCache, 1, count, Stream) == count)
+				// a stream that was just opened is at the start of the file: no seek
+				if ((streamAtStart || _fseeki64(Stream, 0, SEEK_SET) == 0) && fread(g_headBuffer.get(), 1, count, Stream) == count)
+				{
 					headCacheLength = count;
+					streamAtHeadEnd = true;
+				}
+				streamAtStart = false;
 			}
 			if (headCacheLength != 0)
 			{
-				memcpy(destination, headCache + (size_t)pos, length);
+				memcpy(destination, g_headBuffer.get() + (size_t)pos, length);
 				return length;
 			}
 		}
 		// the end of the file
-		const __int64 cacheStart = FileSize > (__int64)TAIL_CACHE_SIZE ? FileSize - (__int64)TAIL_CACHE_SIZE : 0;
-		if (pos >= cacheStart && pos + (__int64)length <= FileSize)
+		if (length <= TAIL_CACHE_SIZE)
 		{
-			if (tailCacheLength == 0)
+			const __int64 cacheStart = FileSize > (__int64)TAIL_CACHE_SIZE ? FileSize - (__int64)TAIL_CACHE_SIZE : 0;
+			if (pos >= cacheStart && pos + (__int64)length <= FileSize)
 			{
-				const size_t count = (size_t)(FileSize - cacheStart);
-				if (_fseeki64(Stream, cacheStart, SEEK_SET) == 0 && fread(tailCache, 1, count, Stream) == count)
-					tailCacheLength = count;
-			}
-			if (tailCacheLength != 0)
-			{
-				memcpy(destination, tailCache + (size_t)(pos - cacheStart), length);
-				return length;
+				if (tailCacheLength == 0)
+				{
+					const size_t count = (size_t)(FileSize - cacheStart);
+					streamAtStart = streamAtHeadEnd = false;
+					if (_fseeki64(Stream, cacheStart, SEEK_SET) == 0 && fread(tailCache, 1, count, Stream) == count)
+						tailCacheLength = count;
+				}
+				if (tailCacheLength != 0)
+				{
+					memcpy(destination, tailCache + (size_t)(pos - cacheStart), length);
+					return length;
+				}
 			}
 		}
 	}
+	streamAtStart = streamAtHeadEnd = false;
 	if (_fseeki64(Stream, pos, SEEK_SET) != 0)
 		return 0;
 	return fread(destination, 1, length, Stream);
+}
+
+void CTools::extendHeadCache(FILE *Stream, __int64 end)
+{
+	if (Stream == NULL || Stream != analysisStream || headCacheLength == 0)
+		return;   // only after the first read of the start
+	if (end > FileSize)
+		end = FileSize;
+	if (end <= (__int64)headCacheLength || end > (__int64)HEAD_CACHE_MAX)
+		return;
+	if (!reserveHead((size_t)end))
+		return;
+	const size_t have = headCacheLength;
+	const size_t count = (size_t)end - have;
+	// directly behind the first read of the start the stream is at the right position
+	const bool seek = !streamAtHeadEnd;
+	streamAtStart = streamAtHeadEnd = false;
+	if (seek && _fseeki64(Stream, (__int64)have, SEEK_SET) != 0)
+		return;
+	// One read of exactly count bytes: fread would split it into a read of a multiple of the buffer size (8 KB) and one more read of 8 KB for the
+	// rest. The buffer of the stream is empty here (directly behind the first read of the start, or behind the seek), the position of the file is the
+	// one of the stream, and every other read of the stream is done behind a seek.
+	const int got = _read(_fileno(Stream), g_headBuffer.get() + have, (unsigned int)count);
+	if (got > 0)
+		headCacheLength = have + (size_t)got;
 }
 
 __int64 CTools::fileLength(FILE *Stream)

@@ -58,6 +58,10 @@ BYTE GetFileFormat(FILE *Stream)
 		if (v2.ReadHeader(Stream))
 		{
 			CTools::ID3v2Size = v2.Size;
+			// If the first block of the audio data (DATASIZE bytes) behind the tag does not fit into the cache of the start of the file, the cache is
+			// extended behind the tag with one read: the header at the end of the tag, the tag (read later) and the first block come from the cache
+			if ((__int64)v2.Size + DATASIZE > (__int64)CTools::headCacheLength)
+				CTools::extendHeadCache(Stream, (__int64)v2.Size + (__int64)CTools::HEAD_CACHE_SIZE);
 			result = header.ReadFromFileAt(Stream, v2.Size);
 			if (result == AUDIO_FORMAT_INVALID)
 				result = AUDIO_FORMAT_UNKNOWN;   // bugfix for mpeg headers that do not directly follow the id3v2 tag

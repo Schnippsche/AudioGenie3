@@ -1074,12 +1074,13 @@ TEST_CASE("ID3v2 tag sizes around the cache of the start of the file give the sa
 {
     // The analysis reads the first 8192 bytes of the file once and answers the reads of the format, the ID3v2 header and tag and the first MPEG
     // block (3460 bytes) from that block, as far as they are completely inside of it. A tag that ends at 4732 or before leaves the whole first MPEG
-    // block inside, a larger tag does not, and a tag larger than the cache is read from the file. The results must not depend on it.
+    // block inside, behind a larger tag the cache is extended (up to 256 KB: tag and 8 KB behind it), a tag that is still larger is read from the file.
+    // The results must not depend on it.
     const Bytes title = { 0x03, 'T', 'i', 't', 'l', 'e' };
     const Bytes body = frame("TIT2", title);
     long frames = 0;
     float duration = 0;
-    for (size_t total : std::vector<size_t>{ 40, 100, 4000, 4732, 4733, 5000, 8000, 8181, 8192, 8193, 8300, 12000, 20000 }) {
+    for (size_t total : std::vector<size_t>{ 40, 100, 4000, 4732, 4733, 5000, 8000, 8181, 8192, 8193, 8300, 12000, 20000, 60000, 131072, 253951, 253952, 262144, 300000 }) {
         INFO("tag of " << total << " bytes");
         auto p = writeTagged("spec_head_cache.mp3", tagBytes(4, 0, body, total - 10 - body.size()));
         REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
