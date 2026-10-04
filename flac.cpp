@@ -413,7 +413,7 @@ bool CFLAC::CurrentMetadataSize(LPCWSTR FileName, long &size)
 	}
 	bool ok = false;
 	BYTE header[4];
-	const __int64 fileLength = _filelengthi64(_fileno(Stream));   // an earlier save may have changed the size of the file
+	const __int64 fileLength = CTools::fileLength(Stream);   // an earlier save may have changed the size of the file
 	__int64 pos = CTools::ID3v2Size;
 	_fseeki64(Stream, pos, SEEK_SET);
 	if (fread(header, 1, 4, Stream) == 4 && memcmp(header, FLAC_ID, 4) == 0)

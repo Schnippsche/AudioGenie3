@@ -106,7 +106,7 @@ bool CLyrics::ReadHeader(FILE *Stream)
 	FVersion = LYRICS_VERSION_UNKNOWN;
 	ID3v1AreaSize = 0;
 	memset(ID3v1Area, 0, sizeof(ID3v1Area));
-	const __int64 fileSize = _filelengthi64(_fileno(Stream));
+	const __int64 fileSize = CTools::fileLength(Stream);
 	/* one read of the end of the file: the id3v1 data (up to 355 bytes), an APE footer in front of it and the end of the lyrics tag */
 	BYTE tail[512];
 	const size_t want = (size_t)(fileSize < (__int64)sizeof(tail) ? fileSize : (__int64)sizeof(tail));

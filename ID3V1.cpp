@@ -54,7 +54,7 @@ void CID3V1::ResetData()
 
 int CID3V1::DetectSize(FILE *Stream)
 {
-	const __int64 fileSize = _filelengthi64(_fileno(Stream));
+	const __int64 fileSize = CTools::fileLength(Stream);
 	char id[4];
 	if (fileSize < ID3V1_TAG_SIZE || _fseeki64(Stream, fileSize - ID3V1_TAG_SIZE, SEEK_SET) != 0 || fread(id, 1, 3, Stream) != 3 || memcmp(id, ID3V1_ID, 3) != 0)
 		return 0;

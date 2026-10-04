@@ -788,9 +788,13 @@ bool CMPEGAudio::ReadFromFile(FILE *Stream)
 		if (!FVBR.Found)
 		{
 			vendorValues.Clear();
-			if (_fseeki64(Stream, -DATASIZE - CTools::ID3v1Size - CTools::LyricsSize, SEEK_END) != 0)
+			// absolute position instead of a seek relative to the end of the file and a query of the position: each of them is a system call
+			__int64 tailStart = CTools::fileLength(Stream) - DATASIZE - CTools::ID3v1Size - CTools::LyricsSize;
+			if (tailStart < 0 || _fseeki64(Stream, tailStart, SEEK_SET) != 0)
+			{
+				tailStart = 0;
 				_fseeki64(Stream, 0, SEEK_SET); // file is smaller than the search range
-			const __int64 tailStart = _ftelli64(Stream);
+			}
 			vendorValues.FileRead(DATASIZE, Stream);
 			if (!scanAll)
 			{

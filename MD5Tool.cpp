@@ -45,7 +45,7 @@ bool CMD5Tool::calcHashFromFile(LPCWSTR FileName, __int64 startPos, __int64 endP
 	if ( (Stream = _wfsopen(FileName, READ_ONLY, _SH_DENYWR)) != NULL)
 	{
 		int len;
-		end = (endPos == 0) ? _filelengthi64(_fileno(Stream)) - 1 : endPos;		
+		end = (endPos == 0) ? CTools::fileLength(Stream) - 1 : endPos;		
 		start = min(startPos, end);
 		maxLoad = end - start + 1;
 		ATLTRACE(_T("MD5calc, start=%I64d ende=%I64d maxLoad=%I64d\n"), start, end, maxLoad);

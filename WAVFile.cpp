@@ -555,7 +555,7 @@ bool CWAVFile::SaveToFile(LPCWSTR FileName)
 		return false;
 	}
 	_fseeki64(Source, CTools::ID3v2Size, SEEK_SET);
-	CTools::FileSize = _filelengthi64(_fileno(Source));
+	CTools::FileSize = CTools::fileLength(Source);
 	CWAVRIFFContainer *newData = new CWAVRIFFContainer();
 	if (!newData->load(Source, CTools::ID3v2Size, (u64)(CTools::FileSize -  CTools::ID3v1Size)))
 	{

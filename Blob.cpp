@@ -43,7 +43,7 @@ static size_t limitToFileRest(size_t nLen, FILE *Stream)
 	__int64 pos = _ftelli64(Stream);
 	if (pos < 0)
 		return nLen;
-	__int64 fileLen = _filelengthi64(_fileno(Stream));
+	__int64 fileLen = CTools::fileLength(Stream);
 	if (fileLen < 0)
 		return nLen;
 	unsigned __int64 rest = (fileLen > pos) ? (unsigned __int64)(fileLen - pos) : 0;

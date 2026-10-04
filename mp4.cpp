@@ -547,7 +547,7 @@ bool CMP4::SaveToFile(LPCWSTR FileName)
 		oldTaggings = atom->copy();
 	}
 	_fseeki64(Source, CTools::ID3v2Size, SEEK_SET);
-	CTools::FileSize = _filelengthi64(_fileno(Source));
+	CTools::FileSize = CTools::fileLength(Source);
 	CMP4_MainContainer *newData = new CMP4_MainContainer();
 	newData->load(Source, CTools::ID3v2Size, (u64)(CTools::FileSize - CTools::ID3v1Size));
 	atom = newData->find(MDAT_PFAD);

@@ -54,7 +54,7 @@ void CAPE::ResetData()
 
 bool CAPE::FindTailFooter(FILE *Stream, int id3v1Size, bool checkLyrics, __int64 &footerPos, __int64 &lyricsAfter)
 {
-	const __int64 end = _filelengthi64(_fileno(Stream)) - id3v1Size;
+	const __int64 end = CTools::fileLength(Stream) - id3v1Size;
 	BYTE id[8];
 	footerPos = 0;
 	lyricsAfter = 0;
@@ -237,7 +237,7 @@ bool CAPE::FindHeadTag(FILE *Stream, __int64 &offset, __int64 &length)
 	BYTE id3[10];
 	offset = 0;
 	length = 0;
-	const __int64 fileSize = _filelengthi64(_fileno(Stream));
+	const __int64 fileSize = CTools::fileLength(Stream);
 	if (_fseeki64(Stream, 0, SEEK_SET) != 0)
 		return false;
 	// behind an ID3v2 tag: the size field is synchsafe, a footer (v2.4) has 10 bytes

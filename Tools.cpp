@@ -21,9 +21,23 @@
 #include "StdAfx.h"
 #include "Tools.h"
 #include "share.h"
+#include <io.h>
 
 int CTools::lastError;
 __int64 CTools::FileSize;
+FILE *CTools::analysisStream = NULL;
+
+__int64 CTools::fileLength(FILE *Stream)
+{
+	if (Stream == NULL)
+		return -1;
+	if (Stream == analysisStream)
+		return FileSize;
+	LARGE_INTEGER size;
+	if (!GetFileSizeEx((HANDLE)_get_osfhandle(_fileno(Stream)), &size))
+		return -1;
+	return size.QuadPart;
+}
 int CTools::ID3v1Size;
 long CTools::ID3v2Size;
 int CTools::LyricsSize;

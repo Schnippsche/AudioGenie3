@@ -149,6 +149,11 @@ public:
 	// writes the file again: the data before the region, the new data (may be NULL) and the data behind the old region
 	static bool rewriteRegion(LPCWSTR FileName, __int64 offset, __int64 oldLength, CBlob *data);
 	static __int64 FileSize;
+	// the stream that AUDIOAnalyzeFileW has opened (NULL outside of the analysis): its file size was read when it was opened, FileSize
+	static FILE *analysisStream;
+	// length of the file of the stream in bytes, -1 on an error. One system call (_filelengthi64 needs about four: it seeks to the end and back);
+	// for the stream of the running analysis no call at all, because the file is not changed during the analysis and its size is known
+	static __int64 fileLength(FILE *Stream);
 	static int ID3v1Size;
 	static long ID3v2Size;
 	static int LyricsSize;
@@ -197,4 +202,12 @@ private:
 	static SYSTEMTIME stTime; //To contain the date/time
 	static CAtlString logOutput;
 	static CBlob output;
+};
+
+// marks the stream of the running analysis for CTools::fileLength(), as long as it exists
+class CAnalysisStream
+{
+public:
+	explicit CAnalysisStream(FILE *Stream) { CTools::analysisStream = Stream; }
+	~CAnalysisStream() { CTools::analysisStream = NULL; }
 };
