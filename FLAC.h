@@ -66,6 +66,7 @@ private:
   long anzComments;
   long oldLen;
   __int64 firstAudioPosition;
+  __int64 readPosition;                               // the position in the file while the metadata blocks are read (absolute reads, see CTools::readAt)
   bool mustRebuild;
   bool metadataComplete;                              // the metadata blocks were read up to the last block
   bool commentRead;                                // the first Vorbis comment block was read

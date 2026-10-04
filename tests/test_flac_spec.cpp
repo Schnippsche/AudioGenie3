@@ -573,3 +573,35 @@ TEST_CASE("FLAC: comment fields larger than the text buffer are not lost when ot
     for (const std::string& c : commentsOf(readFile(p))) if (c == "COMMENT=short") found = true;
     CHECK(found);
 }
+
+TEST_CASE("FLAC: blocks around the size of the cache of the start of the file (8 KB) and of its extension (256 KB)", "[flac][spec]")
+{
+    // The blocks are read from the cache of the start of the file, from its extension or directly from the file. The fields behind a large block
+    // (the comment and the picture) and the position of the audio must not depend on it.
+    for (size_t size : std::vector<size_t>{ 0, 4000, 8100, 8180, 8192, 9000, 100000, 253000, 262144, 300000, 1000000 }) {
+        INFO("size of the block in front of the comment: " << size);
+        Bytes pic;
+        be32(pic, 3); be32(pic, 9); put(pic, "image/png"); be32(pic, 1); put(pic, "d");
+        be32(pic, 1); be32(pic, 2); be32(pic, 24); be32(pic, 0);
+        const Bytes png = pngHeader(1, 2, 8, 2);
+        be32(pic, static_cast<uint32_t>(png.size())); put(pic, png);
+        for (size_t behind : std::vector<size_t>{ 0, 20000 }) {
+            Bytes f;
+            put(f, "fLaC");
+            put(f, block(0, false, streamInfo(4096, 4096, 100, 900, 44100, 2, 16, 441000)));
+            put(f, block(2, false, Bytes(size, 0x55)));   // an APPLICATION block
+            put(f, block(4, false, vorbisComments("v", { "TITLE=Behind", "ARTIST=Large block" })));
+            put(f, block(6, false, pic));
+            put(f, block(1, true, Bytes(behind, 0)));
+            size_t audio = f.size();
+            for (int i = 0; i < 10; i++) put(f, frame(false, static_cast<uint64_t>(i), 12, 4096, 1, 200));
+            auto p = writeTemp("flac_block_sizes.flac", f);
+            REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == FLAC);
+            CHECK(take(FLACGetUserItemW(L"TITLE")) == L"Behind");
+            CHECK(take(FLACGetUserItemW(L"ARTIST")) == L"Large block");
+            CHECK(FLACGetPictureCountW() == 1);
+            CHECK(std::fabs(AUDIOGetDurationW() - 10.0) < 0.0005);
+            CHECK(AUDIOGetBitrateW() == static_cast<long>((f.size() - audio) * 8.0 / 10.0 / 1000.0 + 0.5));
+        }
+    }
+}

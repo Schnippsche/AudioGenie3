@@ -160,6 +160,7 @@ public:
 	static size_t readAt(FILE *Stream, __int64 pos, void *destination, size_t length);
 	static const size_t HEAD_CACHE_SIZE = 8192;
 	static const size_t HEAD_CACHE_MAX = 256 * 1024;
+	static const size_t DIRECT_READ_MIN = 8192;   // from this length on readAt reads from the file directly (one read instead of the split of the C library)
 	static size_t headCacheLength;   // 0: not read yet (or for another analysis); the bytes are in Tools.cpp
 	// Extends the cache of the start of the file to the position end (not more than HEAD_CACHE_MAX bytes, not behind the end of the file) with one read.
 	// Called when the size of the ID3v2 tag is known: the tag and the first MPEG frames behind it are then answered from the cache as well.

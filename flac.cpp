@@ -211,10 +211,12 @@ bool CFLAC::ReadFromFile(FILE *Stream)
 {
 	/* Read FLAC's Audio header data */
 	ResetData();
-	_fseeki64(Stream, CTools::ID3v2Size, SEEK_SET);
+	// the metadata blocks are read from absolute positions, so the start of the file comes from the cache of the analysis (no read of its own)
+	readPosition = CTools::ID3v2Size;
 	memset(tmpHdr, 0, 4);
-	if (fread(tmpHdr, 1, 4, Stream) == 4 && memcmp(tmpHdr, FLAC_ID, 4) == 0)
+	if (CTools::readAt(Stream, readPosition, tmpHdr, 4) == 4 && memcmp(tmpHdr, FLAC_ID, 4) == 0)
 	{
+		readPosition += 4;
 		// metadata blocks: the first one is the STREAMINFO, the last one has the flag in its header
 		bool first = true;
 		bool ok = true;
@@ -229,7 +231,7 @@ bool CFLAC::ReadFromFile(FILE *Stream)
 			return false;   // no STREAMINFO
 		}
 		metadataComplete = ok;
-		firstAudioPosition = _ftelli64(Stream);
+		firstAudioPosition = readPosition;
 		oldLen = (long)(firstAudioPosition - CTools::ID3v2Size);
 		if (ok && Samples == 0 && SampleRate > 0)
 			Samples = SamplesOfLastFrame(Stream);
@@ -243,7 +245,9 @@ bool CFLAC::ReadFromFile(FILE *Stream)
 bool CFLAC::ReadBlockHeader(FILE *Stream)
 {
 	memset(tmpHdr, 0, 4);
-	if (fread(tmpHdr, 1, 4, Stream) != 4)
+	const size_t got = CTools::readAt(Stream, readPosition, tmpHdr, 4);
+	readPosition += (__int64)got;
+	if (got != 4)
 	{
 		BlockHeader.lastBlock = true;   // the file ends inside the metadata
 		return false;
@@ -273,7 +277,7 @@ bool CFLAC::ReadBlock(FILE *Stream, bool first)
 		return false;
 	}
 	const int size = BlockHeader.Size;
-	if (_ftelli64(Stream) + size > CTools::FileSize)
+	if (readPosition + size > CTools::FileSize)
 	{
 		BlockHeader.lastBlock = true;
 		return false;
@@ -284,6 +288,10 @@ bool CFLAC::ReadBlock(FILE *Stream, bool first)
 		return false;
 	}
 	ATLTRACE(L"Block:%i  size:%i\n", BlockHeader.Type, size);
+	// A block (comment, picture, ...) that is not inside of the cache of the start of the file: it is read with the next block header in one read
+	// (a padding is skipped, only the next header is needed).
+	if (BlockHeader.Type != METADATA_BLOCK_PADDING && readPosition + size + (BlockHeader.lastBlock ? 0 : 4) > (__int64)CTools::headCacheLength)
+		CTools::extendHeadCache(Stream, readPosition + size + (__int64)CTools::HEAD_CACHE_SIZE);
 	switch (BlockHeader.Type)
 	{
 	case METADATA_BLOCK_STREAMINFO:
@@ -292,17 +300,16 @@ bool CFLAC::ReadBlock(FILE *Stream, bool first)
 			BlockHeader.lastBlock = true;
 			return false;
 		}
-		BlockStreamInfo.FileRead(size, Stream);
+		BlockStreamInfo.FileReadAt(Stream, readPosition, size);
 		AnalyzeStreamInfo();
 		break;
 	case METADATA_BLOCK_PADDING:
-		_fseeki64(Stream, size, SEEK_CUR);
 		break;
 	case METADATA_BLOCK_COMMENT:
 		{
 			// the Vorbis comments of the block (no framing bit); only the first block counts
 			CBlob comments;
-			comments.FileRead(size, Stream);
+			comments.FileReadAt(Stream, readPosition, size);
 			if (!commentRead)
 				AnalyzeVorbisComments(comments.m_pData, comments.GetLength());
 			commentRead = true;
@@ -310,17 +317,18 @@ bool CFLAC::ReadBlock(FILE *Stream, bool first)
 		break;
 	case METADATA_BLOCK_PICTURE:
 		BlockCover.Clear();
-		BlockCover.FileRead(size, Stream);
+		BlockCover.FileReadAt(Stream, readPosition, size);
 		if (BlockCover.GetLength() > 32)
 			covers.Add(new CFlacCover(&BlockCover));
 		break;
 	default:
 		// seek table, application, cue sheet and the block types that are not known: written back as they are
 		Daten.Clear();
-		Daten.FileRead(size, Stream);
+		Daten.FileReadAt(Stream, readPosition, size);
 		BlockOther.AddMemory(tmpHdr, 4);
 		BlockOther.AddBlob(Daten);
 	};
+	readPosition += size;
 	return true;
 }
 

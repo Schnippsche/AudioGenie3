@@ -102,7 +102,20 @@ size_t CTools::readAt(FILE *Stream, __int64 pos, void *destination, size_t lengt
 	streamAtStart = streamAtHeadEnd = false;
 	if (_fseeki64(Stream, pos, SEEK_SET) != 0)
 		return 0;
-	return fread(destination, 1, length, Stream);
+	if (length < DIRECT_READ_MIN)
+		return fread(destination, 1, length, Stream);
+	// A large read: fread would split it into a read of a multiple of the buffer size (8 KB) and one more read of 8 KB for the rest. The seek has
+	// emptied the buffer of the stream, so the position of the stream is the one of the file; reading from the file directly leaves it right.
+	size_t done = 0;
+	while (done < length)
+	{
+		const size_t part = length - done < 0x40000000 ? length - done : 0x40000000;
+		const int got = _read(_fileno(Stream), (BYTE *)destination + done, (unsigned int)part);
+		if (got <= 0)
+			break;
+		done += (size_t)got;
+	}
+	return done;
 }
 
 void CTools::extendHeadCache(FILE *Stream, __int64 end)
