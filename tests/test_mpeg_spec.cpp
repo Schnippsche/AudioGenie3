@@ -980,3 +980,28 @@ TEST_CASE("Estimated duration: more than 128 KB of data that is not audio behind
     CHECK(MPEGGetFramesW() == audioFrames);
     CHECK(std::fabs(AUDIOGetDurationW() - audioFrames * 1152.0 / 44100) < 0.0005);
 }
+
+TEST_CASE("Estimated number of frames: counted from the first frame, for every padding pattern", "[mpeg][spec][frames]")
+{
+    ExactRead defaultRead(false);
+    const int frames = 400;
+    // junk in front of the first frame (more than the search range of 1729 bytes of the first block), then frames without a Xing header
+    const size_t junk = 2500;
+    for (Version v : { V1, V2 })
+        for (int pad = 0; pad < 3; pad++) {
+            Spec s;
+            s.version = v;
+            s.paddingPattern = pad;
+            s.bitrateIndex = v == V1 ? 9 : 8;
+            s.sampleRateIndex = 0;
+            INFO("MPEG " << (v == V1 ? "1" : "2") << " padding pattern " << pad);
+            Bytes file(junk, 0x00);
+            const Bytes a = framesOf(s, frames);
+            file.insert(file.end(), a.begin(), a.end());
+            auto p = writeTemp("mpegspec_frames_estimate.mp3", file);
+            REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+            CHECK(MPEGGetFramePositionW() == static_cast<long>(junk));
+            // a constant bit rate file without padding bit estimates one frame more at most (the duration is calculated from the size)
+            CHECK(std::abs(MPEGGetFramesW() - frames) <= 1);
+        }
+}

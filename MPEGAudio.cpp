@@ -489,8 +489,6 @@ long CMPEGAudio::GetBitRate()
 
 long CMPEGAudio::GetFrames()
 {
-	__int64 MPEGSize;
-	float tmp;
 	if (!Frame.Found)
 		return 0;
 	/* the frames were counted (MPEGEXACTREAD): exact, independent of data after the last frame */
@@ -501,10 +499,15 @@ long CMPEGAudio::GetFrames()
 		return FVBR.Frames;
 	else
 	{
-		// without the data behind the last frame (trailingBytes, found without a frame scan)
-		MPEGSize = CTools::FileSize - CTools::ID3v1Size - StartPosition - CTools::LyricsSize - CTools::APESize - trailingBytes;
-		tmp = (float)MPEGSize / float(GetFrameLength()) + 0.9f;
-		return long( tmp );
+		// The number of frames follows from the estimated duration (GetDuration(): counted from the first frame, without the data behind the last
+		// frame, with the average frame length of the bit rate). The length of one frame is not suitable for the division: it is 417 or 418 bytes at
+		// 128 kbit/s and 44.1 kHz, the average is 417.96, which makes the result up to 0.2 % wrong. StartPosition would not be suitable as the start
+		// either: it is only the start of the block in which the first frame was found, data in front of the first frame (junk, another tag)
+		// would be counted as frames.
+		const double samplesPerFrame = (double)GetSamplesPerFrame();
+		if (samplesPerFrame <= 0 || GetSampleRate() <= 0)
+			return 0;
+		return (long)((double)GetDuration() * GetSampleRate() / samplesPerFrame + 0.5);
 	}
 }
 
