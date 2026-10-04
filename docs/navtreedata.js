@@ -34,26 +34,28 @@ var NAVTREE =
       [ "MP3 files with a variable bit rate (VBR)", "index.html#autotoc_md6", null ]
     ] ],
     [ "Performance", "index.html#autotoc_md7", [
-      [ "Analyzing files (<span class=\"tt\">AUDIOAnalyzeFileW</span>)", "index.html#autotoc_md8", null ],
-      [ "Optimizations", "index.html#autotoc_md9", null ],
-      [ "Tried without a gain (not adopted)", "index.html#autotoc_md10", null ]
+      [ "Analyzing files (<span class=\"tt\">AUDIOAnalyzeFileW</span>)", "index.html#autotoc_md8", [
+        [ "Comparison with other libraries (local SSD, warm cache)", "index.html#autotoc_md9", null ]
+      ] ],
+      [ "Optimizations", "index.html#autotoc_md10", null ],
+      [ "Tried without a gain (not adopted)", "index.html#autotoc_md11", null ]
     ] ],
-    [ "Getting started", "index.html#autotoc_md11", [
-      [ "Build", "index.html#autotoc_md12", null ],
-      [ "Register the DLL", "index.html#autotoc_md13", null ],
-      [ "Wrappers", "index.html#autotoc_md14", null ]
+    [ "Getting started", "index.html#autotoc_md12", [
+      [ "Build", "index.html#autotoc_md13", null ],
+      [ "Register the DLL", "index.html#autotoc_md14", null ],
+      [ "Wrappers", "index.html#autotoc_md15", null ]
     ] ],
-    [ "Examples", "index.html#autotoc_md15", [
-      [ "C++: read tags and technical data", "index.html#autotoc_md16", null ],
-      [ "C++: change tags and save", "index.html#autotoc_md17", null ],
-      [ "C++: add a cover picture to an MP3", "index.html#autotoc_md18", null ],
-      [ "C", "index.html#autotoc_md19", null ],
-      [ "Delphi", "index.html#autotoc_md20", null ],
-      [ "VB6", "index.html#autotoc_md21", null ]
+    [ "Examples", "index.html#autotoc_md16", [
+      [ "C++: read tags and technical data", "index.html#autotoc_md17", null ],
+      [ "C++: change tags and save", "index.html#autotoc_md18", null ],
+      [ "C++: add a cover picture to an MP3", "index.html#autotoc_md19", null ],
+      [ "C", "index.html#autotoc_md20", null ],
+      [ "Delphi", "index.html#autotoc_md21", null ],
+      [ "VB6", "index.html#autotoc_md22", null ]
     ] ],
-    [ "Documentation", "index.html#autotoc_md22", null ],
-    [ "Tests", "index.html#autotoc_md23", null ],
-    [ "License", "index.html#autotoc_md24", null ],
+    [ "Documentation", "index.html#autotoc_md23", null ],
+    [ "Tests", "index.html#autotoc_md24", null ],
+    [ "License", "index.html#autotoc_md25", null ],
     [ "Picture types", "picturetypes.html", null ],
     [ "Topics", "topics.html", "topics" ]
   ] ]

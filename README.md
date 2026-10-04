@@ -43,8 +43,9 @@ more) to catch what synthetic tests alone miss.
   below), so an old file tagged by a tool that wrote only a private, non-standard ID3v2 frame (RealJukebox and
   similar) is no longer read as having no title or artist at all.
 - **Faster**: the MPEG frame scan reads in 64 KB blocks instead of one read per frame (40 MB of frames: 181 ms ->
-  6 ms); MD5 throughput is up 32% (560 -> 745 MB/s); analyzing a file needs about a quarter of the read calls it used to
-  (3.9 instead of 15.7) and 21 % less time than in 3.0.2 (a profile showed that 93 % of the time is spent in system calls).
+  6 ms); MD5 throughput is up 32% (560 -> 745 MB/s); analyzing a file needs less than half the read calls of 2.0.4 (3.9 instead
+  of 8.9 per file), takes 20 % less time than 2.0.4 and 24 % less than 3.0.2, and is about twice as fast as TagLib and seven times as fast as
+  mutagen (see "Performance"; a profile showed that 93 % of the former time was spent in system calls).
 - **Open source and far more thoroughly tested**: LGPL-2.1-or-later; a Catch2 test suite that grew from about 5,400
   assertions (3.0.0) to over 20,000 today, run on 32 and 64 bit with AddressSanitizer and fuzzing; a contract check
   that every wrapper (C/C++, C#, VB.NET, Delphi, VB6, XProfan) matches the exports; tools to scan and compare whole
@@ -166,15 +167,36 @@ network drive (SMB) with about 16000 MP3 files (measured with 3.0.0). The number
 The analysis reads only the beginning and the end of a file, so its time does not depend on the file size, and it is limited by the
 first access to the file, not by the CPU.
 
-| | local SSD (22,876 files, cached) | network drive (16000 files, first access) |
-|---|---|---|
-| time per file | 0.074 ms (3.0.2: 0.093 ms) | about 33 ms (2.0.4: about 32 ms) |
-| read calls per file | 3.9 (3.0.2: 8.8) | 10.2 (2.0.4: 12.2) |
+#### Comparison with other libraries (local SSD, warm cache)
 
-On an earlier 7,339-file subset of the local library AudioGenie 2.0.4 needed 0.14 ms and 15.7 read calls per file. The network values were
-not measured again for 3.0.3; the cost of the first access to each file dominates there, so fewer system calls are expected to change little.
+All libraries analyzed the same 22,876 files of a local library (101 GB, 22,666 of them MP3, the rest WMA, M4A, WAV and AAC) from the NVMe
+drive with a warm file system cache. For every file a small program reads what an application that shows a library needs: the format, the
+duration, bit rate, sample rate, channels and the tags title, artist, album, year, track, genre and comment. The time is the median of 7
+passes; a second round in the reverse order gave the same values within 4 %.
 
-The 32 and the 64 bit DLL are equally fast and return identical results. The tags and the technical data are the same as in version 2.0.4, except
+| Library | time per file, 32 bit | time per file, 64 bit | read calls per file | CPU time per file (64 bit) |
+|---|---|---|---|---|
+| **AudioGenie3 3.0.3** | **0.070 ms** | **0.065 ms** | **3.9** | **0.066 ms** |
+| AudioGenie3 3.0.2 | 0.094 ms | 0.085 ms | 8.8 | 0.084 ms |
+| AudioGenie3 3.0.0 | 0.089 ms | 0.081 ms | 8.7 | 0.082 ms |
+| AudioGenie 2.0.4 | 0.087 ms | (32 bit only) | 8.9 | |
+| TagLib 2.3.2 (C++) | 0.147 ms | 0.133 ms | 21.6 | 0.136 ms |
+| mutagen 1.48.1 (Python 3.11) | | 0.440 ms | 6.3 | 0.434 ms |
+
+3.0.3 needs about half the time of TagLib, one seventh of the time of mutagen and 20 % less than 2.0.4 (24 % less than 3.0.2). 3.0.2 is 4 to
+6 % slower than 3.0.0, because the duration and the bit rate became more exact (see the release notes of 3.0.1 and 3.0.2). A second 2.0.4 build
+in the old source tree needs 0.093 ms and 13.1 read calls per file.
+
+The libraries do not return the same. TagLib and mutagen estimate the duration of an MP3 file without a Xing header from the file size:
+on the 1,728 files (almost all MP3) where TagLib, mutagen, pymediainfo and AudioGenie3 3.0.2 differed by more than 0.5 s in the duration, a complete
+decoding by ffmpeg agreed within 0.1 s with the duration of AudioGenie3 for 99.3 % of the files, with that of TagLib for 12.6 % and with that of
+mutagen for 7.5 %.
+
+On a network drive (SMB, about 16,000 files, first access, measured with 3.0.0) the analysis took about 33 ms per file with 10.2 read calls
+(2.0.4: about 32 ms, 12.2 read calls). The cost of the first access to each file dominates there, so fewer system calls are expected to change
+little; the comparison above was not repeated on a cold or slow drive.
+
+The 32 and the 64 bit DLL return identical results (the 64 bit DLL is about 8 % faster). The tags and the technical data are the same as in version 2.0.4, except
 where the duration and bit rate of MP3 files are deliberately more accurate now (data behind the last frame, encoders without the padding bit,
 VBR files without a header; see the release notes of 3.0.1 to 3.0.3). On a network drive the cost of the first access to each file dominates; if you scan large libraries
 repeatedly, keep the results in your application and analyze only new or changed files.
@@ -188,7 +210,7 @@ repeatedly, keep the results in your application and analyze only new or changed
 | MPEG duration without Xing/Info header | Encoders that never set the padding bit (11 % of the test library, frames 417 instead of 417.96 bytes) are recognized in the first frames; the frames are counted by their length instead of the bit rate. The end of the last frames is searched in the block at the end of the file that was read anyway (up to 128 KB more only if it has no frames); a VBR header that does not match the file counts all frames; a different bit rate in the blocks at the start and at the end of the file (VBR without header, 0.2 % of the files) counts all frames too; the frame scan only counts frames that are followed by the next frame, so junk no longer adds frames or makes a constant bit rate file VBR (70 of 7335 files); a single frame with a damaged header between two valid frames does not interrupt the frames but is not counted | files with up to 128 KB of data after the last frame no longer 0.5 s too long (1.7 % of a 7300 file library); 7335 MP3 files: 910 -> 37 files with a duration error above 0.1 s, 26 -> 5 above 1 s; about 1.8 us (2.5 %) more per file |
 | MD5 (`AUDIOGetMD5ValueW`, `GetMD5ValueFromFileW`) | All blocks of a read are processed in one call, the words are read directly, 64 KB read blocks | 560 -> 670 MB/s |
 | MD5 | Round 2 with delayed addition (shorter dependency chain) | 670 -> 745 MB/s (5 MB song: about 7 ms) |
-| Analysis (`AUDIOAnalyzeFileW`): system calls | The length of the file is read with one call instead of about four (for the stream of the analysis not at all); absolute positions instead of seeks relative to the end of the file; a read buffer of 8 KB instead of 4 KB; the last 8 KB of the file are read once for ID3v1, Lyrics3, the APE footer and the last MPEG block instead of one seek and read each | local SSD, 22,876 files, cached: 2.14 s -> 1.69 s (-21 %), kernel time 1.94 s -> 1.50 s, read calls per file 8.8 -> 3.9 |
+| Analysis (`AUDIOAnalyzeFileW`): system calls | The length of the file is read with one call instead of about four (for the stream of the analysis not at all); absolute positions instead of seeks relative to the end of the file; a read buffer of 8 KB instead of 4 KB; the last 8 KB of the file are read once for ID3v1, Lyrics3, the APE footer and the last MPEG block instead of one seek and read each | local SSD, 22,876 files, cached, `tests/tools/run_scan.bat` (analysis only): 2.14 s -> 1.69 s (-21 %), kernel time 1.94 s -> 1.50 s, read calls per file 8.8 -> 3.9; including the reading of the fields (comparison above): -24 % |
 
 A sampling profile of the analysis (warm cache, 22,876 files) shows where the time goes: 91 % is spent in system calls (opening the file 32 %,
 reading 36 %, of that the start of the file 16 % and the end 9 %, closing 7 %, the file size and positioning 11 %), only 8 % in the code of the library.

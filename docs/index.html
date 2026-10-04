@@ -124,7 +124,7 @@ What's new since 2.0.4</h1>
 <li><b>Serious bugs fixed that could lose data or corrupt a file</b>: saving an APE tag next to an ID3v1 tag cut 128 bytes of audio; an in-place MP4 save could move the media data without updating the chunk table; a WMA save with a write block size of 0 lost the audio data and reported success anyway; a second FLAC or WMA save without re-analyzing the file first could damage it or lose extended tag fields and pictures.</li>
 <li><b>Real-world quirks handled</b>: ID3v2.3 tags of old iTunes versions (the 3 character frame IDs of v2.2 with a zero byte in a v2.3 header), ID3v2.4 tags with ordinary instead of synchsafe frame sizes, v2.4 tags that set the unsynchronisation flag only in the tag header, junk that looks like an MPEG frame in front of the audio, and MP3 files with more than 128 KB of junk behind the audio or with a padding bit that behaves differently at the start and at the end (joined files). Found by comparing the library with other libraries and with ffmpeg on 22,876 files; the duration of an MP3 file without a Xing header is now within 0.1 s of the decoded duration for 99 % of the files where the libraries disagree.</li>
 <li><b>Tag reading made more correct, not just more permissive</b>: the format-independent <span class="tt">AUDIO*</span> fields now fall back from ID3v2 to APE to ID3v1 to Lyrics3 per field instead of per tag (see "Tag priority for the abstract fields" below), so an old file tagged by a tool that wrote only a private, non-standard ID3v2 frame (RealJukebox and similar) is no longer read as having no title or artist at all.</li>
-<li><b>Faster</b>: the MPEG frame scan reads in 64 KB blocks instead of one read per frame (40 MB of frames: 181 ms -&gt; 6 ms); MD5 throughput is up 32% (560 -&gt; 745 MB/s); analyzing a file needs about a quarter of the read calls it used to (3.9 instead of 15.7) and 21 % less time than in 3.0.2 (a profile showed that 93 % of the time is spent in system calls).</li>
+<li><b>Faster</b>: the MPEG frame scan reads in 64 KB blocks instead of one read per frame (40 MB of frames: 181 ms -&gt; 6 ms); MD5 throughput is up 32% (560 -&gt; 745 MB/s); analyzing a file needs less than half the read calls of 2.0.4 (3.9 instead of 8.9 per file), takes 20 % less time than 2.0.4 and 24 % less than 3.0.2, and is about twice as fast as TagLib and seven times as fast as mutagen (see "Performance"; a profile showed that 93 % of the former time was spent in system calls).</li>
 <li><b>Open source and far more thoroughly tested</b>: LGPL-2.1-or-later; a Catch2 test suite that grew from about 5,400 assertions (3.0.0) to over 20,000 today, run on 32 and 64 bit with AddressSanitizer and fuzzing; a contract check that every wrapper (C/C++, C#, VB.NET, Delphi, VB6, XProfan) matches the exports; tools to scan and compare whole real-world music libraries between versions and against other libraries (TagLib, mutagen, pymediainfo, Mp3tag) and a complete decoding by ffmpeg.</li>
 </ul>
 <h1 class="doxsection"><a class="anchor" id="autotoc_md2"></a>
@@ -209,17 +209,30 @@ Performance</h1>
 <h2 class="doxsection"><a class="anchor" id="autotoc_md8"></a>
 Analyzing files (<span class="tt">AUDIOAnalyzeFileW</span>)</h2>
 <p>The analysis reads only the beginning and the end of a file, so its time does not depend on the file size, and it is limited by the first access to the file, not by the CPU.</p>
+<h3 class="doxsection"><a class="anchor" id="autotoc_md9"></a>
+Comparison with other libraries (local SSD, warm cache)</h3>
+<p>All libraries analyzed the same 22,876 files of a local library (101 GB, 22,666 of them MP3, the rest WMA, M4A, WAV and AAC) from the NVMe drive with a warm file system cache. For every file a small program reads what an application that shows a library needs: the format, the duration, bit rate, sample rate, channels and the tags title, artist, album, year, track, genre and comment. The time is the median of 7 passes; a second round in the reverse order gave the same values within 4 %.</p>
 <table class="markdownTable">
 <tr class="markdownTableHead">
-<th class="markdownTableHeadNone"></th><th class="markdownTableHeadNone">local SSD (22,876 files, cached)  </th><th class="markdownTableHeadNone">network drive (16000 files, first access)  </th></tr>
+<th class="markdownTableHeadNone">Library  </th><th class="markdownTableHeadNone">time per file, 32 bit  </th><th class="markdownTableHeadNone">time per file, 64 bit  </th><th class="markdownTableHeadNone">read calls per file  </th><th class="markdownTableHeadNone">CPU time per file (64 bit)  </th></tr>
 <tr class="markdownTableRowOdd">
-<td class="markdownTableBodyNone">time per file  </td><td class="markdownTableBodyNone">0.074 ms (3.0.2: 0.093 ms)  </td><td class="markdownTableBodyNone">about 33 ms (2.0.4: about 32 ms)  </td></tr>
+<td class="markdownTableBodyNone"><b>AudioGenie3 3.0.3</b>  </td><td class="markdownTableBodyNone"><b>0.070 ms</b>  </td><td class="markdownTableBodyNone"><b>0.065 ms</b>  </td><td class="markdownTableBodyNone"><b>3.9</b>  </td><td class="markdownTableBodyNone"><b>0.066 ms</b>  </td></tr>
 <tr class="markdownTableRowEven">
-<td class="markdownTableBodyNone">read calls per file  </td><td class="markdownTableBodyNone">3.9 (3.0.2: 8.8)  </td><td class="markdownTableBodyNone">10.2 (2.0.4: 12.2)  </td></tr>
+<td class="markdownTableBodyNone">AudioGenie3 3.0.2  </td><td class="markdownTableBodyNone">0.094 ms  </td><td class="markdownTableBodyNone">0.085 ms  </td><td class="markdownTableBodyNone">8.8  </td><td class="markdownTableBodyNone">0.084 ms  </td></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone">AudioGenie3 3.0.0  </td><td class="markdownTableBodyNone">0.089 ms  </td><td class="markdownTableBodyNone">0.081 ms  </td><td class="markdownTableBodyNone">8.7  </td><td class="markdownTableBodyNone">0.082 ms  </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone">AudioGenie 2.0.4  </td><td class="markdownTableBodyNone">0.087 ms  </td><td class="markdownTableBodyNone">(32 bit only)  </td><td class="markdownTableBodyNone">8.9  </td><td class="markdownTableBodyNone"></td></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone">TagLib 2.3.2 (C++)  </td><td class="markdownTableBodyNone">0.147 ms  </td><td class="markdownTableBodyNone">0.133 ms  </td><td class="markdownTableBodyNone">21.6  </td><td class="markdownTableBodyNone">0.136 ms  </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone">mutagen 1.48.1 (Python 3.11)  </td><td class="markdownTableBodyNone"></td><td class="markdownTableBodyNone">0.440 ms  </td><td class="markdownTableBodyNone">6.3  </td><td class="markdownTableBodyNone">0.434 ms  </td></tr>
 </table>
-<p>On an earlier 7,339-file subset of the local library AudioGenie 2.0.4 needed 0.14 ms and 15.7 read calls per file. The network values were not measured again for 3.0.3; the cost of the first access to each file dominates there, so fewer system calls are expected to change little.</p>
-<p>The 32 and the 64 bit DLL are equally fast and return identical results. The tags and the technical data are the same as in version 2.0.4, except where the duration and bit rate of MP3 files are deliberately more accurate now (data behind the last frame, encoders without the padding bit, VBR files without a header; see the release notes of 3.0.1 to 3.0.3). On a network drive the cost of the first access to each file dominates; if you scan large libraries repeatedly, keep the results in your application and analyze only new or changed files.</p>
-<h2 class="doxsection"><a class="anchor" id="autotoc_md9"></a>
+<p>3.0.3 needs about half the time of TagLib, one seventh of the time of mutagen and 20 % less than 2.0.4 (24 % less than 3.0.2). 3.0.2 is 4 to 6 % slower than 3.0.0, because the duration and the bit rate became more exact (see the release notes of 3.0.1 and 3.0.2). A second 2.0.4 build in the old source tree needs 0.093 ms and 13.1 read calls per file.</p>
+<p>The libraries do not return the same. TagLib and mutagen estimate the duration of an MP3 file without a Xing header from the file size: on the 1,728 files (almost all MP3) where TagLib, mutagen, pymediainfo and AudioGenie3 3.0.2 differed by more than 0.5 s in the duration, a complete decoding by ffmpeg agreed within 0.1 s with the duration of AudioGenie3 for 99.3 % of the files, with that of TagLib for 12.6 % and with that of mutagen for 7.5 %.</p>
+<p>On a network drive (SMB, about 16,000 files, first access, measured with 3.0.0) the analysis took about 33 ms per file with 10.2 read calls (2.0.4: about 32 ms, 12.2 read calls). The cost of the first access to each file dominates there, so fewer system calls are expected to change little; the comparison above was not repeated on a cold or slow drive.</p>
+<p>The 32 and the 64 bit DLL return identical results (the 64 bit DLL is about 8 % faster). The tags and the technical data are the same as in version 2.0.4, except where the duration and bit rate of MP3 files are deliberately more accurate now (data behind the last frame, encoders without the padding bit, VBR files without a header; see the release notes of 3.0.1 to 3.0.3). On a network drive the cost of the first access to each file dominates; if you scan large libraries repeatedly, keep the results in your application and analyze only new or changed files.</p>
+<h2 class="doxsection"><a class="anchor" id="autotoc_md10"></a>
 Optimizations</h2>
 <table class="markdownTable">
 <tr class="markdownTableHead">
@@ -235,10 +248,10 @@ Optimizations</h2>
 <tr class="markdownTableRowOdd">
 <td class="markdownTableBodyNone">MD5  </td><td class="markdownTableBodyNone">Round 2 with delayed addition (shorter dependency chain)  </td><td class="markdownTableBodyNone">670 -&gt; 745 MB/s (5 MB song: about 7 ms)  </td></tr>
 <tr class="markdownTableRowEven">
-<td class="markdownTableBodyNone">Analysis (<span class="tt"><a class="el" href="group___a_u_d_i_o.html#ga9073413421b0cd63fcb4b139c85b640c" title="read an audio-file and all known tags">AUDIOAnalyzeFileW</a></span>): system calls  </td><td class="markdownTableBodyNone">The length of the file is read with one call instead of about four (for the stream of the analysis not at all); absolute positions instead of seeks relative to the end of the file; a read buffer of 8 KB instead of 4 KB; the last 8 KB of the file are read once for ID3v1, Lyrics3, the APE footer and the last MPEG block instead of one seek and read each  </td><td class="markdownTableBodyNone">local SSD, 22,876 files, cached: 2.14 s -&gt; 1.69 s (-21 %), kernel time 1.94 s -&gt; 1.50 s, read calls per file 8.8 -&gt; 3.9  </td></tr>
+<td class="markdownTableBodyNone">Analysis (<span class="tt"><a class="el" href="group___a_u_d_i_o.html#ga9073413421b0cd63fcb4b139c85b640c" title="read an audio-file and all known tags">AUDIOAnalyzeFileW</a></span>): system calls  </td><td class="markdownTableBodyNone">The length of the file is read with one call instead of about four (for the stream of the analysis not at all); absolute positions instead of seeks relative to the end of the file; a read buffer of 8 KB instead of 4 KB; the last 8 KB of the file are read once for ID3v1, Lyrics3, the APE footer and the last MPEG block instead of one seek and read each  </td><td class="markdownTableBodyNone">local SSD, 22,876 files, cached, <span class="tt">tests/tools/run_scan.bat</span> (analysis only): 2.14 s -&gt; 1.69 s (-21 %), kernel time 1.94 s -&gt; 1.50 s, read calls per file 8.8 -&gt; 3.9; including the reading of the fields (comparison above): -24 %  </td></tr>
 </table>
-<p>A sampling profile of the analysis (warm cache, 22,876 files) shows where the time goes: 93 % is spent in system calls (opening the file 32 %, reading the start of the file 16 % and the end 9 %, closing 7 %, the file size 4 %, positioning about 6 %), only 8 % in the code of the library. The C library's file functions are the floor; going lower would mean replacing them with direct <span class="tt">ReadFile</span> calls.</p>
-<h2 class="doxsection"><a class="anchor" id="autotoc_md10"></a>
+<p>A sampling profile of the analysis (warm cache, 22,876 files) shows where the time goes: 91 % is spent in system calls (opening the file 32 %, reading 36 %, of that the start of the file 16 % and the end 9 %, closing 7 %, the file size and positioning 11 %), only 8 % in the code of the library. The C library's file functions are the floor; going lower would mean replacing them with direct <span class="tt">ReadFile</span> calls.</p>
+<h2 class="doxsection"><a class="anchor" id="autotoc_md11"></a>
 Tried without a gain (not adopted)</h2>
 <ul>
 <li><b>Reading the end of the file once</b> for ID3v1, Lyrics3, APE and the MPEG vendor block: on the network drive fewer read calls (10.2 -&gt; 6.7 per file) did not change the time (3.0.0). On a local drive the same idea, as a cache of the last 8 KB of the file, saves about 8 % of the analysis time and is part of 3.0.3 (see above). The order of the reads matters: reading the end of the file before the ID3v2 tag made the analysis 50 % slower on the network drive.</li>
@@ -248,14 +261,14 @@ Tried without a gain (not adopted)</h2>
 <li><b>Larger MD5 read blocks and overlapped reads:</b> no gain above 64 KB; on a network drive the transfer rate (50 to 70 MB/s) is the limit.</li>
 </ul>
 <p>The details of the MD5 and the frame scan changes are documented in <span class="tt">md5.cpp</span>, <span class="tt">MD5Tool.h</span> and <span class="tt">MPEGAudio.cpp</span>.</p>
-<h1 class="doxsection"><a class="anchor" id="autotoc_md11"></a>
+<h1 class="doxsection"><a class="anchor" id="autotoc_md12"></a>
 Getting started</h1>
-<h2 class="doxsection"><a class="anchor" id="autotoc_md12"></a>
+<h2 class="doxsection"><a class="anchor" id="autotoc_md13"></a>
 Build</h2>
 <div class="fragment"><div class="line">MSBuild AudioGenie3.vcxproj /p:Configuration=Release /p:Platform=Win32</div>
 <div class="line">MSBuild AudioGenie3.vcxproj /p:Configuration=Release /p:Platform=x64</div>
 </div><!-- fragment --><p>The result is <span class="tt">AudioGenie3.dll</span> (and <span class="tt">AudioGenie3.lib</span> for C/C++) in <span class="tt">Release\</span> or <span class="tt">x64\Release\</span>. Pick the bitness that matches your application. The Visual Studio build registers the DLL for the current user automatically.</p>
-<h2 class="doxsection"><a class="anchor" id="autotoc_md13"></a>
+<h2 class="doxsection"><a class="anchor" id="autotoc_md14"></a>
 Register the DLL</h2>
 <p>The DLL is a COM server and must be registered before use. Use the <span class="tt">regsvr32</span> of the same bitness as the DLL (<span class="tt">C:\Windows\SysWOW64
 egsvr32.exe</span> for the 32-bit DLL on 64-bit Windows):</p>
@@ -264,7 +277,7 @@ egsvr32.exe</span> for the 32-bit DLL on 64-bit Windows):</p>
 <div class="line">regsvr32 /u AudioGenie3.dll                (unregister a per-machine registration)</div>
 <div class="line">regsvr32 /u /n /i:user AudioGenie3.dll     (unregister a per-user registration)</div>
 </div><!-- fragment --><p>Keep the DLL in a fixed folder, because the registration stores its path.</p>
-<h2 class="doxsection"><a class="anchor" id="autotoc_md14"></a>
+<h2 class="doxsection"><a class="anchor" id="autotoc_md15"></a>
 Wrappers</h2>
 <table class="markdownTable">
 <tr class="markdownTableHead">
@@ -282,9 +295,9 @@ Wrappers</h2>
 <tr class="markdownTableRowEven">
 <td class="markdownTableBodyNone">XProfan  </td><td class="markdownTableBodyNone"><span class="tt">Wrapper/Profan/prfwrapper.inc</span> (by Dieter Zornow; the procedures call the DLL functions by name after <span class="tt">ImportDLL</span>)  </td></tr>
 </table>
-<h1 class="doxsection"><a class="anchor" id="autotoc_md15"></a>
+<h1 class="doxsection"><a class="anchor" id="autotoc_md16"></a>
 Examples</h1>
-<h2 class="doxsection"><a class="anchor" id="autotoc_md16"></a>
+<h2 class="doxsection"><a class="anchor" id="autotoc_md17"></a>
 C++: read tags and technical data</h2>
 <div class="fragment"><div class="line"><span class="preprocessor">#include &quot;audiogenie3.h&quot;</span></div>
 <div class="line"><span class="preprocessor">#include &lt;cstdio&gt;</span></div>
@@ -314,7 +327,7 @@ C++: read tags and technical data</h2>
 <div class="ttc" id="agroup___a_u_d_i_o_html_gac3b5081ae76577cc6d3cc48bbcce821e"><div class="ttname"><a href="group___a_u_d_i_o.html#gac3b5081ae76577cc6d3cc48bbcce821e">AUDIOGetSampleRateW</a></div><div class="ttdeci">long AUDIOGetSampleRateW()</div><div class="ttdoc">get the sample rate in Hz</div><div class="ttdef"><b>Definition</b> dllmain.cpp:763</div></div>
 <div class="ttc" id="agroup___a_u_d_i_o_html_gac8f3c0f91a4bdb859642f0797b7740be"><div class="ttname"><a href="group___a_u_d_i_o.html#gac8f3c0f91a4bdb859642f0797b7740be">AUDIOGetBitrateW</a></div><div class="ttdeci">long AUDIOGetBitrateW()</div><div class="ttdoc">get the bit rate in kbps</div><div class="ttdef"><b>Definition</b> dllmain.cpp:780</div></div>
 <div class="ttc" id="agroup___a_u_d_i_o_html_gafff986ef0d161c896be50a3b99dc7bb6"><div class="ttname"><a href="group___a_u_d_i_o.html#gafff986ef0d161c896be50a3b99dc7bb6">AUDIOGetTitleW</a></div><div class="ttdeci">BSTR AUDIOGetTitleW()</div><div class="ttdoc">get the title</div><div class="ttdef"><b>Definition</b> dllmain.cpp:879</div></div>
-</div><!-- fragment --><h2 class="doxsection"><a class="anchor" id="autotoc_md17"></a>
+</div><!-- fragment --><h2 class="doxsection"><a class="anchor" id="autotoc_md18"></a>
 C++: change tags and save</h2>
 <div class="fragment"><div class="line"><span class="keywordflow">if</span> (<a class="code hl_function" href="group___a_u_d_i_o.html#ga9073413421b0cd63fcb4b139c85b640c">AUDIOAnalyzeFileW</a>(L<span class="stringliteral">&quot;C:\\Music\\song.mp3&quot;</span>) != UNKNOWN) {</div>
 <div class="line">    <a class="code hl_function" href="group___a_u_d_i_o.html#ga21e92c35075c0f209dd3597c005dc5ba">AUDIOSetTitleW</a>(L<span class="stringliteral">&quot;New title&quot;</span>);</div>
@@ -327,7 +340,7 @@ C++: change tags and save</h2>
 <div class="ttc" id="agroup___a_u_d_i_o_html_ga9d2a81d26175ae87c79a2ca841ab97f4"><div class="ttname"><a href="group___a_u_d_i_o.html#ga9d2a81d26175ae87c79a2ca841ab97f4">AUDIOSaveChangesW</a></div><div class="ttdeci">short AUDIOSaveChangesW()</div><div class="ttdoc">store the changes in the last analyzed file, depending on format of the destination file:</div><div class="ttdef"><b>Definition</b> dllmain.cpp:710</div></div>
 <div class="ttc" id="agroup___a_u_d_i_o_html_gab7cbf15b7a7d1a1c59e986d797734835"><div class="ttname"><a href="group___a_u_d_i_o.html#gab7cbf15b7a7d1a1c59e986d797734835">AUDIOSetArtistW</a></div><div class="ttdeci">void AUDIOSetArtistW(LPCWSTR textString)</div><div class="ttdoc">set the artist</div><div class="ttdef"><b>Definition</b> dllmain.cpp:916</div></div>
 <div class="ttc" id="agroup___a_u_d_i_o_html_gad936d918d233e46a82528bb55785c58c"><div class="ttname"><a href="group___a_u_d_i_o.html#gad936d918d233e46a82528bb55785c58c">AUDIOSetYearW</a></div><div class="ttdeci">void AUDIOSetYearW(LPCWSTR textString)</div><div class="ttdoc">set the year</div><div class="ttdef"><b>Definition</b> dllmain.cpp:1060</div></div>
-</div><!-- fragment --><h2 class="doxsection"><a class="anchor" id="autotoc_md18"></a>
+</div><!-- fragment --><h2 class="doxsection"><a class="anchor" id="autotoc_md19"></a>
 C++: add a cover picture to an MP3</h2>
 <div class="fragment"><div class="line"><a class="code hl_function" href="group___a_u_d_i_o.html#ga9073413421b0cd63fcb4b139c85b640c">AUDIOAnalyzeFileW</a>(L<span class="stringliteral">&quot;C:\\Music\\song.mp3&quot;</span>);</div>
 <div class="line"><span class="comment">// asLink = 0: embed the image data (1 would store only a link to the file)</span></div>
@@ -335,7 +348,7 @@ C++: add a cover picture to an MP3</h2>
 <div class="line"><a class="code hl_function" href="group___i_d3_v2.html#ga2b1bc39ea19a5472f27caed9215c538f">ID3V2SaveChangesW</a>();</div>
 <div class="ttc" id="agroup___i_d3_v2_html_ga2b1bc39ea19a5472f27caed9215c538f"><div class="ttname"><a href="group___i_d3_v2.html#ga2b1bc39ea19a5472f27caed9215c538f">ID3V2SaveChangesW</a></div><div class="ttdeci">short ID3V2SaveChangesW()</div><div class="ttdoc">store the ID3v2 tag in the last analyzed file</div><div class="ttdef"><b>Definition</b> dllmain.cpp:7654</div></div>
 <div class="ttc" id="agroup___i_d3_v2_html_ga57a827de06db91b6a3924165c0f73880"><div class="ttname"><a href="group___i_d3_v2.html#ga57a827de06db91b6a3924165c0f73880">ID3V2AddPictureFileW</a></div><div class="ttdeci">short ID3V2AddPictureFileW(LPCWSTR FileName, LPCWSTR Description, short PictureType, short asLink)</div><div class="ttdoc">&quot;APIC&quot; store a picture from a file in the tag</div><div class="ttdef"><b>Definition</b> dllmain.cpp:5168</div></div>
-</div><!-- fragment --><h2 class="doxsection"><a class="anchor" id="autotoc_md19"></a>
+</div><!-- fragment --><h2 class="doxsection"><a class="anchor" id="autotoc_md20"></a>
 C</h2>
 <div class="fragment"><div class="line"><span class="keyword">using </span>AudioGenie;</div>
 <div class="line"> </div>
@@ -348,7 +361,7 @@ C</h2>
 <div class="line">    AudioGenie3.AUDIOTitle = <span class="stringliteral">&quot;New title&quot;</span>;</div>
 <div class="line">    AudioGenie3.AUDIOSaveChanges();</div>
 <div class="line">}</div>
-</div><!-- fragment --><h2 class="doxsection"><a class="anchor" id="autotoc_md20"></a>
+</div><!-- fragment --><h2 class="doxsection"><a class="anchor" id="autotoc_md21"></a>
 Delphi</h2>
 <div class="fragment"><div class="line">var</div>
 <div class="line">  AG: TAudioGenie3;</div>
@@ -365,7 +378,7 @@ Delphi</h2>
 <div class="line">    AG.Free;</div>
 <div class="line">  end;</div>
 <div class="line">end;</div>
-</div><!-- fragment --><h2 class="doxsection"><a class="anchor" id="autotoc_md21"></a>
+</div><!-- fragment --><h2 class="doxsection"><a class="anchor" id="autotoc_md22"></a>
 VB6</h2>
 <div class="fragment"><div class="line">Dim ag As New clsAudioGenie</div>
 <div class="line"> </div>
@@ -374,15 +387,15 @@ VB6</h2>
 <div class="line">    ag.AUDIOTitle = &quot;New title&quot;</div>
 <div class="line">    ag.AUDIOSaveChanges</div>
 <div class="line">End If</div>
-</div><!-- fragment --><h1 class="doxsection"><a class="anchor" id="autotoc_md22"></a>
+</div><!-- fragment --><h1 class="doxsection"><a class="anchor" id="autotoc_md23"></a>
 Documentation</h1>
 <p>The API reference (all 470 exported functions, grouped by format) is available online at <a href="https://schnippsche.github.io/AudioGenie3/">https://schnippsche.github.io/AudioGenie3/</a>. It is generated with Doxygen:</p>
 <div class="fragment"><div class="line">doxygen Doxyfile</div>
 </div><!-- fragment --><p>The output goes to <span class="tt">docs/</span> (open <span class="tt">docs/index.html</span>). In the generated help, the functions are grouped by tag or format on the <em>Topics</em> page. This README is used as the start page of the help.</p>
-<h1 class="doxsection"><a class="anchor" id="autotoc_md23"></a>
+<h1 class="doxsection"><a class="anchor" id="autotoc_md24"></a>
 Tests</h1>
 <p>The Catch2 test suite exercises the DLL through its C interface, with fixtures for every format, fuzzing and AddressSanitizer runs. See <span class="tt">tests/README.md</span>.</p>
-<h1 class="doxsection"><a class="anchor" id="autotoc_md24"></a>
+<h1 class="doxsection"><a class="anchor" id="autotoc_md25"></a>
 License</h1>
 <p>Copyright (C) 2001-2026 Stefan Toengi.</p>
 <p>AudioGenie3 is free software, licensed under the GNU Lesser General Public License, version 2.1 or (at your option) any later version. See <span class="tt">LICENSE</span>.</p>
