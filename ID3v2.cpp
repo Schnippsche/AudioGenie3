@@ -215,6 +215,25 @@ static void resyncTag(CBlob* data)
 	delete [] dest;
 }
 
+// true if a frame that ends at 'end' (position in the tag body) is followed by something that can follow a frame: the end of the tag, the
+// padding (a zero byte) or the header of a next frame. Used to decide how the size of a v2.4 frame is to be read, see parseTags().
+// Four capital letters alone are not enough for a frame header: they are also found in the text of a frame (for example "ABBA"). The size
+// in the header has to fit into the tag as well, as a synchsafe integer or as an ordinary number.
+static bool frameEndsCleanly(CBlob* data, u32 dataSize, unsigned __int64 end)
+{
+	if (end > dataSize)
+		return false;
+	if (end == dataSize || data->GetAt((size_t)end) == 0)
+		return true;
+	if (end + 10 > dataSize)
+		return false;
+	const size_t pos = (size_t)end;
+	if (!(ALLOWED[data->GetAt(pos)] && ALLOWED[data->GetAt(pos + 1)] && ALLOWED[data->GetAt(pos + 2)] && ALLOWED[data->GetAt(pos + 3)]))
+		return false;
+	const unsigned __int64 afterNext = end + 10;
+	return afterNext + (u32)data->GetS4B(pos + 4) <= dataSize || afterNext + (u32)data->Get4B(pos + 4) <= dataSize;
+}
+
 void CID3V2::parseTags(CBlob* data)
 {
 	u32 DataPosition = 0;
@@ -231,6 +250,9 @@ void CID3V2::parseTags(CBlob* data)
 		if (extendedSize >= 6 && extendedSize <= dataSize)
 			DataPosition = extendedSize;
 	}
+	// v2.4: the size of a frame is a synchsafe integer (7 bits per byte). Some taggers (e.g. old iTunes versions) write an ordinary 32 bit
+	// number instead, which is only the same up to a size of 127 bytes. Once a frame of a tag has shown this, all frames of the tag are read that way.
+	bool plainSizes = false;
 	while ((DataPosition + headerSize) < dataSize)
 	{
 		ATLTRACE(_T("Reading at Pos:%d \n"), DataPosition);
@@ -245,9 +267,30 @@ void CID3V2::parseTags(CBlob* data)
 		{
 			FrameID = data->Get4B(DataPosition);
 			//fread(buf, 1, 10, Stream);
-			if (CTools::ID3V2oldTagVersion == TAG_VERSION_2_4) // SyncSafe Integer
-				FrameSize = data->GetS4B(DataPosition + 4);
-			else // Unsync Integer
+			if (CTools::ID3V2oldTagVersion == TAG_VERSION_2_4)
+			{
+				// the size as a synchsafe integer (as the specification says) and as an ordinary number (wrong, but written by some taggers)
+				const u32 synchsafeSize = (u32)data->GetS4B(DataPosition + 4);
+				const u32 plainSize = (u32)data->Get4B(DataPosition + 4);
+				FrameSize = synchsafeSize;
+				if (!plainSizes && synchsafeSize != plainSize)
+				{
+					// The ordinary number is used if the bytes cannot be a synchsafe integer (a size byte with bit 7 set), or if the synchsafe
+					// reading does not end in front of the next frame (or the padding, or the end of the tag) but the ordinary one does.
+					// A size below 128 is the same in both and is never in doubt.
+					const bool sevenBitBytes = ((data->GetAt(DataPosition + 4) | data->GetAt(DataPosition + 5) | data->GetAt(DataPosition + 6) | data->GetAt(DataPosition + 7)) & 0x80) == 0;
+					const unsigned __int64 afterSynchsafe = (unsigned __int64)DataPosition + headerSize + synchsafeSize;
+					const unsigned __int64 afterPlain = (unsigned __int64)DataPosition + headerSize + plainSize;
+					if (!sevenBitBytes || (!frameEndsCleanly(data, dataSize, afterSynchsafe) && frameEndsCleanly(data, dataSize, afterPlain)))
+					{
+						plainSizes = true;
+						CTools::instance().writeWarning(L"id3v2.4 tag with frame sizes that are not synchsafe, read as ordinary numbers");
+					}
+				}
+				if (plainSizes)
+					FrameSize = plainSize;
+			}
+			else // v2.3: ordinary number
 				FrameSize = data->Get4B(DataPosition + 4);
 			FrameFlags = data->Get2B(DataPosition + 8);
 			// is Data Length Indicator set?

@@ -954,3 +954,67 @@ TEST_CASE("ID3v2.3: 3 character v2.2 frame IDs padded with a zero byte are read"
         CHECK(take(AUDIOGetAlbumW()) == L"Dangerous");
     }
 }
+
+TEST_CASE("ID3v2.4: frame sizes written as ordinary numbers (old iTunes versions) are read", "[id3v2][spec][header]")
+{
+    // v2.4 says: the size of a frame is a synchsafe integer. Some taggers write an ordinary 32 bit number, which is the same only below
+    // 128 bytes. frame(..., 3) writes the ordinary number, frame(..., 4) the synchsafe integer.
+    auto utf8 = [](const std::string& s) {
+        Bytes b = { 0x03 };
+        b.insert(b.end(), s.begin(), s.end());
+        return b;
+    };
+    auto picture = [](size_t n) {
+        Bytes b = { 0x00, 'i', 'm', 'a', 'g', 'e', '/', 'j', 'p', 'e', 'g', 0x00, 0x03, 0x00 };
+        for (size_t i = 0; i < n; i++)
+            b.push_back(static_cast<uint8_t>((i * 7 + 1) % 200 + 1));
+        return b;
+    };
+    const std::string longText(300, 'A');   // capital letters: also look like a frame ID
+    auto check = [](const fs::path& p, const wchar_t* title, const wchar_t* artist) {
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        CHECK(take(AUDIOGetTitleW()) == title);
+        CHECK(take(AUDIOGetArtistW()) == artist);
+    };
+
+    SECTION("a text frame of 300 bytes") {
+        Bytes body = frame("TIT2", utf8("Title"), 0, 3);
+        put(body, frame("TALB", utf8(longText), 0, 3));
+        put(body, frame("TPE1", utf8("Artist"), 0, 3));
+        auto p = writeTagged("spec_v24_plain_text.mp3", tagBytes(4, 0, body));
+        check(p, L"Title", L"Artist");
+        CHECK(take(AUDIOGetAlbumW()) == std::wstring(longText.begin(), longText.end()));
+        CHECK(AUDIOGetLastErrorNumberW() == 0);
+    }
+    SECTION("a picture of 20000 bytes in the middle") {
+        Bytes body = frame("TIT2", utf8("Title"), 0, 3);
+        put(body, frame("APIC", picture(20000), 0, 3));
+        put(body, frame("TPE1", utf8("Artist"), 0, 3));
+        check(writeTagged("spec_v24_plain_pic.mp3", tagBytes(4, 0, body)), L"Title", L"Artist");
+    }
+    SECTION("a picture of 300000 bytes in front of the text frames") {
+        Bytes body = frame("APIC", picture(300000), 0, 3);
+        put(body, frame("TIT2", utf8("Title"), 0, 3));
+        put(body, frame("TPE1", utf8("Artist"), 0, 3));
+        check(writeTagged("spec_v24_plain_pic_first.mp3", tagBytes(4, 0, body)), L"Title", L"Artist");
+    }
+    SECTION("saving writes synchsafe sizes and keeps the audio") {
+        Bytes body = frame("TIT2", utf8("Title"), 0, 3);
+        put(body, frame("APIC", picture(20000), 0, 3));
+        put(body, frame("TPE1", utf8("Artist"), 0, 3));
+        auto p = writeTagged("spec_v24_plain_save.mp3", tagBytes(4, 0, body));
+        check(p, L"Title", L"Artist");
+        saveAsV24(3);   // changes the artist and writes the tag as v2.4
+        CHECK(audioIntact(p));
+        check(p, L"Title", L"Changed");
+        // the picture is still there: the tag is at least as large as the picture
+        CHECK(id3v2TotalSize(readFile(p)) > 20000);
+    }
+    SECTION("synchsafe sizes with capital letters in the text are not taken for ordinary numbers") {
+        Bytes body = frame("TALB", utf8(longText), 0, 4);   // 301 bytes: synchsafe 00 00 02 2D, as an ordinary number 557
+        put(body, frame("TIT2", utf8("Title"), 0, 4));
+        put(body, frame("TPE1", utf8("Artist"), 0, 4));
+        check(writeTagged("spec_v24_synchsafe_caps.mp3", tagBytes(4, 0, body)), L"Title", L"Artist");
+        CHECK(take(AUDIOGetAlbumW()) == std::wstring(longText.begin(), longText.end()));
+    }
+}
