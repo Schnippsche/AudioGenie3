@@ -153,3 +153,25 @@ TEST_CASE("WMA: a text of more than 65535 bytes is shortened, it does not damage
         CHECK(std::fabs(AUDIOGetDurationW() - 1.0) < 100);   // the file is still readable
     }
 }
+
+TEST_CASE("WMA: headers around the size of the cache of the start of the file (8 KB) and of its extension (256 KB)", "[wma][spec][write]")
+{
+    // The objects of the header follow each other and are read from the cache of the start of the file, from its extension or directly from the
+    // file. The text and the following objects must not depend on it.
+    for (size_t n : std::vector<size_t>{ 100, 3000, 4000, 4100, 5000, 10000, 31000, 32766 }) {
+        INFO("length of the title and the description: " << n);
+        const fs::path p = copyFixture("wma/tagged.wma");
+        const std::wstring text = longText(n);
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == WMA);
+        WMASetUserItemW(L"Title", text.c_str());
+        WMASetUserItemW(L"Description", text.c_str());
+        WMASetUserItemW(L"LongItem", text.c_str());
+        REQUIRE(WMASaveChangesToFileW(p.c_str()) != 0);
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == WMA);
+        CHECK(take(WMAGetUserItemW(L"Title")) == text);
+        CHECK(take(WMAGetUserItemW(L"Description")) == text);
+        CHECK(take(WMAGetUserItemW(L"LongItem")) == text);
+        CHECK(take(WMAGetUserItemW(L"WM/AlbumTitle")).size() > 0);   // the objects behind the large ones
+        CHECK(AUDIOGetSampleRateW() > 0);
+    }
+}

@@ -34,8 +34,7 @@ CMP4_MDHD::~CMP4_MDHD(void)
 
 void CMP4_MDHD::load(FILE *Stream, u64 offset, u64 size)
 {
-	offset;
-	_blob.FileRead((size_t)size, Stream);
+	_blob.FileReadAt(Stream, (__int64)offset, (size_t)size);
 	version = 0;
 	timeScale = 0;
 	duration = 0;

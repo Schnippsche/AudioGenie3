@@ -55,8 +55,8 @@ bool CWMA_Header_Extension::load(FILE *Stream, size_t maxLen)
 	CWMA_Object* obj;
 	while (totalSize > 0)
 	{
-		ATLTRACE(_T(" Item in Extended Header at Pos:%i "), (long)_ftelli64(Stream));
-		if (fread(&testIID, 1, 16, Stream) != 16 || fread(&Size, 1, 8, Stream) != 8)
+		ATLTRACE(_T(" Item in Extended Header at Pos:%i "), (long)CTools::seqTell(Stream));
+		if (CTools::seqRead(Stream, &testIID, 16) != 16 || CTools::seqRead(Stream, &Size, 8) != 8)
 		{
 			CTools::instance().setLastError(ERR_WMA_PARSE);
 			_data.Clear();

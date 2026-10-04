@@ -160,6 +160,14 @@ public:
 	static size_t readAt(FILE *Stream, __int64 pos, void *destination, size_t length);
 	static const size_t HEAD_CACHE_SIZE = 8192;
 	static const size_t HEAD_CACHE_MAX = 256 * 1024;
+	// Sequential reads (the objects of a WMA header read one after the other): between CSequentialRead and its end the reads of the stream
+	// (CBlob::FileRead, seqRead) continue at seqPosition and go through readAt, so they are served from the caches and need no ftell. seqSeek and
+	// seqTell replace _fseeki64 and _ftelli64; for any other stream (or outside of CSequentialRead) all of them are the C functions.
+	static FILE *seqStream;
+	static __int64 seqPosition;
+	static size_t seqRead(FILE *Stream, void *destination, size_t length);
+	static void seqSeek(FILE *Stream, __int64 pos);
+	static __int64 seqTell(FILE *Stream);
 	static const size_t DIRECT_READ_MIN = 8192;   // from this length on readAt reads from the file directly (one read instead of the split of the C library)
 	static size_t headCacheLength;   // 0: not read yet (or for another analysis); the bytes are in Tools.cpp
 	// Extends the cache of the start of the file to the position end (not more than HEAD_CACHE_MAX bytes, not behind the end of the file) with one read.
@@ -226,6 +234,13 @@ private:
 };
 
 // marks the stream of the running analysis for CTools::fileLength(), as long as it exists
+class CSequentialRead
+{
+public:
+	CSequentialRead(FILE *Stream, __int64 pos) { CTools::seqStream = Stream; CTools::seqPosition = pos; }
+	~CSequentialRead() { CTools::seqStream = NULL; }
+};
+
 class CAnalysisStream
 {
 public:

@@ -35,6 +35,8 @@ bool CTools::streamAtStart = false;
 bool CTools::streamAtHeadEnd = false;
 BYTE CTools::tailCache[CTools::TAIL_CACHE_SIZE];
 size_t CTools::tailCacheLength = 0;
+FILE *CTools::seqStream = NULL;
+__int64 CTools::seqPosition = 0;
 
 // makes room for count bytes in the cache of the start of the file, the bytes that are in it stay
 static bool reserveHead(size_t count)
@@ -100,12 +102,17 @@ size_t CTools::readAt(FILE *Stream, __int64 pos, void *destination, size_t lengt
 		}
 	}
 	streamAtStart = streamAtHeadEnd = false;
-	if (_fseeki64(Stream, pos, SEEK_SET) != 0)
-		return 0;
 	if (length < DIRECT_READ_MIN)
+	{
+		if (_fseeki64(Stream, pos, SEEK_SET) != 0)
+			return 0;
 		return fread(destination, 1, length, Stream);
-	// A large read: fread would split it into a read of a multiple of the buffer size (8 KB) and one more read of 8 KB for the rest. The seek has
-	// emptied the buffer of the stream, so the position of the stream is the one of the file; reading from the file directly leaves it right.
+	}
+	// A large read: fread would split it into a read of a multiple of the buffer size (8 KB) and one more read of 8 KB for the rest, so it is read
+	// from the file directly. The C library may keep older data in the buffer of the stream (a seek to a position inside of the buffer does not
+	// move the file) and takes the position of the next refill from the file: afterwards the stream is brought to a known state (an empty buffer).
+	if (_lseeki64(_fileno(Stream), pos, SEEK_SET) < 0)
+		return 0;
 	size_t done = 0;
 	while (done < length)
 	{
@@ -115,7 +122,36 @@ size_t CTools::readAt(FILE *Stream, __int64 pos, void *destination, size_t lengt
 			break;
 		done += (size_t)got;
 	}
+	_fseeki64(Stream, 0, SEEK_END);
 	return done;
+}
+
+size_t CTools::seqRead(FILE *Stream, void *destination, size_t length)
+{
+	if (Stream == NULL)
+		return 0;
+	if (Stream != seqStream)
+		return fread(destination, 1, length, Stream);
+	const size_t got = readAt(Stream, seqPosition, destination, length);
+	seqPosition += (__int64)got;
+	return got;
+}
+
+void CTools::seqSeek(FILE *Stream, __int64 pos)
+{
+	if (Stream == NULL)
+		return;
+	if (Stream == seqStream)
+		seqPosition = pos;
+	else
+		_fseeki64(Stream, pos, SEEK_SET);
+}
+
+__int64 CTools::seqTell(FILE *Stream)
+{
+	if (Stream == NULL)
+		return -1;
+	return Stream == seqStream ? seqPosition : _ftelli64(Stream);
 }
 
 void CTools::extendHeadCache(FILE *Stream, __int64 end)
@@ -133,14 +169,16 @@ void CTools::extendHeadCache(FILE *Stream, __int64 end)
 	// directly behind the first read of the start the stream is at the right position
 	const bool seek = !streamAtHeadEnd;
 	streamAtStart = streamAtHeadEnd = false;
-	if (seek && _fseeki64(Stream, (__int64)have, SEEK_SET) != 0)
+	if (seek && _lseeki64(_fileno(Stream), (__int64)have, SEEK_SET) < 0)
 		return;
 	// One read of exactly count bytes: fread would split it into a read of a multiple of the buffer size (8 KB) and one more read of 8 KB for the
-	// rest. The buffer of the stream is empty here (directly behind the first read of the start, or behind the seek), the position of the file is the
-	// one of the stream, and every other read of the stream is done behind a seek.
+	// rest. Directly behind the first read of the start the buffer of the stream is empty and the position of the file is the one of the stream;
+	// otherwise the stream is brought to an empty buffer after the read (see readAt).
 	const int got = _read(_fileno(Stream), g_headBuffer.get() + have, (unsigned int)count);
 	if (got > 0)
 		headCacheLength = have + (size_t)got;
+	if (seek)
+		_fseeki64(Stream, 0, SEEK_END);
 }
 
 __int64 CTools::fileLength(FILE *Stream)

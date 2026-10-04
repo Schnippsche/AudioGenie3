@@ -61,8 +61,7 @@ CWAVDISPChunk::~CWAVDISPChunk(void)
 
 bool CWAVDISPChunk::load(FILE *Stream, u64 offset, u64 size)
 {
-	_fseeki64(Stream, (__int64)offset, SEEK_SET);
-	_data.FileRead((size_t)size, Stream);
+	_data.FileReadAt(Stream, (__int64)offset, (size_t)size);
 	_type = _data.GetR4B(0);
 	return true;
 }

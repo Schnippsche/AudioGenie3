@@ -605,3 +605,34 @@ TEST_CASE("FLAC: blocks around the size of the cache of the start of the file (8
         }
     }
 }
+
+TEST_CASE("FLAC: several large blocks one behind the other (reads of the cache, of its extension and of the file)", "[flac][spec]")
+{
+    // Two large blocks, the second one is read directly from the file or from the extended cache; the position of the audio and the fields behind
+    // them must be right (a read from the file must not leave an older buffer of the stream behind that is used by the next read).
+    for (size_t first : std::vector<size_t>{ 9000, 100000, 255389, 262144, 300000 }) {
+        for (size_t second : std::vector<size_t>{ 9000, 154664, 262144, 400000 }) {
+            INFO("blocks: " << first << " and " << second);
+            Bytes pic;
+            be32(pic, 3); be32(pic, 9); put(pic, "image/png"); be32(pic, 1); put(pic, "d");
+            be32(pic, 1); be32(pic, 2); be32(pic, 24); be32(pic, 0);
+            const Bytes png = pngHeader(1, 2, 8, 2);
+            be32(pic, static_cast<uint32_t>(png.size())); put(pic, png);
+            pic.resize(pic.size() + second, 0x33);   // data behind the png header: the picture block is large
+            Bytes f;
+            put(f, "fLaC");
+            put(f, block(0, false, streamInfo(4096, 4096, 100, 900, 44100, 2, 16, 441000)));
+            put(f, block(2, false, Bytes(first, 0x55)));
+            put(f, block(6, false, pic));
+            put(f, block(4, false, vorbisComments("v", { "TITLE=After two large blocks" })));
+            put(f, block(1, true, Bytes(100, 0)));
+            const size_t audio = f.size();
+            for (int i = 0; i < 10; i++) put(f, frame(false, static_cast<uint64_t>(i), 12, 4096, 1, 200));
+            auto p = writeTemp("flac_two_blocks.flac", f);
+            REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == FLAC);
+            CHECK(take(FLACGetUserItemW(L"TITLE")) == L"After two large blocks");
+            CHECK(FLACGetPictureCountW() == 1);
+            CHECK(AUDIOGetBitrateW() == static_cast<long>((f.size() - audio) * 8.0 / 10.0 / 1000.0 + 0.5));
+        }
+    }
+}

@@ -185,8 +185,7 @@ void CMP4_Container::load(FILE *Stream, u64 offset, u64 size)
 	CMP4Atom *atom;
 	while (_offset + 8 <= endPos)
 	{
-		_fseeki64(Stream, (__int64)_offset, SEEK_SET);
-		header.FileRead(8, Stream);
+		header.FileReadAt(Stream, (__int64)_offset, 8);
 		if (header.GetLength() < 8)
 			return;
 		atomSize = header.Get4B(0);
@@ -196,7 +195,7 @@ void CMP4_Container::load(FILE *Stream, u64 offset, u64 size)
 		headerLength = 8;
 		if (atomSize == 1) // the size follows as a 64 bit value (extended size)
 		{
-			header.FileRead(8, Stream);
+			header.FileReadAt(Stream, (__int64)_offset + 8, 8);
 			if (header.GetLength() < 8)
 				return;
 			atomSize = ((u64)header.Get4B(0) << 32) | header.Get4B(4);
@@ -234,6 +233,10 @@ void CMP4_Container::load(FILE *Stream, u64 offset, u64 size)
 #endif
 		CTools::instance().doEvents();
 		nextReadPos = _offset + headerLength;
+		// An atom that is not inside of the cache of the start of the file (the metadata atom moov, 'meta' with a cover) is read with the header of
+		// the next atom in one read.
+		if (atomID != MP4_MDAT && nextReadPos + dataSize + 8 > (u64)CTools::headCacheLength)
+			CTools::extendHeadCache(Stream, (__int64)(nextReadPos + dataSize) + (__int64)CTools::HEAD_CACHE_SIZE);
 		atom->load(Stream, nextReadPos, dataSize);
 		CMP4_AtomFactory::instance()->ebene-=2;
 		_offset+=atomSize;

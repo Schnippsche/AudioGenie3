@@ -58,8 +58,7 @@ CWAVChunk* CWAVChunk::find(u32 ID)
 
 bool CWAVChunk::load(FILE *Stream, u64 offset, u64 size)
 {
-	_fseeki64(Stream, (__int64)offset, SEEK_SET);
-	_data.FileRead((size_t)size, Stream);
+	_data.FileReadAt(Stream, (__int64)offset, (size_t)size);
 	return ((u64)_data.GetLength() == size);
 }
 

@@ -222,6 +222,8 @@ extern "C" long __stdcall AUDIOAnalyzeFileW(LPCWSTR FileName)
 			goto ende;
 		}
 		BYTE possibleFormat = GetFileFormat(Source);
+		// the readers that follow (ID3v1, the format) move the stream as they like: extendHeadCache has to seek from now on
+		CTools::streamAtHeadEnd = false;
 		// distinguish cases by format
 		if (possibleFormat == AUDIO_FORMAT_INVALID) // clearly invalid format
 		{

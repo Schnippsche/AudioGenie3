@@ -259,6 +259,13 @@ long CBlob::Get3B(size_t nIndex)
 
 void CBlob::FileRead(size_t nLen, FILE *Stream)
 {
+	if (Stream != NULL && Stream == CTools::seqStream)
+	{
+		// a sequential read (CSequentialRead): from the position of the sequence
+		FileReadAt(Stream, CTools::seqPosition, nLen);
+		CTools::seqPosition += (__int64)m_CurrentLength;
+		return;
+	}
 	if (nLen < 1 || Stream == NULL)
 	{
 		m_CurrentLength = 0;

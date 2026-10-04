@@ -45,8 +45,7 @@ CMP4_SOUN::~CMP4_SOUN(void)
 
 void CMP4_SOUN::load(FILE *Stream, u64 offset, u64 size)
 {
-	offset;
-	_blob.FileRead((size_t)size, Stream);
+	_blob.FileReadAt(Stream, (__int64)offset, (size_t)size);
 	if (_blob.GetLength() >= 20)
 	{
 		version = _blob.Get2B(0); // usually version 0
@@ -88,8 +87,7 @@ CMP4_STSD::~CMP4_STSD(void)
 
 void CMP4_STSD::load(FILE *Stream, u64 offset, u64 size)
 {
-	offset;
-	_blob.FileRead((size_t)size, Stream);
+	_blob.FileReadAt(Stream, (__int64)offset, (size_t)size);
 	channels = 0;
 	sampleRate = 0;
 	// version and flags (4), number of entries (4), then the first entry: size (4), format (4), 6 reserved bytes, data reference index (2),

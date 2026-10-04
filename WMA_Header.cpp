@@ -42,10 +42,10 @@ __int64 CWMA_Header::loadHeaderOnly(FILE *Stream)
 {
 	// is this the right ID?
 	__int64 HeaderSize;
-	fread(&testIID, 1, 16, Stream);
+	CTools::seqRead(Stream, &testIID, 16);
 	if (!IsEqualIID(testIID, WMA_HEADER_OBJECT))
 		return 0;
-	fread(&HeaderSize, 1, 8, Stream);
+	CTools::seqRead(Stream, &HeaderSize, 8);
 	return HeaderSize;
 }
 
@@ -65,11 +65,11 @@ bool CWMA_Header::load(FILE *Stream, size_t maxLen)
 	__int64 Size = 0;
 	CWMA_Object* obj;
 	__int64 Position = 0;
-	Position = _ftelli64(Stream);
+	Position = CTools::seqTell(Stream);
 	for (size_t i = 0; i < anzElem; i++)
 	{
-		ATLTRACE(_T(" at Pos:%i "), (long)_ftelli64(Stream));
-		if (fread(&testIID, 1, 16, Stream) != 16 || fread(&Size, 1, 8, Stream) != 8)
+		ATLTRACE(_T(" at Pos:%i "), (long)CTools::seqTell(Stream));
+		if (CTools::seqRead(Stream, &testIID, 16) != 16 || CTools::seqRead(Stream, &Size, 8) != 8)
 		{
 			CTools::instance().setLastError(ERR_WMA_PARSE);   // the file ends inside the header
 			_data.Clear();
@@ -87,7 +87,7 @@ bool CWMA_Header::load(FILE *Stream, size_t maxLen)
 		obj->load(Stream, (long)Size);
 		_children.Add(obj);
 		Position+=(long)Size;
-		_fseeki64(Stream, Position, SEEK_SET);
+		CTools::seqSeek(Stream, Position);
 	}
 	return true;
 }

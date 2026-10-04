@@ -38,11 +38,12 @@ bool CWMA_File::ReadFromFile(FILE *Stream)
 	ResetData();
 	/* Read file data */
 	/* Check for existing header */
-	_fseeki64(Stream, CTools::ID3v2Size, SEEK_SET);
+	// the header is read in sequence from the cache of the start of the file (no read and no ftell of its own)
+	CSequentialRead sequence(Stream, CTools::ID3v2Size);
 	if (header.load(Stream, toSizeClamped(CTools::FileSize)))
 	{
 		_valid = true;
-		DataPosition = _ftelli64(Stream); 
+		DataPosition = CTools::seqTell(Stream);
 		return true;
 	}
 	_valid = false;

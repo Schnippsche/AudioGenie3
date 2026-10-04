@@ -38,8 +38,7 @@ CWAVFormatChunk::~CWAVFormatChunk(void)
 
 bool CWAVFormatChunk::load(FILE *Stream, u64 offset, u64 size)
 {
-	_fseeki64(Stream, (__int64)offset, SEEK_SET);
-	_data.FileRead((size_t)size, Stream);
+	_data.FileReadAt(Stream, (__int64)offset, (size_t)size);
 	if (_data.GetLength() < 16)
 		return false;
 	// in a RIFX file (big endian RIFF variant) these fields are big endian too, like every other size/number field in the file

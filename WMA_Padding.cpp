@@ -20,6 +20,7 @@
 
 #include "StdAfx.h"
 #include "WMA_Padding.h"
+#include "Tools.h"
 
 CWMA_Padding::CWMA_Padding(void)
 {
@@ -40,7 +41,7 @@ CWMA_Padding::~CWMA_Padding(void)
 bool CWMA_Padding::load(FILE *Stream, size_t maxLen)
 {
 	ATLTRACE(_T("Padding with %i bytes\n"), maxLen);
-	_fseeki64(Stream, (long)maxLen, SEEK_CUR);
+	CTools::seqSeek(Stream, CTools::seqTell(Stream) + (__int64)(long)maxLen);
 	_size = maxLen;
 	return true;
 }

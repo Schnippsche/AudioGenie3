@@ -97,8 +97,7 @@ bool CWAVRIFFContainer::load(FILE *Stream, u64 offset, u64 size)
 	// 4 bytes 'WAVE' as text
 	// then the remaining chunks/subchunks
 	CBlob header;
-	_fseeki64(Stream, (__int64)offset, SEEK_SET);
-	header.FileRead(12, Stream);
+	header.FileReadAt(Stream, (__int64)offset, 12);
 	if (header.GetLength() != 12)
 		return false;
 
@@ -117,8 +116,7 @@ bool CWAVRIFFContainer::load(FILE *Stream, u64 offset, u64 size)
 	u64 dataSize, nextReadPos;
 	while (offset + 8 < endPos)
 	{
-		_fseeki64(Stream, (__int64)offset, SEEK_SET);
-		header.FileRead(8, Stream);
+		header.FileReadAt(Stream, (__int64)offset, 8);
 		if (header.GetLength() < 8)
 			break;
 		chunkID = (u32)header.Get4B(0);
@@ -128,8 +126,7 @@ bool CWAVRIFFContainer::load(FILE *Stream, u64 offset, u64 size)
 		{
 			// riff size (8), data size (8), sample count (8), table length (4), then the table (not used: none of our chunks reaches 4 GB besides 'data')
 			CBlob ds64;
-			_fseeki64(Stream, (__int64)nextReadPos, SEEK_SET);
-			ds64.FileRead(28, Stream);
+			ds64.FileReadAt(Stream, (__int64)nextReadPos, 28);
 			if (ds64.GetLength() == 28)
 			{
 				realDataSize = (u64)ds64.GetR8B(8);
