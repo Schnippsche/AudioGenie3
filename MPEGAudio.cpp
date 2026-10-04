@@ -757,8 +757,7 @@ bool CMPEGAudio::ReadFromFile(FILE *Stream)
 	/* Open file, read first block of data and search for a frame */
 	ResetData();
 	StartPosition = CTools::audioStart();
-	_fseeki64(Stream, StartPosition, SEEK_SET);
-	Transferred = (long)fread(FrameData, 1, DATASIZE, Stream);
+	Transferred = (long)CTools::readAt(Stream, StartPosition, FrameData, DATASIZE);
 	if (Transferred < 0)
 		Transferred = 0;
 	memset(FrameData + Transferred, 0, sizeof(FrameData) - Transferred); // do not evaluate remains of the last block
@@ -771,8 +770,7 @@ bool CMPEGAudio::ReadFromFile(FILE *Stream)
 	{
 		CTools::instance().doEvents();
 		StartPosition += MAX_MPEG_FRAME_LENGTH;
-		_fseeki64(Stream, StartPosition, SEEK_SET);
-		Transferred = (long)fread(FrameData, 1, DATASIZE, Stream);
+		Transferred = (long)CTools::readAt(Stream, StartPosition, FrameData, DATASIZE);
 	if (Transferred < 0)
 		Transferred = 0;
 	memset(FrameData + Transferred, 0, sizeof(FrameData) - Transferred); // do not evaluate remains of the last block

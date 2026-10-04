@@ -24,6 +24,7 @@
 
 #include "stdafx.h"
 #include "Header.h"
+#include "Tools.h"
 
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
@@ -42,7 +43,19 @@ CHeader::~CHeader()
 BYTE CHeader::ReadFromFile(FILE *Stream)
 {
   // _fseeki64(Stream, 0, SEEK_SET);
-  fread(Buf, 1, 8, Stream); 
+  fread(Buf, 1, 8, Stream);
+  return Detect();
+}
+
+BYTE CHeader::ReadFromFileAt(FILE *Stream, __int64 pos)
+{
+  CTools::readAt(Stream, pos, Buf, 8);
+  return Detect();
+}
+
+// the format from the bytes in Buf
+BYTE CHeader::Detect()
+{
   for (int i = 0; i < MAX_FILETYPES; i++)
   {
     if ( memcmp(Buf, filetypes[i].kennung, filetypes[i].laenge) == 0)

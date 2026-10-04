@@ -280,7 +280,28 @@ void CBlob::FileRead(size_t nLen, FILE *Stream)
 
 void CBlob::FileReadAt(FILE *Stream, __int64 pos, size_t nLen)
 {
-	if (nLen < 1 || Stream == NULL || !AllocNewBuffer(nLen))
+	if (nLen < 1 || Stream == NULL)
+	{
+		m_CurrentLength = 0;
+		return;
+	}
+	// a large size (for example from a damaged tag) is limited to what is left in the file, like in FileRead()
+	if (nLen > BLOB_CHECK_FILE_LIMIT)
+	{
+		const __int64 fileLen = CTools::fileLength(Stream);
+		if (fileLen >= 0)
+		{
+			const unsigned __int64 rest = (fileLen > pos) ? (unsigned __int64)(fileLen - pos) : 0;
+			if ((unsigned __int64)nLen > rest)
+				nLen = (size_t)rest;
+		}
+		if (nLen < 1)
+		{
+			m_CurrentLength = 0;
+			return;
+		}
+	}
+	if (!AllocNewBuffer(nLen))
 	{
 		m_CurrentLength = 0;
 		return;

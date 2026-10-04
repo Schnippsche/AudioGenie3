@@ -51,15 +51,14 @@ static bool IsOggFormat(BYTE format)
 BYTE GetFileFormat(FILE *Stream)
 {
 	CTools::APEHeadSize = 0;
-	BYTE result = header.ReadFromFile(Stream);
+	BYTE result = header.ReadFromFileAt(Stream, 0);
 	if (result == SIGNATURE_ID3V2_TAG)
 	{
 		CID3V2 v2;
 		if (v2.ReadHeader(Stream))
 		{
 			CTools::ID3v2Size = v2.Size;
-			_fseeki64(Stream, v2.Size, SEEK_SET);
-			result = header.ReadFromFile(Stream);
+			result = header.ReadFromFileAt(Stream, v2.Size);
 			if (result == AUDIO_FORMAT_INVALID)
 				result = AUDIO_FORMAT_UNKNOWN;   // bugfix for mpeg headers that do not directly follow the id3v2 tag
 		}

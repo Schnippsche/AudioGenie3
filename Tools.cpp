@@ -26,15 +26,36 @@
 int CTools::lastError;
 __int64 CTools::FileSize;
 FILE *CTools::analysisStream = NULL;
+BYTE CTools::headCache[CTools::HEAD_CACHE_SIZE];
+size_t CTools::headCacheLength = 0;
 BYTE CTools::tailCache[CTools::TAIL_CACHE_SIZE];
 size_t CTools::tailCacheLength = 0;
+
+static_assert(CTools::HEAD_CACHE_SIZE == CTools::TAIL_CACHE_SIZE, "readAt checks the length against one size for both caches");
 
 size_t CTools::readAt(FILE *Stream, __int64 pos, void *destination, size_t length)
 {
 	if (Stream == NULL || length == 0)
 		return 0;
-	if (Stream == analysisStream && pos >= 0 && length <= TAIL_CACHE_SIZE)
+	if (Stream == analysisStream && pos >= 0 && length <= HEAD_CACHE_SIZE)
 	{
+		// the start of the file (the whole file if it is small)
+		const __int64 headEnd = FileSize < (__int64)HEAD_CACHE_SIZE ? FileSize : (__int64)HEAD_CACHE_SIZE;
+		if (pos + (__int64)length <= headEnd)
+		{
+			if (headCacheLength == 0)
+			{
+				const size_t count = (size_t)headEnd;
+				if (_fseeki64(Stream, 0, SEEK_SET) == 0 && fread(headCache, 1, count, Stream) == count)
+					headCacheLength = count;
+			}
+			if (headCacheLength != 0)
+			{
+				memcpy(destination, headCache + (size_t)pos, length);
+				return length;
+			}
+		}
+		// the end of the file
 		const __int64 cacheStart = FileSize > (__int64)TAIL_CACHE_SIZE ? FileSize - (__int64)TAIL_CACHE_SIZE : 0;
 		if (pos >= cacheStart && pos + (__int64)length <= FileSize)
 		{

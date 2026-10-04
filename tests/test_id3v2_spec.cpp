@@ -1069,3 +1069,50 @@ TEST_CASE("ID3v2.4: the unsynchronisation flag in the tag header applies to all 
         CHECK(take(AUDIOGetAlbumW()) == L"Album");
     }
 }
+
+TEST_CASE("ID3v2 tag sizes around the cache of the start of the file give the same result", "[id3v2][spec][head]")
+{
+    // The analysis reads the first 8192 bytes of the file once and answers the reads of the format, the ID3v2 header and tag and the first MPEG
+    // block (3460 bytes) from that block, as far as they are completely inside of it. A tag that ends at 4732 or before leaves the whole first MPEG
+    // block inside, a larger tag does not, and a tag larger than the cache is read from the file. The results must not depend on it.
+    const Bytes title = { 0x03, 'T', 'i', 't', 'l', 'e' };
+    const Bytes body = frame("TIT2", title);
+    long frames = 0;
+    float duration = 0;
+    for (size_t total : std::vector<size_t>{ 40, 100, 4000, 4732, 4733, 5000, 8000, 8181, 8192, 8193, 8300, 12000, 20000 }) {
+        INFO("tag of " << total << " bytes");
+        auto p = writeTagged("spec_head_cache.mp3", tagBytes(4, 0, body, total - 10 - body.size()));
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        CHECK(take(AUDIOGetTitleW()) == L"Title");
+        CHECK(MPEGGetFramePositionW() == static_cast<long>(total));
+        CHECK(AUDIOGetBitrateW() > 0);
+        if (frames == 0) {
+            frames = MPEGGetFramesW();
+            duration = AUDIOGetDurationW();
+            REQUIRE(frames > 0);
+        }
+        CHECK(MPEGGetFramesW() == frames);
+        CHECK(AUDIOGetDurationW() == duration);
+        CHECK(id3v2TotalSize(readFile(p)) == total);
+    }
+    SECTION("a file that is smaller than the cache: tag and frames are read from the cache of the start") {
+        Bytes shortFile = tagBytes(4, 0, body, 200 - 10 - body.size());
+        const Bytes a = makeMp3(4);
+        shortFile.insert(shortFile.end(), a.begin(), a.end());
+        REQUIRE(shortFile.size() < 8192);
+        auto p = writeTemp("spec_head_cache_small.mp3", shortFile);
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        CHECK(take(AUDIOGetTitleW()) == L"Title");
+        CHECK(MPEGGetFramePositionW() == 200);
+        CHECK(std::abs(MPEGGetFramesW() - 4) <= 1);
+    }
+    SECTION("saving after the analysis, then analyzing again") {
+        auto p = writeTagged("spec_head_cache_save.mp3", tagBytes(4, 0, body, 3000));
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        AUDIOSetTitleW(L"Changed");
+        REQUIRE(AUDIOSaveChangesW() != 0);
+        CHECK(audioIntact(p));
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        CHECK(take(AUDIOGetTitleW()) == L"Changed");
+    }
+}

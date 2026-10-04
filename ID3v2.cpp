@@ -79,8 +79,7 @@ bool CID3V2::ReadHeader(FILE *Stream)
 	// Where yy is less than $FF, xx is the 'flags' byte and zz is less than $80.
 	memset(buf, 0, 10);
 	TagDataSize = 0;
-	_fseeki64(Stream, 0, SEEK_SET);
-	fread(buf, 1, 10, Stream);	
+	CTools::readAt(Stream, 0, buf, 10);
 	Size = 0;
 	if (buf[0] == 'I' && buf[1] == 'D' && buf[2] == '3' && buf[3] < 0xFF && buf[4] < 0xFF)
 	{
@@ -149,7 +148,7 @@ void CID3V2::ReadFromFile(FILE *Stream)
 		CTools::instance().writeDebug(_T("id3v2.%i tag found"), Version);
 		CTools::ID3V2oldTagVersion = Version;
 		CBlob data(TagDataSize + 10);
-		data.FileRead(TagDataSize, Stream);
+		data.FileReadAt(Stream, 10, TagDataSize);   // behind the header of 10 bytes
 		if (Version == TAG_VERSION_2_2 && (CTools::ID3V2Flags & 0x40) == 0x40)
 			CTools::instance().writeWarning(L"id3v2.2 tag is compressed: no compression scheme is defined, the tag is ignored");
 		else

@@ -151,10 +151,16 @@ public:
 	static __int64 FileSize;
 	// the stream that AUDIOAnalyzeFileW has opened (NULL outside of the analysis): its file size was read when it was opened, FileSize
 	static FILE *analysisStream;
-	// Reads length bytes at the position pos (like fseek and fread, returns the number of bytes read). The tags at the end of the file (ID3v1,
-	// Lyrics3, APE) and the last MPEG frames are read one after the other from the end of the file: for the stream of the running analysis the last
-	// TAIL_CACHE_SIZE bytes of the file are read once (with the first request that is inside of them), the other requests are answered from memory.
+	// Reads length bytes at the position pos (like fseek and fread, returns the number of bytes read). The analysis reads the same few places of
+	// a file one after the other: the start (the format, the ID3v2 header and tag, the first MPEG frames) and the end (ID3v1, Lyrics3, APE and the last
+	// MPEG frames). For the stream of the running analysis the first HEAD_CACHE_SIZE and the last TAIL_CACHE_SIZE bytes of the file are read once
+	// (with the first request that is inside of them), the other requests inside of them are answered from memory. A request that is not completely
+	// inside of one of them, and every other stream, is read with fseek and fread. (A seek on the stream would throw away its read buffer, so the start of
+	// the file was read twice before.) The position of the stream is not changed by a request that is answered from memory.
 	static size_t readAt(FILE *Stream, __int64 pos, void *destination, size_t length);
+	static const size_t HEAD_CACHE_SIZE = 8192;
+	static BYTE headCache[HEAD_CACHE_SIZE];
+	static size_t headCacheLength;   // 0: not read yet (or for another analysis)
 	static const size_t TAIL_CACHE_SIZE = 8192;
 	static BYTE tailCache[TAIL_CACHE_SIZE];
 	static size_t tailCacheLength;   // 0: not read yet (or for another analysis)
@@ -215,6 +221,6 @@ private:
 class CAnalysisStream
 {
 public:
-	explicit CAnalysisStream(FILE *Stream) { CTools::analysisStream = Stream; CTools::tailCacheLength = 0; }
+	explicit CAnalysisStream(FILE *Stream) { CTools::analysisStream = Stream; CTools::headCacheLength = 0; CTools::tailCacheLength = 0; }
 	~CAnalysisStream() { CTools::analysisStream = NULL; }
 };
