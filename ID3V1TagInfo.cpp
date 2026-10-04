@@ -91,14 +91,11 @@ bool CID3V1TagInfo::ReadFromFile(FILE *Stream)
   _enhanced = false;
   memset(_enhancedRest, 0, sizeof(_enhancedRest));
   size_t want = ID3V1_TAG_SIZE + ID3V1_ENHANCED_SIZE;
-  // absolute positions: a seek relative to the end of the file costs a system call more (the library asks for the file size first)
+  // absolute position (a seek relative to the end of the file costs a system call more), read from the cache of the end of the file
   const __int64 fileLength = CTools::fileLength(Stream);
-  if (fileLength < (__int64)want || _fseeki64(Stream, fileLength - (__int64)want, SEEK_SET) != 0)
-  {
+  if (fileLength < (__int64)want)
     want = 131;   // a smaller file: the id3v1 tag and the 3 bytes in front of it
-    _fseeki64(Stream, fileLength - (__int64)want, SEEK_SET);
-  }
-  tail.FileRead(want, Stream);
+  tail.FileReadAt(Stream, fileLength - (__int64)want, want);
   const size_t length = tail.GetLength();
   if (length < 131)
     return false;

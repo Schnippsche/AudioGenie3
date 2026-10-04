@@ -59,14 +59,14 @@ bool CAPE::FindTailFooter(FILE *Stream, int id3v1Size, bool checkLyrics, __int64
 	footerPos = 0;
 	lyricsAfter = 0;
 	// directly in front of the ID3v1 data
-	if (end >= APE_TAG_FOOTER_SIZE && _fseeki64(Stream, end - APE_TAG_FOOTER_SIZE, SEEK_SET) == 0 && fread(id, 1, 8, Stream) == 8 && memcmp(id, APE_ID, 8) == 0)
+	if (end >= APE_TAG_FOOTER_SIZE && CTools::readAt(Stream, end - APE_TAG_FOOTER_SIZE, id, 8) == 8 && memcmp(id, APE_ID, 8) == 0)
 	{
 		footerPos = end - APE_TAG_FOOTER_SIZE;
 		return true;
 	}
 	// a Lyrics3 v2.00 tag ends with its size (6 digits: LYRICSBEGIN and the fields) and "LYRICS200"
 	BYTE tail[15];
-	if (checkLyrics && end >= 15 + APE_TAG_FOOTER_SIZE && _fseeki64(Stream, end - 15, SEEK_SET) == 0 && fread(tail, 1, 15, Stream) == 15 && memcmp(tail + 6, "LYRICS200", 9) == 0)
+	if (checkLyrics && end >= 15 + APE_TAG_FOOTER_SIZE && CTools::readAt(Stream, end - 15, tail, 15) == 15 && memcmp(tail + 6, "LYRICS200", 9) == 0)
 	{
 		__int64 size = 0;
 		int digits = 0;
@@ -76,8 +76,8 @@ bool CAPE::FindTailFooter(FILE *Stream, int id3v1Size, bool checkLyrics, __int64
 			digits++;
 		}
 		const __int64 total = size + 15;
-		if (digits == 6 && size >= 11 && end - total - APE_TAG_FOOTER_SIZE >= 0 && _fseeki64(Stream, end - total - APE_TAG_FOOTER_SIZE, SEEK_SET) == 0
-			&& fread(id, 1, 8, Stream) == 8 && memcmp(id, APE_ID, 8) == 0)
+		if (digits == 6 && size >= 11 && end - total - APE_TAG_FOOTER_SIZE >= 0 && CTools::readAt(Stream, end - total - APE_TAG_FOOTER_SIZE, id, 8) == 8
+			&& memcmp(id, APE_ID, 8) == 0)
 		{
 			footerPos = end - total - APE_TAG_FOOTER_SIZE;
 			lyricsAfter = total;

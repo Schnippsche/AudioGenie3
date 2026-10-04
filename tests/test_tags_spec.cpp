@@ -1132,3 +1132,48 @@ TEST_CASE("Tags: clearing a field through the abstract API also clears it in an 
     CHECK(take(ID3V1GetTitleW()) == L"");
     CHECK(take(ID3V1GetArtistW()) == L"");
 }
+
+TEST_CASE("Tags at the end of the file that are larger than the cache of the end of the file", "[tags][spec][lyrics][ape][tail]")
+{
+    // the tags at the end and the last MPEG frames are read from a cache of the last 8192 bytes of the file; a tag that is larger than that has to be
+    // found, and the values of the audio data (frames, duration, MD5) must not depend on it
+    auto plain = writeParts("tail_plain.mp3", Bytes(), kV1());
+    REQUIRE(AUDIOAnalyzeFileW(plain.c_str()) == MPEG);
+    const long frames = MPEGGetFramesW();
+    const float duration = AUDIOGetDurationW();
+    const std::wstring md5 = take(AUDIOGetMD5ValueW());
+    REQUIRE(frames > 0);
+
+    SECTION("Lyrics3 v2.00 of 12000 bytes in front of the ID3v1 tag") {
+        const std::string longLyrics(12000, 'x');
+        const Bytes tag = lyrics200({ lyricsField("IND", "10"), lyricsField("LYR", longLyrics) });
+        auto p = writeParts("tail_lyrics.mp3", Bytes(), concat({ tag, kV1() }));
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        CHECK(take(LYRICSGetLyricsW()) == wide(longLyrics));
+        CHECK(LYRICSGetStartPositionW() == static_cast<long>(audio().size()));
+        CHECK(take(ID3V1GetTitleW()) == L"Title");
+        CHECK(MPEGGetFramesW() == frames);
+        CHECK(AUDIOGetDurationW() == duration);
+        CHECK(take(AUDIOGetMD5ValueW()) == md5);
+    }
+    SECTION("APE v2 of 10000 bytes in front of the ID3v1 tag") {
+        const Bytes big(10000, 0x41);
+        auto p = writeParts("tail_ape.mp3", Bytes(), concat({ apeTag(2000, { apeItem("Title", text("ape title")), apeItem("Cover Art (Front)", big, 2) }), kV1() }));
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        CHECK(take(APEGetTitleW()) == L"ape title");
+        CHECK(take(ID3V1GetTitleW()) == L"Title");
+        CHECK(MPEGGetFramesW() == frames);
+        CHECK(AUDIOGetDurationW() == duration);
+        CHECK(take(AUDIOGetMD5ValueW()) == md5);
+    }
+    SECTION("a file that is smaller than the cache, with all three tags") {
+        const Bytes tag = lyrics200({ lyricsField("LYR", "short") });
+        auto p = writeParts("tail_small.mp3", Bytes(), concat({ apeTag(2000, { apeItem("Title", text("ape title")) }), tag, kV1() }));
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        CHECK(take(APEGetTitleW()) == L"ape title");
+        CHECK(take(LYRICSGetLyricsW()) == L"short");
+        CHECK(take(ID3V1GetTitleW()) == L"Title");
+        CHECK(MPEGGetFramesW() == frames);
+        CHECK(take(AUDIOGetMD5ValueW()) == md5);
+    }
+}

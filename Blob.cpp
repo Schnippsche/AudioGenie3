@@ -278,6 +278,16 @@ void CBlob::FileRead(size_t nLen, FILE *Stream)
 	m_CurrentLength = fread(m_pData, 1, nLen, Stream);
 }
 
+void CBlob::FileReadAt(FILE *Stream, __int64 pos, size_t nLen)
+{
+	if (nLen < 1 || Stream == NULL || !AllocNewBuffer(nLen))
+	{
+		m_CurrentLength = 0;
+		return;
+	}
+	m_CurrentLength = CTools::readAt(Stream, pos, m_pData, nLen);
+}
+
 size_t CBlob::FileWrite(size_t nLen, FILE *Stream)
 {
 	if (nLen > m_CurrentLength)

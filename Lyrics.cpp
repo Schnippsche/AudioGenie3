@@ -110,7 +110,7 @@ bool CLyrics::ReadHeader(FILE *Stream)
 	/* one read of the end of the file: the id3v1 data (up to 355 bytes), an APE footer in front of it and the end of the lyrics tag */
 	BYTE tail[512];
 	const size_t want = (size_t)(fileSize < (__int64)sizeof(tail) ? fileSize : (__int64)sizeof(tail));
-	if (want < ID3V1_TAG_SIZE || _fseeki64(Stream, fileSize - (__int64)want, SEEK_SET) != 0 || fread(tail, 1, want, Stream) != want)
+	if (want < ID3V1_TAG_SIZE || CTools::readAt(Stream, fileSize - (__int64)want, tail, want) != want)
 		return false;
 	/* the lyrics tag is in front of the id3v1 tag, which has to exist */
 	if (memcmp(tail + want - ID3V1_TAG_SIZE, ID3V1_ID, 3) != 0)
@@ -148,8 +148,7 @@ bool CLyrics::ReadHeader(FILE *Stream)
 	else
 	{
 		/* an APE tag is between the two: read the header there */
-		_fseeki64(Stream, FEndPosition, SEEK_SET);
-		if (fread(FHeader, 1, 9, Stream) != 9)
+		if (CTools::readAt(Stream, FEndPosition, FHeader, 9) != 9)
 			return false;
 	}
 	/* check if Lyrics-Tag exists */

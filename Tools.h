@@ -151,6 +151,13 @@ public:
 	static __int64 FileSize;
 	// the stream that AUDIOAnalyzeFileW has opened (NULL outside of the analysis): its file size was read when it was opened, FileSize
 	static FILE *analysisStream;
+	// Reads length bytes at the position pos (like fseek and fread, returns the number of bytes read). The tags at the end of the file (ID3v1,
+	// Lyrics3, APE) and the last MPEG frames are read one after the other from the end of the file: for the stream of the running analysis the last
+	// TAIL_CACHE_SIZE bytes of the file are read once (with the first request that is inside of them), the other requests are answered from memory.
+	static size_t readAt(FILE *Stream, __int64 pos, void *destination, size_t length);
+	static const size_t TAIL_CACHE_SIZE = 8192;
+	static BYTE tailCache[TAIL_CACHE_SIZE];
+	static size_t tailCacheLength;   // 0: not read yet (or for another analysis)
 	// length of the file of the stream in bytes, -1 on an error. One system call (_filelengthi64 needs about four: it seeks to the end and back);
 	// for the stream of the running analysis no call at all, because the file is not changed during the analysis and its size is known
 	static __int64 fileLength(FILE *Stream);
@@ -208,6 +215,6 @@ private:
 class CAnalysisStream
 {
 public:
-	explicit CAnalysisStream(FILE *Stream) { CTools::analysisStream = Stream; }
+	explicit CAnalysisStream(FILE *Stream) { CTools::analysisStream = Stream; CTools::tailCacheLength = 0; }
 	~CAnalysisStream() { CTools::analysisStream = NULL; }
 };

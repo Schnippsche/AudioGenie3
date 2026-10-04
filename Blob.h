@@ -75,6 +75,8 @@ public:
 	void AddString(const LPCWSTR string);
 	// general methods
 	void AddMemory(const void *src, size_t nLen);
+	// replaces the content with the nLen bytes (at most) at the position pos of the file, see CTools::readAt()
+	void FileReadAt(FILE *Stream, __int64 pos, size_t nLen);
 	void Add2B(int value);
 	void Add3B(int value);
 	void Add4B(unsigned int value);

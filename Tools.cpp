@@ -26,6 +26,35 @@
 int CTools::lastError;
 __int64 CTools::FileSize;
 FILE *CTools::analysisStream = NULL;
+BYTE CTools::tailCache[CTools::TAIL_CACHE_SIZE];
+size_t CTools::tailCacheLength = 0;
+
+size_t CTools::readAt(FILE *Stream, __int64 pos, void *destination, size_t length)
+{
+	if (Stream == NULL || length == 0)
+		return 0;
+	if (Stream == analysisStream && pos >= 0 && length <= TAIL_CACHE_SIZE)
+	{
+		const __int64 cacheStart = FileSize > (__int64)TAIL_CACHE_SIZE ? FileSize - (__int64)TAIL_CACHE_SIZE : 0;
+		if (pos >= cacheStart && pos + (__int64)length <= FileSize)
+		{
+			if (tailCacheLength == 0)
+			{
+				const size_t count = (size_t)(FileSize - cacheStart);
+				if (_fseeki64(Stream, cacheStart, SEEK_SET) == 0 && fread(tailCache, 1, count, Stream) == count)
+					tailCacheLength = count;
+			}
+			if (tailCacheLength != 0)
+			{
+				memcpy(destination, tailCache + (size_t)(pos - cacheStart), length);
+				return length;
+			}
+		}
+	}
+	if (_fseeki64(Stream, pos, SEEK_SET) != 0)
+		return 0;
+	return fread(destination, 1, length, Stream);
+}
 
 __int64 CTools::fileLength(FILE *Stream)
 {

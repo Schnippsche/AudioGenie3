@@ -788,14 +788,12 @@ bool CMPEGAudio::ReadFromFile(FILE *Stream)
 		if (!FVBR.Found)
 		{
 			vendorValues.Clear();
-			// absolute position instead of a seek relative to the end of the file and a query of the position: each of them is a system call
+			// absolute position instead of a seek relative to the end of the file and a query of the position (each of them is a system call),
+			// read from the cache of the end of the file, which the tags at the end of the file have filled already
 			__int64 tailStart = CTools::fileLength(Stream) - DATASIZE - CTools::ID3v1Size - CTools::LyricsSize;
-			if (tailStart < 0 || _fseeki64(Stream, tailStart, SEEK_SET) != 0)
-			{
-				tailStart = 0;
-				_fseeki64(Stream, 0, SEEK_SET); // file is smaller than the search range
-			}
-			vendorValues.FileRead(DATASIZE, Stream);
+			if (tailStart < 0)
+				tailStart = 0;   // file is smaller than the search range
+			vendorValues.FileReadAt(Stream, tailStart, DATASIZE);
 			if (!scanAll)
 			{
 				FindTrailingBytes(Stream, tailStart);
