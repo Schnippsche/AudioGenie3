@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Speed test of AudioGenie3.dll in Visual Studio: analyzes every audio file below a directory (default D:\Musik) and prints the time per
+  file, the CPU time and the read calls (the same program as tests\tools\run_scan.bat, source: scan_library.cpp).
+
+  Start: select the configuration (Release) and the platform (x64 or x86) in the toolbar, set SpeedTest as startup project (right click in
+  the Solution Explorer -> Set as Startup Project) and press Ctrl+F5 (Start Without Debugging: the console stays open at the end).
+  The library is built first. The directory and the result file can be changed in the project properties: Debugging -> Command Arguments
+  (<directory> <result file> [limit] [k/n]). The result is written to tests\out\speedtest\<platform>\<configuration>\.
+  The first run reads the files from the disk, repeat the run for the values with a warm cache of the file system.
+-->
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32"><Configuration>Debug</Configuration><Platform>Win32</Platform></ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64"><Configuration>Debug</Configuration><Platform>x64</Platform></ProjectConfiguration>
+    <ProjectConfiguration Include="profiling|Win32"><Configuration>profiling</Configuration><Platform>Win32</Platform></ProjectConfiguration>
+    <ProjectConfiguration Include="profiling|x64"><Configuration>profiling</Configuration><Platform>x64</Platform></ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32"><Configuration>Release</Configuration><Platform>Win32</Platform></ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64"><Configuration>Release</Configuration><Platform>x64</Platform></ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{5b7c2f1e-6d34-4a9b-8c0e-3f2a1d9e7b41}</ProjectGuid>
+    <RootNamespace>SpeedTest</RootNamespace>
+    <Keyword>Win32Proj</Keyword>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <PlatformToolset>v145</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+    <UseDebugLibraries Condition="'$(Configuration)'=='Debug'">true</UseDebugLibraries>
+    <UseDebugLibraries Condition="'$(Configuration)'!='Debug'">false</UseDebugLibraries>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <PropertyGroup>
+    <RepoRoot>$(MSBuildThisFileDirectory)..\..\</RepoRoot>
+    <!-- the output directory of AudioGenie3.vcxproj: Release\ and x64\Release\ (the same for Debug and profiling) -->
+    <DllDir Condition="'$(Platform)'=='Win32'">$(RepoRoot)$(Configuration)\</DllDir>
+    <DllDir Condition="'$(Platform)'!='Win32'">$(RepoRoot)$(Platform)\$(Configuration)\</DllDir>
+    <OutDir>$(RepoRoot)tests\out\speedtest\$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>$(RepoRoot)tests\out\speedtest\obj\$(Platform)\$(Configuration)\</IntDir>
+    <TargetName>scan_library</TargetName>
+    <LinkIncremental>false</LinkIncremental>
+    <!-- Debugging: directory, result file; the DLL directory in front of the search path; the working directory is the output directory -->
+    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
+    <LocalDebuggerCommandArguments>D:\Musik "$(OutDir)result.tsv"</LocalDebuggerCommandArguments>
+    <LocalDebuggerEnvironment>PATH=$(DllDir);%PATH%</LocalDebuggerEnvironment>
+    <LocalDebuggerWorkingDirectory>$(OutDir)</LocalDebuggerWorkingDirectory>
+  </PropertyGroup>
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <SDLCheck>false</SDLCheck>
+      <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <AdditionalOptions>/utf-8 /wd4828 %(AdditionalOptions)</AdditionalOptions>
+      <PreprocessorDefinitions>_CONSOLE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <AdditionalDependencies>$(DllDir)AudioGenie3.lib;oleaut32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)'=='Debug'">
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link><GenerateDebugInformation>true</GenerateDebugInformation></Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)'!='Debug'">
+    <ClCompile>
+      <Optimization>MaxSpeed</Optimization>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="scan_library.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- the library is built first (its import library is linked above, not through the reference) -->
+    <ProjectReference Include="..\..\AudioGenie3.vcxproj">
+      <Project>{9d2c8d2b-b702-452e-89a1-88cc79b1ab75}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <LinkLibraryDependencies>false</LinkLibraryDependencies>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+</Project>

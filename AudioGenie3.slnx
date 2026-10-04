@@ -7,4 +7,7 @@
     <Platform Name="x86" />
   </Configurations>
   <Project Path="AudioGenie3.vcxproj" Id="9d2c8d2b-b702-452e-89a1-88cc79b1ab75" />
+  <Project Path="tests/tools/SpeedTest.vcxproj" Id="5b7c2f1e-6d34-4a9b-8c0e-3f2a1d9e7b41">
+    <BuildDependency Project="AudioGenie3.vcxproj" />
+  </Project>
 </Solution>

@@ -64,6 +64,12 @@ Lyrics3, APE and the MPEG vendor block instead of several times reduced the read
 time, so it was not adopted. The order of the reads matters: reading the end of the file before the ID3v2 tag made the analysis 50 %
 slower.
 
+**In Visual Studio:** open `AudioGenie3.slnx`, select the configuration `Release` and the platform `x64` or `x86` in the toolbar, set the
+project `SpeedTest` as startup project (right click in the Solution Explorer, *Set as Startup Project*) and press Ctrl+F5 (*Start Without
+Debugging*, the console stays open). The library is built first; the program is the same `scan_library.cpp`. It scans `D:\Musik` by default,
+the directory, the result file, `limit` and `k/n` are in the project properties under *Debugging -> Command Arguments*. The result goes to
+`tests\out\speedtest\<platform>\<configuration>\`. Run it twice: the first run reads the files from the disk.
+
 ## Encoder quirks (`kQuirks`)
 
 The earlier "read gaps" (year `TDRC`, Vorbis `DESCRIPTION`, APE `date`, WMA `Description`/`date`, WAV `IPRT`) are fixed in the DLL
