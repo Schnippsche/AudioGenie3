@@ -135,6 +135,9 @@ void CTools::reset()
 
 void CTools::doEvents()
 {
+	// GetTickCount (not GetTickCount64, which needs Windows Vista; the minimum platform is Windows 2000) wraps around after 49 days, which is
+	// harmless here: the difference of two DWORD values is correct across the wrap-around, and it is only compared with a few hundred milliseconds
+#pragma warning(suppress: 28159)
 	DWORD ticks = GetTickCount();
 	if ((DWORD)(ticks - oldTickCount) < (DWORD)CTools::configValues[CONFIG_DOEVENTSMILLIS]) // only every eventMillis milliseconds
 		return;
@@ -397,7 +400,9 @@ void CTools::setConfigValue(long key, long value)
 			newValue = 32768;
 		wchar_t *newWc = new (std::nothrow) wchar_t[newValue + 2];
 		char *newC = new (std::nothrow) char[newValue + 2];
-		if (newWc == NULL || newC == NULL)
+		const bool failedWc = (newWc == NULL);
+		const bool failedC = (newC == NULL);
+		if (failedWc || failedC)
 		{
 			delete [] newWc;
 			delete [] newC;

@@ -54,13 +54,13 @@ class CID3V2
 public:
 	CID3V2(void);
 	virtual ~CID3V2(void);
-	BYTE buf[16];
-	u32 TagID, FrameID;
-	u32 FrameSize, Size, oldTagSize;
-	u32 TagDataSize;                      // size field of the header: extended header, frames and padding (without header and footer)
-	u16 FrameFlags;
+	BYTE buf[16]{};
+	u32 TagID{}, FrameID{};
+	u32 FrameSize{}, Size{}, oldTagSize{};
+	u32 TagDataSize{};                      // size field of the header: extended header, frames and padding (without header and footer)
+	u16 FrameFlags{};
 	//static BYTE oldTagVersion, newTagVersion, defaultEncodingID, Flags;
-	BYTE Revision, Version;	
+	BYTE Revision{}, Version{};	
 	bool ReadHeader(FILE *Stream);
 	void ReadFromFile(FILE *Stream);
 	void WriteHeader(CBlob *blob, long tagSize, bool unsynchronised = false);
@@ -88,7 +88,7 @@ public:
 	u32 calcTagSize();
 	void convertFramesForVersion();
 	void parseTags(CBlob* data);
-	bool isValid;
+	bool isValid{};
 	void ResetData();
 	bool parseCueFile(LPCWSTR FileName);
 	short getEncoding(u32 frameID);

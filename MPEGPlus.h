@@ -65,14 +65,14 @@ long HeaderTail;                                        // the 32 bit word at of
 class CMPEGPlus: public CAudio
 {
 private:
-	tagape Header;
-	bool FValid;
-	BYTE FChannelModeID;
-	long FFrameCount;
-	long FSampleRate;
-	int  FBitRate;
-	BYTE FStreamVersion;
-	BYTE FProfileID;
+	tagape Header{};
+	bool FValid{};
+	BYTE FChannelModeID{};
+	long FFrameCount{};
+	long FSampleRate{};
+	int  FBitRate{};
+	BYTE FStreamVersion{};
+	BYTE FProfileID{};
 	// Stream version 8 ('MPCK'): packet-based header, values come from the SH packet
 	bool FIsSV8;
 	long FChannels;

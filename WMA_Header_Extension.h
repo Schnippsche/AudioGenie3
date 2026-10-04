@@ -40,6 +40,6 @@ public:
 	void Remove();
 private:
 	CAtlArray<CWMA_Object *> _children;
-	IID reserved1;
-	u16 reserved2;
+	IID reserved1{};
+	u16 reserved2{};
 };

@@ -37,6 +37,6 @@ public:
 	// the file size in the header changes with the size of the header
 	void addToFileSize(__int64 delta);
 private:
-	u64 PlayDuration, Preroll;
-	u32 Flags, MaxBitrate;
+	u64 PlayDuration{}, Preroll{};
+	u32 Flags{}, MaxBitrate{};
 };

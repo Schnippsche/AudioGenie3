@@ -31,9 +31,9 @@ class CApeTagItem
 public:
 	CApeTagItem();
 	virtual ~CApeTagItem();
-	long Size;
-	long Flags;
-	char NextChar;
+	long Size{};
+	long Flags{};
+	char NextChar{};
 	CAtlString Key;
 	CBlob Value;
 

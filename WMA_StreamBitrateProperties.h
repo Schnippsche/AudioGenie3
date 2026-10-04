@@ -32,6 +32,6 @@ public:
 	~CWMA_StreamBitrateProperties(void);
 	bool load(FILE *Stream, size_t maxLen);
 	void Empty();
-	u16 Flags;
-    u32 AverageBitrate;
+	u16 Flags{};
+    u32 AverageBitrate{};
 };

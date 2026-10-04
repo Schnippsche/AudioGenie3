@@ -36,5 +36,5 @@ public:
 	void copyPositionFrom(const CWAVDataChunk &other) { _offset = other._offset; _size = other._size; };
 protected:
 	u64 _size;
-	u64 _offset;
+	u64 _offset{};
 };

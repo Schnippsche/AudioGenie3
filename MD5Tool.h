@@ -32,7 +32,7 @@ class CMD5Tool
 {
 protected:
 	MD5 *md5;
-	MD5_CTX ctx;
+	MD5_CTX ctx{};
 	BYTE *buffer;
 	CAtlString hash;
 private:

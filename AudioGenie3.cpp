@@ -28,7 +28,7 @@
 #include "dlldatax.h"
 
 // Used to determine whether the DLL can be unloaded by OLE.
-STDAPI DllCanUnloadNow(void)
+__control_entrypoint(DllExport) STDAPI DllCanUnloadNow(void)
 {
 #ifdef _MERGE_PROXYSTUB
     HRESULT hr = PrxDllCanUnloadNow();
@@ -40,7 +40,7 @@ STDAPI DllCanUnloadNow(void)
 
 
 // Returns a class factory to create an object of the requested type.
-STDAPI DllGetClassObject(REFCLSID rclsid, REFIID riid, LPVOID* ppv)
+_Check_return_ STDAPI DllGetClassObject(_In_ REFCLSID rclsid, _In_ REFIID riid, _Outptr_ LPVOID* ppv)
 {
 #ifdef _MERGE_PROXYSTUB
     if (PrxDllGetClassObject(rclsid, riid, ppv) == S_OK)
@@ -81,7 +81,7 @@ STDAPI DllUnregisterServer(void)
 
 // DllInstall - adds or removes per-user entries in the system registry.
 //              per computer.	
-STDAPI DllInstall(BOOL bInstall, LPCWSTR pszCmdLine)
+STDAPI DllInstall(BOOL bInstall, _In_opt_ PCWSTR pszCmdLine)
 {
     HRESULT hr = E_FAIL;
     static const wchar_t szUserSwitch[] = _T("user");

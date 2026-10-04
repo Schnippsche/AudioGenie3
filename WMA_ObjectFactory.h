@@ -34,9 +34,9 @@ struct TagPictureStruct
 {
 	CAtlString Mime;
 	CAtlString Description;
-	BYTE* PicDaten;
-	u32 PicSize;
-	BYTE Type;
+	BYTE* PicDaten{};
+	u32 PicSize{};
+	BYTE Type{};
 };
 
 class CWMA_ObjectFactory

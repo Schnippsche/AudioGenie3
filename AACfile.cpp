@@ -23,6 +23,7 @@
 #include "io.h"
 #include "Blob.h"
 #include <fcntl.h>
+#include <vector>
 #include "resource.h"
 
 //////////////////////////////////////////////////////////////////////
@@ -149,16 +150,16 @@ class FileWindow
 	FILE *file;
 	__int64 start;
 	size_t length;
-	BYTE buffer[64 * 1024];
+	std::vector<BYTE> buffer;   // 64 KB, on the heap: as a member of an object on the stack it made the function use 66 KB of stack
 public:
-	FileWindow(FILE *f) : file(f), start(0), length(0) {}
+	FileWindow(FILE *f) : file(f), start(0), length(0), buffer(64 * 1024) {}
 	const BYTE* At(__int64 position, size_t need, size_t &available)
 	{
 		if (position < start || position + (__int64)need > start + (__int64)length)
 		{
 			_fseeki64(file, position, SEEK_SET);
 			start = position;
-			length = fread(buffer, 1, sizeof(buffer), file);
+			length = fread(buffer.data(), 1, buffer.size(), file);
 		}
 		if (length == 0 || position >= start + (__int64)length)
 		{
@@ -166,7 +167,7 @@ public:
 			return NULL;
 		}
 		available = (size_t)(start + length - position);
-		return buffer + (position - start);
+		return buffer.data() + (position - start);
 	}
 };
 
@@ -311,7 +312,7 @@ bool CAAC::ReadADTS(FILE *Source)
 			rateIndex = f.sampleRateIndex;
 			FMPEGVersionID = f.id ? AAC_MPEG_VERSION_2 : AAC_MPEG_VERSION_4;
 			FProfileID = (BYTE)(f.profile + 1);
-			FSampleRate = SAMPLE_RATE[rateIndex];
+			FSampleRate = SAMPLE_RATE[rateIndex & 0x0F];   // the index has 4 bits, the table has 16 entries
 			FChannels = CHANNELS_OF_CONFIG[f.channelConfig];
 			// channel configuration 0: the program config element at the start of the first raw data block (without the block positions
 			// that a frame with several raw data blocks has)
@@ -329,7 +330,7 @@ bool CAAC::ReadADTS(FILE *Source)
 			variable = true;
 		frames++;
 		audioBytes += f.frameLength;
-		FDuration += 1024.0 * f.blocks / SAMPLE_RATE[f.sampleRateIndex];
+		FDuration += 1024.0 * f.blocks / SAMPLE_RATE[f.sampleRateIndex & 0x0F];
 		position += f.frameLength;
 	}
 	if (frames == 0)

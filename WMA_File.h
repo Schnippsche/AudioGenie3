@@ -75,7 +75,7 @@ public:
 	__int64 GetFirstAudioPosition() { return DataPosition; };	
 private:
 	 CWMA_Header header;
-	 __int64 DataPosition;
+	 __int64 DataPosition{};
 	 bool _valid;
 };
 

@@ -95,7 +95,7 @@ static const structft filetypes[MAX_FILETYPES] = {
 class CHeader  
 {
 private:
-	BYTE Buf[16];
+	BYTE Buf[16]{};
 public:
 	CHeader();
 	virtual ~CHeader();

@@ -33,7 +33,7 @@ public:
 	void setSourceFile(CAtlString file) { _sourcefile = file; };
 	void setSameFile(bool status)       { _sameFile = status; };
 private:
-	u64 _position;
+	u64 _position{};
 	u64 _size;
 	CAtlString _sourcefile;
 	bool _sameFile;

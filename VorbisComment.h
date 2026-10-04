@@ -59,8 +59,8 @@ class CVorbisComment
 private:
 	CAtlString content, VendorInfo;
 	CAtlArray<structField *> _items;
-	structField* item;
-	int Fields;	
+	structField* item{};
+	int Fields{};	
 public:
 	CVorbisComment();
 	virtual ~CVorbisComment();

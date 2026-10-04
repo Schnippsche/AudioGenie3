@@ -54,9 +54,9 @@ class CAPE
 {
 private:
 	CApeTagInfo TagInfo;
-	int FVersion;
+	int FVersion{};
 	CID3V1 tmpid3v1;
-	CApeTagItem* item;
+	CApeTagItem* item{};
 	CBlob Data;
 	bool ReadFooter(FILE *Stream);
 	__int64 _footerPos;	// position of the footer of an APE tag at the end of the file

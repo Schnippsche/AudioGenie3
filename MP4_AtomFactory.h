@@ -59,7 +59,7 @@ class CMP4_AtomFactory
 {
 public:
 	static CMP4_AtomFactory *instance();
-	int ebene;
+	int ebene{};
 	static int count;
 	static __int64 firstAudioPos, lastAudioPos, lastOffset;
 	static __int64 mediaLength;

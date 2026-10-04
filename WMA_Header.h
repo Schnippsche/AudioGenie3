@@ -44,6 +44,6 @@ public:
 	void replaceObject(CWMA_Object* object);
 	void Remove();
 private:
-	IID testIID;
+	IID testIID{};
 	CAtlArray<CWMA_Object *> _children;	
 };

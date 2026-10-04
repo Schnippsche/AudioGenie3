@@ -25,6 +25,7 @@
 #include "ID3v2.h"
 #include "Tools.h"
 #include "ID3_FrameFactory.h"
+#include <vector>
 extern "C" {
 #include "puff.h"   // third-party (Mark Adler, zlib license, see THIRD-PARTY-NOTICES.md): raw DEFLATE decoder, no dependencies
 }
@@ -413,18 +414,18 @@ void CID3_Frame::storeFrame(CBlob *tmp)
 //	Transforms all FF 00 sequences into FF
 void CID3_Frame::resync()
 {
-	BYTE *dest = new BYTE[_blob.GetLength()];
-	BYTE *src = _blob.m_pData;
-	BYTE *end = src + _blob.GetLength();
-	int ln = 0;
+	std::vector<BYTE> dest;
+	dest.reserve(_blob.GetLength());
+	const BYTE *src = _blob.m_pData;
+	const BYTE *end = src + _blob.GetLength();
 	while (src < end)
 	{
-		dest[ln++] = *src;
-		src+=(src[0] == 0xFF && (src + 1 < end) && src[1] == 0) ? 2 : 1;
+		dest.push_back(*src);
+		src += (src[0] == 0xFF && (src + 1 < end) && src[1] == 0) ? 2 : 1;
 	}
 	_blob.Clear();
-	_blob.AddMemory(dest, ln);
-	delete [] dest;
+	if (!dest.empty())
+		_blob.AddMemory(dest.data(), dest.size());
 	mustRebuild = true;
 }
 

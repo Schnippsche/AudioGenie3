@@ -75,14 +75,14 @@ static long SAMPLE_RATE[] =
 class CAAC : public CAudio
 { 
 private:
-	BYTE FHeaderTypeID;
-	BYTE FMPEGVersionID;
-	BYTE FProfileID;
-	BYTE FChannels;
-	long FSampleRate;
-	long FBitRate;
-	BYTE FBitRateTypeID;
-	double FDuration;                                      /* ADTS: sum of the frames */
+	BYTE FHeaderTypeID{};
+	BYTE FMPEGVersionID{};
+	BYTE FProfileID{};
+	BYTE FChannels{};
+	long FSampleRate{};
+	long FBitRate{};
+	BYTE FBitRateTypeID{};
+	double FDuration{};                                      /* ADTS: sum of the frames */
 	BYTE RecognizeHeaderType(FILE *Source);
 	bool ReadADIF(FILE *Source);
 	bool ReadADTS(FILE *Source);

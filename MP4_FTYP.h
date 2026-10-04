@@ -28,5 +28,5 @@ public:
 	~CMP4_FTYP(void);	
 	void load(FILE *stream, u64 offset, u64 size);
 private:
-	long _majorType, _majorVersion,	_minorType;
+	long _majorType{}, _majorVersion{},	_minorType{};
 };

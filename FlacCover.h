@@ -46,7 +46,7 @@ public:
 	CAtlString getMime();
 	void CFlacCover::Save(CBlob * destination);
 private:
-	bool _isLink;
+	bool _isLink{};
 	CAtlString _mime;
 	CAtlString _pictureLink;
 };

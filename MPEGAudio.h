@@ -205,27 +205,27 @@ class CMPEGAudio: public CAudio
 private:
 	CBlob vendorValues;
 	CAtlString Encoder;                                                /* Encoder */
-	BYTE VendorID[10];                                               /* Vendor ID (if present) */
-	__int64 StartPosition;                                              /* Position of first valid Header */
-	long totalBitrate;
-	float secPerFrame;
-	long scannedFrames;                                                /* number of frames counted by ReadAllFrames, 0 = no scan */
-	__int64 trailingBytes;                                             /* bytes without audio frames behind the last frame (before the tags) */
-	bool headerFrameSeen;                                              /* the first frame belongs to a Xing, Info or VBRI header (also if it was not used) */
-	bool headerRejectedVbr;                                            /* a VBR header was found but does not match the file */
-	unsigned long headBitrates;                                        /* bit rate indices (one bit each) of the frames at the start of the audio */
-	unsigned long tailBitrates;                                        /* bit rate indices of the last run of frames at the end of the audio */
-	bool noPadding;                                                    /* a constant bit rate encoder that never sets the padding bit (frames of the same length, shorter than the bit rate says) */
-	bool headPadded;                                                   /* a frame at the start of the audio has the padding bit */
-	int headFrames;                                                    /* number of frames checked at the start of the audio */
-	bool tailPadded;                                                   /* a frame of the last run of frames at the end has the padding bit */
-	int tailFrames;                                                    /* number of frames in the last run of frames at the end */
-	bool tailRunMissing;                                               /* no run of frames in the last 128 KB: the end of the file is not audio data */
-	VBRData FVBR;
-	LameData FLame;
-	__int64 lameHeaderStart;                                          /* position of the frame with the LAME tag */
-	long lameHeaderSize;
-	tagFrameData Frame;
+	BYTE VendorID[10]{};                                              /* Vendor ID (if present) */
+	__int64 StartPosition{};                                              /* Position of first valid Header */
+	long totalBitrate{};
+	float secPerFrame{};
+	long scannedFrames{};                                                /* number of frames counted by ReadAllFrames, 0 = no scan */
+	__int64 trailingBytes{};                                             /* bytes without audio frames behind the last frame (before the tags) */
+	bool headerFrameSeen{};                                              /* the first frame belongs to a Xing, Info or VBRI header (also if it was not used) */
+	bool headerRejectedVbr{};                                            /* a VBR header was found but does not match the file */
+	unsigned long headBitrates{};                                        /* bit rate indices (one bit each) of the frames at the start of the audio */
+	unsigned long tailBitrates{};                                        /* bit rate indices of the last run of frames at the end of the audio */
+	bool noPadding{};                                                    /* a constant bit rate encoder that never sets the padding bit (frames of the same length, shorter than the bit rate says) */
+	bool headPadded{};                                                   /* a frame at the start of the audio has the padding bit */
+	int headFrames{};                                                    /* number of frames checked at the start of the audio */
+	bool tailPadded{};                                                   /* a frame of the last run of frames at the end has the padding bit */
+	int tailFrames{};                                                    /* number of frames in the last run of frames at the end */
+	bool tailRunMissing{};                                               /* no run of frames in the last 128 KB: the end of the file is not audio data */
+	VBRData FVBR{};
+	LameData FLame{};
+	__int64 lameHeaderStart{};                                          /* position of the frame with the LAME tag */
+	long lameHeaderSize{};
+	tagFrameData Frame{};
 	/* internal functions */
 	long Get4B(BYTE v[]);
 	bool IsFrameHeader(BYTE HeaderData[] );
@@ -256,7 +256,7 @@ private:
 	void CheckPadding(long start, BYTE Data[]);
 	bool PaddingRequired(int count);
 	bool SetBit(LPCWSTR FileName, int HdrPos, BYTE BitPos, bool neu);
-	__int64 firstAudioPos, lastAudioPos;
+	__int64 firstAudioPos{}, lastAudioPos{};
 public:
 	CMPEGAudio();
 	virtual ~CMPEGAudio();
