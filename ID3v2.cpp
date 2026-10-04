@@ -326,6 +326,12 @@ void CID3V2::parseTags(CBlob* data)
 					FrameSize = oldTagSize;
 				CID3_Frame *frame = CID3_FrameFactory::instance().createFrame(FrameID);
 				frame->flags = FrameFlags;
+				// v2.4: the unsynchronisation flag in the tag header says that unsynchronisation is applied on all frames. Many taggers set only this
+				// flag and not the flag of the frames, so every frame is read as if it had the flag (as TagLib and mutagen do). If the frame has the
+				// flag as well, nothing changes: the data are decoded only once. Only the frames of the tag get it, not the frames inside of a
+				// chapter frame (they are part of the data of the chapter frame, which is decoded as a whole).
+				if (Version == TAG_VERSION_2_4 && (CTools::ID3V2Flags & 0x80) == 0x80)
+					frame->flags |= 0x0002;
 				frame->load(data->m_pData + DataPosition + headerSize, FrameSize);
 #ifdef DEBUG
 				frame->print();

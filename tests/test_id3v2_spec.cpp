@@ -1018,3 +1018,54 @@ TEST_CASE("ID3v2.4: frame sizes written as ordinary numbers (old iTunes versions
         CHECK(take(AUDIOGetAlbumW()) == std::wstring(longText.begin(), longText.end()));
     }
 }
+
+TEST_CASE("ID3v2.4: the unsynchronisation flag in the tag header applies to all frames", "[id3v2][spec][unsync]")
+{
+    // Unsynchronisation puts a 0x00 byte behind every 0xFF byte that is followed by 0x00 or by a byte >= 0xE0. UTF-16 text with a byte
+    // order mark (FF FE) and a character with the code unit 00FF (bytes FF 00) needs it twice. Many taggers set only the flag in the tag
+    // header and not the flag of the frames (0x0002); decoding twice would remove the 0x00 of the second kind again.
+    auto unsync = [](const Bytes& in) {
+        Bytes out;
+        for (size_t i = 0; i < in.size(); i++) {
+            out.push_back(in[i]);
+            if (in[i] == 0xFF && (i + 1 == in.size() || in[i + 1] == 0 || in[i + 1] >= 0xE0))
+                out.push_back(0);
+        }
+        return out;
+    };
+    const Bytes title = { 0x01, 0xFF, 0xFE, 'T', 0, 0xFF, 0, 'x', 0 };     // UTF-16LE with BOM: "T" U+00FF "x"
+    const Bytes artist = { 0x01, 0xFF, 0xFE, 'A', 0, 'r', 0, 't', 0 };     // "Art"
+    REQUIRE(unsync(title) != title);
+    auto check = [](const fs::path& p) {
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        CHECK(take(AUDIOGetTitleW()) == L"T\u00ffx");
+        CHECK(take(AUDIOGetArtistW()) == L"Art");
+    };
+    auto build = [&](uint8_t tagFlags, uint16_t frameFlags, bool unsynchronised) {
+        Bytes body = frame("TIT2", unsynchronised ? unsync(title) : title, frameFlags, 4);
+        put(body, frame("TPE1", unsynchronised ? unsync(artist) : artist, frameFlags, 4));
+        return tagBytes(4, tagFlags, body);
+    };
+
+    SECTION("only the flag of the frames (the specification)") {
+        check(writeTagged("spec_v24_unsync_frames.mp3", build(0, 0x0002, true)));
+    }
+    SECTION("only the flag of the tag header") {
+        check(writeTagged("spec_v24_unsync_header.mp3", build(0x80, 0, true)));
+    }
+    SECTION("both flags: the data are decoded only once") {
+        check(writeTagged("spec_v24_unsync_both.mp3", build(0x80, 0x0002, true)));
+    }
+    SECTION("no flag and data that are not unsynchronised") {
+        check(writeTagged("spec_v24_unsync_none.mp3", build(0, 0, false)));
+    }
+    SECTION("saving keeps the text and the audio") {
+        auto p = writeTagged("spec_v24_unsync_save.mp3", build(0x80, 0, true));
+        check(p);
+        ID3V2SetTextFrameW(ID3F_TALB, L"Album");
+        REQUIRE(ID3V2SaveChangesW() != 0);
+        CHECK(audioIntact(p));
+        check(p);
+        CHECK(take(AUDIOGetAlbumW()) == L"Album");
+    }
+}
