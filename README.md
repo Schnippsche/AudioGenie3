@@ -180,18 +180,23 @@ passes (fewer for the slow libraries); a second round in the reverse order gave 
 | AudioGenie3 3.0.2 | 0.094 ms | 0.085 ms | 8.8 | 0.084 ms |
 | AudioGenie3 3.0.0 | 0.089 ms | 0.081 ms | 8.7 | 0.082 ms |
 | AudioGenie 2.0.4 | 0.087 ms | (32 bit only) | 8.9 | |
+| tagparser 12.5.3 (C++) | | 0.103 ms | 8.6 | 0.103 ms |
 | TagLib 2.3.2 (C++) | 0.147 ms | 0.133 ms | 21.6 | 0.136 ms |
 | JAudioTagger 3.0.1 (Java 23) | | 0.209 ms | 4.6 | 0.22 ms |
 | mutagen 1.48.1 (Python 3.11) | | 0.440 ms | 6.3 | 0.434 ms |
+| tinytag 2.3.2 (Python 3.11) | | 0.459 ms | 3.8 | 0.454 ms |
+| music-metadata 12.0.0 (Node.js 22) | | 0.729 ms | 24.1 | 0.730 ms |
 | FFmpeg libavformat 62.3 (PyAV 17, Python 3.11) | | 0.75 ms | 1.6 | 0.75 ms |
 | MediaInfoLib 26.05 | | 1.47 ms | 4.7 | 1.47 ms |
 
-3.0.3 needs about half the time of TagLib, one third of the time of JAudioTagger, one seventh of mutagen, one twelfth of FFmpeg and one twenty-third
-of MediaInfoLib, and 20 % less than 2.0.4 (24 % less than 3.0.2). 3.0.2 is 4 to
+3.0.3 needs 37 % less time than tagparser, about half the time of TagLib, one third of the time of JAudioTagger, one seventh of mutagen and tinytag,
+one eleventh of music-metadata, one twelfth of FFmpeg and one twenty-third of MediaInfoLib, and 20 % less than 2.0.4 (24 % less than 3.0.2). 3.0.2 is 4 to
 6 % slower than 3.0.0, because the duration and the bit rate became more exact (see the release notes of 3.0.1 and 3.0.2). A second 2.0.4 build
 in the old source tree needs 0.093 ms and 13.1 read calls per file. MediaInfoLib with the option `ParseSpeed` 0 (headers only) needs 1.20 ms and
 4.2 read calls. JAudioTagger is measured after the warm-up of the JIT compiler (the first pass is not counted), its CPU time includes the compiler
-and garbage collector threads. FFmpeg could not open 31 of the 22,876 files, JAudioTagger and mutagen one.
+and garbage collector threads. FFmpeg could not open 31 of the 22,876 files, JAudioTagger and mutagen one and tagparser 137 (it does not read WMA, which accounts for 127 of them).
+tagparser was built with MSVC for the test (with win-iconv instead of GNU libiconv, without Boost) and given the paths in the ANSI code page;
+music-metadata ran with its default options (its option `duration`, which parses the whole file to get the duration, is off by default).
 
 The libraries do not return the same: MediaInfoLib and FFmpeg analyze the streams in depth and return far more than the fields above, which is
 why they need more time for this task. TagLib and mutagen estimate the duration of an MP3 file without a Xing header from the file size:
