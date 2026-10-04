@@ -32,16 +32,24 @@ more) to catch what synthetic tests alone miss.
   of audio; an in-place MP4 save could move the media data without updating the chunk table; a WMA save with a write
   block size of 0 lost the audio data and reported success anyway; a second FLAC or WMA save without re-analyzing the
   file first could damage it or lose extended tag fields and pictures.
+- **Real-world quirks handled**: ID3v2.3 tags of old iTunes versions (the 3 character frame IDs of v2.2 with a zero byte in a v2.3
+  header), ID3v2.4 tags with ordinary instead of synchsafe frame sizes, v2.4 tags that set the unsynchronisation flag only in the
+  tag header, junk that looks like an MPEG frame in front of the audio, and MP3 files with more than 128 KB of junk behind
+  the audio or with a padding bit that behaves differently at the start and at the end (joined files). Found by comparing
+  the library with other libraries and with ffmpeg on 22,876 files; the duration of an MP3 file without a Xing header is now
+  within 0.1 s of the decoded duration for 99 % of the files where the libraries disagree.
 - **Tag reading made more correct, not just more permissive**: the format-independent `AUDIO*` fields now fall back
   from ID3v2 to APE to ID3v1 to Lyrics3 per field instead of per tag (see "Tag priority for the abstract fields"
   below), so an old file tagged by a tool that wrote only a private, non-standard ID3v2 frame (RealJukebox and
   similar) is no longer read as having no title or artist at all.
 - **Faster**: the MPEG frame scan reads in 64 KB blocks instead of one read per frame (40 MB of frames: 181 ms ->
-  6 ms); MD5 throughput is up 32% (560 -> 745 MB/s); analyzing a file needs about half the read calls it used to.
+  6 ms); MD5 throughput is up 32% (560 -> 745 MB/s); analyzing a file needs about a quarter of the read calls it used to
+  (3.9 instead of 15.7) and 21 % less time than in 3.0.2 (a profile showed that 93 % of the time is spent in system calls).
 - **Open source and far more thoroughly tested**: LGPL-2.1-or-later; a Catch2 test suite that grew from about 5,400
-  assertions (3.0.0) to over 19,800 today, run on 32 and 64 bit with AddressSanitizer and fuzzing; a contract check
+  assertions (3.0.0) to over 20,000 today, run on 32 and 64 bit with AddressSanitizer and fuzzing; a contract check
   that every wrapper (C/C++, C#, VB.NET, Delphi, VB6, XProfan) matches the exports; tools to scan and compare whole
-  real-world music libraries between versions and against other libraries (mutagen, pymediainfo).
+  real-world music libraries between versions and against other libraries (TagLib, mutagen, pymediainfo, Mp3tag) and a complete
+  decoding by ffmpeg.
 
 ## What it does
 
@@ -130,7 +138,8 @@ type must be marshalled as `BStr`, otherwise the process crashes on x64. The wra
 
 The duration, the number of frames and the average bit rate of an MP3 file are exact if the file has a Xing or VBRI
 header, and for files with a constant bit rate (CBR). Data after the last frame (up to 128 KB of junk or tags that are not
-recognized) is found without reading the whole file and does not count. If a Xing or VBRI header does not match the file
+recognized) is found without reading the whole file and does not count; if there is more of it, or if the padding bit behaves
+differently at the start and at the end of the file (joined files), the frames are counted automatically. If a Xing or VBRI header does not match the file
 (for example after cutting), the frames are counted. A VBR file **without** such a header can only be estimated from its
 size and the bit rate of the first frame; such a file is noticed if the bit rate differs between the first and the last frames
 (they are read anyway): then all frames are counted and `MPEGIsVBRW()` returns -1. A bit rate that changes only in the middle
@@ -149,22 +158,25 @@ documentation of `SetConfigValueW`.
 
 ## Performance
 
-Measured on an AMD Ryzen 7 7700 with a Samsung 990 Pro (NVMe) and on a network drive (SMB) with about 16000 MP3 files. The numbers
-depend on the hardware; the tool `tests/tools/run_scan.bat` repeats the measurement on your own library (see `tests/README.md`).
+Measured on an AMD Ryzen 7 7700 with a Samsung 990 Pro (NVMe), with a library of 22,876 audio files (101 GB, 22,666 of them MP3), and on a
+network drive (SMB) with about 16000 MP3 files (measured with 3.0.0). The numbers depend on the hardware; the tool `tests/tools/run_scan.bat` repeats the measurement on your own library (see `tests/README.md`).
 
 ### Analyzing files (`AUDIOAnalyzeFileW`)
 
 The analysis reads only the beginning and the end of a file, so its time does not depend on the file size, and it is limited by the
 first access to the file, not by the CPU.
 
-| | local SSD (7339 files, cached) | network drive (16000 files, first access) |
+| | local SSD (22,876 files, cached) | network drive (16000 files, first access) |
 |---|---|---|
-| time per file | 0.11 ms (AudioGenie 2.0.4: 0.14 ms) | about 33 ms (2.0.4: about 32 ms) |
-| read calls per file | 8.6 (2.0.4: 15.7) | 10.2 (2.0.4: 12.2) |
+| time per file | 0.074 ms (3.0.2: 0.093 ms) | about 33 ms (2.0.4: about 32 ms) |
+| read calls per file | 3.9 (3.0.2: 8.8) | 10.2 (2.0.4: 12.2) |
+
+On an earlier 7,339-file subset of the local library AudioGenie 2.0.4 needed 0.14 ms and 15.7 read calls per file. The network values were
+not measured again for 3.0.3; the cost of the first access to each file dominates there, so fewer system calls are expected to change little.
 
 The 32 and the 64 bit DLL are equally fast and return identical results. The tags and the technical data are the same as in version 2.0.4, except
 where the duration and bit rate of MP3 files are deliberately more accurate now (data behind the last frame, encoders without the padding bit,
-VBR files without a header; see the release notes of 3.0.1 and 3.0.2). On a network drive the cost of the first access to each file dominates; if you scan large libraries
+VBR files without a header; see the release notes of 3.0.1 to 3.0.3). On a network drive the cost of the first access to each file dominates; if you scan large libraries
 repeatedly, keep the results in your application and analyze only new or changed files.
 
 ### Optimizations
@@ -176,12 +188,20 @@ repeatedly, keep the results in your application and analyze only new or changed
 | MPEG duration without Xing/Info header | Encoders that never set the padding bit (11 % of the test library, frames 417 instead of 417.96 bytes) are recognized in the first frames; the frames are counted by their length instead of the bit rate. The end of the last frames is searched in the block at the end of the file that was read anyway (up to 128 KB more only if it has no frames); a VBR header that does not match the file counts all frames; a different bit rate in the blocks at the start and at the end of the file (VBR without header, 0.2 % of the files) counts all frames too; the frame scan only counts frames that are followed by the next frame, so junk no longer adds frames or makes a constant bit rate file VBR (70 of 7335 files); a single frame with a damaged header between two valid frames does not interrupt the frames but is not counted | files with up to 128 KB of data after the last frame no longer 0.5 s too long (1.7 % of a 7300 file library); 7335 MP3 files: 910 -> 37 files with a duration error above 0.1 s, 26 -> 5 above 1 s; about 1.8 us (2.5 %) more per file |
 | MD5 (`AUDIOGetMD5ValueW`, `GetMD5ValueFromFileW`) | All blocks of a read are processed in one call, the words are read directly, 64 KB read blocks | 560 -> 670 MB/s |
 | MD5 | Round 2 with delayed addition (shorter dependency chain) | 670 -> 745 MB/s (5 MB song: about 7 ms) |
+| Analysis (`AUDIOAnalyzeFileW`): system calls | The length of the file is read with one call instead of about four (for the stream of the analysis not at all); absolute positions instead of seeks relative to the end of the file; a read buffer of 8 KB instead of 4 KB; the last 8 KB of the file are read once for ID3v1, Lyrics3, the APE footer and the last MPEG block instead of one seek and read each | local SSD, 22,876 files, cached: 2.14 s -> 1.69 s (-21 %), kernel time 1.94 s -> 1.50 s, read calls per file 8.8 -> 3.9 |
+
+A sampling profile of the analysis (warm cache, 22,876 files) shows where the time goes: 91 % is spent in system calls (opening the file 32 %,
+reading 36 %, of that the start of the file 16 % and the end 9 %, closing 7 %, the file size and positioning 11 %), only 8 % in the code of the library.
+The C library's file functions are the floor; going lower would mean replacing them with direct `ReadFile` calls.
 
 ### Tried without a gain (not adopted)
 
-- **Reading the end of the file once** for ID3v1, Lyrics3, APE and the MPEG vendor block: fewer read calls (10.2 -> 6.7 per file) but the
-  same time on the network drive. The order of the reads matters: reading the end of the file before the ID3v2 tag made the analysis
-  50 % slower.
+- **Reading the end of the file once** for ID3v1, Lyrics3, APE and the MPEG vendor block: on the network drive fewer read calls
+  (10.2 -> 6.7 per file) did not change the time (3.0.0). On a local drive the same idea, as a cache of the last 8 KB of the file, saves
+  about 8 % of the analysis time and is part of 3.0.3 (see above). The order of the reads matters: reading the end of the file before
+  the ID3v2 tag made the analysis 50 % slower on the network drive.
+- **Larger read buffers** than 8 KB for the analysis (time relative to 3.0.2, together with the other system call changes): 6 KB -12.0 %,
+  8 KB -12.5 %, 12 KB -11.2 %, 16 KB -10.9 %, 32 KB -6.9 %, 64 KB -2.1 %: more bytes are copied than calls are saved.
 - **`CBlob` growth strategy:** the buffer already grows by a factor of 1.5; the whole CPU time of the analysis is below 0.5 % of the
   time per file on a network drive.
 - **Several processes in parallel** on the network drive: the same total throughput as one process.
