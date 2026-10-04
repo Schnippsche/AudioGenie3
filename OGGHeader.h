@@ -46,6 +46,7 @@ public:
 	BYTE LacingValues[255];                        /* Lacing values - segment sizes */
 	//
 	bool ReadFromFile(FILE *Stream);
+	bool ReadFromMemory(const BYTE *data, size_t length);   // the page header (27 bytes and the lacing values) from memory
 	bool WriteToFile(FILE *Stream);
 	void CopyToChar(BYTE buf[]);
 	void Reset();	

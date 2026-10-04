@@ -94,7 +94,7 @@ bool CAPE::ReadFooter(FILE *Stream)
 	// the Lyrics3 tag is read before this one: it is only looked for if there is one
 	if (!FindTailFooter(Stream, CTools::ID3v1Size, CTools::LyricsSize > 0, _footerPos, lyricsAfter))
 		return false;
-	_fseeki64(Stream, _footerPos, SEEK_SET);
+	CSequentialRead sequence(Stream, _footerPos);
 	return TagInfo.ReadFromFile(Stream);
 }
 
@@ -207,11 +207,9 @@ bool CAPE::ReadFields(FILE *Stream, __int64 headOffset)
 {
 	CAtlString FieldName;
 	long Iterator;
-	// the items of a tag at the beginning follow its header, the items of a tag at the end are counted back from the end of the file
-	if (headOffset >= 0)
-		_fseeki64(Stream, headOffset + APE_TAG_HEADER_SIZE, SEEK_SET);
-	else
-		_fseeki64(Stream, _footerPos + APE_TAG_FOOTER_SIZE - TagInfo.Size, SEEK_SET);
+	// the items of a tag at the beginning follow its header, the items of a tag at the end are counted back from the end of the file;
+	// they are read in sequence, from the cache of the start or of the end of the file
+	CSequentialRead sequence(Stream, headOffset >= 0 ? headOffset + APE_TAG_HEADER_SIZE : _footerPos + APE_TAG_FOOTER_SIZE - TagInfo.Size);
 	/* Read all stored fields */
 	for (Iterator = 0; Iterator < TagInfo.Fields; Iterator++)
 	{
@@ -223,7 +221,7 @@ bool CAPE::ReadFields(FILE *Stream, __int64 headOffset)
 			return false;
 		}
 		_items.Add(item);
-		if (headOffset >= 0 && _ftelli64(Stream) > headOffset + APE_TAG_HEADER_SIZE + TagInfo.Size)
+		if (headOffset >= 0 && CTools::seqTell(Stream) > headOffset + APE_TAG_HEADER_SIZE + TagInfo.Size)
 		{
 			ResetData();	// the items reach beyond the tag
 			return false;
@@ -238,20 +236,18 @@ bool CAPE::FindHeadTag(FILE *Stream, __int64 &offset, __int64 &length)
 	offset = 0;
 	length = 0;
 	const __int64 fileSize = CTools::fileLength(Stream);
-	if (_fseeki64(Stream, 0, SEEK_SET) != 0)
-		return false;
 	// behind an ID3v2 tag: the size field is synchsafe, a footer (v2.4) has 10 bytes
-	if (fread(id3, 1, 10, Stream) == 10 && id3[0] == 'I' && id3[1] == 'D' && id3[2] == '3' && id3[3] < 0xFF && id3[4] < 0xFF
+	if (CTools::readAt(Stream, 0, id3, 10) == 10 && id3[0] == 'I' && id3[1] == 'D' && id3[2] == '3' && id3[3] < 0xFF && id3[4] < 0xFF
 		&& ((id3[6] | id3[7] | id3[8] | id3[9]) & 0x80) == 0)
 	{
 		offset = 10 + ((__int64)id3[6] << 21) + ((__int64)id3[7] << 14) + ((__int64)id3[8] << 7) + id3[9];
 		if (id3[3] == 4 && (id3[5] & 0x10) != 0)
 			offset += 10;
 	}
-	if (offset + APE_TAG_HEADER_SIZE > fileSize || _fseeki64(Stream, offset, SEEK_SET) != 0)
+	if (offset + APE_TAG_HEADER_SIZE > fileSize)
 		return false;
 	CBlob tmp;
-	tmp.FileRead(APE_TAG_HEADER_SIZE, Stream);
+	tmp.FileReadAt(Stream, offset, APE_TAG_HEADER_SIZE);
 	if (tmp.GetLength() != APE_TAG_HEADER_SIZE || memcmp(tmp.m_pData, APE_ID, 8) != 0)
 		return false;
 	const DWORD version = (DWORD)tmp.GetR4B(8);
@@ -267,11 +263,13 @@ bool CAPE::FindHeadTag(FILE *Stream, __int64 &offset, __int64 &length)
 
 bool CAPE::ReadHeadTag(FILE *Stream, __int64 offset, __int64 length)
 {
-	_fseeki64(Stream, offset, SEEK_SET);
-	if (!TagInfo.ReadFromFile(Stream))
 	{
-		ResetData();
-		return false;
+		CSequentialRead sequence(Stream, offset);
+		if (!TagInfo.ReadFromFile(Stream))
+		{
+			ResetData();
+			return false;
+		}
 	}
 	FVersion = TagInfo.Version;
 	CTools::APEHeadSize = (int)length;

@@ -58,6 +58,7 @@ __int64 COggVorbis::GetSamples(FILE *Source)
 	const __int64 fileSize = CTools::FileSize;
 	const long BLOCK = 65536 + 512;
 	const __int64 low = (firstAudioPos > 0) ? firstAudioPos : 0;
+	CSequentialRead sequence(Source, 0);
 	CBlob block;
 	__int64 end = fileSize;
 	while (end > low)
@@ -65,8 +66,7 @@ __int64 COggVorbis::GetSamples(FILE *Source)
 		__int64 start = end - BLOCK;
 		if (start < low)
 			start = low;
-		_fseeki64(Source, start, SEEK_SET);
-		block.FileRead((size_t)(end - start), Source);
+		block.FileReadAt(Source, start, (size_t)(end - start));
 		const long length = (long)block.GetLength();
 		for (long i = length - 27; i >= 0; i--)
 		{
@@ -76,8 +76,7 @@ __int64 COggVorbis::GetSamples(FILE *Source)
 			if (block.m_pData[i + 4] != 0)
 				continue;
 			COGGHeader page;
-			_fseeki64(Source, start + i, SEEK_SET);
-			if (!page.ReadFromFile(Source) || (unsigned int)page.Serial != serial)
+			if (!page.ReadFromMemory(block.m_pData + i, (size_t)(length - i)) || (unsigned int)page.Serial != serial)
 				continue;
 			__int64 pageLength = 27 + page.Segments;
 			for (int k = 0; k < page.Segments; k++)
@@ -105,6 +104,7 @@ bool COggVorbis::GetInfo(FILE *Source, bool withComments)
 	headerPages = 0;
 	multiplexed = false;
 	valid = false;
+	CSequentialRead sequence(Source, 0);   // the pages of the headers are read in sequence, from the cache of the start of the file
 	__int64 pos = CTools::ID3v2Size;
 	long bodyLength = 0;
 	__int64 bodyPos = 0;
@@ -113,7 +113,7 @@ bool COggVorbis::GetInfo(FILE *Source, bool withComments)
 	// Theora) the Vorbis or Opus stream is not the first one: the first stream of these two codecs is used; such a file is read, but not written.
 	for (int stream = 0; stream < 16 && !found; stream++)
 	{
-		_fseeki64(Source, pos, SEEK_SET);
+		CTools::seqSeek(Source, pos);
 		if (!FPage.ReadFromFile(Source))
 			return false;
 		if (stream > 0 && (FPage.Byte & 2) == 0)
@@ -122,13 +122,13 @@ bool COggVorbis::GetInfo(FILE *Source, bool withComments)
 		for (int k = 0; k < FPage.Segments; k++)
 			bodyLength += FPage.LacingValues[k];
 		bodyPos = pos + 27 + FPage.Segments;
-		_fseeki64(Source, bodyPos, SEEK_SET);
+		CTools::seqSeek(Source, bodyPos);
 		Parameters.Reset();
 		opus = false;
 		preSkip = 0;
 		// Opus (RFC 7845): "OpusHead", version (4 bit major), channels, pre-skip (16 bit), input sample rate, output gain, channel mapping family
 		BYTE opusHead[19];
-		if (bodyLength >= 19 && fread(opusHead, 1, 19, Source) == 19 && memcmp(opusHead, "OpusHead", 8) == 0 && (opusHead[8] & 0xF0) == 0 && opusHead[9] > 0)
+		if (bodyLength >= 19 && CTools::seqRead(Source, opusHead, 19) == 19 && memcmp(opusHead, "OpusHead", 8) == 0 && (opusHead[8] & 0xF0) == 0 && opusHead[9] > 0)
 		{
 			opus = true;
 			Parameters.ChannelMode = opusHead[9];
@@ -138,7 +138,7 @@ bool COggVorbis::GetInfo(FILE *Source, bool withComments)
 		}
 		else
 		{
-			_fseeki64(Source, bodyPos, SEEK_SET);
+			CTools::seqSeek(Source, bodyPos);
 			Parameters.ReadFromFile(Source);
 			found = (memcmp(Parameters.ID, VORBIS_PARAMETERS_ID, 7) == 0 && bodyLength >= 30);
 		}
@@ -162,7 +162,7 @@ bool COggVorbis::GetInfo(FILE *Source, bool withComments)
 	int packetsDone = 0;
 	while (packetsDone < packetsWanted)
 	{
-		_fseeki64(Source, pos, SEEK_SET);
+		CTools::seqSeek(Source, pos);
 		COGGHeader page;
 		if (!page.ReadFromFile(Source))
 			break;
@@ -178,6 +178,9 @@ bool COggVorbis::GetInfo(FILE *Source, bool withComments)
 			pos = pageEnd;
 			continue;
 		}
+		// a page that is not inside of the cache of the start of the file is read into it with the next page header (one read)
+		if (pageEnd + 27 > (__int64)CTools::headCacheLength)
+			CTools::extendHeadCache(Source, pageEnd + (__int64)CTools::HEAD_CACHE_SIZE);
 		CBlob body;
 		body.FileRead(length, Source);
 		if ((long)body.GetLength() != length)

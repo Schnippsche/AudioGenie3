@@ -159,8 +159,7 @@ void CWavPack::ReadFrame(FILE *Stream, __int64 position)
 	for (int block = 0; block < 255; block++)
 	{
 		BYTE header[32];
-		_fseeki64(Stream, position, SEEK_SET);
-		if (fread(header, 1, 32, Stream) != 32)
+		if (CTools::readAt(Stream, position, header, 32) != 32)
 			return;
 		BlockHeader b;
 		if (!ParseHeader(header, b) || position + 8 + (__int64)b.size > CTools::FileSize)
@@ -170,7 +169,7 @@ void CWavPack::ReadFrame(FILE *Stream, __int64 position)
 		{
 			// the sample rate of a stream with a rate that is not in the table: a sub-block of the first block
 			CBlob data;
-			data.FileRead(b.size - 24, Stream);
+			data.FileReadAt(Stream, position + 32, b.size - 24);
 			size_t pos = 0;
 			while (pos + 2 <= data.GetLength())
 			{
@@ -215,8 +214,7 @@ __int64 CWavPack::SamplesOfLastBlock(FILE *Stream)
 		__int64 start = end - BLOCK;
 		if (start < low)
 			start = low;
-		_fseeki64(Stream, start, SEEK_SET);
-		block.FileRead((size_t)(end - start) + 32, Stream);
+		block.FileReadAt(Stream, start, (size_t)(end - start) + 32);
 		const long length = (long)block.GetLength();
 		for (long i = (long)(end - start) - 1; i >= 0; i--)
 		{
@@ -239,8 +237,7 @@ bool CWavPack::ReadFromFile(FILE *Stream)
 {
 	/* Read header data */
 	ResetData();
-	_fseeki64(Stream, CTools::audioStart(), SEEK_SET);
-	_header.FileRead(32, Stream);
+	_header.FileReadAt(Stream, CTools::audioStart(), 32);
 	BlockHeader b;
 	if (_header.GetLength() == 32 && ParseHeader(_header.m_pData, b))
 	{

@@ -1177,3 +1177,25 @@ TEST_CASE("Tags at the end of the file that are larger than the cache of the end
         CHECK(take(AUDIOGetMD5ValueW()) == md5);
     }
 }
+
+TEST_CASE("APE v2: tags around the size of the cache of the end (8 KB) and with long keys", "[tags][spec][ape]")
+{
+    // The items are read in sequence from the cache of the end of the file, or from the file if the tag is larger. Between the large item and the
+    // end there are items with a key of 255 characters and one that ends exactly at the end of the tag.
+    for (size_t n : std::vector<size_t>{ 0, 100, 4000, 8000, 8100, 8160, 8192, 9000, 70000 }) {
+        INFO("size of the first item: " << n);
+        const std::string longKey(255, 'k');
+        const Bytes tag = apeTag(2000, { apeItem("Filler", Bytes(n, 'x')), apeItem("Title", text("after the filler")), apeItem(longKey, text("long key")), apeItem("Artist", text("last item")) });
+        for (bool v1 : { false, true }) {
+            Bytes tail = tag;
+            if (v1)
+                put(tail, id3v1("T", "A", "B", "2001", pad30("c"), 17));
+            auto p = writeWithTail("ape_sizes.mp3", tail);
+            REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+            CHECK(take(APEGetTitleW()) == L"after the filler");
+            CHECK(take(APEGetArtistW()) == L"last item");
+            CHECK(take(APEGetUserItemW(std::wstring(255, L'k').c_str())) == L"long key");
+            CHECK(AUDIOGetDurationW() > 0);
+        }
+    }
+}

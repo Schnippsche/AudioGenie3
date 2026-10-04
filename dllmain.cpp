@@ -82,8 +82,7 @@ BYTE GetFileFormat(FILE *Stream)
 	if (result == AUDIO_FORMAT_OGGVORBIS)
 	{
 		BYTE page[27 + 255 + 8];
-		_fseeki64(Stream, CTools::ID3v2Size, SEEK_SET);
-		const size_t count = fread(page, 1, sizeof(page), Stream);
+		const size_t count = CTools::readAt(Stream, CTools::ID3v2Size, page, sizeof(page));
 		if (count >= 27 && page[26] > 0 && count >= (size_t)27 + page[26] + 8 && memcmp(page + 27 + page[26], "OpusHead", 8) == 0)
 			result = AUDIO_FORMAT_OGGOPUS;
 	}

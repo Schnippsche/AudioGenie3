@@ -24,6 +24,7 @@
 
 #include "stdafx.h"
 #include "OGGHeader.h"
+#include "Tools.h"
 #include "Blob.h"
 
 //////////////////////////////////////////////////////////////////////
@@ -42,16 +43,19 @@ COGGHeader::~COGGHeader()
 bool COGGHeader::ReadFromFile(FILE *Stream)
 {
   errno = 0;
-  fread(ID, 1, 4, Stream);                            /* Always "OggS" */
-  if (memcmp(ID, OGG_PAGE_ID, 4) != 0)
+  // the first 27 bytes of the page in one read (the identification "OggS", then 23 bytes)
+  BYTE head[27];
+  const size_t got = CTools::seqRead(Stream, head, sizeof(head));
+  memcpy(ID, head, 4);                                /* Always "OggS" */
+  if (got < 4 || memcmp(ID, OGG_PAGE_ID, 4) != 0)
   {
 	  memset(ID, 0, 4);
 	  return false;
   }
-  CBlob tmp;
-  tmp.FileRead(23, Stream);
-  if (tmp.GetLength() != 23)
+  if (got != sizeof(head))
 	  return false;
+  CBlob tmp;
+  tmp.AddMemory(head + 4, 23);
   StreamVersion = tmp.GetAt(0);
   Byte = tmp.GetAt(1);                         /* Header type flag */
   AbsolutePosition = tmp.GetR4B(2);
@@ -61,8 +65,30 @@ bool COGGHeader::ReadFromFile(FILE *Stream)
   PageNumber = tmp.GetR4B(14);         /* Page sequence number */
   Checksum = tmp.GetR4B(18);           /* Page checksum */
   Segments = tmp.GetAt(22);                    /* Number of page segments */
-  fread(LacingValues, 1, Segments, Stream);    /* Lacing values - segment sizes */
+  CTools::seqRead(Stream, LacingValues, Segments);    /* Lacing values - segment sizes */
   return (errno == 0);
+}
+
+bool COGGHeader::ReadFromMemory(const BYTE *data, size_t length)
+{
+  if (length < 27 || memcmp(data, OGG_PAGE_ID, 4) != 0 || length < (size_t)27 + data[26])
+  {
+	  memset(ID, 0, 4);
+	  return false;
+  }
+  memcpy(ID, data, 4);
+  CBlob tmp;
+  tmp.AddMemory(data + 4, 23);
+  StreamVersion = tmp.GetAt(0);
+  Byte = tmp.GetAt(1);
+  AbsolutePosition = tmp.GetR4B(2);
+  Abs1 = tmp.GetR4B(6);
+  Serial = tmp.GetR4B(10);
+  PageNumber = tmp.GetR4B(14);
+  Checksum = tmp.GetR4B(18);
+  Segments = tmp.GetAt(22);
+  memcpy(LacingValues, data + 27, Segments);
+  return true;
 }
 
 bool COGGHeader::WriteToFile(FILE *Stream)

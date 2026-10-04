@@ -237,8 +237,13 @@ private:
 class CSequentialRead
 {
 public:
-	CSequentialRead(FILE *Stream, __int64 pos) { CTools::seqStream = Stream; CTools::seqPosition = pos; }
-	~CSequentialRead() { CTools::seqStream = NULL; }
+	CSequentialRead(FILE *Stream, __int64 pos) : previousStream(CTools::seqStream), previousPosition(CTools::seqPosition) { CTools::seqStream = Stream; CTools::seqPosition = pos; }
+	~CSequentialRead() { CTools::seqStream = previousStream; CTools::seqPosition = previousPosition; }
+private:
+	FILE *previousStream;
+	__int64 previousPosition;
+	CSequentialRead(const CSequentialRead &);
+	CSequentialRead &operator=(const CSequentialRead &);
 };
 
 class CAnalysisStream

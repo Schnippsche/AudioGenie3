@@ -24,6 +24,7 @@
 
 #include "stdafx.h"
 #include "VorbisHeader.h"
+#include "Tools.h"
 #include "Blob.h"
 
 //////////////////////////////////////////////////////////////////////
@@ -42,7 +43,7 @@ CVorbisHeader::~CVorbisHeader()
 bool CVorbisHeader::ReadFromFile(FILE *Stream)
 {
 	errno = 0;
-	fread(ID, 1, 7, Stream);                          /* Always #1 + "vorbis" */
+	CTools::seqRead(Stream, ID, 7);                          /* Always #1 + "vorbis" */
 	CBlob tmp;
     tmp.FileRead(23, Stream);
     if (tmp.GetLength() != 23)
