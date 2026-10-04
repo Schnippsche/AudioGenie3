@@ -24,6 +24,7 @@
 
 #include "stdafx.h"
 #include "MonkeyTagInfo.h"
+#include "Tools.h"
 #include "Blob.h"
 
 //////////////////////////////////////////////////////////////////////
@@ -47,7 +48,7 @@ CMonkeyTagInfo::~CMonkeyTagInfo()
 // format flags, blocks per frame, blocks of the final frame, frames, bits per sample, channels, sample rate.
 bool CMonkeyTagInfo::ReadFromFile(FILE *Stream)
 {
-	const __int64 start = _ftelli64(Stream);
+	const __int64 start = CTools::seqTell(Stream);
 	CBlob tmp;
 	tmp.FileRead(6, Stream);
 	if (tmp.GetLength() != 6)
@@ -111,7 +112,7 @@ bool CMonkeyTagInfo::ReadFromFile(FILE *Stream)
 		// the header follows the descriptor (the descriptor can be larger than 52 bytes)
 		if (DescriptorBytes < 52)
 			return false;
-		_fseeki64(Stream, start + DescriptorBytes, SEEK_SET);
+		CTools::seqSeek(Stream, start + DescriptorBytes);
 		tmp.FileRead(24, Stream);
 		if (tmp.GetLength() != 24)
 			return false;

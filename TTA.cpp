@@ -104,9 +104,8 @@ bool CTTA::ReadFromFile(FILE *Stream)
 {
 	/* Read header data */
 	ResetData();
-	_fseeki64(Stream, CTools::audioStart(), SEEK_SET);
 	// 00-03 Format signature with major version number (ASCII, "TTA1")
-	_header.FileRead(36, Stream);
+	_header.FileReadAt(Stream, CTools::audioStart(), 36);
 	if (_header.GetLength() < 22)
 	{
 		ResetData();

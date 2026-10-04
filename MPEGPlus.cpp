@@ -42,10 +42,10 @@ CMPEGPlus::~CMPEGPlus()
 bool CMPEGPlus::ReadHeader(FILE *Stream)
 {
   FIsSV8 = false;
-  _fseeki64(Stream, CTools::audioStart(), SEEK_SET);
+  CSequentialRead sequence(Stream, CTools::audioStart());   // read from the cache of the start of the file
   /* Read header and get file size */
   memset(Header.ByteArray, 0, sizeof(Header.ByteArray));
-  fread(Header.ByteArray, 1, 12, Stream);
+  CTools::seqRead(Stream, Header.ByteArray, 12);
   /* if transfer is not complete */
   if (memcmp(Header.ByteArray, "MP+", 3) == 0)
   {
@@ -53,8 +53,8 @@ bool CMPEGPlus::ReadHeader(FILE *Stream)
     // the last frame length is in the word at offset 20
     BYTE tail[4] = { 0, 0, 0, 0 };
     Header.HeaderTail = 0;
-    _fseeki64(Stream, CTools::audioStart() + 20, SEEK_SET);
-    if (fread(tail, 1, 4, Stream) == 4)
+    CTools::seqSeek(Stream, CTools::audioStart() + 20);
+    if (CTools::seqRead(Stream, tail, 4) == 4)
       Header.HeaderTail = (long)((unsigned long)tail[0] | ((unsigned long)tail[1] << 8) | ((unsigned long)tail[2] << 16) | ((unsigned long)tail[3] << 24));
     return true;
   }
@@ -90,11 +90,11 @@ bool CMPEGPlus::ReadHeaderSV8(FILE *Stream)
   bool haveSH = false, midSideUsed = false;
   BYTE profileIndex = 0;
 
-  _fseeki64(Stream, CTools::audioStart() + 4, SEEK_SET);
+  CSequentialRead sequence(Stream, CTools::audioStart() + 4);
   for (int packet = 0; packet < 32; packet++)
   {
     BYTE head[2 + 9];
-    size_t got = fread(head, 1, sizeof(head), Stream);
+    size_t got = CTools::seqRead(Stream, head, sizeof(head));
     if (got < 4)
       break;
     size_t pos = 2;
@@ -106,14 +106,14 @@ bool CMPEGPlus::ReadHeaderSV8(FILE *Stream)
     if (memcmp(key, "AP", 2) == 0 || memcmp(key, "SE", 2) == 0)
       break;
     // back to the start of the payload (after the header bytes that were read)
-    _fseeki64(Stream, (__int64)pos - (__int64)got, SEEK_CUR);
+    CTools::seqSeek(Stream, CTools::seqTell(Stream) + (__int64)pos - (__int64)got);
     if (payloadLen > MAX_PACKET_PAYLOAD || (memcmp(key, "SH", 2) != 0 && memcmp(key, "EI", 2) != 0))
     {
-      _fseeki64(Stream, (__int64)payloadLen, SEEK_CUR);
+      CTools::seqSeek(Stream, CTools::seqTell(Stream) + (__int64)payloadLen);
       continue;
     }
     BYTE payload[MAX_PACKET_PAYLOAD];
-    if (fread(payload, 1, payloadLen, Stream) != payloadLen)
+    if (CTools::seqRead(Stream, payload, payloadLen) != payloadLen)
       break;
     if (memcmp(key, "SH", 2) == 0)
     {

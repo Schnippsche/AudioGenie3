@@ -162,7 +162,7 @@ long CMonkey::GetBitRate()
 bool CMonkey::ReadFromFile(FILE *Stream)
 {
   /* Read Monkey"s Audio header data */
-  _fseeki64(Stream, CTools::audioStart(), SEEK_SET);
+  CSequentialRead sequence(Stream, CTools::audioStart());   // read from the cache of the start of the file
   ResetData();
   if (Header.ReadFromFile(Stream))
     return true;
