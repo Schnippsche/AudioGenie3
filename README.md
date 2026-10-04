@@ -44,8 +44,8 @@ more) to catch what synthetic tests alone miss.
   similar) is no longer read as having no title or artist at all.
 - **Faster**: the MPEG frame scan reads in 64 KB blocks instead of one read per frame (40 MB of frames: 181 ms ->
   6 ms); MD5 throughput is up 32% (560 -> 745 MB/s); analyzing a file needs less than half the read calls of 2.0.4 (3.9 instead
-  of 8.9 per file), takes 20 % less time than 2.0.4 and 24 % less than 3.0.2, and is about twice as fast as TagLib and seven times as fast as
-  mutagen (see "Performance"; a profile showed that 93 % of the former time was spent in system calls).
+  of 8.9 per file), takes 20 % less time than 2.0.4 and 24 % less than 3.0.2, and is about twice as fast as TagLib, three times as fast as JAudioTagger and
+  seven times as fast as mutagen (see "Performance"; a profile showed that 93 % of the former time was spent in system calls).
 - **Open source and far more thoroughly tested**: LGPL-2.1-or-later; a Catch2 test suite that grew from about 5,400
   assertions (3.0.0) to over 20,000 today, run on 32 and 64 bit with AddressSanitizer and fuzzing; a contract check
   that every wrapper (C/C++, C#, VB.NET, Delphi, VB6, XProfan) matches the exports; tools to scan and compare whole
@@ -171,8 +171,8 @@ first access to the file, not by the CPU.
 
 All libraries analyzed the same 22,876 files of a local library (101 GB, 22,666 of them MP3, the rest WMA, M4A, WAV and AAC) from the NVMe
 drive with a warm file system cache. For every file a small program reads what an application that shows a library needs: the format, the
-duration, bit rate, sample rate, channels and the tags title, artist, album, year, track, genre and comment. The time is the median of 7
-passes; a second round in the reverse order gave the same values within 4 %.
+duration, bit rate, sample rate, channels and the tags title, artist, album, year, track, genre and comment. The time is the median of 3 to 7
+passes (fewer for the slow libraries); a second round in the reverse order gave the same values within 4 %.
 
 | Library | time per file, 32 bit | time per file, 64 bit | read calls per file | CPU time per file (64 bit) |
 |---|---|---|---|---|
@@ -181,13 +181,20 @@ passes; a second round in the reverse order gave the same values within 4 %.
 | AudioGenie3 3.0.0 | 0.089 ms | 0.081 ms | 8.7 | 0.082 ms |
 | AudioGenie 2.0.4 | 0.087 ms | (32 bit only) | 8.9 | |
 | TagLib 2.3.2 (C++) | 0.147 ms | 0.133 ms | 21.6 | 0.136 ms |
+| JAudioTagger 3.0.1 (Java 23) | | 0.209 ms | 4.6 | 0.22 ms |
 | mutagen 1.48.1 (Python 3.11) | | 0.440 ms | 6.3 | 0.434 ms |
+| FFmpeg libavformat 62.3 (PyAV 17, Python 3.11) | | 0.75 ms | 1.6 | 0.75 ms |
+| MediaInfoLib 26.05 | | 1.47 ms | 4.7 | 1.47 ms |
 
-3.0.3 needs about half the time of TagLib, one seventh of the time of mutagen and 20 % less than 2.0.4 (24 % less than 3.0.2). 3.0.2 is 4 to
+3.0.3 needs about half the time of TagLib, one third of the time of JAudioTagger, one seventh of mutagen, one twelfth of FFmpeg and one twenty-third
+of MediaInfoLib, and 20 % less than 2.0.4 (24 % less than 3.0.2). 3.0.2 is 4 to
 6 % slower than 3.0.0, because the duration and the bit rate became more exact (see the release notes of 3.0.1 and 3.0.2). A second 2.0.4 build
-in the old source tree needs 0.093 ms and 13.1 read calls per file.
+in the old source tree needs 0.093 ms and 13.1 read calls per file. MediaInfoLib with the option `ParseSpeed` 0 (headers only) needs 1.20 ms and
+4.2 read calls. JAudioTagger is measured after the warm-up of the JIT compiler (the first pass is not counted), its CPU time includes the compiler
+and garbage collector threads. FFmpeg could not open 31 of the 22,876 files, JAudioTagger and mutagen one.
 
-The libraries do not return the same. TagLib and mutagen estimate the duration of an MP3 file without a Xing header from the file size:
+The libraries do not return the same: MediaInfoLib and FFmpeg analyze the streams in depth and return far more than the fields above, which is
+why they need more time for this task. TagLib and mutagen estimate the duration of an MP3 file without a Xing header from the file size:
 on the 1,728 files (almost all MP3) where TagLib, mutagen, pymediainfo and AudioGenie3 3.0.2 differed by more than 0.5 s in the duration, a complete
 decoding by ffmpeg agreed within 0.1 s with the duration of AudioGenie3 for 99.3 % of the files, with that of TagLib for 12.6 % and with that of
 mutagen for 7.5 %.
