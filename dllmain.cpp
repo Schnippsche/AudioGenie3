@@ -4653,7 +4653,7 @@ extern "C" short __stdcall ID3V2GetEncodingW(u32 FrameID)
  * | 0 | MPEGEXACTREAD | 0 | a non-zero value activates reading all MPEG frames (see below); replaces SetMPEGAnalyzeAllFrames |
  * | 1 | ID3V2PADDINGSIZE | 4096 | the padding size in bytes for an ID3v2 tag |
  * | 2 | WRITEBLOCKSIZE | 524288 | the block size in bytes for internal file copy |
- * | 3 | DOEVENTSMILLIS | 250 | milliseconds after which AudioGenie fires a DoEvent |
+ * | 3 | DOEVENTSMILLIS | 250 | milliseconds between two runs of the message processing (see below) |
  * | 4 | MAXTEXTBUFFER | 262144 | the maximum text size in bytes |
  * | 5 | WMAPADDINGSIZE | 4096 | the padding size in bytes for a WMA tag |
  * | 6 | MP4PADDINGSIZE | 4096 | the padding size in bytes for an MP4 tag |
@@ -4681,6 +4681,16 @@ extern "C" short __stdcall ID3V2GetEncodingW(u32 FrameID)
  * An ID3v2 picture frame can contain a link to a file instead of the picture (MIME type <tt>--></tt>). The link comes from the
  * tag of the audio file, so it is not followed by default (the picture size is 0); otherwise a manipulated file could make
  * an application read any file of the computer. Set the value to 1 to load such pictures.
+ *
+ * <b>DOEVENTSMILLIS</b>
+ *
+ * During a long operation (reading a large file, calculating the MD5 value, rewriting a file) the library lets the thread that
+ * called it process its window messages, like DoEvents of Visual Basic, so that the user interface of the application (for
+ * example a progress bar) stays alive. This happens at most once in the given number of milliseconds; the value 0 means
+ * at every opportunity, a very large value practically switches it off. Each time all messages that are waiting for the
+ * thread are dispatched, but not more than 100. A message handler of the application can start another library call: that
+ * inner call does not process messages again. A WM_QUIT message is posted again, so that the message loop of the application still
+ * receives it. A thread without a message loop (for example a worker thread) has no waiting messages, nothing happens there.
  *
  * <b>MPEGEXACTREAD</b>
  *
@@ -4736,7 +4746,7 @@ extern "C" void __stdcall SetConfigValueW(long key, long value)
  * | 0 | MPEGEXACTREAD | a non-zero value means that all MPEG frames are read |
  * | 1 | ID3V2PADDINGSIZE | the padding size in bytes for an ID3v2 tag |
  * | 2 | WRITEBLOCKSIZE | the block size in bytes for internal file copy |
- * | 3 | DOEVENTSMILLIS | milliseconds after which AudioGenie fires a DoEvent |
+ * | 3 | DOEVENTSMILLIS | milliseconds between two runs of the message processing (see below) |
  * | 4 | MAXTEXTBUFFER | the maximum text size in bytes |
  * | 5 | WMAPADDINGSIZE | the padding size in bytes for a WMA tag |
  * | 6 | MP4PADDINGSIZE | the padding size in bytes for an MP4 tag |

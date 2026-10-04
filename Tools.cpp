@@ -141,16 +141,30 @@ void CTools::doEvents()
 	oldTickCount = ticks;
 	doEventsNow();
 }
+// Lets the host process the messages of its thread (user interface, progress bar) while the library works on a long operation, like DoEvents
+// of Visual Basic: all messages that are waiting are dispatched, at most MAX_MESSAGES, so that a flood of messages (mouse moves) cannot hold up
+// the operation. A WM_QUIT is not for the library: it is posted again for the message loop of the host, which would otherwise never see it
+// (the host would keep running after it asked to quit).
 void CTools::doEventsNow()
 {
-	if (PeekMessageW(&msg, (HWND) NULL, 0, 0, PM_REMOVE)) 
-	{ 
-		if (msg.message == WM_QUIT)
-			return;
-		
-		TranslateMessage(&msg);
-		DispatchMessage(&msg);	
-	}  
+	const int MAX_MESSAGES = 100;
+	// a message handler of the host can call the library again: that inner call does not process messages itself
+	static bool processing = false;
+	if (processing)
+		return;
+	processing = true;
+	MSG message;   // local: the handlers can use the library again, which would overwrite a member
+	for (int i = 0; i < MAX_MESSAGES && PeekMessageW(&message, (HWND) NULL, 0, 0, PM_REMOVE); i++)
+	{
+		if (message.message == WM_QUIT)
+		{
+			PostQuitMessage((int)message.wParam);
+			break;
+		}
+		TranslateMessage(&message);
+		DispatchMessageW(&message);
+	}
+	processing = false;
 }
 
 void CTools::setLastError(int error, ...)

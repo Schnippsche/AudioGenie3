@@ -7,6 +7,8 @@
 #include <algorithm>
 #include <cstring>
 
+#pragma comment(lib, "user32.lib")   // PeekMessageW, PostThreadMessageW, PostQuitMessage
+
 using namespace ag3test;
 namespace fs = std::filesystem;
 
@@ -391,4 +393,53 @@ TEST_CASE("Large files: 5 GB FLAC and WavPack (sparse) - read the head", "[speci
         std::error_code ec;
         fs::remove(p, ec);
     }
+}
+
+TEST_CASE("Message processing during an operation (DOEVENTSMILLIS)", "[special][doevents]")
+{
+    // the value 0: the messages are processed at every opportunity (by default only every 250 ms)
+    struct EventsEveryTime {
+        long old;
+        EventsEveryTime() : old(GetConfigValueW(3)) { SetConfigValueW(3, 0); }
+        ~EventsEveryTime() { SetConfigValueW(3, old); }
+    } guard;
+    auto p = writeTemp("doevents.mp3", makeMp3(40));
+    const DWORD thread = GetCurrentThreadId();
+    MSG m;
+    auto emptyQueue = [&m]() { while (PeekMessageW(&m, nullptr, 0, 0, PM_REMOVE)) {} };   // also takes a WM_QUIT of an earlier test
+    emptyQueue();
+
+    // the messages that are still in the queue (the quit message with its exit code, if there is one)
+    auto remaining = [&m]() {
+        std::vector<std::pair<UINT, WPARAM>> left;
+        while (PeekMessageW(&m, nullptr, 0, 0, PM_REMOVE))
+            left.push_back({ m.message, m.wParam });
+        return left;
+    };
+
+    SECTION("all waiting messages are dispatched, not one per call") {
+        for (int i = 0; i < 10; i++)
+            PostThreadMessageW(thread, WM_APP + 1, 0, 0);
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        CHECK(remaining().empty());
+    }
+    SECTION("WM_QUIT is posted again for the message loop of the host") {
+        PostQuitMessage(42);
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        const auto left = remaining();
+        REQUIRE(left.size() == 1);
+        CHECK(left[0].first == WM_QUIT);
+        CHECK(left[0].second == 42);
+    }
+    SECTION("the messages in front of a WM_QUIT are dispatched, the quit message stays") {
+        for (int i = 0; i < 5; i++)
+            PostThreadMessageW(thread, WM_APP + 2, 0, 0);
+        PostQuitMessage(7);
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        const auto left = remaining();
+        REQUIRE(left.size() == 1);
+        CHECK(left[0].first == WM_QUIT);
+        CHECK(left[0].second == 7);
+    }
+    emptyQueue();
 }
