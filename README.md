@@ -44,7 +44,7 @@ more) to catch what synthetic tests alone miss.
   similar) is no longer read as having no title or artist at all.
 - **Faster**: the MPEG frame scan reads in 64 KB blocks instead of one read per frame (40 MB of frames: 181 ms ->
   6 ms); MD5 throughput is up 32% (560 -> 745 MB/s); analyzing a file needs less than a third of the read calls of 2.0.4 (2.4 instead
-  of 8.9 per file), takes 34 % less time than 2.0.4 (32 bit), and is two and a half times as fast as TagLib, four times as fast as JAudioTagger and
+  of 8.9 per file), takes 39 % less time than 2.0.4, and is two and a half times as fast as TagLib, four times as fast as JAudioTagger and
   almost eight times as fast as mutagen (see "Performance"; a profile showed that 93 % of the former time was spent in system calls).
 - **Open source and far more thoroughly tested**: LGPL-2.1-or-later; a Catch2 test suite that grew from about 5,400
   assertions (3.0.0) to over 20,000 today, run on 32 and 64 bit with AddressSanitizer and fuzzing; a contract check
@@ -177,23 +177,24 @@ All libraries analyzed the same 22,919 files of the local library (103 GB: 22,66
 2 FLAC and 1 AAC) from the NVMe drive with a warm file system cache. For every file a small program reads what an application that shows a library
 needs: the format, the duration, bit rate, sample rate, channels and the tags title, artist, album, year, track, genre and comment. The time is the
 median of 3 to 7 passes (fewer for the slow libraries; the first pass is a warm-up); two rounds, the second in the reverse order, gave the same values
-within 1 %. The table shows the mean of the two rounds.
+within 1 %. The table shows the mean of the two rounds, for the 64 bit versions of the libraries (AudioGenie 2.0.4 only exists as a 32 bit DLL); the first
+column is the time of one pass over all 22,919 files.
 
-| Library | time per file, 32 bit | time per file, 64 bit | read calls per file | CPU time per file (64 bit) |
+| Library | total time for 22,919 files | time per file | read calls per file | CPU time per file |
 |---|---|---|---|---|
-| **AudioGenie3, current** | **0.057 ms** | **0.053 ms** | **2.4** | **0.052 ms** |
-| AudioGenie 2.0.4 | 0.087 ms | (32 bit only) | 8.9 | |
-| tagparser 12.5.3 (C++) | | 0.105 ms | 8.8 | 0.104 ms |
-| TagLib 2.3.2 (C++) | 0.143 ms | 0.129 ms | 21.6 | 0.128 ms |
-| JAudioTagger 3.0.1 (Java 23) | | 0.210 ms | 4.9 | 0.213 ms |
-| mutagen 1.48.1 (Python 3.11) | | 0.414 ms | 6.3 | 0.413 ms |
-| tinytag 2.3.2 (Python 3.11) | | 0.418 ms | 3.8 | 0.418 ms |
-| music-metadata 12.0.0 (Node.js 22) | | 0.739 ms | 24.3 | 0.750 ms |
-| FFmpeg libavformat 62.3 (PyAV 17, Python 3.11) | | 0.732 ms | 1.6 | 0.731 ms |
-| MediaInfoLib 26.05 | | 1.443 ms | 4.7 | 1.424 ms |
+| **AudioGenie3, current** | **1.2 s** | **0.053 ms** | **2.4** | **0.052 ms** |
+| AudioGenie 2.0.4 (32 bit only) | 2.0 s | 0.087 ms | 8.9 | 0.087 ms |
+| tagparser 12.5.3 (C++) | 2.4 s | 0.105 ms | 8.8 | 0.104 ms |
+| TagLib 2.3.2 (C++) | 3.0 s | 0.129 ms | 21.6 | 0.128 ms |
+| JAudioTagger 3.0.1 (Java 23) | 4.8 s | 0.210 ms | 4.9 | 0.213 ms |
+| mutagen 1.48.1 (Python 3.11) | 9.5 s | 0.414 ms | 6.3 | 0.413 ms |
+| tinytag 2.3.2 (Python 3.11) | 9.6 s | 0.418 ms | 3.8 | 0.418 ms |
+| music-metadata 12.0.0 (Node.js 22) | 16.9 s | 0.739 ms | 24.3 | 0.750 ms |
+| FFmpeg libavformat 62.3 (PyAV 17, Python 3.11) | 16.8 s | 0.732 ms | 1.6 | 0.731 ms |
+| MediaInfoLib 26.05 | 33.1 s | 1.443 ms | 4.7 | 1.424 ms |
 
 The current state needs 50 % less time than tagparser, 59 % less than TagLib, a quarter of the time of JAudioTagger, one eighth of mutagen and tinytag,
-one fourteenth of music-metadata and FFmpeg and one twenty-seventh of MediaInfoLib, and 34 % less than 2.0.4 (32 bit). The duration and the bit rate of
+one fourteenth of music-metadata and FFmpeg and one twenty-seventh of MediaInfoLib, and 39 % less than 2.0.4. The duration and the bit rate of
 MP3 files are more exact than in 2.0.4 (see the release notes of 3.0.1 and 3.0.2); that costs a little time, which the fewer system calls more than make up.
 A second 2.0.4 build in the old source tree needs 0.093 ms and 13.0 read calls per file. MediaInfoLib with the option `ParseSpeed` 0 (headers only) needs 1.17 ms and
 4.2 read calls. JAudioTagger is measured after the warm-up of the JIT compiler (the first pass is not counted), its CPU time includes the compiler
@@ -237,7 +238,7 @@ little. The same holds for a mechanical drive: 600 random files (590 MP3) of a S
 of an AudioGenie 2.0.4 run was 55.8 ms (the drive was spinning up), 25.1 ms in the second round. The CPU time per file was 0.25 ms for AudioGenie3,
 0.4 ms for TagLib, 0.8 ms for mutagen, 1.2 ms for tinytag and FFmpeg and 2.0 ms for MediaInfoLib.
 
-The 32 and the 64 bit DLL return identical results (the 64 bit DLL is about 8 % faster). The tags and the technical data are the same as in version 2.0.4, except
+The 32 and the 64 bit DLL return identical results. The tags and the technical data are the same as in version 2.0.4, except
 where the duration and bit rate of MP3 files are deliberately more accurate now (data behind the last frame, encoders without the padding bit,
 VBR files without a header; see the release notes of 3.0.1 to 3.0.3). On a network drive the cost of the first access to each file dominates; if you scan large libraries
 repeatedly, keep the results in your application and analyze only new or changed files.
@@ -254,7 +255,7 @@ repeatedly, keep the results in your application and analyze only new or changed
 | Analysis (`AUDIOAnalyzeFileW`): system calls | The length of the file is read with one call instead of about four (for the stream of the analysis not at all); absolute positions instead of seeks relative to the end of the file; a read buffer of 8 KB instead of 4 KB; the last 8 KB of the file are read once for ID3v1, Lyrics3, the APE footer and the last MPEG block instead of one seek and read each | local SSD, 22,876 files, cached, `tests/tools/run_scan.bat` (analysis only): 2.14 s -> 1.69 s (-21 %), kernel time 1.94 s -> 1.50 s, read calls per file 8.8 -> 3.9; including the reading of the fields (comparison above): -24 % |
 | Text conversion (fields of many KB) | The end of a text is searched with `memchr`; a text that cannot fit into the text buffer (256 KB characters) is not converted at all (more than three times the buffer, or ASCII characters: one character per byte), where the system first looked at all of the text, twice (UTF-8, then ANSI) | the FLAC test file with 39 fields of 468 KB each: 25 -> 10 ms |
 | Analysis: start of the file | The first 8 KB of the file are read once for the format check, the ID3v2 header and the first MPEG block (no seek on a freshly opened file); behind an ID3v2 tag larger than about 4.7 KB the cache is extended with one read to the end of the tag plus 8 KB (at most 256 KB), so tag, header and first block come from memory | same files, cached: read calls per file 3.9 -> 2.4 (-38 %), time per file 0.065 -> 0.058 ms (-11 %) |
-| File access: class `CFile` (File.h) | The readers and the functions that write a file use a `CFile` and no longer the C library: the file is opened with `CreateFileW` and read with `ReadFile` with the offset in the request (one system call, no seek, no file pointer), written with `WriteFile`, with an own read buffer of 8 KB for the sequential reads; the writes are not buffered | local SSD, 22,876 files, cached: time per file 0.059 -> 0.054 ms (-7 %), 64 bit; 32 bit 0.064 -> 0.059 ms |
+| File access: class `CFile` (File.h) | The readers and the functions that write a file use a `CFile` and no longer the C library: the file is opened with `CreateFileW` and read with `ReadFile` with the offset in the request (one system call, no seek, no file pointer), written with `WriteFile`, with an own read buffer of 8 KB for the sequential reads; the writes are not buffered | local SSD, 22,876 files, cached: time per file 0.059 -> 0.054 ms (-7 %) |
 | Other formats: the start of the file | FLAC, M4A (atoms), WAV (chunks), WavPack, TTA and the header of Monkey's Audio read from absolute positions through the cache of the start of the file, WMA, Musepack, the APE tag (also at the end of MP3 files, from the cache of the end of the file) and the Ogg pages read in sequence through the caches (`CSequentialRead`: no `ftell`, no second read of the start); an item or block that is not inside of the cache extends it with one read; reads of 8 KB and more go to the file directly (one read instead of two) | read calls per file: WMA 3.0 -> 2.0, M4A 6.7 -> 3.7, WAV 3.7 -> 1.9, WavPack 5 -> 2, Ogg 6 -> 3, Monkey's Audio 3 -> 2, FLAC 3.7 -> 2.6; time -10 to -22 %, FLAC unchanged |
 
 A sampling profile of the analysis before the cache of the start of the file (warm cache, 22,876 files) shows where the time goes: 91 % is spent in system calls (opening the file 32 %,
