@@ -163,7 +163,7 @@ documentation of `SetConfigValueW`.
 
 ## Performance
 
-Measured on an AMD Ryzen 7 7700 with a Samsung 990 Pro (NVMe), with a library of 22,876 audio files (101 GB, 22,666 of them MP3), and on a
+Measured on an AMD Ryzen 7 7700 with a Samsung 990 Pro (NVMe), with a library of 22,919 audio files (103 GB: 22,666 MP3, 127 WMA, 80 M4A, 28 Monkey's Audio, 7 WAV, 5 WavPack, 3 Ogg Vorbis, 2 FLAC and 1 AAC), and on a
 network drive (SMB) with about 16000 MP3 files (measured with 3.0.0). The numbers depend on the hardware; the tool `tests/tools/run_scan.bat` repeats the measurement on your own library (see `tests/README.md`).
 
 ### Analyzing files (`AUDIOAnalyzeFileW`)
@@ -173,12 +173,14 @@ first access to the file, not by the CPU.
 
 #### Comparison with other libraries (local SSD, warm cache)
 
-All libraries analyzed the same 22,876 files of a local library (101 GB, 22,666 of them MP3, the rest WMA, M4A, WAV and AAC) from the NVMe
+All libraries analyzed the same 22,876 files of the local library (101 GB, 22,666 of them MP3, the rest WMA, M4A, WAV and AAC: the files that the library
+had when the libraries were compared; the Monkey's Audio, WavPack, Ogg Vorbis and FLAC files were added later) from the NVMe
 drive with a warm file system cache. For every file a small program reads what an application that shows a library needs: the format, the
 duration, bit rate, sample rate, channels and the tags title, artist, album, year, track, genre and comment. The time is the median of 3 to 7
 passes (fewer for the slow libraries); a second round in the reverse order gave the same values within 4 %. The AudioGenie rows were measured again
 for the current state of the repository (two rounds); the other libraries were measured earlier on the same machine (TagLib 0.133 and 0.129 ms in the
-two measurements), so the ratios below are exact to about 5 %.
+two measurements), so the ratios below are exact to about 5 %. On all 22,919 files of the library the current version needs 0.053 ms (64 bit) and 0.057 ms (32 bit) per file,
+2.0.4 0.088 ms and TagLib 0.130 ms, with 2.4 read calls for the current version: the same as in the table within the noise.
 
 | Library | time per file, 32 bit | time per file, 64 bit | read calls per file | CPU time per file (64 bit) |
 |---|---|---|---|---|
