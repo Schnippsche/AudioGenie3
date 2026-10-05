@@ -63,7 +63,7 @@ void CVorbisComment::BuildVorbisComments(CBlob &Data)
 	//int maxLen = VendorInfo.GetLength();
 	Fields = (int)_items.GetCount();
 	// vendor info and number of fields
-	str.AddEncodedString(TEXT_ENCODED_UTF8, VendorInfo, false,false);
+	str.AddEncodedString(TEXT_ENCODED_UTF8, VendorInfo, TEXT_WITHOUT_ENCODING, TEXT_WITHOUT_NULLBYTES);
 	Data.AddR4B((int)str.GetLength());
 	Data.AddBlob(str); 
 	Data.AddR4B(Fields);
@@ -79,7 +79,7 @@ void CVorbisComment::BuildVorbisComments(CBlob &Data)
 		else
 		{
 			content = item->key + L"=" + item->value;
-			str.AddEncodedString(TEXT_ENCODED_UTF8, content, false, false);
+			str.AddEncodedString(TEXT_ENCODED_UTF8, content, TEXT_WITHOUT_ENCODING, TEXT_WITHOUT_NULLBYTES);
 		}
 		Data.AddR4B((int)str.GetLength());
 		Data.AddBlob(str);		

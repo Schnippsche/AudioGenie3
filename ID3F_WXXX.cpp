@@ -85,7 +85,7 @@ void CID3F_WXXX::decode()
 		}
 		else
 		{
-			encodingID = _blob.GetAt(0);
+			encodingID = textEncodingOf(_blob.GetAt(0));
 			int start = 1;
 			_description = _blob.getNextString(encodingID, start);
 			_url = _blob.getNextString(TEXT_ENCODED_ANSI, start);

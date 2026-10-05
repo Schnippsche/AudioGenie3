@@ -114,7 +114,7 @@ void CWAVBEXTChunk::setASCIIText(CAtlString newText, BYTE nr)
 		// delete all bytes from position 602 on
 		tmp.AddMemory(_data.m_pData, startPos);
 		if (!newText.IsEmpty())
-			tmp.AddEncodedString(TEXT_ENCODED_ANSI, newText, false, false);
+			tmp.AddEncodedString(TEXT_ENCODED_ANSI, newText, TEXT_WITHOUT_ENCODING, TEXT_WITHOUT_NULLBYTES);
 		_data.Clear();
 		_data.AddBlob(tmp);
 		return;

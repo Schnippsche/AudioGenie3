@@ -46,7 +46,7 @@ short CID3V2::getEncoding(u32 frameID)
 		if (_frames[i]->_frameID == frameID)
 		{
 			_frames[i]->decode();
-			return _frames[i]->encodingID;
+			return encodingByte(_frames[i]->encodingID);
 		}
 	}
 	return -1;
@@ -497,7 +497,7 @@ bool CID3V2::RebuildFile(LPCWSTR FileName, CBlob* data)
 	/* Copy data blocks */
 	if (!Source->seek(FrameOldSize))
 	{
-		CTools::instance().writeError(L"ID3V2 fseek(%i) failed, aborting save", FrameOldSize);
+		CTools::instance().writeError(L"ID3V2 seek(%i) failed, aborting save", FrameOldSize);
 		ok = false;
 	}
 	if (ok && data != NULL)

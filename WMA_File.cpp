@@ -37,7 +37,7 @@ bool CWMA_File::ReadFromFile(CFile *Stream)
 	ResetData();
 	/* Read file data */
 	/* Check for existing header */
-	// the header is read in sequence from the cache of the start of the file (no read and no ftell of its own)
+	// the header is read in sequence from the cache of the start of the file (no read of its own)
 	CSequentialRead sequence(Stream, CTools::ID3v2Size);
 	if (header.load(Stream, toSizeClamped(CTools::FileSize)))
 	{

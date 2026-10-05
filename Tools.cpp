@@ -106,8 +106,7 @@ size_t CTools::readAt(CFile *Stream, __int64 pos, void *destination, size_t leng
 			return 0;
 		return Stream->read(destination, length);
 	}
-	// A large read: the buffered read of the C library would split it into a read of a multiple of the buffer size (8 KB) and one more read of
-	// 8 KB for the rest, so it is read from the file directly.
+	// A large read goes directly into the destination: one system call and no copy through the buffer of the file.
 	return Stream->readDirect(pos, destination, length);
 }
 
@@ -189,7 +188,7 @@ CBlob CTools::output;
 DWORD CTools::oldTickCount;
 BYTE CTools::ID3V2oldTagVersion = 0;
 BYTE CTools::ID3V2newTagVersion = 3; // TAG_VERSION_2_3
-BYTE CTools::ID3V2defaultEncodingID = TEXT_ENCODED_ANSI;
+BYTE CTools::ID3V2defaultEncodingID = encodingByte(TEXT_ENCODED_ANSI);
 BYTE CTools::ID3V2Flags = 0;
 
 CTools::CTools(void)

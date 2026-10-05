@@ -41,7 +41,7 @@ public:
 	long getStoredSize();
 	CBlob _blob, _data;	
 	unsigned int _frameID;
-	BYTE encodingID;
+	TextEncoding encodingID;
 	u16 flags;
 	bool isDecoded;
 	bool mustRebuild;

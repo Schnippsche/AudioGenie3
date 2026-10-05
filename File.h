@@ -50,7 +50,7 @@ public:
 	bool openRead(LPCWSTR fileName);   // Mode::Read and Share::All
 	void close();
 	bool isOpen() const { return m_handle != INVALID_HANDLE_VALUE; }
-	// like _wfsopen and fclose for the functions that keep a pointer: NULL if the file cannot be opened, closeFile closes and deletes (NULL is allowed)
+	// for the functions that keep a pointer to the file: NULL if the file cannot be opened, closeFile closes and deletes (NULL is allowed)
 	static CFile *openFile(LPCWSTR fileName, Mode mode, Share share);
 	static void closeFile(CFile *file);
 	// deletes a file; false if it cannot be deleted

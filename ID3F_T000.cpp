@@ -76,7 +76,7 @@ void CID3F_T000::decode()
 		_lastTag = CTools::ID3V2oldTagVersion;
 		if (_blob.GetLength() > 0)
 		{
-			encodingID = _blob.GetAt(0);
+			encodingID = textEncodingOf(_blob.GetAt(0));
 			if (_blob.GetLength() > 1)
 			{
 				int start = 1;
@@ -134,5 +134,5 @@ void CID3F_T000::print()
 {
 	ATLTRACE(_T("Frame:%c%c%c%c %u "), BYTE(_frameID >> 24), BYTE(_frameID >> 16), BYTE(_frameID >> 8), BYTE(_frameID), _frameID);
 	decode();
-	ATLTRACE(_T(" Encoding:%i Text:%s\n"), encodingID,_text);
+	ATLTRACE(_T(" Encoding:%i Text:%s\n"), (int)encodingByte(encodingID),_text);
 }

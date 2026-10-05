@@ -151,7 +151,7 @@ void CID3F_SYLT::decode()
 		}
 		else
 		{
-			encodingID = _blob.GetAt(0);
+			encodingID = textEncodingOf(_blob.GetAt(0));
 			_language = _blob.GetStringAt(1, 3);
 			_timestampformat = _blob.GetAt(4);
 			_contenttype = _blob.GetAt(5);
@@ -160,7 +160,7 @@ void CID3F_SYLT::decode()
 			// extract text ( ANSI, Unicode or UTF8 )
 			// IMPORTANT: a BOM is no longer listed here!!!
 			// therefore convert
-			BYTE code = (encodingID == TEXT_ENCODED_UTF16BOM) ? TEXT_ENCODED_UTF16LE : encodingID;
+			TextEncoding code = (encodingID == TEXT_ENCODED_UTF16BOM) ? TEXT_ENCODED_UTF16LE : encodingID;
 			int nr = 0;
 			_data.AddBlob(_blob, start);
 			start = 0;
@@ -183,7 +183,7 @@ void CID3F_SYLT::encode()
 	{
 		decode();
 		_blob.Clear();
-		_blob.AddValue(encodingID);
+		_blob.AddValue(encodingByte(encodingID));
 		_blob.AddFixedAnsiString(_language.IsEmpty() ? CAtlString(_T("XXX")) : _language, 3);   // XXX = language not known
 		_blob.AddValue(_timestampformat);
 		_blob.AddValue(_contenttype);
@@ -195,7 +195,7 @@ void CID3F_SYLT::encode()
 		tmp.Append(_T("\n"));
 		int pos = tmp.Find(_T("\n"));
 		int start = 0;
-		BYTE code = (encodingID == TEXT_ENCODED_UTF16BOM) ? TEXT_ENCODED_UTF16LE : encodingID;
+		TextEncoding code = (encodingID == TEXT_ENCODED_UTF16BOM) ? TEXT_ENCODED_UTF16LE : encodingID;
 		while (pos >= 0)
 		{
 			entry = tmp.Mid(start, pos - start);

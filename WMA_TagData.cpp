@@ -77,8 +77,8 @@ bool CWMA_TagData::setNewPicture(BYTE *arr, u32 len, LPCWSTR Description, BYTE p
 	_data.Clear();
 	_data.AddValue(picType);
 	_data.AddR4B(int(len));
-	_data.AddEncodedString(TEXT_ENCODED_UTF16LE, CTools::instance().ExtractMimeFromPicture(arr), false, true);
-	_data.AddEncodedString(TEXT_ENCODED_UTF16LE, Description, false, true);
+	_data.AddEncodedString(TEXT_ENCODED_UTF16LE, CTools::instance().ExtractMimeFromPicture(arr), TEXT_WITHOUT_ENCODING, TEXT_WITH_NULLBYTES);
+	_data.AddEncodedString(TEXT_ENCODED_UTF16LE, Description, TEXT_WITHOUT_ENCODING, TEXT_WITH_NULLBYTES);
 	_data.AddMemory(arr, len);
 	return false;
 }
@@ -190,12 +190,12 @@ void CWMA_TagData::buildData(CBlob* blob)
 		blob->AddR2B(FieldSize);
 		blob->AddR2B(Type);
 		blob->AddR4B((int)_data.GetLength());
-		blob->AddEncodedString(TEXT_ENCODED_UTF16LE, FieldName, false, true);			
+		blob->AddEncodedString(TEXT_ENCODED_UTF16LE, FieldName, TEXT_WITHOUT_ENCODING, TEXT_WITH_NULLBYTES);			
 	}
 	else if (_art == EXTCONTENT_ART)
 	{
 		blob->AddR2B(FieldSize);
-		blob->AddEncodedString(TEXT_ENCODED_UTF16LE, FieldName, false, true);
+		blob->AddEncodedString(TEXT_ENCODED_UTF16LE, FieldName, TEXT_WITHOUT_ENCODING, TEXT_WITH_NULLBYTES);
 		blob->AddR2B(Type);
 		blob->AddR2B((int)_data.GetLength());
 	}

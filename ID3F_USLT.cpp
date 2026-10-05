@@ -89,7 +89,7 @@ void CID3F_USLT::decode()
 		}
 		else
 		{
-			encodingID = _blob.GetAt(0);
+			encodingID = textEncodingOf(_blob.GetAt(0));
 			_language = _blob.GetStringAt(1, 3);			
 			int start = 4;
 			_description = _blob.getNextString(encodingID, start);
@@ -104,7 +104,7 @@ void CID3F_USLT::encode()
 	{
 		decode();
 		_blob.Clear();
-		_blob.AddValue(encodingID);
+		_blob.AddValue(encodingByte(encodingID));
 		_blob.AddFixedAnsiString(_language.IsEmpty() ? CAtlString(_T("XXX")) : _language, 3);   // XXX = language not known
 		_blob.AddEncodedString(encodingID, _description, TEXT_WITHOUT_ENCODING, TEXT_WITH_NULLBYTES);
 		_blob.AddEncodedString(encodingID, _text, TEXT_WITHOUT_ENCODING, TEXT_WITHOUT_NULLBYTES);

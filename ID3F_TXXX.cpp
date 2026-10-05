@@ -82,7 +82,7 @@ void CID3F_TXXX::decode()
 		_description.Empty();
 		if (_blob.GetLength() > 0)
 		{
-			encodingID = _blob.GetAt(0);
+			encodingID = textEncodingOf(_blob.GetAt(0));
 			if (_blob.GetLength() > 1)
 			{
 				int start = 1;

@@ -518,7 +518,7 @@ static bool ansiTextTooLarge(size_t size, size_t maxBuffer)
 	return size > maxBuffer * (bytesPerCharacter > 0 ? bytesPerCharacter : 1);
 }
 
-CAtlString CBlob::getNextString(BYTE encoding, int& startPos)
+CAtlString CBlob::getNextString(TextEncoding encoding, int& startPos)
 {
 	if (m_CurrentLength == 0 || m_pData == NULL || startPos < 0 || (size_t)startPos > m_CurrentLength)
 		return EMPTY;
@@ -623,7 +623,7 @@ CAtlString CBlob::getNextString(BYTE encoding, int& startPos)
 // only works with a UNICODE build
 // encoding: specifies the encoding
 // rest is data ( 0-terminated )
-CAtlString CBlob::ConvertToUnicodeString( BYTE encoding)
+CAtlString CBlob::ConvertToUnicodeString(TextEncoding encoding)
 {
 	if (m_CurrentLength < 1)
 		return EMPTY;
@@ -635,7 +635,7 @@ void CBlob::AddFixedAnsiString(const CAtlString source, size_t maxLen)
 {
 	CAtlString tmp = source.Left((int)maxLen);
 	size_t nLen = tmp.GetLength();
-	AddEncodedString(TEXT_ENCODED_ANSI, tmp, false, false);
+	AddEncodedString(TEXT_ENCODED_ANSI, tmp, TEXT_WITHOUT_ENCODING, TEXT_WITHOUT_NULLBYTES);
 	if (nLen < maxLen)
 		AddValue(0,maxLen - nLen);
 }
@@ -643,14 +643,14 @@ void CBlob::AddFixedAnsiString(const CAtlString source, size_t maxLen)
 /**
 adds a string depending on the encoding
 **/
-void CBlob::AddEncodedString(BYTE encoding, const CAtlString source, bool withEncodingByte, bool withNullBytes)
+void CBlob::AddEncodedString(TextEncoding encoding, const CAtlString source, EncodingByte withEncodingByte, NullBytes withNullBytes)
 {
-	if (withEncodingByte)
-		AddValue(encoding);
+	if (withEncodingByte == EncodingByte::With)
+		AddValue(encodingByte(encoding));
 	// if the string is empty, do not convert
 	if (source.GetLength() == 0)
 	{
-		if (withNullBytes)
+		if (withNullBytes == NullBytes::With)
 		{
 			if (encoding == TEXT_ENCODED_UTF16BOM || encoding == TEXT_ENCODED_UTF16 || encoding == TEXT_ENCODED_UTF16LE)
 				AddValue(0, 2);
@@ -685,14 +685,14 @@ void CBlob::AddEncodedString(BYTE encoding, const CAtlString source, bool withEn
 			ConcatInPlace(Size, buf);
 		else
 			CTools::instance().setLastError(ERR_TEXTCONVERT, L"ANSI");
-		if (withNullBytes)
+		if (withNullBytes == NullBytes::With)
 			AddNullByte();
 		break;
 	case TEXT_ENCODED_UTF16BOM: // UTF-16 with BOM
 		AddValue(0xFF);
 		AddValue(0xFE);
 		ConcatInPlace(wcslen(source) * 2, source);
-		if (withNullBytes)
+		if (withNullBytes == NullBytes::With)
 			AddValue(0, 2);
 		break;
 	case TEXT_ENCODED_UTF16: // UTF-16BE without BOM (ID3v2.4, encoding $02)
@@ -704,12 +704,12 @@ void CBlob::AddEncodedString(BYTE encoding, const CAtlString source, bool withEn
 				AddValue((BYTE)(source[(int)i] & 0xFF));
 			}
 		}
-		if (withNullBytes)
+		if (withNullBytes == NullBytes::With)
 			AddValue(0, 2);
 		break;
 	case TEXT_ENCODED_UTF16LE: // UTF-16 little endian without BOM (internal)
 		ConcatInPlace(wcslen(source) * 2, source);
-		if (withNullBytes)
+		if (withNullBytes == NullBytes::With)
 			AddValue(0, 2);
 		break;
 	case TEXT_ENCODED_UTF8:   // UTF-8
@@ -718,7 +718,7 @@ void CBlob::AddEncodedString(BYTE encoding, const CAtlString source, bool withEn
 			ConcatInPlace(Size, buf);
 		else
 			CTools::instance().setLastError(ERR_TEXTCONVERT, L"UTF-8");
-		if (withNullBytes)
+		if (withNullBytes == NullBytes::With)
 			AddNullByte();
 		break;
 	}

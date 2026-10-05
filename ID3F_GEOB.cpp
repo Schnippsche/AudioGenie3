@@ -93,7 +93,7 @@ void CID3F_GEOB::decode()
 		}
 		else
 		{
-			encodingID = _blob.GetAt(0);
+			encodingID = textEncodingOf(_blob.GetAt(0));
 			int start = 1;
 			_mime = _blob.getNextString(TEXT_ENCODED_ANSI, start);
 			_filename = _blob.getNextString(encodingID, start);	
@@ -109,7 +109,7 @@ void CID3F_GEOB::encode()
 	{
 		decode();
 		_blob.Clear();
-		_blob.AddValue(encodingID);
+		_blob.AddValue(encodingByte(encodingID));
 		_blob.AddEncodedString(TEXT_ENCODED_ANSI, _mime, TEXT_WITHOUT_ENCODING, TEXT_WITH_NULLBYTES);
 		_blob.AddEncodedString(encodingID, _filename, TEXT_WITHOUT_ENCODING, TEXT_WITH_NULLBYTES);
 		_blob.AddEncodedString(encodingID, _description, TEXT_WITHOUT_ENCODING, TEXT_WITH_NULLBYTES);

@@ -55,7 +55,7 @@ void CID3_Frame::init(unsigned int frameID)
 	_frameID = frameID;	
 	isDecoded = false;
 	mustRebuild = true;
-	encodingID = 255;
+	encodingID = TextEncoding::Unset;
 	useTextEncoding = false;
 	flags = 0;
 	_discardOnTagAlter = _discardOnFileAlter = _readOnly = _grouped = _compressed = _encrypted = _hasDataLength = _unsyncResolved = _loaded = false;
@@ -128,9 +128,9 @@ long CID3_Frame::getSize()
 	if (useTextEncoding)
 	{
 		decode();
-		if (CTools::ID3V2defaultEncodingID != encodingID)
+		if (textEncodingOf(CTools::ID3V2defaultEncodingID) != encodingID)
 		{
-			encodingID = CTools::ID3V2defaultEncodingID;
+			encodingID = textEncodingOf(CTools::ID3V2defaultEncodingID);
 			mustRebuild = true;
 			rebuilt = true;
 		}

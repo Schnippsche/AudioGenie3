@@ -137,7 +137,7 @@ void CID3F_APIC::decode()
 		else
 		{
 			int start = 0;
-			encodingID = _blob.GetAt(start++);
+			encodingID = textEncodingOf(_blob.GetAt(start++));
 			if (CTools::ID3V2oldTagVersion == TAG_VERSION_2_2)
 			{
 				_mime = _blob.GetStringAt(start, 3);
@@ -185,7 +185,7 @@ void CID3F_APIC::encode()
 	{
 		decode();
 		_blob.Clear();
-		_blob.AddValue(encodingID);
+		_blob.AddValue(encodingByte(encodingID));
 		if (CTools::ID3V2newTagVersion == TAG_VERSION_2_2)
 		{
 			if (_isLink)

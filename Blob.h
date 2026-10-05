@@ -34,15 +34,30 @@ static const LPCWSTR DUALCHANNEL(_T("Dual Channel"));
 static const LPCWSTR MULTICHANNEL(_T("Multi Channel"));
 static const LPCWSTR TILDE(_T("~"));
 
-static const int TEXT_ENCODED_ANSI = 0;     // ISO-8859-1 or ANSI
-static const int TEXT_ENCODED_UTF16BOM = 1; // UTF-16 with BOM
-static const int TEXT_ENCODED_UTF16 = 2;    // UTF-16BE without BOM (encoding $02 of ID3v2.4)
-static const int TEXT_ENCODED_UTF16LE = 4;  // internal: UTF-16 little endian without BOM (WMA, SYLT), not an ID3v2 encoding
-static const int TEXT_ENCODED_UTF8 = 3;     // UTF-8
-static const bool TEXT_WITH_ENCODING = true;
-static const bool TEXT_WITHOUT_ENCODING = false;
-static const bool TEXT_WITH_NULLBYTES = true;
-static const bool TEXT_WITHOUT_NULLBYTES = false;
+// the encoding of a text (the first byte of most ID3v2 text frames; the other tags use the ones they need)
+enum class TextEncoding : BYTE
+{
+	Ansi = 0,       // ISO-8859-1 or ANSI
+	Utf16Bom = 1,   // UTF-16 with BOM
+	Utf16 = 2,      // UTF-16BE without BOM (encoding $02 of ID3v2.4)
+	Utf8 = 3,       // UTF-8
+	Utf16LE = 4,    // internal: UTF-16 little endian without BOM (WMA, SYLT), not an ID3v2 encoding
+	Unset = 255     // no encoding chosen yet
+};
+inline TextEncoding textEncodingOf(BYTE value) { return static_cast<TextEncoding>(value); }   // from the byte of a file or of the API
+inline BYTE encodingByte(TextEncoding encoding) { return static_cast<BYTE>(encoding); }       // the byte for a file or the API
+static const TextEncoding TEXT_ENCODED_ANSI = TextEncoding::Ansi;
+static const TextEncoding TEXT_ENCODED_UTF16BOM = TextEncoding::Utf16Bom;
+static const TextEncoding TEXT_ENCODED_UTF16 = TextEncoding::Utf16;
+static const TextEncoding TEXT_ENCODED_UTF16LE = TextEncoding::Utf16LE;
+static const TextEncoding TEXT_ENCODED_UTF8 = TextEncoding::Utf8;
+// AddEncodedString: is the byte of the encoding written in front of the text, are the terminating zero bytes written behind it
+enum class EncodingByte { Without, With };
+enum class NullBytes { Without, With };
+static const EncodingByte TEXT_WITH_ENCODING = EncodingByte::With;
+static const EncodingByte TEXT_WITHOUT_ENCODING = EncodingByte::Without;
+static const NullBytes TEXT_WITH_NULLBYTES = NullBytes::With;
+static const NullBytes TEXT_WITHOUT_NULLBYTES = NullBytes::Without;
 
 class CBlob
 {
@@ -102,8 +117,8 @@ public:
 	size_t FileWrite(size_t nLen, CFile *Stream);
 	bool isEmpty()    { return (m_CurrentLength == 0); };
 	bool isNotEmpty() { return (m_CurrentLength > 0); };
-	CAtlString ConvertToUnicodeString(BYTE code);
+	CAtlString ConvertToUnicodeString(TextEncoding encoding);
 	void AddFixedAnsiString(const CAtlString source, size_t maxLen);
-	void AddEncodedString(BYTE encoding, const CAtlString source, bool withEncodingByte = true, bool withNullByte = true);
-	CAtlString getNextString(BYTE encoding, int& startPos);
+	void AddEncodedString(TextEncoding encoding, const CAtlString source, EncodingByte withEncodingByte = EncodingByte::With, NullBytes withNullBytes = NullBytes::With);
+	CAtlString getNextString(TextEncoding encoding, int& startPos);
 };

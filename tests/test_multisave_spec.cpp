@@ -1,7 +1,7 @@
 // Saving a tag twice in a row without AUDIOAnalyzeFileW in between, for every writable format. Several *SaveChangesToFileW functions
 // re-read the "AUDIOGetLastFileW() == FileName" case (calling analyze themselves) and hide problems that only show up when the caller
 // passes a path that is textually different from the last analyzed one (a relative path, a different drive letter mapping, a path with
-// an extra "." segment) but names the very same file - which native _wfsopen() resolves identically, so the file is still opened. Since
+// an extra "." segment) but names the very same file - which the system resolves identically (CreateFileW), so the file is still opened. Since
 // two spellings compare unequal, the wrapper's "reload after saving" convenience does not fire, exercising the underlying SaveToFile()
 // on its own: a save that leaves cached positions or sizes from the earlier analysis around damages the audio data of the second save.
 // (FLAC and WMA had exactly this problem; both are fixed and covered here so a regression comes back with a red test.)

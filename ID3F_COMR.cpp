@@ -138,7 +138,7 @@ void CID3F_COMR::decode()
 		}
 		else
 		{
-			encodingID = _blob.GetAt(0);
+			encodingID = textEncodingOf(_blob.GetAt(0));
 			int start = 1;
 			_price = _blob.getNextString(TEXT_ENCODED_ANSI, start);
 			_validUntil = _T("        ");
@@ -166,7 +166,7 @@ void CID3F_COMR::encode()
 	{
 		decode();
 		_blob.Clear();
-		_blob.AddValue(encodingID);
+		_blob.AddValue(encodingByte(encodingID));
 		_blob.AddEncodedString(TEXT_ENCODED_ANSI, _price, TEXT_WITHOUT_ENCODING, TEXT_WITH_NULLBYTES);		
 		_blob.AddEncodedString(TEXT_ENCODED_ANSI, _validUntil, TEXT_WITHOUT_ENCODING, TEXT_WITHOUT_NULLBYTES);		
 		_blob.AddEncodedString(TEXT_ENCODED_ANSI, _contactUrl, TEXT_WITHOUT_ENCODING, TEXT_WITH_NULLBYTES);		
