@@ -177,13 +177,12 @@ All libraries analyzed the same 22,919 files of the local library (103 GB: 22,66
 2 FLAC and 1 AAC) from the NVMe drive with a warm file system cache. For every file a small program reads what an application that shows a library
 needs: the format, the duration, bit rate, sample rate, channels and the tags title, artist, album, year, track, genre and comment. The time is the
 median of 3 to 7 passes (fewer for the slow libraries; the first pass is a warm-up); two rounds, the second in the reverse order, gave the same values
-within 1 %. The table shows the mean of the two rounds, for the 64 bit versions of the libraries (AudioGenie 2.0.4 only exists as a 32 bit DLL); the first
-column is the time of one pass over all 22,919 files.
+within 1 %. The table shows the mean of the two rounds for the 64 bit versions; the first column is the time of one pass over all 22,919 files.
 
 | Library | total time for 22,919 files | time per file | read calls per file | CPU time per file |
 |---|---|---|---|---|
 | **AudioGenie3, current** | **1.2 s** | **0.053 ms** | **2.4** | **0.052 ms** |
-| AudioGenie 2.0.4 (32 bit only) | 2.0 s | 0.087 ms | 8.9 | 0.087 ms |
+| AudioGenie 2.0.4 | 2.0 s | 0.087 ms | 8.9 | 0.087 ms |
 | tagparser 12.5.3 (C++) | 2.4 s | 0.105 ms | 8.8 | 0.104 ms |
 | TagLib 2.3.2 (C++) | 3.0 s | 0.129 ms | 21.6 | 0.128 ms |
 | JAudioTagger 3.0.1 (Java 23) | 4.8 s | 0.210 ms | 4.9 | 0.213 ms |
@@ -212,9 +211,9 @@ mutagen for 7.5 %.
 
 The comparison above is 99 % MP3. The other formats of the test library (the FLAC files are the test files of the FLAC project, `flac-test-files`,
 with deliberately extreme metadata: tags of 17 MB, 1,000 comments, 13 blocks of several MB, and 6 invalid files that no library reads) with the 64 bit
-DLL (2.0.4: 32 bit, the only one there is), the median of 40 passes; TagLib 2.3.2 for comparison:
+DLL, the median of 40 passes; TagLib 2.3.2 for comparison:
 
-| Format | files | 2.0.4 (32 bit): time, read calls | current: time, read calls | TagLib: time, read calls |
+| Format | files | 2.0.4: time, read calls | current: time, read calls | TagLib: time, read calls |
 |---|---|---|---|---|
 | WMA | 127 | 0.088 ms, 7.1 | **0.040 ms, 2.0** | 0.44 ms, 147.5 |
 | M4A | 80 | 0.157 ms, 10.4 | **0.081 ms, 3.7** | 0.29 ms, 53.0 |
