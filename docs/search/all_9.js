@@ -32,5 +32,6 @@ var searchData=
   ['flacsetvendorw_29',['FLACSetVendorW',['../group___f_l_a_c.html#ga6a2becba52f9829abf5407175c4261f0',1,'dllmain.cpp']]],
   ['for_20the_20abstract_20fields_30',['Tag priority for the abstract fields',['../index.html#autotoc_md4',1,'']]],
   ['formats_31',['Supported formats',['../index.html#autotoc_md3',1,'']]],
-  ['functions_32',['functions',['../group___a_u_d_i_o.html',1,'Generic audio functions'],['../group___u_n_i_v_e_r_s_a_l.html',1,'Universal functions']]]
+  ['formats_20local_20ssd_20warm_20cache_32',['Other formats (local SSD, warm cache)',['../index.html#autotoc_md10',1,'']]],
+  ['functions_33',['functions',['../group___a_u_d_i_o.html',1,'Generic audio functions'],['../group___u_n_i_v_e_r_s_a_l.html',1,'Universal functions']]]
 ];

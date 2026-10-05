@@ -44,7 +44,8 @@ var searchData=
   ['oggsetuseritemw_41',['OGGSetUserItemW',['../group___o_g_g.html#ga5ac8bcb9207676496c10f5cafda4718b',1,'dllmain.cpp']]],
   ['oggsetvendorw_42',['OGGSetVendorW',['../group___o_g_g.html#ga8f512c6f0e8c45ffa55967fd756db452',1,'dllmain.cpp']]],
   ['oggsetversionw_43',['OGGSetVersionW',['../group___o_g_g.html#gad53ee0c3ac776d705e8015db9109934a',1,'dllmain.cpp']]],
-  ['optimizations_44',['Optimizations',['../index.html#autotoc_md10',1,'']]],
+  ['optimizations_44',['Optimizations',['../index.html#autotoc_md11',1,'']]],
   ['opus_45',['Ogg Vorbis and Ogg Opus',['../group___o_g_g.html',1,'']]],
-  ['other_20libraries_20local_20ssd_20warm_20cache_46',['Comparison with other libraries (local SSD, warm cache)',['../index.html#autotoc_md9',1,'']]]
+  ['other_20formats_20local_20ssd_20warm_20cache_46',['Other formats (local SSD, warm cache)',['../index.html#autotoc_md10',1,'']]],
+  ['other_20libraries_20local_20ssd_20warm_20cache_47',['Comparison with other libraries (local SSD, warm cache)',['../index.html#autotoc_md9',1,'']]]
 ];
