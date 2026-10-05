@@ -14,7 +14,7 @@ version number now follows the name. The `@since` remarks in the API documentati
 2.0.4 (2011) was the last release before the DLL lay dormant for about 15 years. Version 3.x is a ground-up revision:
 every format was checked against its actual specification (not just against whatever a handful of sample files
 happened to need), several serious data-loss bugs were found and fixed, and formats and capabilities were added that
-did not exist before. The 4,000-file library comparison in "Performance" below is against 2.0.4 itself; every 3.x
+did not exist before. The comparison of 22,919 files in "Performance" below includes 2.0.4 itself and nine other libraries; every 3.x
 release since is additionally checked against real-world collections of thousands of files (14,385 MP3, 596 Ogg, and
 more) to catch what synthetic tests alone miss.
 
@@ -43,8 +43,8 @@ more) to catch what synthetic tests alone miss.
   below), so an old file tagged by a tool that wrote only a private, non-standard ID3v2 frame (RealJukebox and
   similar) is no longer read as having no title or artist at all.
 - **Faster**: the MPEG frame scan reads in 64 KB blocks instead of one read per frame (40 MB of frames: 181 ms ->
-  6 ms); MD5 throughput is up 32% (560 -> 745 MB/s); analyzing a file needs less than a third of the read calls of 2.0.4 (2.4 instead
-  of 8.9 per file), takes 39 % less time than 2.0.4, and is two and a half times as fast as TagLib, four times as fast as JAudioTagger and
+  6 ms); MD5 throughput is up 32% (560 -> 745 MB/s); analyzing a file needs less than a fifth of the read calls of 2.0.4 (2.4 instead
+  of 13.0 per file), takes 43 % less time than 2.0.4, and is two and a half times as fast as TagLib, four times as fast as JAudioTagger and
   almost eight times as fast as mutagen (see "Performance"; a profile showed that 93 % of the former time was spent in system calls).
 - **Open source and far more thoroughly tested**: LGPL-2.1-or-later; a Catch2 test suite that grew from about 5,400
   assertions (3.0.0) to over 20,000 today, run on 32 and 64 bit with AddressSanitizer and fuzzing; a contract check
@@ -182,7 +182,7 @@ within 1 %. The table shows the mean of the two rounds for the 64 bit versions; 
 | Library | total time for 22,919 files | time per file | read calls per file | CPU time per file |
 |---|---|---|---|---|
 | **AudioGenie3, current** | **1.2 s** | **0.053 ms** | **2.4** | **0.052 ms** |
-| AudioGenie 2.0.4 | 2.0 s | 0.087 ms | 8.9 | 0.087 ms |
+| AudioGenie 2.0.4 | 2.1 s | 0.092 ms | 13.0 | 0.091 ms |
 | tagparser 12.5.3 (C++) | 2.4 s | 0.105 ms | 8.8 | 0.104 ms |
 | TagLib 2.3.2 (C++) | 3.0 s | 0.129 ms | 21.6 | 0.128 ms |
 | JAudioTagger 3.0.1 (Java 23) | 4.8 s | 0.210 ms | 4.9 | 0.213 ms |
@@ -193,9 +193,9 @@ within 1 %. The table shows the mean of the two rounds for the 64 bit versions; 
 | MediaInfoLib 26.05 | 33.1 s | 1.443 ms | 4.7 | 1.424 ms |
 
 The current state needs 50 % less time than tagparser, 59 % less than TagLib, a quarter of the time of JAudioTagger, one eighth of mutagen and tinytag,
-one fourteenth of music-metadata and FFmpeg and one twenty-seventh of MediaInfoLib, and 39 % less than 2.0.4. The duration and the bit rate of
+one fourteenth of music-metadata and FFmpeg and one twenty-seventh of MediaInfoLib, and 43 % less than 2.0.4. The duration and the bit rate of
 MP3 files are more exact than in 2.0.4 (see the release notes of 3.0.1 and 3.0.2); that costs a little time, which the fewer system calls more than make up.
-A second 2.0.4 build in the old source tree needs 0.093 ms and 13.0 read calls per file. MediaInfoLib with the option `ParseSpeed` 0 (headers only) needs 1.17 ms and
+MediaInfoLib with the option `ParseSpeed` 0 (headers only) needs 1.17 ms and
 4.2 read calls. JAudioTagger is measured after the warm-up of the JIT compiler (the first pass is not counted), its CPU time includes the compiler
 and garbage collector threads. FFmpeg and tinytag could not open 33 of the 22,919 files, JAudioTagger 35, mutagen 2 and tagparser 137 (it does not read WMA, which accounts for 127 of them).
 tagparser was built with MSVC for the test (with win-iconv instead of GNU libiconv, without Boost) and given the paths in the ANSI code page;
@@ -215,13 +215,13 @@ DLL, the median of 40 passes; TagLib 2.3.2 for comparison:
 
 | Format | files | 2.0.4: time, read calls | current: time, read calls | TagLib: time, read calls |
 |---|---|---|---|---|
-| WMA | 127 | 0.088 ms, 7.1 | **0.040 ms, 2.0** | 0.44 ms, 147.5 |
-| M4A | 80 | 0.157 ms, 10.4 | **0.081 ms, 3.7** | 0.29 ms, 53.0 |
-| WAV | 7 | 0.066 ms, 6.0 | **0.032 ms, 2.0** | 0.066 ms, 10.1 |
-| WavPack | 5 | 0.061 ms, 6.0 | **0.033 ms, 2.0** | 0.057 ms, 5.0 |
-| Ogg Vorbis | 3 | 0.095 ms, 15.3 | **0.041 ms, 3.0** | 0.148 ms, 24.7 |
-| Monkey's Audio | 28 | 0.054 ms, 5.0 | **0.032 ms, 2.0** | 0.054 ms, 6.0 |
-| FLAC | 140 | 0.87 ms, 10.6 | **0.81 ms, 2.6** | 2.05 ms, 22.9 |
+| WMA | 127 | 0.086 ms, 13.2 | **0.040 ms, 2.0** | 0.44 ms, 147.5 |
+| M4A | 80 | 0.221 ms, 46.1 | **0.081 ms, 3.7** | 0.29 ms, 53.0 |
+| WAV | 7 | 0.078 ms, 14.3 | **0.032 ms, 2.0** | 0.066 ms, 10.1 |
+| WavPack | 5 | 0.058 ms, 6.0 | **0.033 ms, 2.0** | 0.057 ms, 5.0 |
+| Ogg Vorbis | 3 | 0.096 ms, 18.3 | **0.041 ms, 3.0** | 0.148 ms, 24.7 |
+| Monkey's Audio | 28 | 0.053 ms, 6.0 | **0.032 ms, 2.0** | 0.054 ms, 6.0 |
+| FLAC | 140 | 1.08 ms, 10.6 | **0.81 ms, 2.6** | 2.05 ms, 22.9 |
 
 Two read calls (the start and the end of the file) are the minimum; the files with larger metadata need one more for every block that does not fit into
 the cache. The time of the FLAC test files is dominated by the few files with metadata of many MB (the median of the FLAC files is 0.075 ms per file). The current
