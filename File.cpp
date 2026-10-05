@@ -20,7 +20,6 @@
 
 #include "StdAfx.h"
 #include "File.h"
-#include "share.h"
 #include <errno.h>
 #include <new>
 
@@ -63,43 +62,36 @@ static int errnoOf(DWORD error)
 	}
 }
 
-bool CFile::open(LPCWSTR fileName, LPCWSTR mode, int share)
+bool CFile::open(LPCWSTR fileName, Mode mode, Share share)
 {
 	close();
-	DWORD access, creation;
+	DWORD access = GENERIC_READ, creation = OPEN_EXISTING;
 	bool append = false;
-	if (wcscmp(mode, L"rb") == 0)
+	switch (mode)
 	{
+	case Mode::Read:
 		access = GENERIC_READ;
 		creation = OPEN_EXISTING;
-	}
-	else if (wcscmp(mode, L"wb") == 0)
-	{
+		break;
+	case Mode::Write:
 		access = GENERIC_WRITE;
 		creation = CREATE_ALWAYS;
-	}
-	else if (wcscmp(mode, L"r+b") == 0)
-	{
+		break;
+	case Mode::ReadWrite:
 		access = GENERIC_READ | GENERIC_WRITE;
 		creation = OPEN_EXISTING;
-	}
-	else if (wcscmp(mode, L"w+b") == 0)
-	{
+		break;
+	case Mode::ReadWriteNew:
 		access = GENERIC_READ | GENERIC_WRITE;
 		creation = CREATE_ALWAYS;
-	}
-	else if (wcscmp(mode, L"ab") == 0)
-	{
+		break;
+	case Mode::Append:
 		access = FILE_APPEND_DATA | FILE_READ_ATTRIBUTES | SYNCHRONIZE;   // every write goes to the end of the file
 		creation = OPEN_ALWAYS;
 		append = true;
+		break;
 	}
-	else
-	{
-		errno = EINVAL;
-		return false;
-	}
-	const DWORD sharing = (share == _SH_DENYWR) ? FILE_SHARE_READ : (FILE_SHARE_READ | FILE_SHARE_WRITE);
+	const DWORD sharing = (share == Share::Read) ? FILE_SHARE_READ : (FILE_SHARE_READ | FILE_SHARE_WRITE);
 	m_handle = CreateFileW(fileName, access, sharing, NULL, creation, FILE_ATTRIBUTE_NORMAL, NULL);
 	if (m_handle == INVALID_HANDLE_VALUE)
 	{
@@ -116,7 +108,7 @@ bool CFile::open(LPCWSTR fileName, LPCWSTR mode, int share)
 
 bool CFile::openRead(LPCWSTR fileName)
 {
-	return open(fileName, L"rb", _SH_DENYNO);
+	return open(fileName, Mode::Read, Share::All);
 }
 
 void CFile::close()
@@ -127,7 +119,7 @@ void CFile::close()
 	m_bufferLength = 0;
 }
 
-CFile *CFile::openFile(LPCWSTR fileName, LPCWSTR mode, int share)
+CFile *CFile::openFile(LPCWSTR fileName, Mode mode, Share share)
 {
 	CFile *file = new (std::nothrow) CFile();
 	if (file == NULL)
@@ -146,6 +138,16 @@ CFile *CFile::openFile(LPCWSTR fileName, LPCWSTR mode, int share)
 void CFile::closeFile(CFile *file)
 {
 	delete file;
+}
+
+bool CFile::removeFile(LPCWSTR fileName)
+{
+	return DeleteFileW(fileName) != FALSE;
+}
+
+bool CFile::replaceFile(LPCWSTR newFileName, LPCWSTR origFileName)
+{
+	return MoveFileExW(newFileName, origFileName, MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH) != FALSE;
 }
 
 __int64 CFile::size()
@@ -284,6 +286,22 @@ size_t CFile::write(const void *source, size_t length)
 	if (m_append)
 		m_pos = size();   // the writes went to the end of the file
 	return done;
+}
+
+bool CFile::truncate(__int64 length)
+{
+	if (m_handle == INVALID_HANDLE_VALUE || length < 0)
+		return false;
+	LARGE_INTEGER where;
+	where.QuadPart = length;
+	m_bufferLength = 0;
+	if (!SetFilePointerEx(m_handle, where, NULL, FILE_BEGIN) || !SetEndOfFile(m_handle))
+	{
+		m_failed = true;
+		errno = errnoOf(GetLastError());
+		return false;
+	}
+	return true;
 }
 
 bool CFile::flush()

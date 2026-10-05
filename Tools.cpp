@@ -20,8 +20,6 @@
 
 #include "StdAfx.h"
 #include "Tools.h"
-#include "share.h"
-#include <io.h>
 #include <memory>
 #include <new>
 
@@ -322,13 +320,13 @@ bool CTools::rewriteRegion(LPCWSTR FileName, __int64 offset, __int64 oldLength, 
 	CFile *Source;
 	CFile *Destination;
 	CAtlString NewFileName(FileName);
-	if ( (Source = CFile::openFile(FileName, READ_ONLY, _SH_DENYNO)) == NULL)
+	if ( (Source = CFile::openFile(FileName, CFile::Mode::Read, CFile::Share::All)) == NULL)
 	{
 		instance().setLastError(errno);
 		return false;
 	}
 	NewFileName += TILDE;
-	if ( (Destination = CFile::openFile(NewFileName, READ_AND_WRITENEW, _SH_DENYWR)) == NULL)
+	if ( (Destination = CFile::openFile(NewFileName, CFile::Mode::ReadWriteNew, CFile::Share::Read)) == NULL)
 	{
 		instance().setLastError(errno);
 		CFile::closeFile(Source);
@@ -343,7 +341,7 @@ bool CTools::rewriteRegion(LPCWSTR FileName, __int64 offset, __int64 oldLength, 
 	{
 		CFile::closeFile(Destination);
 		CFile::closeFile(Source);
-		_wremove(NewFileName);
+		CFile::removeFile(NewFileName);
 		instance().setLastError(EIO);
 		return false;
 	}
@@ -372,15 +370,15 @@ bool CTools::finishRewrite(CFile *source, CFile *destination, LPCWSTR newFileNam
 	if (!ok)
 	{
 		// the original stays unchanged, only the temporary file is removed
-		_wremove(newFileName);
+		CFile::removeFile(newFileName);
 		instance().setLastError(err != 0 ? err : EIO);
 		return false;
 	}
 	instance().doEventsNow();
 	// replace the old file with the new file in one step
-	if (!MoveFileExW(newFileName, origFileName, MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH))
+	if (!CFile::replaceFile(newFileName, origFileName))
 	{
-		_wremove(newFileName);
+		CFile::removeFile(newFileName);
 		instance().setLastError(EACCES);
 		return false;
 	}
@@ -442,7 +440,7 @@ void CTools::write(LPCWSTR art, LPCWSTR entry)
 {
 	if (!logFile.IsEmpty())
 	{
-		log = CFile::openFile(logFile, _T("ab"), _SH_DENYNO);
+		log = CFile::openFile(logFile, CFile::Mode::Append, CFile::Share::All);
 		if (log != NULL)
 		{
 			GetLocalTime(&stTime);

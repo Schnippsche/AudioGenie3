@@ -20,7 +20,6 @@
 
 #include "stdafx.h"
 #include <new>
-#include <io.h>
 #include "Blob.h"
 #include "Tools.h"
 

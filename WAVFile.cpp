@@ -21,10 +21,8 @@
 #include "stdafx.h"
 #include "stdio.h"
 #include "io.h"
-#include <fcntl.h>
 #include "wavfile.h"
 #include "Blob.h"
-#include <share.h>
 #include "wavformatchunk.h"
 #include "wavdatachunk.h"
 #include "wavcartchunk.h"
@@ -549,7 +547,7 @@ bool CWAVFile::SaveToFile(LPCWSTR FileName)
 	CFile *Destination;
 	CAtlString NewFileName(FileName);
 	//long FrameOldSize = 0;
-	if ( (Source = CFile::openFile(FileName, READ_AND_WRITE, _SH_DENYNO)) == NULL)
+	if ( (Source = CFile::openFile(FileName, CFile::Mode::ReadWrite, CFile::Share::All)) == NULL)
 	{
 		CTools::instance().setLastError(errno);
 		return false;
@@ -579,7 +577,7 @@ bool CWAVFile::SaveToFile(LPCWSTR FileName)
 	// rebuild File
 	NewFileName+=TILDE;
 	/* Create file streams */
-	if ( (Destination = CFile::openFile(NewFileName, WRITE_ONLY, _SH_DENYWR)) == NULL)
+	if ( (Destination = CFile::openFile(NewFileName, CFile::Mode::Write, CFile::Share::Read)) == NULL)
 	{
 		CTools::instance().setLastError(errno);
 		CFile::closeFile(Source);

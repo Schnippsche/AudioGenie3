@@ -161,7 +161,7 @@ void CID3F_APIC::decode()
 				{
 					// the link is kept, the picture is not loaded
 				}
-				else if ( (tmpSource = CFile::openFile(_pictureLink, READ_ONLY, _SH_DENYNO)) != NULL)
+				else if ( (tmpSource = CFile::openFile(_pictureLink, CFile::Mode::Read, CFile::Share::All)) != NULL)
 				{
 					_data.FileRead(toSizeClamped(tmpSource->size()), tmpSource);
 					CFile::closeFile(tmpSource);
@@ -274,8 +274,8 @@ bool CID3F_APIC::getPictureFile(LPCWSTR fileName)
 {
 	decode();
 	CFile *Stream;
-	ATLTRACE(_T("open %s WRITE_ONLY\n"), fileName);
-	if ( (Stream = CFile::openFile(fileName, WRITE_ONLY, _SH_DENYNO)) != NULL)
+	ATLTRACE(_T("open %s CFile::Mode::Write\n"), fileName);
+	if ( (Stream = CFile::openFile(fileName, CFile::Mode::Write, CFile::Share::All)) != NULL)
 	{
 		_data.FileWrite(_data.GetLength(), Stream);	  
 		Stream->flush();
@@ -291,11 +291,11 @@ bool CID3F_APIC::setPictureFile(LPCWSTR fileName)
 {
 	decode();
 	CFile *Stream;
-	ATLTRACE(_T("open %s READ_ONLY\n"), fileName);
+	ATLTRACE(_T("open %s CFile::Mode::Read\n"), fileName);
 	_data.Clear();
 	_isLink = false;
 	_pictureLink.Empty();
-	if ( (Stream = CFile::openFile(fileName, READ_ONLY, _SH_DENYNO)) != NULL)
+	if ( (Stream = CFile::openFile(fileName, CFile::Mode::Read, CFile::Share::All)) != NULL)
 	{
 		_data.FileRead(toSizeClamped(Stream->size()), Stream); 
 		CFile::closeFile(Stream);
@@ -321,7 +321,7 @@ bool CID3F_APIC::setFileLink(LPCWSTR fileName)
 	{
 		_pictureLink = fileName;
 		_mime = MIME_LINK;
-		if ( (Stream = CFile::openFile(fileName, READ_ONLY, _SH_DENYNO)) != NULL)
+		if ( (Stream = CFile::openFile(fileName, CFile::Mode::Read, CFile::Share::All)) != NULL)
 		{
 			_data.FileRead(toSizeClamped(Stream->size()), Stream); 
 			CFile::closeFile(Stream);

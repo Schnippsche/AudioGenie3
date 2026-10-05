@@ -22,7 +22,6 @@
 #include "MD5Tool.h"
 #include "io.h"
 #include "Tools.h"
-#include <share.h>
 
 CMD5Tool::CMD5Tool(void)
 {
@@ -42,7 +41,7 @@ bool CMD5Tool::calcHashFromFile(LPCWSTR FileName, __int64 startPos, __int64 endP
 	CFile *Stream;
 	__int64 end, start, maxLoad;
 	hash.Empty();
-	if ( (Stream = CFile::openFile(FileName, READ_ONLY, _SH_DENYWR)) != NULL)
+	if ( (Stream = CFile::openFile(FileName, CFile::Mode::Read, CFile::Share::Read)) != NULL)
 	{
 		int len;
 		end = (endPos == 0) ? CTools::fileLength(Stream) - 1 : endPos;		

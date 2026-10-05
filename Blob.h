@@ -32,11 +32,6 @@ static const LPCWSTR STEREO(_T("Stereo"));
 static const LPCWSTR JOINTSTEREO(_T("Joint Stereo"));
 static const LPCWSTR DUALCHANNEL(_T("Dual Channel"));
 static const LPCWSTR MULTICHANNEL(_T("Multi Channel"));
-static const LPCWSTR READ_ONLY(_T("rb"));
-static const LPCWSTR WRITE_ONLY(_T("wb"));
-static const LPCWSTR READ_AND_WRITE(_T("r+b"));
-static const LPCWSTR READ_AND_WRITENEW(_T("w+b"));
-static const LPCWSTR APPEND(_T("ab"));
 static const LPCWSTR TILDE(_T("~"));
 
 static const int TEXT_ENCODED_ANSI = 0;     // ISO-8859-1 or ANSI

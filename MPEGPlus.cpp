@@ -21,7 +21,6 @@
 #include "stdafx.h"
 #include "MPEGPlus.h"
 #include "io.h"
-#include <fcntl.h>
 
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction

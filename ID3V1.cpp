@@ -28,9 +28,6 @@
 #include "Blob.h"
 #include "id3v1taginfo.h"
 #include "io.h"
-#include <fcntl.h>
-#include "sys/stat.h"
-#include "share.h"
 
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
@@ -66,14 +63,10 @@ int CID3V1::DetectSize(CFile *Stream)
 
 bool CID3V1::OpenFile(LPCWSTR FileName, bool WriteModus)
 {
-	CAtlString modus;
-	if (WriteModus)
-		modus = READ_AND_WRITE;
-	else
-		modus = READ_ONLY;
+	const CFile::Mode modus = WriteModus ? CFile::Mode::ReadWrite : CFile::Mode::Read;
 	id3v1tag._exists = false;			
 	fileEnhanced = false;
-	if ( (Stream = CFile::openFile(FileName, modus, _SH_DENYNO)) != NULL)
+	if ( (Stream = CFile::openFile(FileName, modus, CFile::Share::All)) != NULL)
   {
 		/* Read tag */
 		char ap[10];
@@ -136,14 +129,13 @@ CAtlString CID3V1::GetGenreItem(int i)
 
 bool CID3V1::RemoveTag(LPCWSTR FileName)
 {
-	int fh;
+	CFile file;
 	/* Open a file */
-	if (_wsopen_s(&fh, FileName, _O_WRONLY | _O_BINARY, _SH_DENYWR, _S_IWRITE) == 0)
+	if (file.open(FileName, CFile::Mode::ReadWrite, CFile::Share::Read))
 	{
-		long ln = _filelength(fh) - (fileEnhanced ? ID3V1_TAG_SIZE + ID3V1_ENHANCED_SIZE : ID3V1_TAG_SIZE);
+		const __int64 ln = file.size() - (fileEnhanced ? ID3V1_TAG_SIZE + ID3V1_ENHANCED_SIZE : ID3V1_TAG_SIZE);
 		if (ln > 0)
-			_chsize_s(fh, ln);
-		_close(fh);
+			file.truncate(ln);
 		return true;
 	}
 	else
@@ -170,7 +162,7 @@ bool CID3V1::AddTag(LPCWSTR FileName)
 {
 	bool result = false;
 	/* Write tag */
-	if ( (Stream = CFile::openFile(FileName, APPEND, _SH_DENYWR)) != NULL)
+	if ( (Stream = CFile::openFile(FileName, CFile::Mode::Append, CFile::Share::Read)) != NULL)
   {
 		result = id3v1tag.WriteToFile(Stream);
 		CFile::closeFile(Stream);

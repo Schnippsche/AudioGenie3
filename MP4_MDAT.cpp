@@ -22,7 +22,6 @@
 #include "MP4_MDAT.h"
 #include "mp4_atomfactory.h"
 #include "Tools.h"
-#include <share.h>
 
 CMP4_MDAT::CMP4_MDAT(void)
 {
@@ -71,7 +70,7 @@ void CMP4_MDAT::save(CFile *Destination)
 		CBlob tmp(blockSize);	
 		CFile *Source;
 		/* Copy data blocks */
-		if ( (Source = CFile::openFile(_sourcefile, READ_ONLY, _SH_DENYNO)) != NULL)
+		if ( (Source = CFile::openFile(_sourcefile, CFile::Mode::Read, CFile::Share::All)) != NULL)
 		{
 			Source->seek(_position);
 			long tmpSize = 0;

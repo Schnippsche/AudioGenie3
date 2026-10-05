@@ -19,7 +19,6 @@
 */
 
 #pragma once
-#include <share.h>
 #include "Blob.h"
 #include "ID3_frame.h"
 #include "ID3_FrameFactory.h"

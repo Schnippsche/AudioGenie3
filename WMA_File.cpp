@@ -20,7 +20,6 @@
 
 #include "StdAfx.h"
 #include "WMA_File.h"
-#include "share.h"
 #include "io.h"
 
 CWMA_File::CWMA_File(void)
@@ -149,7 +148,7 @@ void CWMA_File::SetUserItem(LPCWSTR key, LPCWSTR item)
 bool CWMA_File::SaveToFile(LPCWSTR FileName)
 {
 	CFile *Stream;
-	if ( (Stream = CFile::openFile(FileName, READ_AND_WRITE, _SH_DENYWR)) == NULL)
+	if ( (Stream = CFile::openFile(FileName, CFile::Mode::ReadWrite, CFile::Share::Read)) == NULL)
 	{
 		CTools::instance().setLastError(errno);
 		return false;
@@ -261,7 +260,7 @@ bool CWMA_File::SaveToFile(LPCWSTR FileName)
 		CFile *Destination;
 		CAtlString NewFileName(FileName);
 		NewFileName+=TILDE;
-		if ( (Destination = CFile::openFile(NewFileName, WRITE_ONLY, _SH_DENYWR)) == NULL)
+		if ( (Destination = CFile::openFile(NewFileName, CFile::Mode::Write, CFile::Share::Read)) == NULL)
 		{
 			CTools::instance().setLastError(errno);
 			CFile::closeFile(Stream);
@@ -275,7 +274,7 @@ bool CWMA_File::SaveToFile(LPCWSTR FileName)
 		{
 			CFile::closeFile(Destination);
 			CFile::closeFile(Stream);
-			_wremove(NewFileName);
+			CFile::removeFile(NewFileName);
 			CTools::instance().setLastError(EIO);
 			return false;
 		}
@@ -369,8 +368,8 @@ bool CWMA_File::GetPicture(int index, LPCWSTR fileName)
 	if (tps == NULL)
 		return false;
 	CFile *Stream;
-	ATLTRACE(_T("open %s WRITE_ONLY\n"), fileName);
-	if ( (Stream = CFile::openFile(fileName, WRITE_ONLY, _SH_DENYNO)) != NULL)
+	ATLTRACE(_T("open %s CFile::Mode::Write\n"), fileName);
+	if ( (Stream = CFile::openFile(fileName, CFile::Mode::Write, CFile::Share::All)) != NULL)
 	{
 		Stream->write(tps->PicDaten, tps->PicSize);
 		Stream->flush();
@@ -414,7 +413,7 @@ bool CWMA_File::SetPicture(LPCWSTR FileName, LPCWSTR Description, short Index, s
 	}
 	CFile *Stream;
 	long ln = 0;
-	if ( (Stream = CFile::openFile(FileName, READ_ONLY, _SH_DENYNO)) != NULL)
+	if ( (Stream = CFile::openFile(FileName, CFile::Mode::Read, CFile::Share::All)) != NULL)
 	{
 		ln = (long)toSizeClamped(Stream->size());
 		CBlob tmp(ln);

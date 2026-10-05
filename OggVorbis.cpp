@@ -22,10 +22,8 @@
 #include "OGGVORBIS.h"
 #include "Blob.h"
 #include "io.h"
-#include <fcntl.h>
 #include "OggHeader.h"
 #include "vorbisheader.h"
-#include <share.h>
 
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
@@ -362,7 +360,7 @@ bool COggVorbis::RebuildFile(LPCWSTR FileName)
 	CFile *Destination;
 	CAtlString NewFileName(FileName);
 	/* Rebuild the file with the new Vorbis tag */
-	if ( (Source = CFile::openFile(FileName, READ_ONLY, _SH_DENYNO)) == NULL)
+	if ( (Source = CFile::openFile(FileName, CFile::Mode::Read, CFile::Share::All)) == NULL)
 	{
 		CTools::instance().setLastError(errno);
 		return false;
@@ -370,7 +368,7 @@ bool COggVorbis::RebuildFile(LPCWSTR FileName)
 	/* Create file streams */
 	// read and write permissions are required!
 	NewFileName+=TILDE;
-	if ( (Destination = CFile::openFile(NewFileName, READ_AND_WRITENEW, _SH_DENYWR)) == NULL)
+	if ( (Destination = CFile::openFile(NewFileName, CFile::Mode::ReadWriteNew, CFile::Share::Read)) == NULL)
 	{
 		CTools::instance().setLastError(errno);
 		CFile::closeFile(Source);
@@ -389,7 +387,7 @@ bool COggVorbis::RebuildFile(LPCWSTR FileName)
 	{
 		CFile::closeFile(Destination);
 		CFile::closeFile(Source);
-		_wremove(NewFileName);
+		CFile::removeFile(NewFileName);
 		CTools::instance().setLastError(EIO);
 		return false;
 	}
@@ -485,7 +483,7 @@ bool COggVorbis::SaveTag(LPCWSTR FileName)
 	// Save Vorbis tag
 	bool Result = false;
 	CFile *Source;
-	if ( (Source = CFile::openFile(FileName, READ_ONLY, _SH_DENYWR)) != NULL)
+	if ( (Source = CFile::openFile(FileName, CFile::Mode::Read, CFile::Share::Read)) != NULL)
 	{
 		Result = GetInfo(Source, false);
 		CFile::closeFile(Source);

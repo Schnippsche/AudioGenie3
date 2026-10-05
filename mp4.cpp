@@ -26,11 +26,8 @@
 #include "stdlib.h"
 #include "stdio.h"
 #include "mp4.h"
-#include <io.h>
 #include <memory.h>
-#include <fcntl.h>
 #include "resource.h"
-#include <share.h>
 #include "id3v1taginfo.h"
 #include "mp4_atomfactory.h"
 #include "mp4_soun.h"
@@ -150,7 +147,7 @@ bool CMP4::GetPicture(LPCWSTR file, int Index)
 		return false;
 	// write from memory to file
 	CFile *Stream;
-	if ( (Stream = CFile::openFile(file, WRITE_ONLY, _SH_DENYWR)) != NULL)
+	if ( (Stream = CFile::openFile(file, CFile::Mode::Write, CFile::Share::Read)) != NULL)
 	{
 		long ln = (long)atom->_blob.GetLength() - 8;
 		long res = (long)Stream->write(atom->_blob.m_pData + 8, ln);
@@ -165,7 +162,7 @@ bool CMP4::GetPicture(LPCWSTR file, int Index)
 bool CMP4::AddPictureFile(LPCWSTR FileName)
 {
 	CFile *Stream;
-	if ( (Stream = CFile::openFile(FileName, READ_ONLY, _SH_DENYNO)) == NULL)
+	if ( (Stream = CFile::openFile(FileName, CFile::Mode::Read, CFile::Share::All)) == NULL)
 	{
 		CTools::instance().setLastError(errno);
 		return false;
@@ -534,7 +531,7 @@ bool CMP4::SaveToFile(LPCWSTR FileName)
 	CFile *Destination;
 	CAtlString NewFileName(FileName);
 	//long FrameOldSize = 0;
-	if ( (Source = CFile::openFile(FileName, READ_AND_WRITE, _SH_DENYNO)) == NULL)
+	if ( (Source = CFile::openFile(FileName, CFile::Mode::ReadWrite, CFile::Share::All)) == NULL)
 	{
 		CTools::instance().setLastError(errno);
 		return false;
@@ -604,7 +601,7 @@ bool CMP4::SaveToFile(LPCWSTR FileName)
 		// rebuild File
 		NewFileName+=TILDE;
 		/* Create file streams */
-		if ( (Destination = CFile::openFile(NewFileName, WRITE_ONLY, _SH_DENYWR)) == NULL)
+		if ( (Destination = CFile::openFile(NewFileName, CFile::Mode::Write, CFile::Share::Read)) == NULL)
 		{
 			delete newData;		
 			CTools::instance().setLastError(errno);
@@ -645,7 +642,7 @@ bool CMP4::SaveToFile(LPCWSTR FileName)
 			// an offset does not fit into a 32 bit table: the file is not changed
 			CFile::closeFile(Destination);
 			CFile::closeFile(Source);
-			_wremove(NewFileName);
+			CFile::removeFile(NewFileName);
 			CTools::instance().setLastError(ERR_FRAME_TOO_BIG);
 			return false;
 		}

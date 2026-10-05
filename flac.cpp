@@ -24,7 +24,6 @@
 #include "flac.h"
 #include "FlacCover.h"
 #include "Blob.h"
-#include <share.h>
 
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
@@ -412,7 +411,7 @@ bool CFLAC::BuildFrame(bool withComment)
 // the end of the metadata blocks in the file as it is now (an earlier save may have changed its size)
 bool CFLAC::CurrentMetadataSize(LPCWSTR FileName, long &size)
 {
-	CFile *Stream = CFile::openFile(FileName, READ_ONLY, _SH_DENYNO);
+	CFile *Stream = CFile::openFile(FileName, CFile::Mode::Read, CFile::Share::All);
 	if (Stream == NULL)
 	{
 		CTools::instance().setLastError(errno);
@@ -474,7 +473,7 @@ bool CFLAC::RebuildFile(LPCWSTR FileName)
 	CFile *Destination;
 	CAtlString NewFileName(FileName);
 	CBlob tmp;
-	if ( (Source = CFile::openFile(FileName, READ_ONLY, _SH_DENYNO)) == NULL)
+	if ( (Source = CFile::openFile(FileName, CFile::Mode::Read, CFile::Share::All)) == NULL)
 	{
 		CTools::instance().setLastError(errno);
 		return false;
@@ -482,7 +481,7 @@ bool CFLAC::RebuildFile(LPCWSTR FileName)
 
 	/* Create file streams */
 	NewFileName+=TILDE;
-	if ( (Destination = CFile::openFile(NewFileName, WRITE_ONLY, _SH_DENYWR)) == NULL)
+	if ( (Destination = CFile::openFile(NewFileName, CFile::Mode::Write, CFile::Share::Read)) == NULL)
 	{
 		CFile::closeFile(Source);
 		CTools::instance().setLastError(errno);
@@ -502,7 +501,7 @@ bool CFLAC::RebuildFile(LPCWSTR FileName)
 	{
 		CFile::closeFile(Destination);
 		CFile::closeFile(Source);
-		_wremove(NewFileName);
+		CFile::removeFile(NewFileName);
 		CTools::instance().setLastError(EIO);
 		return false;
 	}
@@ -512,7 +511,7 @@ bool CFLAC::RebuildFile(LPCWSTR FileName)
 bool CFLAC::ReplaceTag(LPCWSTR FileName)
 {
 	CFile *Stream;
-	if ( (Stream = CFile::openFile(FileName, READ_AND_WRITE, _SH_DENYWR)) != NULL)
+	if ( (Stream = CFile::openFile(FileName, CFile::Mode::ReadWrite, CFile::Share::Read)) != NULL)
 	{
 		Stream->seek(CTools::ID3v2Size);
 		Daten.FileWrite(Daten.GetLength(), Stream);

@@ -24,10 +24,7 @@
 #include "Blob.h"
 #include "Tools.h"
 #include "ape.h"
-#include <fcntl.h>
 #include <ctype.h>
-#include "sys/stat.h"
-#include "share.h"
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////
@@ -101,7 +98,7 @@ bool CAPE::ReadFooter(CFile *Stream)
 // position and size of the tag at the end of the file if a Lyrics3 tag is behind it; false for every other case
 bool CAPE::LocateTail(LPCWSTR FileName, __int64 &start, __int64 &total)
 {
-	CFile *Source = CFile::openFile(FileName, READ_ONLY, _SH_DENYNO);
+	CFile *Source = CFile::openFile(FileName, CFile::Mode::Read, CFile::Share::All);
 	if (Source == NULL)
 		return false;
 	__int64 footerPos, lyricsAfter;
@@ -282,13 +279,13 @@ bool CAPE::RewriteRegion(LPCWSTR FileName, __int64 offset, __int64 oldLength, CB
 	CFile *Source;
 	CFile *Destination;
 	CAtlString NewFileName(FileName);
-	if ( (Source = CFile::openFile(FileName, READ_ONLY, _SH_DENYNO)) == NULL)
+	if ( (Source = CFile::openFile(FileName, CFile::Mode::Read, CFile::Share::All)) == NULL)
 	{
 		CTools::instance().setLastError(errno);
 		return false;
 	}
 	NewFileName += TILDE;
-	if ( (Destination = CFile::openFile(NewFileName, READ_AND_WRITENEW, _SH_DENYWR)) == NULL)
+	if ( (Destination = CFile::openFile(NewFileName, CFile::Mode::ReadWriteNew, CFile::Share::Read)) == NULL)
 	{
 		CTools::instance().setLastError(errno);
 		CFile::closeFile(Source);
@@ -303,7 +300,7 @@ bool CAPE::RewriteRegion(LPCWSTR FileName, __int64 offset, __int64 oldLength, CB
 	{
 		CFile::closeFile(Destination);
 		CFile::closeFile(Source);
-		_wremove(NewFileName);
+		CFile::removeFile(NewFileName);
 		CTools::instance().setLastError(EIO);
 		return false;
 	}
@@ -312,13 +309,12 @@ bool CAPE::RewriteRegion(LPCWSTR FileName, __int64 offset, __int64 oldLength, CB
 
 bool CAPE::TruncateFile(LPCWSTR FileName, int Offset)
 {
-	int fh;
-	if( _wsopen_s(&fh,  FileName, _O_RDWR | _O_BINARY, _SH_DENYWR, _S_IREAD | _S_IWRITE )  == 0 )
+	CFile file;
+	if (file.open(FileName, CFile::Mode::ReadWrite, CFile::Share::Read))
 	{
-		long ln = _filelength(fh) - Offset;
+		const __int64 ln = file.size() - Offset;
 		if (ln > 0)
-			_chsize_s(fh, ln);
-		_close( fh );
+			file.truncate(ln);
 		return true;
 	}
 	CTools::instance().setLastError(errno);
@@ -328,7 +324,7 @@ bool CAPE::TruncateFile(LPCWSTR FileName, int Offset)
 bool CAPE::AddToFile(LPCWSTR FileName)
 { /* Add tag data to file */
 	CFile *Stream;
-	if ( (Stream = CFile::openFile(FileName, APPEND, _SH_DENYWR)) != NULL)
+	if ( (Stream = CFile::openFile(FileName, CFile::Mode::Append, CFile::Share::Read)) != NULL)
 	{
 		Data.FileWrite(Data.GetLength(), Stream);
 		Stream->flush();
@@ -426,7 +422,7 @@ bool CAPE::RemoveFromFile(LPCWSTR FileName, bool saveID3v1Tag)
 { /* Remove tag from file if found */
 	CFile *Source;
 	// a tag at the beginning of the file: the rest of the file is written again
-	if ( (Source = CFile::openFile(FileName, READ_ONLY, _SH_DENYNO)) != NULL)
+	if ( (Source = CFile::openFile(FileName, CFile::Mode::Read, CFile::Share::All)) != NULL)
 	{
 		__int64 headOffset, headLength;
 		const bool head = FindHeadTag(Source, headOffset, headLength);
@@ -446,7 +442,7 @@ bool CAPE::RemoveFromFile(LPCWSTR FileName, bool saveID3v1Tag)
 		TagInfo.Reset();
 		return removed;
 	}
-	if ( (Source = CFile::openFile(FileName, READ_ONLY, _SH_DENYWR)) != NULL)
+	if ( (Source = CFile::openFile(FileName, CFile::Mode::Read, CFile::Share::Read)) != NULL)
 	{
 		// read and remember the ID3v1 tag
 		CTools::ID3v1Size = 0;
@@ -482,7 +478,7 @@ bool CAPE::SaveToFile(LPCWSTR FileName)
 	/* Delete old tag if exists and write new tag */
 	CTools::instance().setLastError(0);
 	// a tag at the beginning of the file is written again at the same place
-	CFile *Source = CFile::openFile(FileName, READ_ONLY, _SH_DENYNO);
+	CFile *Source = CFile::openFile(FileName, CFile::Mode::Read, CFile::Share::All);
 	if (Source != NULL)
 	{
 		__int64 headOffset, headLength;

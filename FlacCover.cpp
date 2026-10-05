@@ -21,7 +21,6 @@
 #include "StdAfx.h"
 #include "FlacCover.h"
 #include "Tools.h"
-#include "share.h"
 #include "io.h"
 #include "ID3F_APIC.h"
 
@@ -84,7 +83,7 @@ CFlacCover::CFlacCover(CBlob *tmpData)
 		_isLink = true;
 		_pictureLink = tmpData->getNextString(TEXT_ENCODED_ANSI, start);
 		CFile *tmpSource;
-		if ( (tmpSource = CFile::openFile(_pictureLink, READ_ONLY, _SH_DENYNO)) != NULL)
+		if ( (tmpSource = CFile::openFile(_pictureLink, CFile::Mode::Read, CFile::Share::All)) != NULL)
 		{
 			data.FileRead(toSizeClamped(tmpSource->size()), tmpSource);
 			CFile::closeFile(tmpSource);
@@ -119,8 +118,8 @@ CFlacCover::~CFlacCover(void)
 bool CFlacCover::getPictureFile(LPCWSTR fileName)
 {
 	CFile *Stream;
-	ATLTRACE(_T("open %s WRITE_ONLY\n"), fileName);
-	if ( (Stream = CFile::openFile(fileName, WRITE_ONLY, _SH_DENYNO)) != NULL)
+	ATLTRACE(_T("open %s CFile::Mode::Write\n"), fileName);
+	if ( (Stream = CFile::openFile(fileName, CFile::Mode::Write, CFile::Share::All)) != NULL)
 	{
 		data.FileWrite(data.GetLength(), Stream);	  
 		Stream->flush();
@@ -167,11 +166,11 @@ CAtlString CFlacCover::getPictureTypeAsText()
 bool CFlacCover::setPictureFile(LPCWSTR fileName)
 {
 	CFile *Stream;
-	ATLTRACE(_T("open %s READ_ONLY\n"), fileName);
+	ATLTRACE(_T("open %s CFile::Mode::Read\n"), fileName);
 	data.Clear();
 	_isLink = false;
 	_pictureLink.Empty();
-	if ( (Stream = CFile::openFile(fileName, READ_ONLY, _SH_DENYNO)) != NULL)
+	if ( (Stream = CFile::openFile(fileName, CFile::Mode::Read, CFile::Share::All)) != NULL)
 	{
 		data.FileRead(toSizeClamped(Stream->size()), Stream); 
 		CFile::closeFile(Stream);
@@ -208,7 +207,7 @@ bool CFlacCover::setFileLink(LPCWSTR fileName)
 	{
 		_pictureLink = fileName;
 		_mime = MIME_LINK;
-		if ( (Stream = CFile::openFile(fileName, READ_ONLY, _SH_DENYNO)) != NULL)
+		if ( (Stream = CFile::openFile(fileName, CFile::Mode::Read, CFile::Share::All)) != NULL)
 		{
 			data.FileRead(toSizeClamped(Stream->size()), Stream); 
 			CFile::closeFile(Stream);

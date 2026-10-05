@@ -30,16 +30,33 @@ class CFile
 public:
 	CFile();
 	~CFile() { close(); }
-	// Opens a file; mode: "rb" (read, the file has to exist), "wb" (write, empty file), "r+b" (read and write, the file has to exist), "w+b" (read
-	// and write, empty file), "ab" (append). share is _SH_DENYNO (other programs may read and write the file) or _SH_DENYWR (they may only read it).
-	// false if the file cannot be opened (errno is set).
-	bool open(LPCWSTR fileName, LPCWSTR mode, int share);
-	bool openRead(LPCWSTR fileName);   // "rb" and _SH_DENYNO
+	// how a file is opened
+	enum class Mode
+	{
+		Read,           // read, the file has to exist
+		Write,          // write, the file is empty afterwards (it is created if it does not exist)
+		ReadWrite,      // read and write, the file has to exist
+		ReadWriteNew,   // read and write, the file is empty afterwards (it is created if it does not exist)
+		Append          // write at the end of the file (the file is created if it does not exist)
+	};
+	// what other programs may do with the file while it is open
+	enum class Share
+	{
+		All,            // read and write
+		Read            // only read
+	};
+	// false if the file cannot be opened (errno is set)
+	bool open(LPCWSTR fileName, Mode mode, Share share);
+	bool openRead(LPCWSTR fileName);   // Mode::Read and Share::All
 	void close();
 	bool isOpen() const { return m_handle != INVALID_HANDLE_VALUE; }
 	// like _wfsopen and fclose for the functions that keep a pointer: NULL if the file cannot be opened, closeFile closes and deletes (NULL is allowed)
-	static CFile *openFile(LPCWSTR fileName, LPCWSTR mode, int share);
+	static CFile *openFile(LPCWSTR fileName, Mode mode, Share share);
 	static void closeFile(CFile *file);
+	// deletes a file; false if it cannot be deleted
+	static bool removeFile(LPCWSTR fileName);
+	// replaces the file origFileName with the file newFileName in one step (the new file is written to disk first); false if that is not possible
+	static bool replaceFile(LPCWSTR newFileName, LPCWSTR origFileName);
 	// size of the file in bytes, -1 on an error
 	__int64 size();
 	// sequential access
@@ -50,6 +67,7 @@ public:
 	int getByte();                     // -1 at the end of the file
 	size_t write(const void *source, size_t length);   // the bytes written (less than length on an error)
 	bool flush();                      // the writes are not buffered here: nothing is left to write
+	bool truncate(__int64 length);     // the file gets this length (shorter: the end is cut off, longer: zeros)
 	bool failed() const { return m_failed; }   // a read or write error happened (like ferror)
 	// Reads length bytes from the position pos directly from the file (no buffer, one system call); the position is behind the last byte.
 	// For large blocks and for filling the caches of CTools::readAt.

@@ -22,10 +22,8 @@
 #include "stdlib.h"
 #include "stdio.h"
 #include "io.h"
-#include <fcntl.h>
 #include "lyrics.h"
 #include "Blob.h"
-#include "share.h"
 #include "sys\stat.h"
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
@@ -67,21 +65,21 @@ bool CLyrics::WriteRegion(LPCWSTR FileName, __int64 start, __int64 oldLength, CB
 	const long dataLength = (data != NULL) ? (long)data->GetLength() : 0;
 	if (start + oldLength != FFileSize - ID3v1AreaSize)
 		return CTools::rewriteRegion(FileName, start, oldLength, data);
-	int fh;
-	if (_wsopen_s(&fh, FileName, O_RDWR | _O_BINARY, _SH_DENYWR, _S_IREAD | _S_IWRITE ) != 0)
+	CFile file;
+	if (!file.open(FileName, CFile::Mode::ReadWrite, CFile::Share::Read))
 	{
 		CTools::instance().setLastError(errno);
 		return false;
 	}
-	bool ok = (_lseeki64(fh, start, SEEK_SET) >= 0);
+	bool ok = file.seek(start);
 	if (ok && dataLength > 0)
-		ok = (_write(fh, data->m_pData, dataLength) == dataLength);
+		ok = (file.write(data->m_pData, dataLength) == (size_t)dataLength);
 	/* the ID3 tag (with the enhanced tag in front of it, if there is one) follows the lyrics tag */
 	if (ok)
-		ok = (_write(fh, ID3v1Area, ID3v1AreaSize) == ID3v1AreaSize);
+		ok = (file.write(ID3v1Area, ID3v1AreaSize) == (size_t)ID3v1AreaSize);
 	if (ok)
-		ok = (_chsize_s(fh, start + dataLength + ID3v1AreaSize) == 0);
-	_close(fh);
+		ok = file.truncate(start + dataLength + ID3v1AreaSize);
+	file.close();
 	if (!ok)
 		CTools::instance().setLastError(errno != 0 ? errno : EIO);
 	return ok;
@@ -266,7 +264,7 @@ void CLyrics::ReadFromFile(CFile *Stream)
 bool CLyrics::RemoveFromFile(LPCWSTR FileName)
 {
 	CFile *Stream;
-	if ( (Stream = CFile::openFile(FileName, READ_ONLY, _SH_DENYNO)) != NULL)
+	if ( (Stream = CFile::openFile(FileName, CFile::Mode::Read, CFile::Share::All)) != NULL)
 	{
 		bool Result = ReadHeader(Stream);
 		if (Result)
@@ -366,7 +364,7 @@ bool CLyrics::SaveToFile(LPCWSTR FileName)
 	/* Prepare tag record */
 	CFile *Stream;
 	bool hadTag = false;
-	if ( (Stream = CFile::openFile(FileName, READ_ONLY, _SH_DENYNO)) == NULL)
+	if ( (Stream = CFile::openFile(FileName, CFile::Mode::Read, CFile::Share::All)) == NULL)
 	{
 		CTools::instance().setLastError(errno);
 		return false;

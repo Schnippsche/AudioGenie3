@@ -346,8 +346,8 @@ bool CID3V2::SaveToFile(LPCWSTR FileName)
 {
 	CFile *Stream;
 	/* Check for existing tag */
-	ATLTRACE(_T("open %s READ_ONLY\n"), FileName); 
-	if ( (Stream = CFile::openFile(FileName, READ_ONLY, _SH_DENYNO)) != NULL)
+	ATLTRACE(_T("open %s CFile::Mode::Read\n"), FileName); 
+	if ( (Stream = CFile::openFile(FileName, CFile::Mode::Read, CFile::Share::All)) != NULL)
 	{
 		ReadHeader(Stream);
 		oldTagSize = Size;
@@ -446,7 +446,7 @@ bool CID3V2::ReplaceTag(LPCWSTR FileName, CBlob* data)
 {
 	CFile *Stream;	
 	CTools::instance().writeDebug(_T("Replace id3v2 Tag")); 
-	if ( (Stream = CFile::openFile(FileName, READ_AND_WRITE, _SH_DENYWR)) != NULL)
+	if ( (Stream = CFile::openFile(FileName, CFile::Mode::ReadWrite, CFile::Share::Read)) != NULL)
 	{
 		data->FileWrite(data->GetLength(), Stream);
 		Stream->flush();
@@ -464,7 +464,7 @@ bool CID3V2::RebuildFile(LPCWSTR FileName, CBlob* data)
 	CAtlString NewFileName(FileName);
 	long FrameOldSize = 0;
 	CTools::instance().writeDebug(_T("Rebuild id3v2 tag")); 
-	if ( (Source = CFile::openFile(FileName, READ_ONLY, _SH_DENYNO)) == NULL)
+	if ( (Source = CFile::openFile(FileName, CFile::Mode::Read, CFile::Share::All)) == NULL)
 	{
 		CTools::instance().setLastError(errno);
 		return false;
@@ -482,7 +482,7 @@ bool CID3V2::RebuildFile(LPCWSTR FileName, CBlob* data)
 
 	/* Create file streams */
 	NewFileName+=TILDE;
-	if ( (Destination = CFile::openFile(NewFileName, WRITE_ONLY, _SH_DENYWR)) == NULL)
+	if ( (Destination = CFile::openFile(NewFileName, CFile::Mode::Write, CFile::Share::Read)) == NULL)
 	{
 		CTools::instance().setLastError(errno);
 		CFile::closeFile(Source);
@@ -534,7 +534,7 @@ bool CID3V2::RebuildFile(LPCWSTR FileName, CBlob* data)
 	if (!ok)
 	{
 		// the original stays unchanged, only the temporary file is removed
-		_wremove(NewFileName);
+		CFile::removeFile(NewFileName);
 		CTools::instance().setLastError(writeErr != 0 ? writeErr : EIO);
 		return false;
 	}
@@ -542,7 +542,7 @@ bool CID3V2::RebuildFile(LPCWSTR FileName, CBlob* data)
 	/* replace the old file with the new file in one step */
 	if (!MoveFileExW(NewFileName, FileName, MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH))
 	{
-		_wremove(NewFileName);
+		CFile::removeFile(NewFileName);
 		CTools::instance().setLastError(EACCES);
 		return false;
 	}
@@ -805,7 +805,7 @@ bool CID3V2::parseCueFile(LPCWSTR FileName)
 {
 	CFile *Source;
 	CTools::instance().writeDebug(_T("parse cue file")); 
-	if ( (Source = CFile::openFile(FileName, READ_ONLY, _SH_DENYNO)) == NULL)
+	if ( (Source = CFile::openFile(FileName, CFile::Mode::Read, CFile::Share::All)) == NULL)
 	{
 		CTools::instance().setLastError(errno);
 		return false;

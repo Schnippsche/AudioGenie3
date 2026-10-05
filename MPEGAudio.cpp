@@ -22,8 +22,6 @@
 #include "MPEGAudio.h"
 #include "stdio.h"
 #include "io.h"
-#include <fcntl.h>
-#include <share.h>
 
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
@@ -401,7 +399,7 @@ bool CMPEGAudio::IsLameMusicCrcValid(LPCWSTR FileName)
 {
 	if (!FLame.Found || FLame.MusicLength <= lameHeaderSize)
 		return false;
-	CFile *Stream = CFile::openFile(FileName, READ_ONLY, _SH_DENYNO);
+	CFile *Stream = CFile::openFile(FileName, CFile::Mode::Read, CFile::Share::All);
 	if (Stream == NULL)
 		return false;
 	const __int64 start = lameHeaderStart + lameHeaderSize;
@@ -840,7 +838,7 @@ bool CMPEGAudio::SetBit(LPCWSTR FileName, int HdrPos, BYTE BitPos, bool neu)
 	BYTE HeaderData[4];
 	bool result = false;
 	CFile *Stream;
-	if ( (Stream = CFile::openFile(FileName, READ_AND_WRITE, _SH_DENYWR)) != NULL)
+	if ( (Stream = CFile::openFile(FileName, CFile::Mode::ReadWrite, CFile::Share::Read)) != NULL)
 	{
 		result = ReadFromFile(Stream);
 		if (Frame.Found == false)

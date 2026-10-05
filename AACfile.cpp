@@ -22,7 +22,6 @@
 #include "aac.h"
 #include "io.h"
 #include "Blob.h"
-#include <fcntl.h>
 #include <vector>
 #include "resource.h"
 
