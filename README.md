@@ -44,8 +44,8 @@ more) to catch what synthetic tests alone miss.
   similar) is no longer read as having no title or artist at all.
 - **Faster**: the MPEG frame scan reads in 64 KB blocks instead of one read per frame (40 MB of frames: 181 ms ->
   6 ms); MD5 throughput is up 32% (560 -> 745 MB/s); analyzing a file needs less than a third of the read calls of 2.0.4 (2.4 instead
-  of 8.9 per file), takes 35 % less time than 2.0.4 (32 bit), and is more than two and a half times as fast as TagLib, four times as fast as JAudioTagger and
-  more than eight times as fast as mutagen (see "Performance"; a profile showed that 93 % of the former time was spent in system calls).
+  of 8.9 per file), takes 34 % less time than 2.0.4 (32 bit), and is two and a half times as fast as TagLib, four times as fast as JAudioTagger and
+  almost eight times as fast as mutagen (see "Performance"; a profile showed that 93 % of the former time was spent in system calls).
 - **Open source and far more thoroughly tested**: LGPL-2.1-or-later; a Catch2 test suite that grew from about 5,400
   assertions (3.0.0) to over 20,000 today, run on 32 and 64 bit with AddressSanitizer and fuzzing; a contract check
   that every wrapper (C/C++, C#, VB.NET, Delphi, VB6, XProfan) matches the exports; tools to scan and compare whole
@@ -173,34 +173,31 @@ first access to the file, not by the CPU.
 
 #### Comparison with other libraries (local SSD, warm cache)
 
-All libraries analyzed the same 22,876 files of the local library (101 GB, 22,666 of them MP3, the rest WMA, M4A, WAV and AAC: the files that the library
-had when the libraries were compared; the Monkey's Audio, WavPack, Ogg Vorbis and FLAC files were added later) from the NVMe
-drive with a warm file system cache. For every file a small program reads what an application that shows a library needs: the format, the
-duration, bit rate, sample rate, channels and the tags title, artist, album, year, track, genre and comment. The time is the median of 3 to 7
-passes (fewer for the slow libraries); a second round in the reverse order gave the same values within 4 %. The AudioGenie rows were measured again
-for the current state of the repository (two rounds); the other libraries were measured earlier on the same machine (TagLib 0.133 and 0.129 ms in the
-two measurements), so the ratios below are exact to about 5 %. On all 22,919 files of the library the current version needs 0.053 ms (64 bit) and 0.057 ms (32 bit) per file,
-2.0.4 0.088 ms and TagLib 0.130 ms, with 2.4 read calls for the current version: the same as in the table within the noise.
+All libraries analyzed the same 22,919 files of the local library (103 GB: 22,666 MP3, 127 WMA, 80 M4A, 28 Monkey's Audio, 7 WAV, 5 WavPack, 3 Ogg Vorbis,
+2 FLAC and 1 AAC) from the NVMe drive with a warm file system cache. For every file a small program reads what an application that shows a library
+needs: the format, the duration, bit rate, sample rate, channels and the tags title, artist, album, year, track, genre and comment. The time is the
+median of 3 to 7 passes (fewer for the slow libraries; the first pass is a warm-up); two rounds, the second in the reverse order, gave the same values
+within 1 %. The table shows the mean of the two rounds.
 
 | Library | time per file, 32 bit | time per file, 64 bit | read calls per file | CPU time per file (64 bit) |
 |---|---|---|---|---|
-| **AudioGenie3, current** | **0.056 ms** | **0.052 ms** | **2.4** | **0.053 ms** |
-| AudioGenie 2.0.4 | 0.086 ms | (32 bit only) | 8.9 | |
-| tagparser 12.5.3 (C++) | | 0.103 ms | 8.6 | 0.103 ms |
-| TagLib 2.3.2 (C++) | 0.147 ms | 0.133 ms | 21.6 | 0.136 ms |
-| JAudioTagger 3.0.1 (Java 23) | | 0.209 ms | 4.6 | 0.22 ms |
-| mutagen 1.48.1 (Python 3.11) | | 0.440 ms | 6.3 | 0.434 ms |
-| tinytag 2.3.2 (Python 3.11) | | 0.459 ms | 3.8 | 0.454 ms |
-| music-metadata 12.0.0 (Node.js 22) | | 0.729 ms | 24.1 | 0.730 ms |
-| FFmpeg libavformat 62.3 (PyAV 17, Python 3.11) | | 0.75 ms | 1.6 | 0.75 ms |
-| MediaInfoLib 26.05 | | 1.47 ms | 4.7 | 1.47 ms |
+| **AudioGenie3, current** | **0.057 ms** | **0.053 ms** | **2.4** | **0.052 ms** |
+| AudioGenie 2.0.4 | 0.087 ms | (32 bit only) | 8.9 | |
+| tagparser 12.5.3 (C++) | | 0.105 ms | 8.8 | 0.104 ms |
+| TagLib 2.3.2 (C++) | 0.143 ms | 0.129 ms | 21.6 | 0.128 ms |
+| JAudioTagger 3.0.1 (Java 23) | | 0.210 ms | 4.9 | 0.213 ms |
+| mutagen 1.48.1 (Python 3.11) | | 0.414 ms | 6.3 | 0.413 ms |
+| tinytag 2.3.2 (Python 3.11) | | 0.418 ms | 3.8 | 0.418 ms |
+| music-metadata 12.0.0 (Node.js 22) | | 0.739 ms | 24.3 | 0.750 ms |
+| FFmpeg libavformat 62.3 (PyAV 17, Python 3.11) | | 0.732 ms | 1.6 | 0.731 ms |
+| MediaInfoLib 26.05 | | 1.443 ms | 4.7 | 1.424 ms |
 
-The current state needs 50 % less time than tagparser, 61 % less than TagLib, a quarter of the time of JAudioTagger, one ninth of mutagen and tinytag,
-one fourteenth of music-metadata and FFmpeg and one twenty-eighth of MediaInfoLib, and 35 % less than 2.0.4 (32 bit). The duration and the bit rate of
+The current state needs 50 % less time than tagparser, 59 % less than TagLib, a quarter of the time of JAudioTagger, one eighth of mutagen and tinytag,
+one fourteenth of music-metadata and FFmpeg and one twenty-seventh of MediaInfoLib, and 34 % less than 2.0.4 (32 bit). The duration and the bit rate of
 MP3 files are more exact than in 2.0.4 (see the release notes of 3.0.1 and 3.0.2); that costs a little time, which the fewer system calls more than make up.
-A second 2.0.4 build in the old source tree needs 0.093 ms and 13.1 read calls per file. MediaInfoLib with the option `ParseSpeed` 0 (headers only) needs 1.20 ms and
+A second 2.0.4 build in the old source tree needs 0.093 ms and 13.0 read calls per file. MediaInfoLib with the option `ParseSpeed` 0 (headers only) needs 1.17 ms and
 4.2 read calls. JAudioTagger is measured after the warm-up of the JIT compiler (the first pass is not counted), its CPU time includes the compiler
-and garbage collector threads. FFmpeg could not open 31 of the 22,876 files, JAudioTagger and mutagen one and tagparser 137 (it does not read WMA, which accounts for 127 of them).
+and garbage collector threads. FFmpeg and tinytag could not open 33 of the 22,919 files, JAudioTagger 35, mutagen 2 and tagparser 137 (it does not read WMA, which accounts for 127 of them).
 tagparser was built with MSVC for the test (with win-iconv instead of GNU libiconv, without Boost) and given the paths in the ANSI code page;
 music-metadata ran with its default options (its option `duration`, which parses the whole file to get the duration, is off by default).
 
