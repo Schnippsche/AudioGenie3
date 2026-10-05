@@ -92,7 +92,7 @@ public:
 	BYTE _enhancedRest[ID3V1_ENHANCED_REST];	// speed, genre, start time and end time of the enhanced tag, kept as they are
 	// methods
 	bool ReadFromFile(CFile *Stream);
-	bool WriteToFile(FILE *Stream);
+	bool WriteToFile(CFile *Stream);
 	void Reset();
 	bool exists();
 	int GetSpeed();

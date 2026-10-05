@@ -171,13 +171,6 @@ __int64 CTools::fileLength(CFile *Stream)
 	return Stream->size();
 }
 
-__int64 CTools::fileLength(FILE *Stream)
-{
-	if (Stream == NULL)
-		return -1;
-	CFile file(Stream);
-	return file.size();
-}
 int CTools::ID3v1Size;
 long CTools::ID3v2Size;
 int CTools::LyricsSize;
@@ -191,7 +184,7 @@ char *CTools::cTextPuffer = 0;
 CAtlString CTools::lastErrorText;
 MSG CTools::msg;
 CAtlString CTools::logFile;
-FILE* CTools::log;
+CFile* CTools::log;
 SYSTEMTIME CTools::stTime; //To contain the date/time
 CAtlString CTools::logOutput;
 CBlob CTools::output;
@@ -302,7 +295,7 @@ void CTools::setLastError(int error, ...)
 	writeError(L"%s", (LPCWSTR)lastErrorText);
 }
 
-bool CTools::copyStream(FILE *source, FILE *destination, __int64 count)
+bool CTools::copyStream(CFile *source, CFile *destination, __int64 count)
 {
 	size_t blockSize = (size_t)configValues[CONFIG_ID3V2WRITEBLOCKSIZE];
 	if (blockSize < 4096)
@@ -319,37 +312,37 @@ bool CTools::copyStream(FILE *source, FILE *destination, __int64 count)
 		if (count > 0)
 			count -= (__int64)got;
 		if (got < want)
-			return (count < 0) ? (ferror(source) == 0) : false; // end of file (with count > 0: source too short)
+			return (count < 0) ? !source->failed() : false; // end of file (with count > 0: source too short)
 	}
 	return true;
 }
 
 bool CTools::rewriteRegion(LPCWSTR FileName, __int64 offset, __int64 oldLength, CBlob *data)
 {
-	FILE *Source;
-	FILE *Destination;
+	CFile *Source;
+	CFile *Destination;
 	CAtlString NewFileName(FileName);
-	if ( (Source = _wfsopen(FileName, READ_ONLY, _SH_DENYNO)) == NULL)
+	if ( (Source = CFile::openFile(FileName, READ_ONLY, _SH_DENYNO)) == NULL)
 	{
 		instance().setLastError(errno);
 		return false;
 	}
 	NewFileName += TILDE;
-	if ( (Destination = _wfsopen(NewFileName, READ_AND_WRITENEW, _SH_DENYWR)) == NULL)
+	if ( (Destination = CFile::openFile(NewFileName, READ_AND_WRITENEW, _SH_DENYWR)) == NULL)
 	{
 		instance().setLastError(errno);
-		fclose(Source);
+		CFile::closeFile(Source);
 		return false;
 	}
 	bool ok = copyStream(Source, Destination, offset);
 	if (ok && data != NULL && data->GetLength() > 0)
 		ok = (data->FileWrite(data->GetLength(), Destination) == data->GetLength());
 	if (ok)
-		ok = (_fseeki64(Source, offset + oldLength, SEEK_SET) == 0) && copyStream(Source, Destination, -1);
+		ok = Source->seek(offset + oldLength) && copyStream(Source, Destination, -1);
 	if (!ok)
 	{
-		fclose(Destination);
-		fclose(Source);
+		CFile::closeFile(Destination);
+		CFile::closeFile(Source);
 		_wremove(NewFileName);
 		instance().setLastError(EIO);
 		return false;
@@ -357,29 +350,24 @@ bool CTools::rewriteRegion(LPCWSTR FileName, __int64 offset, __int64 oldLength, 
 	return finishRewrite(Source, Destination, NewFileName, FileName);
 }
 
-bool CTools::finishRewrite(FILE *source, FILE *destination, LPCWSTR newFileName, LPCWSTR origFileName)
+bool CTools::finishRewrite(CFile *source, CFile *destination, LPCWSTR newFileName, LPCWSTR origFileName)
 {
 	bool ok = true;
 	int err = 0;
 	if (destination != NULL)
 	{
-		if (ferror(destination) != 0 || fflush(destination) != 0)
+		if (destination->failed() || !destination->flush())
 		{
 			ok = false;
 			err = errno;
 		}
-		if (fclose(destination) != 0)
-		{
-			ok = false;
-			if (err == 0)
-				err = errno;
-		}
+		CFile::closeFile(destination);
 	}
 	if (source != NULL)
 	{
-		if (ferror(source) != 0)
+		if (source->failed())
 			ok = false;
-		fclose(source);
+		CFile::closeFile(source);
 	}
 	if (!ok)
 	{
@@ -454,7 +442,7 @@ void CTools::write(LPCWSTR art, LPCWSTR entry)
 {
 	if (!logFile.IsEmpty())
 	{
-		log = _wfsopen(logFile, _T("ab"), _SH_DENYNO);
+		log = CFile::openFile(logFile, _T("ab"), _SH_DENYNO);
 		if (log != NULL)
 		{
 			GetLocalTime(&stTime);
@@ -463,8 +451,9 @@ void CTools::write(LPCWSTR art, LPCWSTR entry)
 				stTime.wDay, stTime.wHour, stTime.wMinute, stTime.wSecond, stTime.wMilliseconds, art, entry);
 			output.AddEncodedString(TEXT_ENCODED_ANSI, logOutput, TEXT_WITHOUT_ENCODING, TEXT_WITHOUT_NULLBYTES);
 			output.FileWrite(output.GetLength(), log);
-			fflush(log);
-			fclose(log);
+			log->flush();
+			CFile::closeFile(log);
+			log = NULL;
 		}	
 	}
 }

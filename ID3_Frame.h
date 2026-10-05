@@ -64,7 +64,7 @@ public:
 	/** transfers the data into the blob **/
 	virtual void encode() {} ;
 	void load(BYTE *source, long size);
-	void save(FILE *stream);
+	void save(CFile *stream);
 	virtual void print();
 	//void unsync();
 	void resync();

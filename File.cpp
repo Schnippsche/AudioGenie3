@@ -20,17 +20,11 @@
 
 #include "StdAfx.h"
 #include "File.h"
-#include "Blob.h"
 #include "share.h"
 #include <errno.h>
-#include <io.h>
 #include <new>
 
-CFile::CFile() : m_file(NULL), m_handle(INVALID_HANDLE_VALUE), m_pos(0), m_bufferStart(0), m_bufferLength(0)
-{
-}
-
-CFile::CFile(FILE *file) : m_file(file), m_handle(INVALID_HANDLE_VALUE), m_pos(0), m_bufferStart(0), m_bufferLength(0)
+CFile::CFile() : m_handle(INVALID_HANDLE_VALUE), m_append(false), m_failed(false), m_pos(0), m_bufferStart(0), m_bufferLength(0)
 {
 }
 
@@ -53,8 +47,14 @@ static int errnoOf(DWORD error)
 	case ERROR_LOCK_VIOLATION:
 	case ERROR_NETWORK_ACCESS_DENIED:
 		return EACCES;
+	case ERROR_FILE_EXISTS:
+	case ERROR_ALREADY_EXISTS:
+		return EEXIST;
 	case ERROR_TOO_MANY_OPEN_FILES:
 		return EMFILE;
+	case ERROR_DISK_FULL:
+	case ERROR_HANDLE_DISK_FULL:
+		return ENOSPC;
 	case ERROR_NOT_ENOUGH_MEMORY:
 	case ERROR_OUTOFMEMORY:
 		return ENOMEM;
@@ -63,20 +63,60 @@ static int errnoOf(DWORD error)
 	}
 }
 
-bool CFile::openRead(LPCWSTR fileName)
+bool CFile::open(LPCWSTR fileName, LPCWSTR mode, int share)
 {
 	close();
-	// like _wfsopen(READ_ONLY, _SH_DENYNO): other programs may read and write the file
-	m_handle = CreateFileW(fileName, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+	DWORD access, creation;
+	bool append = false;
+	if (wcscmp(mode, L"rb") == 0)
+	{
+		access = GENERIC_READ;
+		creation = OPEN_EXISTING;
+	}
+	else if (wcscmp(mode, L"wb") == 0)
+	{
+		access = GENERIC_WRITE;
+		creation = CREATE_ALWAYS;
+	}
+	else if (wcscmp(mode, L"r+b") == 0)
+	{
+		access = GENERIC_READ | GENERIC_WRITE;
+		creation = OPEN_EXISTING;
+	}
+	else if (wcscmp(mode, L"w+b") == 0)
+	{
+		access = GENERIC_READ | GENERIC_WRITE;
+		creation = CREATE_ALWAYS;
+	}
+	else if (wcscmp(mode, L"ab") == 0)
+	{
+		access = FILE_APPEND_DATA | FILE_READ_ATTRIBUTES | SYNCHRONIZE;   // every write goes to the end of the file
+		creation = OPEN_ALWAYS;
+		append = true;
+	}
+	else
+	{
+		errno = EINVAL;
+		return false;
+	}
+	const DWORD sharing = (share == _SH_DENYWR) ? FILE_SHARE_READ : (FILE_SHARE_READ | FILE_SHARE_WRITE);
+	m_handle = CreateFileW(fileName, access, sharing, NULL, creation, FILE_ATTRIBUTE_NORMAL, NULL);
 	if (m_handle == INVALID_HANDLE_VALUE)
 	{
 		errno = errnoOf(GetLastError());
 		return false;
 	}
+	m_append = append;
+	m_failed = false;
 	m_pos = 0;
 	m_bufferStart = 0;
 	m_bufferLength = 0;
 	return true;
+}
+
+bool CFile::openRead(LPCWSTR fileName)
+{
+	return open(fileName, L"rb", _SH_DENYNO);
 }
 
 void CFile::close()
@@ -84,55 +124,58 @@ void CFile::close()
 	if (m_handle != INVALID_HANDLE_VALUE)
 		CloseHandle(m_handle);
 	m_handle = INVALID_HANDLE_VALUE;
-	m_file = NULL;   // a C stream of the caller stays open
 	m_bufferLength = 0;
+}
+
+CFile *CFile::openFile(LPCWSTR fileName, LPCWSTR mode, int share)
+{
+	CFile *file = new (std::nothrow) CFile();
+	if (file == NULL)
+	{
+		errno = ENOMEM;
+		return NULL;
+	}
+	if (!file->open(fileName, mode, share))
+	{
+		delete file;
+		return NULL;
+	}
+	return file;
+}
+
+void CFile::closeFile(CFile *file)
+{
+	delete file;
 }
 
 __int64 CFile::size()
 {
-	HANDLE handle = m_handle;
-	if (handle == INVALID_HANDLE_VALUE)
-	{
-		if (m_file == NULL)
-			return -1;
-		handle = (HANDLE)_get_osfhandle(_fileno(m_file));
-	}
 	LARGE_INTEGER length;
-	if (!GetFileSizeEx(handle, &length))
+	if (m_handle == INVALID_HANDLE_VALUE || !GetFileSizeEx(m_handle, &length))
 		return -1;
 	return length.QuadPart;
 }
 
 bool CFile::seek(__int64 pos)
 {
-	if (m_handle != INVALID_HANDLE_VALUE)
-	{
-		if (pos < 0)
-			return false;
-		m_pos = pos;
-		return true;
-	}
-	return m_file != NULL && _fseeki64(m_file, pos, SEEK_SET) == 0;
+	if (m_handle == INVALID_HANDLE_VALUE || pos < 0)
+		return false;
+	m_pos = pos;
+	return true;
 }
 
 bool CFile::seekEnd(__int64 offset)
 {
-	if (m_handle != INVALID_HANDLE_VALUE)
-	{
-		const __int64 length = size();
-		if (length < 0 || length + offset < 0)
-			return false;
-		m_pos = length + offset;
-		return true;
-	}
-	return m_file != NULL && _fseeki64(m_file, offset, SEEK_END) == 0;
+	const __int64 length = size();
+	if (length < 0 || length + offset < 0)
+		return false;
+	m_pos = length + offset;
+	return true;
 }
 
 __int64 CFile::tell()
 {
-	if (m_handle != INVALID_HANDLE_VALUE)
-		return m_pos;
-	return m_file != NULL ? _ftelli64(m_file) : -1;
+	return m_handle != INVALID_HANDLE_VALUE ? m_pos : -1;
 }
 
 // a positioned read: the file pointer is not used (the system takes the offset from the request)
@@ -148,8 +191,14 @@ size_t CFile::readRaw(__int64 pos, void *destination, size_t length)
 		where.Offset = (DWORD)(at & 0xFFFFFFFF);
 		where.OffsetHigh = (DWORD)(at >> 32);
 		DWORD got = 0;
-		if (!ReadFile(m_handle, (BYTE *)destination + done, part, &got, &where) || got == 0)
-			break;   // the end of the file or an error
+		if (!ReadFile(m_handle, (BYTE *)destination + done, part, &got, &where))
+		{
+			if (GetLastError() != ERROR_HANDLE_EOF)
+				m_failed = true;
+			break;
+		}
+		if (got == 0)
+			break;   // the end of the file
 		done += got;
 	}
 	return done;
@@ -158,7 +207,7 @@ size_t CFile::readRaw(__int64 pos, void *destination, size_t length)
 size_t CFile::read(void *destination, size_t length)
 {
 	if (m_handle == INVALID_HANDLE_VALUE)
-		return m_file != NULL ? fread(destination, 1, length, m_file) : 0;
+		return 0;
 	size_t done = 0;
 	BYTE *to = (BYTE *)destination;
 	while (done < length)
@@ -206,47 +255,52 @@ size_t CFile::read(void *destination, size_t length)
 int CFile::getByte()
 {
 	BYTE b;
-	if (m_handle == INVALID_HANDLE_VALUE)
-	{
-		if (m_file == NULL)
-			return -1;
-		const int c = fgetc(m_file);
-		return c == EOF ? -1 : c;
-	}
 	return read(&b, 1) == 1 ? b : -1;
+}
+
+size_t CFile::write(const void *source, size_t length)
+{
+	if (m_handle == INVALID_HANDLE_VALUE)
+		return 0;
+	m_bufferLength = 0;   // the bytes in the buffer may be out of date
+	size_t done = 0;
+	while (done < length)
+	{
+		const DWORD part = (DWORD)(length - done < 0x40000000 ? length - done : 0x40000000);
+		OVERLAPPED where;
+		memset(&where, 0, sizeof(where));
+		where.Offset = (DWORD)(m_pos & 0xFFFFFFFF);
+		where.OffsetHigh = (DWORD)(m_pos >> 32);
+		DWORD written = 0;
+		if (!WriteFile(m_handle, (const BYTE *)source + done, part, &written, m_append ? NULL : &where) || written == 0)
+		{
+			m_failed = true;
+			errno = errnoOf(GetLastError());
+			break;
+		}
+		done += written;
+		m_pos += (__int64)written;
+	}
+	if (m_append)
+		m_pos = size();   // the writes went to the end of the file
+	return done;
+}
+
+bool CFile::flush()
+{
+	return m_handle != INVALID_HANDLE_VALUE && !m_failed;
 }
 
 size_t CFile::readDirect(__int64 pos, void *destination, size_t length)
 {
-	if (m_handle != INVALID_HANDLE_VALUE)
-	{
-		const size_t got = readRaw(pos, destination, length);
-		m_pos = pos + (__int64)got;
-		return got;
-	}
-	if (m_file == NULL || _lseeki64(_fileno(m_file), pos, SEEK_SET) < 0)
+	if (m_handle == INVALID_HANDLE_VALUE)
 		return 0;
-	const size_t done = readDirectHere(destination, length);
-	// the C library may keep older data in the buffer of the stream (a seek to a position inside of the buffer does not move the file) and takes
-	// the position of the next refill from the file: the stream is brought to a known state (an empty buffer)
-	_fseeki64(m_file, 0, SEEK_END);
-	return done;
+	const size_t got = readRaw(pos, destination, length);
+	m_pos = pos + (__int64)got;
+	return got;
 }
 
 size_t CFile::readDirectHere(void *destination, size_t length)
 {
-	if (m_handle != INVALID_HANDLE_VALUE)
-		return readDirect(m_pos, destination, length);
-	if (m_file == NULL)
-		return 0;
-	size_t done = 0;
-	while (done < length)
-	{
-		const size_t part = length - done < 0x40000000 ? length - done : 0x40000000;
-		const int got = _read(_fileno(m_file), (BYTE *)destination + done, (unsigned int)part);
-		if (got <= 0)
-			break;
-		done += (size_t)got;
-	}
-	return done;
+	return readDirect(m_pos, destination, length);
 }

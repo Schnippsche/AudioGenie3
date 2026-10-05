@@ -45,7 +45,7 @@ public:
 	// char Reserved[8];                                      // Reserved for later use
 	// methods
 	bool ReadFromFile(CFile *Stream);
-	//bool WriteToFile(FILE *Stream);
+	//bool WriteToFile(CFile *Stream);
 	void WriteToBlob(CBlob &blob);
 	void Reset();	
 };

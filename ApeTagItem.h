@@ -38,7 +38,7 @@ public:
 	CBlob Value;
 
 	bool ReadFromFile(CFile *Stream);
-	bool WriteToFile(FILE *Stream);
+	bool WriteToFile(CFile *Stream);
 	bool isBinary();
 	void Reset();
 };

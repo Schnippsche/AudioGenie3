@@ -145,8 +145,8 @@ public:
 	static CTools &instance();
 	// closes both files, checks for write errors and only then replaces the original with the new file
 	// copies count bytes block by block (count < 0: until the end of the file). Returns false on a read or write error
-	static bool copyStream(FILE *source, FILE *destination, __int64 count);
-	static bool finishRewrite(FILE *source, FILE *destination, LPCWSTR newFileName, LPCWSTR origFileName);
+	static bool copyStream(CFile *source, CFile *destination, __int64 count);
+	static bool finishRewrite(CFile *source, CFile *destination, LPCWSTR newFileName, LPCWSTR origFileName);
 	// writes the file again: the data before the region, the new data (may be NULL) and the data behind the old region
 	static bool rewriteRegion(LPCWSTR FileName, __int64 offset, __int64 oldLength, CBlob *data);
 	static __int64 FileSize;
@@ -184,7 +184,6 @@ public:
 	// length of the file of the stream in bytes, -1 on an error. One system call (_filelengthi64 needs about four: it seeks to the end and back);
 	// for the stream of the running analysis no call at all, because the file is not changed during the analysis and its size is known
 	static __int64 fileLength(CFile *Stream);
-	static __int64 fileLength(FILE *Stream);   // a C stream of a function that writes
 	static int ID3v1Size;
 	static long ID3v2Size;
 	static int LyricsSize;
@@ -227,7 +226,7 @@ private:
 	static int lastError;
 	static CAtlString lastErrorText;
 	static DWORD oldTickCount;
-	static FILE* log;
+	static CFile* log;
 	static CAtlString logFile;
 	static MSG msg;
 	static SYSTEMTIME stTime; //To contain the date/time

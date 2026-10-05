@@ -29,7 +29,7 @@ public:
 	~CWAVDataChunk(void);
 	bool load(CFile *Stream, u64 offset, u64 size);
 	void save(CBlob *blob);
-	bool save(FILE* Source, FILE *Destination);
+	bool save(CFile *Source, CFile *Destination);
 	u64 getSize();
 	u64 getOffset() { return _offset; };
 	u64 getPayloadSize() { return _size; };   // the size of the audio data alone, without the chunk header (the 64 bit value from 'ds64' for RF64 files)

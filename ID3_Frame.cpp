@@ -292,7 +292,7 @@ void CID3_Frame::load(BYTE* source, long size)
 	_unsyncResolved = true;
 }
 
-void CID3_Frame::save(FILE *stream)
+void CID3_Frame::save(CFile *stream)
 {
 	encode();
 	_blob.FileWrite(_blob.GetLength(), stream);	

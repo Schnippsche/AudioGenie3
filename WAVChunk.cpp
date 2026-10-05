@@ -78,7 +78,7 @@ void CWAVChunk::save(CBlob *blob)
 
 }
 
-bool CWAVChunk::save(FILE* Source, FILE *Destination)
+bool CWAVChunk::save(CFile *Source, CFile *Destination)
 {
 	Source;
 	if (_data.GetLength() > 0)

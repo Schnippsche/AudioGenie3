@@ -106,7 +106,7 @@ void CMP4Atom::load(CFile *Stream, u64 offset, u64 size)
 	_blob.FileReadAt(Stream, (__int64)offset, (size_t)size);
 }
 
-void CMP4Atom::save(FILE *stream)
+void CMP4Atom::save(CFile *stream)
 {
 	u64 frameSize = getSize();
 	CBlob tmp(16);

@@ -91,7 +91,7 @@ bool COGGHeader::ReadFromMemory(const BYTE *data, size_t length)
   return true;
 }
 
-bool COGGHeader::WriteToFile(FILE *Stream)
+bool COGGHeader::WriteToFile(CFile *Stream)
 {
   errno = 0;
   CBlob tmp;

@@ -36,7 +36,7 @@ public:
 	void remove();
 	bool removeAtom(CMP4Atom* atom);
 	void load(CFile *stream, u64 offset, u64 size);
-	virtual void save(FILE *stream);
+	virtual void save(CFile *stream);
 	u64 getSize();	
 protected:
 	u64 _offset, _size;

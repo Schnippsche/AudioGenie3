@@ -401,18 +401,18 @@ bool CMPEGAudio::IsLameMusicCrcValid(LPCWSTR FileName)
 {
 	if (!FLame.Found || FLame.MusicLength <= lameHeaderSize)
 		return false;
-	FILE *Stream = _wfsopen(FileName, READ_ONLY, _SH_DENYNO);
+	CFile *Stream = CFile::openFile(FileName, READ_ONLY, _SH_DENYNO);
 	if (Stream == NULL)
 		return false;
 	const __int64 start = lameHeaderStart + lameHeaderSize;
 	__int64 remaining = (__int64)FLame.MusicLength - lameHeaderSize;
-	bool ok = (_fseeki64(Stream, 0, SEEK_END) == 0 && _ftelli64(Stream) >= start + remaining && _fseeki64(Stream, start, SEEK_SET) == 0);
+	bool ok = (Stream->seekEnd(0) && Stream->tell() >= start + remaining && Stream->seek(start));
 	unsigned short crc = 0;
 	BYTE *block = new BYTE[64 * 1024];
 	while (ok && remaining > 0)
 	{
 		const size_t want = (remaining > 64 * 1024) ? 64 * 1024 : (size_t)remaining;
-		const size_t got = fread(block, 1, want, Stream);
+		const size_t got = Stream->read(block, want);
 		if (got != want)
 			ok = false;
 		crc = LameCrc16(crc, block, got);
@@ -420,7 +420,7 @@ bool CMPEGAudio::IsLameMusicCrcValid(LPCWSTR FileName)
 		CTools::instance().doEvents();
 	}
 	delete [] block;
-	fclose(Stream);
+	CFile::closeFile(Stream);
 	return ok && crc == FLame.MusicCrc;
 }
 
@@ -839,28 +839,27 @@ bool CMPEGAudio::SetBit(LPCWSTR FileName, int HdrPos, BYTE BitPos, bool neu)
 {
 	BYTE HeaderData[4];
 	bool result = false;
-	FILE *Stream;
-	if ( (Stream = _wfsopen(FileName, READ_AND_WRITE, _SH_DENYWR)) != NULL)
+	CFile *Stream;
+	if ( (Stream = CFile::openFile(FileName, READ_AND_WRITE, _SH_DENYWR)) != NULL)
 	{
-		CFile source(Stream);
-		result = ReadFromFile(&source);
+		result = ReadFromFile(Stream);
 		if (Frame.Found == false)
 		{
-			fclose(Stream);
+			CFile::closeFile(Stream);
 			return false;
 		}
 		// the header is at StartPosition
-		_fseeki64(Stream, Frame.FramePosition, SEEK_SET);
-		fread(HeaderData, 1, 4, Stream);
+		Stream->seek(Frame.FramePosition);
+		Stream->read(HeaderData, 4);
 		if (neu)
 			HeaderData[HdrPos] |= BitPos;
 		else
 			HeaderData[HdrPos] &= ~BitPos;
 
-		_fseeki64(Stream, Frame.FramePosition, SEEK_SET);
-		fwrite(HeaderData, 1, 4, Stream);
-		fflush(Stream);
-		fclose(Stream);
+		Stream->seek(Frame.FramePosition);
+		Stream->write(HeaderData, 4);
+		Stream->flush();
+		CFile::closeFile(Stream);
 		return true;
 	}
 	CTools::instance().setLastError(errno);

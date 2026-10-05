@@ -545,25 +545,24 @@ CAtlString CWAVFile::getINFOChunkIDs()
 bool CWAVFile::SaveToFile(LPCWSTR FileName)
 {
 	// determine the start of the data area
-	FILE *Source;
-	FILE *Destination;
+	CFile *Source;
+	CFile *Destination;
 	CAtlString NewFileName(FileName);
 	//long FrameOldSize = 0;
-	if ( (Source = _wfsopen(FileName, READ_AND_WRITE, _SH_DENYNO)) == NULL)
+	if ( (Source = CFile::openFile(FileName, READ_AND_WRITE, _SH_DENYNO)) == NULL)
 	{
 		CTools::instance().setLastError(errno);
 		return false;
 	}
-	_fseeki64(Source, CTools::ID3v2Size, SEEK_SET);
+	Source->seek(CTools::ID3v2Size);
 	CTools::FileSize = CTools::fileLength(Source);
 	CWAVRIFFContainer *newData = new CWAVRIFFContainer();
-	CFile oldFile(Source);
-	if (!newData->load(&oldFile, CTools::ID3v2Size, (u64)(CTools::FileSize -  CTools::ID3v1Size)))
+	if (!newData->load(Source, CTools::ID3v2Size, (u64)(CTools::FileSize -  CTools::ID3v1Size)))
 	{
 		CTools::instance().setLastError(ERR_INVALID_FORMAT);
 		newData->Remove();
 		delete newData;
-		fclose(Source);
+		CFile::closeFile(Source);
 		return false;
 	}
 	// the position of the audio data can have moved since the file was analyzed (a previous save that was not followed by a fresh
@@ -580,10 +579,10 @@ bool CWAVFile::SaveToFile(LPCWSTR FileName)
 	// rebuild File
 	NewFileName+=TILDE;
 	/* Create file streams */
-	if ( (Destination = _wfsopen(NewFileName, WRITE_ONLY, _SH_DENYWR)) == NULL)
+	if ( (Destination = CFile::openFile(NewFileName, WRITE_ONLY, _SH_DENYWR)) == NULL)
 	{
 		CTools::instance().setLastError(errno);
-		fclose(Source);
+		CFile::closeFile(Source);
 		return false;
 	};
 	mainContainer->save(Source, Destination);

@@ -40,7 +40,7 @@ public:
 	void print();
 	virtual void replaceAtom(CMP4Atom* atom) { atom; } ;
 	virtual void load(CFile *stream, u64 offset, u64 size);
-	virtual void save(FILE *stream);
+	virtual void save(CFile *stream);
 	virtual void Empty();
 	virtual void remove() { };
 	virtual bool removeAtom(CAtlString atomID);

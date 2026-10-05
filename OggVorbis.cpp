@@ -311,9 +311,9 @@ int COggVorbis::BuildHeaderPages(CBlob &out)
 
 // Copies the pages behind the headers. If the number of the header pages has changed, the sequence numbers of the pages of the stream
 // change by delta and their checksums are calculated again.
-bool COggVorbis::CopyPages(FILE *Source, FILE *Destination, int delta)
+bool COggVorbis::CopyPages(CFile *Source, CFile *Destination, int delta)
 {
-	_fseeki64(Source, headerEndPos, SEEK_SET);
+	Source->seek(headerEndPos);
 	if (delta == 0)
 		return CTools::copyStream(Source, Destination, -1);
 	CBlob page;
@@ -358,11 +358,11 @@ bool COggVorbis::CopyPages(FILE *Source, FILE *Destination, int delta)
 
 bool COggVorbis::RebuildFile(LPCWSTR FileName)
 {
-	FILE *Source;
-	FILE *Destination;
+	CFile *Source;
+	CFile *Destination;
 	CAtlString NewFileName(FileName);
 	/* Rebuild the file with the new Vorbis tag */
-	if ( (Source = _wfsopen(FileName, READ_ONLY, _SH_DENYNO)) == NULL)
+	if ( (Source = CFile::openFile(FileName, READ_ONLY, _SH_DENYNO)) == NULL)
 	{
 		CTools::instance().setLastError(errno);
 		return false;
@@ -370,16 +370,16 @@ bool COggVorbis::RebuildFile(LPCWSTR FileName)
 	/* Create file streams */
 	// read and write permissions are required!
 	NewFileName+=TILDE;
-	if ( (Destination = _wfsopen(NewFileName, READ_AND_WRITENEW, _SH_DENYWR)) == NULL)
+	if ( (Destination = CFile::openFile(NewFileName, READ_AND_WRITENEW, _SH_DENYWR)) == NULL)
 	{
 		CTools::instance().setLastError(errno);
-		fclose(Source);
+		CFile::closeFile(Source);
 		return false;
 	};
 	// everything in front of the header pages (the first page), the new header pages, the pages of the audio
 	CBlob newHeader;
 	const int newPages = BuildHeaderPages(newHeader);
-	_fseeki64(Source, 0, SEEK_SET);
+	Source->seek(0);
 	bool ok = CTools::copyStream(Source, Destination, secondPagePos);
 	if (ok)
 		ok = (newHeader.FileWrite(newHeader.GetLength(), Destination) == newHeader.GetLength());
@@ -387,8 +387,8 @@ bool COggVorbis::RebuildFile(LPCWSTR FileName)
 		ok = CopyPages(Source, Destination, newPages - this->headerPages);
 	if (!ok)
 	{
-		fclose(Destination);
-		fclose(Source);
+		CFile::closeFile(Destination);
+		CFile::closeFile(Source);
 		_wremove(NewFileName);
 		CTools::instance().setLastError(EIO);
 		return false;
@@ -484,12 +484,11 @@ bool COggVorbis::SaveTag(LPCWSTR FileName)
 {
 	// Save Vorbis tag
 	bool Result = false;
-	FILE *Source;
-	if ( (Source = _wfsopen(FileName, READ_ONLY, _SH_DENYWR)) != NULL)
+	CFile *Source;
+	if ( (Source = CFile::openFile(FileName, READ_ONLY, _SH_DENYWR)) != NULL)
 	{
-		CFile source(Source);
-		Result = GetInfo(&source, false);
-		fclose(Source);
+		Result = GetInfo(Source, false);
+		CFile::closeFile(Source);
 		if (Result && (multiplexed || !valid))
 		{
 			// the headers of several streams are mixed: the pages cannot be written without the other streams

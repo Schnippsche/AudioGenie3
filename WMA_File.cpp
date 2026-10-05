@@ -148,19 +148,18 @@ void CWMA_File::SetUserItem(LPCWSTR key, LPCWSTR item)
 
 bool CWMA_File::SaveToFile(LPCWSTR FileName)
 {
-	FILE* Stream;
-	if ( (Stream = _wfsopen(FileName, READ_AND_WRITE, _SH_DENYWR)) == NULL)
+	CFile *Stream;
+	if ( (Stream = CFile::openFile(FileName, READ_AND_WRITE, _SH_DENYWR)) == NULL)
 	{
 		CTools::instance().setLastError(errno);
 		return false;
 	}
 
-	_fseeki64(Stream, CTools::ID3v2Size, SEEK_SET);
-	CFile oldFile(Stream);
-	u32 oldHeaderSize = (u32)header.loadHeaderOnly(&oldFile);
+	Stream->seek(CTools::ID3v2Size);
+	u32 oldHeaderSize = (u32)header.loadHeaderOnly(Stream);
 	if (oldHeaderSize == 0) 
 	{
-		fclose(Stream);
+		CFile::closeFile(Stream);
 		return false;
 	}
 	long audioPos = CTools::ID3v2Size + oldHeaderSize;
@@ -198,8 +197,8 @@ bool CWMA_File::SaveToFile(LPCWSTR FileName)
 	}
 
 	ResetData();
-	_fseeki64(Stream, CTools::ID3v2Size, SEEK_SET);
-	header.load(&oldFile, toSizeClamped(CTools::FileSize));
+	Stream->seek(CTools::ID3v2Size);
+	header.load(Stream, toSizeClamped(CTools::FileSize));
 	// throw out all paddings	
 	size_t oldPadding = 0;
 	while ((obj = header.findObject(WMA_PADDING_ID)) != NULL)
@@ -259,23 +258,23 @@ bool CWMA_File::SaveToFile(LPCWSTR FileName)
 			newHeader.Clear();
 			header.save(&newHeader);
 		}
-		FILE *Destination;
+		CFile *Destination;
 		CAtlString NewFileName(FileName);
 		NewFileName+=TILDE;
-		if ( (Destination = _wfsopen(NewFileName, WRITE_ONLY, _SH_DENYWR)) == NULL)
+		if ( (Destination = CFile::openFile(NewFileName, WRITE_ONLY, _SH_DENYWR)) == NULL)
 		{
 			CTools::instance().setLastError(errno);
-			fclose(Stream);
+			CFile::closeFile(Stream);
 			return false;
 		}
 		bool copied = newHeader.FileWrite(newHeader.GetLength(), Destination) == newHeader.GetLength();
 		// the rest of the file: the data object and everything behind it
-		_fseeki64(Stream, audioPos, SEEK_SET);
+		Stream->seek(audioPos);
 		copied = copied && CTools::copyStream(Stream, Destination, -1);
 		if (!copied)
 		{
-			fclose(Destination);
-			fclose(Stream);
+			CFile::closeFile(Destination);
+			CFile::closeFile(Stream);
 			_wremove(NewFileName);
 			CTools::instance().setLastError(EIO);
 			return false;
@@ -294,10 +293,10 @@ bool CWMA_File::SaveToFile(LPCWSTR FileName)
 		}
 		newHeader.Clear();
 		header.save(&newHeader);
-		_fseeki64(Stream, CTools::ID3v2Size, SEEK_SET);	
+		Stream->seek(CTools::ID3v2Size);	
 		newHeader.FileWrite(newHeader.GetLength(), Stream);
 		_flushall();
-		fclose(Stream);	
+		CFile::closeFile(Stream);	
 	}
 	return true;
 }
@@ -369,13 +368,13 @@ bool CWMA_File::GetPicture(int index, LPCWSTR fileName)
 	TagPictureStruct *tps = getPictureTag(index);
 	if (tps == NULL)
 		return false;
-	FILE *Stream;
+	CFile *Stream;
 	ATLTRACE(_T("open %s WRITE_ONLY\n"), fileName);
-	if ( (Stream = _wfsopen(fileName, WRITE_ONLY, _SH_DENYNO)) != NULL)
+	if ( (Stream = CFile::openFile(fileName, WRITE_ONLY, _SH_DENYNO)) != NULL)
 	{
-		fwrite(tps->PicDaten, 1, tps->PicSize, Stream);
-		fflush(Stream);
-		fclose(Stream);
+		Stream->write(tps->PicDaten, tps->PicSize);
+		Stream->flush();
+		CFile::closeFile(Stream);
 		return true;
 	}
 	CTools::instance().setLastError(errno);
@@ -413,14 +412,14 @@ bool CWMA_File::SetPicture(LPCWSTR FileName, LPCWSTR Description, short Index, s
 		CTools::instance().setLastError(errno);
 		return false;
 	}
-	FILE *Stream;
+	CFile *Stream;
 	long ln = 0;
-	if ( (Stream = _wfsopen(FileName, READ_ONLY, _SH_DENYNO)) != NULL)
+	if ( (Stream = CFile::openFile(FileName, READ_ONLY, _SH_DENYNO)) != NULL)
 	{
-		ln = _filelength(_fileno(Stream));
+		ln = (long)toSizeClamped(Stream->size());
 		CBlob tmp(ln);
 		tmp.FileRead(ln, Stream);
-		fclose(Stream);
+		CFile::closeFile(Stream);
 
 		return SetPictureArray(tmp.m_pData, ln, Description, Index, PictureType);
 	}

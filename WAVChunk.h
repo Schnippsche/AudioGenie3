@@ -34,7 +34,7 @@ public:
 	virtual bool isID(u32 ID) { return ( _chunkID == ID ); };
 	virtual bool load(CFile *Stream, u64 offset, u64 size);
 	virtual void save(CBlob *blob);	
-	virtual bool save(FILE* Source, FILE *Destination);
+	virtual bool save(CFile *Source, CFile *Destination);
 	virtual void Remove();
 	u32 getID() { return _chunkID; };
 	CBlob* getData() { return &_data; };

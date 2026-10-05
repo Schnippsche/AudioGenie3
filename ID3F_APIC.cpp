@@ -156,15 +156,15 @@ void CID3F_APIC::decode()
 				_isLink = true;
 				_pictureLink = _blob.getNextString(TEXT_ENCODED_ANSI, start);
 				// the link comes from the tag of the file: it is only followed if this is configured (LINKEDPICTURES)
-				FILE *tmpSource = NULL;
+				CFile *tmpSource = NULL;
 				if (CTools::configValues[CONFIG_ID3V2LINKEDPICTURES] == 0)
 				{
 					// the link is kept, the picture is not loaded
 				}
-				else if ( (tmpSource = _wfsopen(_pictureLink, READ_ONLY, _SH_DENYNO)) != NULL)
+				else if ( (tmpSource = CFile::openFile(_pictureLink, READ_ONLY, _SH_DENYNO)) != NULL)
 				{
-					_data.FileRead(_filelength(_fileno(tmpSource)), tmpSource);
-					fclose(tmpSource);
+					_data.FileRead(toSizeClamped(tmpSource->size()), tmpSource);
+					CFile::closeFile(tmpSource);
 				}
 				else
 					CTools::instance().setLastError(ERR_IMAGEURL_NOT_FOUND, (LPCTSTR)_pictureLink);				
@@ -273,13 +273,13 @@ void CID3F_APIC::setPictureType(BYTE newType)
 bool CID3F_APIC::getPictureFile(LPCWSTR fileName)
 {
 	decode();
-	FILE *Stream;
+	CFile *Stream;
 	ATLTRACE(_T("open %s WRITE_ONLY\n"), fileName);
-	if ( (Stream = _wfsopen(fileName, WRITE_ONLY, _SH_DENYNO)) != NULL)
+	if ( (Stream = CFile::openFile(fileName, WRITE_ONLY, _SH_DENYNO)) != NULL)
 	{
 		_data.FileWrite(_data.GetLength(), Stream);	  
-		fflush(Stream);
-		fclose(Stream);
+		Stream->flush();
+		CFile::closeFile(Stream);
 		return true;
 	}
 	CTools::instance().setLastError(errno);
@@ -290,15 +290,15 @@ bool CID3F_APIC::getPictureFile(LPCWSTR fileName)
 bool CID3F_APIC::setPictureFile(LPCWSTR fileName)
 {
 	decode();
-	FILE *Stream;
+	CFile *Stream;
 	ATLTRACE(_T("open %s READ_ONLY\n"), fileName);
 	_data.Clear();
 	_isLink = false;
 	_pictureLink.Empty();
-	if ( (Stream = _wfsopen(fileName, READ_ONLY, _SH_DENYNO)) != NULL)
+	if ( (Stream = CFile::openFile(fileName, READ_ONLY, _SH_DENYNO)) != NULL)
 	{
-		_data.FileRead(_filelength(_fileno(Stream)), Stream); 
-		fclose(Stream);
+		_data.FileRead(toSizeClamped(Stream->size()), Stream); 
+		CFile::closeFile(Stream);
 		// rebuild the MIME type
 		if (CTools::ID3V2oldTagVersion == TAG_VERSION_2_2)
 			_mime = CTools::instance().ExtractSmallMimeFromPicture(_data.m_pData);
@@ -313,7 +313,7 @@ bool CID3F_APIC::setPictureFile(LPCWSTR fileName)
 bool CID3F_APIC::setFileLink(LPCWSTR fileName)
 {
 	decode();
-	FILE *Stream;
+	CFile *Stream;
 	_data.Clear();
 	_isLink = true;
 	_pictureLink.Empty();
@@ -321,10 +321,10 @@ bool CID3F_APIC::setFileLink(LPCWSTR fileName)
 	{
 		_pictureLink = fileName;
 		_mime = MIME_LINK;
-		if ( (Stream = _wfsopen(fileName, READ_ONLY, _SH_DENYNO)) != NULL)
+		if ( (Stream = CFile::openFile(fileName, READ_ONLY, _SH_DENYNO)) != NULL)
 		{
-			_data.FileRead(_filelength(_fileno(Stream)), Stream); 
-			fclose(Stream);
+			_data.FileRead(toSizeClamped(Stream->size()), Stream); 
+			CFile::closeFile(Stream);
 		}
 		return true;
 	}	

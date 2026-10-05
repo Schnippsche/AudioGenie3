@@ -19,24 +19,27 @@
 */
 
 #pragma once
-#include <stdio.h>
 #include <memory>
 
-// The access of the library to a file that is read: the readers (ReadFromFile, load, ...) read from a CFile and not from a C stream or a handle of
-// the system, so the system functions are used in one place only (File.cpp). The sequential functions (read, seek, tell, getByte) have the meaning of
-// fread, fseek, ftell and fgetc; the positioned reads with the caches of the analysis are CTools::readAt and CBlob::FileReadAt.
-// A CFile either opens the file itself (openRead) or wraps a C stream of the caller (the functions that write a file read the old one that way).
+// The access of the library to a file: the readers (ReadFromFile, load, ...) and the functions that write a file use a CFile and not a C stream
+// or a handle of the system, so the system functions are used in one place only (File.cpp), the one that has to be written again for another
+// platform. The sequential functions (read, write, seek, tell, getByte) have the meaning of fread, fwrite, fseek, ftell and fgetc; the positioned
+// reads with the caches of the analysis are CTools::readAt and CBlob::FileReadAt.
 class CFile
 {
 public:
 	CFile();
-	explicit CFile(FILE *file);   // a C stream that the caller has opened, it stays open
 	~CFile() { close(); }
-	// opens the file for reading with the functions of the system, other programs may read and write it at the same time; false if it cannot be
-	// opened (errno is set). The reads are positioned reads (one system call each, no seek) and are buffered for the sequential functions.
-	bool openRead(LPCWSTR fileName);
+	// Opens a file; mode: "rb" (read, the file has to exist), "wb" (write, empty file), "r+b" (read and write, the file has to exist), "w+b" (read
+	// and write, empty file), "ab" (append). share is _SH_DENYNO (other programs may read and write the file) or _SH_DENYWR (they may only read it).
+	// false if the file cannot be opened (errno is set).
+	bool open(LPCWSTR fileName, LPCWSTR mode, int share);
+	bool openRead(LPCWSTR fileName);   // "rb" and _SH_DENYNO
 	void close();
-	bool isOpen() const { return m_handle != INVALID_HANDLE_VALUE || m_file != NULL; }
+	bool isOpen() const { return m_handle != INVALID_HANDLE_VALUE; }
+	// like _wfsopen and fclose for the functions that keep a pointer: NULL if the file cannot be opened, closeFile closes and deletes (NULL is allowed)
+	static CFile *openFile(LPCWSTR fileName, LPCWSTR mode, int share);
+	static void closeFile(CFile *file);
 	// size of the file in bytes, -1 on an error
 	__int64 size();
 	// sequential access
@@ -45,6 +48,9 @@ public:
 	__int64 tell();
 	size_t read(void *destination, size_t length);
 	int getByte();                     // -1 at the end of the file
+	size_t write(const void *source, size_t length);   // the bytes written (less than length on an error)
+	bool flush();                      // the writes are not buffered here: nothing is left to write
+	bool failed() const { return m_failed; }   // a read or write error happened (like ferror)
 	// Reads length bytes from the position pos directly from the file (no buffer, one system call); the position is behind the last byte.
 	// For large blocks and for filling the caches of CTools::readAt.
 	size_t readDirect(__int64 pos, void *destination, size_t length);
@@ -56,10 +62,11 @@ private:
 	CFile &operator=(const CFile &);
 	static const size_t BUFFER_SIZE = 8192;
 	size_t readRaw(__int64 pos, void *destination, size_t length);   // positioned read of the system
-	FILE *m_file;               // a C stream of the caller (the functions that write a file read the old one that way)
-	HANDLE m_handle;            // the file opened by openRead
-	__int64 m_pos;              // the position of the sequential functions (handle)
-	__int64 m_bufferStart;      // the buffer holds the bytes of the file from m_bufferStart on (handle)
+	HANDLE m_handle;
+	bool m_append;              // the writes go to the end of the file
+	bool m_failed;
+	__int64 m_pos;              // the position of the sequential functions
+	__int64 m_bufferStart;      // the buffer holds the bytes of the file from m_bufferStart on
 	size_t m_bufferLength;
 	std::unique_ptr<BYTE[]> m_buffer;   // allocated with the first sequential read
 };

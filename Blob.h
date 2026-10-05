@@ -89,7 +89,7 @@ public:
 	void AddValue(BYTE ch, size_t nRepeat);
 	void AddNullByte();
 	void AddBlob(const CBlob& blob, size_t start = 0);
-	void AddFile(size_t nLen, FILE *Stream);
+	void AddFile(size_t nLen, CFile *Stream);
 	BYTE GetAt(size_t nIndex);
 	long Get4B(size_t nIndex);
 	long GetR4B(size_t nIndex);
@@ -104,8 +104,7 @@ public:
 	void Clear() { Free(); };
 	size_t GetLength() { return m_CurrentLength; };
 	void FileRead(size_t nLen, CFile *Stream);
-	void FileRead(size_t nLen, FILE *Stream);   // a C stream (the functions that copy a file)
-	size_t FileWrite(size_t nLen, FILE *Stream);
+	size_t FileWrite(size_t nLen, CFile *Stream);
 	bool isEmpty()    { return (m_CurrentLength == 0); };
 	bool isNotEmpty() { return (m_CurrentLength > 0); };
 	CAtlString ConvertToUnicodeString(BYTE code);

@@ -26,7 +26,8 @@ public:
 	CMP4_MainContainer(void);
 	~CMP4_MainContainer(void);
 	CMP4Atom* find(CAtlString atomID, int count = 1);
-	void save(FILE *stream);
+	void save(CFile *stream);
 	void adjustPadding(__int64 size);
+	__int64 sizeBeforeMdat();   // the size of the atoms in front of the mdat atom (the position of the mdat atom without the data in front of the file), -1 without mdat
 	void checkMetaBox();
 };

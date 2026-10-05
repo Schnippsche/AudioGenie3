@@ -265,7 +265,7 @@ void CID3V2::parseTags(CBlob* data)
 		else
 		{
 			FrameID = data->Get4B(DataPosition);
-			//fread(buf, 1, 10, Stream);
+			//Stream->read(buf, 10);
 			if (CTools::ID3V2oldTagVersion == TAG_VERSION_2_4)
 			{
 				// the size as a synchsafe integer (as the specification says) and as an ordinary number (wrong, but written by some taggers)
@@ -344,15 +344,14 @@ void CID3V2::parseTags(CBlob* data)
 
 bool CID3V2::SaveToFile(LPCWSTR FileName)
 {
-	FILE *Stream;
+	CFile *Stream;
 	/* Check for existing tag */
 	ATLTRACE(_T("open %s READ_ONLY\n"), FileName); 
-	if ( (Stream = _wfsopen(FileName, READ_ONLY, _SH_DENYNO)) != NULL)
+	if ( (Stream = CFile::openFile(FileName, READ_ONLY, _SH_DENYNO)) != NULL)
 	{
-		CFile source(Stream);
-		ReadHeader(&source);
+		ReadHeader(Stream);
 		oldTagSize = Size;
-		fclose(Stream);
+		CFile::closeFile(Stream);
 		return SaveTag(FileName);
 	}
 	CTools::instance().setLastError(errno);
@@ -445,13 +444,13 @@ bool CID3V2::SaveTag(LPCWSTR FileName)
 
 bool CID3V2::ReplaceTag(LPCWSTR FileName, CBlob* data)
 {
-	FILE *Stream;	
+	CFile *Stream;	
 	CTools::instance().writeDebug(_T("Replace id3v2 Tag")); 
-	if ( (Stream = _wfsopen(FileName, READ_AND_WRITE, _SH_DENYWR)) != NULL)
+	if ( (Stream = CFile::openFile(FileName, READ_AND_WRITE, _SH_DENYWR)) != NULL)
 	{
 		data->FileWrite(data->GetLength(), Stream);
-		fflush(Stream);
-		fclose(Stream);
+		Stream->flush();
+		CFile::closeFile(Stream);
 		return true;
 	}
 	CTools::instance().setLastError(errno);
@@ -460,34 +459,33 @@ bool CID3V2::ReplaceTag(LPCWSTR FileName, CBlob* data)
 
 bool CID3V2::RebuildFile(LPCWSTR FileName, CBlob* data)
 {
-	FILE *Source;
-	FILE *Destination;
+	CFile *Source;
+	CFile *Destination;
 	CAtlString NewFileName(FileName);
 	long FrameOldSize = 0;
 	CTools::instance().writeDebug(_T("Rebuild id3v2 tag")); 
-	if ( (Source = _wfsopen(FileName, READ_ONLY, _SH_DENYNO)) == NULL)
+	if ( (Source = CFile::openFile(FileName, READ_ONLY, _SH_DENYNO)) == NULL)
 	{
 		CTools::instance().setLastError(errno);
 		return false;
 	}
 
 	/* Rebuild file with old file data and new tag data (optional) */
-	CFile oldFile(Source);
-	ReadHeader(&oldFile);
+	ReadHeader(Source);
 	FrameOldSize = Size;
 	if (data == NULL && FrameOldSize == 0)
 	{
 		CTools::instance().setLastError(ERR_TAG_NOT_EXIST);
-		fclose(Source);
+		CFile::closeFile(Source);
 		return false;
 	}
 
 	/* Create file streams */
 	NewFileName+=TILDE;
-	if ( (Destination = _wfsopen(NewFileName, WRITE_ONLY, _SH_DENYWR)) == NULL)
+	if ( (Destination = CFile::openFile(NewFileName, WRITE_ONLY, _SH_DENYWR)) == NULL)
 	{
 		CTools::instance().setLastError(errno);
-		fclose(Source);
+		CFile::closeFile(Source);
 		return false;
 	};
 
@@ -497,7 +495,7 @@ bool CID3V2::RebuildFile(LPCWSTR FileName, CBlob* data)
 	CBlob tmp(blockSize);
 	bool ok = true;
 	/* Copy data blocks */
-	if (_fseeki64(Source, FrameOldSize, SEEK_SET) != 0)
+	if (!Source->seek(FrameOldSize))
 	{
 		CTools::instance().writeError(L"ID3V2 fseek(%i) failed, aborting save", FrameOldSize);
 		ok = false;
@@ -523,17 +521,16 @@ bool CID3V2::RebuildFile(LPCWSTR FileName, CBlob* data)
 		CTools::instance().doEvents();
 		if (got < blockSize)
 		{
-			if (ferror(Source))
+			if (Source->failed())
 				ok = false;
 			break;
 		}
 	}
-	if (ok && fflush(Destination) != 0)
+	if (ok && (Destination->failed() || !Destination->flush()))
 		ok = false;
 	int writeErr = errno;
-	if (fclose(Destination) != 0)
-		ok = false;
-	fclose(Source);
+	CFile::closeFile(Destination);
+	CFile::closeFile(Source);
 	if (!ok)
 	{
 		// the original stays unchanged, only the temporary file is removed
@@ -806,18 +803,18 @@ CAtlString CID3V2::GetGenre()
 }
 bool CID3V2::parseCueFile(LPCWSTR FileName)
 {
-	FILE *Source;
+	CFile *Source;
 	CTools::instance().writeDebug(_T("parse cue file")); 
-	if ( (Source = _wfsopen(FileName, READ_ONLY, _SH_DENYNO)) == NULL)
+	if ( (Source = CFile::openFile(FileName, READ_ONLY, _SH_DENYNO)) == NULL)
 	{
 		CTools::instance().setLastError(errno);
 		return false;
 	}
 	// read everything into the blob
-	int ln = _filelength(_fileno(Source));
+	int ln = (int)toSizeClamped(Source->size());
 	CBlob dummy(ln + 1);
 	dummy.FileRead(ln, Source);
-	fclose(Source);
+	CFile::closeFile(Source);
 	// split the blob into pieces; separators are 0D, 0A, EOL and blanks
 	int pos = 0, start = 0;
 	CAtlArray<CAtlString> tokens;

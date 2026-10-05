@@ -29,7 +29,7 @@ public:
 	u64 getSize();
 	void load(CFile *stream, u64 offset, u64 size);
 	__int64 getPosition() { return _position; };
-	void save(FILE *Destination);
+	void save(CFile *Destination);
 	void setSourceFile(CAtlString file) { _sourcefile = file; };
 	void setSameFile(bool status)       { _sameFile = status; };
 private:

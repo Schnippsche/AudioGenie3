@@ -202,7 +202,7 @@ bool CID3V1TagInfo::needsEnhanced()
   return false;
 }
 
-bool CID3V1TagInfo::WriteToFile(FILE *Stream)
+bool CID3V1TagInfo::WriteToFile(CFile *Stream)
 {
   errno = 0;
   tmp->Clear();

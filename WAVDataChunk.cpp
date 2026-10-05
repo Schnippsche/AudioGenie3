@@ -60,7 +60,7 @@ void CWAVDataChunk::save(CBlob *blob)
 		blob->AddR4B(sizeField);
 }
 
-bool CWAVDataChunk::save(FILE* Source, FILE *Destination)
+bool CWAVDataChunk::save(CFile *Source, CFile *Destination)
 {
 	if (_size > 0)
 	{
@@ -74,7 +74,7 @@ bool CWAVDataChunk::save(FILE* Source, FILE *Destination)
 			blob->AddR4B(sizeField);
 		blob->FileWrite(8, Destination);
 		// Copy Block
-		_fseeki64(Source, (__int64)_offset, SEEK_SET);
+		Source->seek((__int64)_offset);
 		long tmpSize = 0;
 		unsigned __int64 dataLen = _size;
 		while (dataLen > 0)

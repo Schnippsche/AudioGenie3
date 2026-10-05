@@ -20,6 +20,7 @@
 
 #include "StdAfx.h"
 #include "MP4_STCO.h"
+#include "File.h"
 #include "mp4_atomfactory.h"
 
 CMP4_STCO::CMP4_STCO(u32 id)
@@ -33,7 +34,7 @@ CMP4_STCO::~CMP4_STCO(void)
 {
 }
 
-bool CMP4_STCO::move(__int64 delta, FILE* Destination)
+bool CMP4_STCO::move(__int64 delta, CFile *Destination)
 {
 	if (_blob.GetLength() < 8 || delta == 0)
 		return true;
@@ -70,14 +71,14 @@ bool CMP4_STCO::move(__int64 delta, FILE* Destination)
 		tmp.AddMemory(_blob.m_pData + used, _blob.GetLength() - used);
 	_blob.Clear();
 	_blob.AddBlob(tmp);
-	_fseeki64(Destination, _position, SEEK_SET);
+	Destination->seek(_position);
 	CMP4Atom::save(Destination);
 	return true;
 }
 
-void CMP4_STCO::save(FILE *Destination)
+void CMP4_STCO::save(CFile *Destination)
 {
 	// if source and destination position are identical and it is the same file, do nothing
-	_position = _ftelli64(Destination);
+	_position = Destination->tell();
 	CMP4Atom::save(Destination);
 }

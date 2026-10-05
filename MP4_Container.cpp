@@ -308,7 +308,7 @@ bool CMP4_Container::removeAtom(CMP4Atom* atom)
 	}
 	return false;
 }
-void CMP4_Container::save(FILE *stream)
+void CMP4_Container::save(CFile *stream)
 {
 	u64 frameSize = getSize();
 	CBlob tmp(20);

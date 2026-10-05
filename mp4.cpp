@@ -69,7 +69,7 @@ bool CMP4::ReadFromFile(CFile *Stream)
 	//ResetData();
 	CMP4_AtomFactory::lastAudioPos = CTools::FileSize;
 	/* Read file data */
-	//_fseeki64(Stream, CTools::ID3v2Size, SEEK_SET);
+	//Stream->seek(CTools::ID3v2Size);
 	mainContainer->load(Stream, CTools::ID3v2Size, (u64)(CTools::FileSize - CTools::ID3v1Size));
 	return (mainContainer->find(FTYP_PFAD) != NULL);	
 }
@@ -149,13 +149,13 @@ bool CMP4::GetPicture(LPCWSTR file, int Index)
 	else
 		return false;
 	// write from memory to file
-	FILE *Stream;
-	if ( (Stream = _wfsopen(file, WRITE_ONLY, _SH_DENYWR)) != NULL)
+	CFile *Stream;
+	if ( (Stream = CFile::openFile(file, WRITE_ONLY, _SH_DENYWR)) != NULL)
 	{
 		long ln = (long)atom->_blob.GetLength() - 8;
-		long res = (long)fwrite(atom->_blob.m_pData + 8, 1, ln, Stream);
-		fflush(Stream);
-		fclose(Stream);
+		long res = (long)Stream->write(atom->_blob.m_pData + 8, ln);
+		Stream->flush();
+		CFile::closeFile(Stream);
 		return (res == ln);
 	}
 	CTools::instance().setLastError(errno);
@@ -164,16 +164,16 @@ bool CMP4::GetPicture(LPCWSTR file, int Index)
 
 bool CMP4::AddPictureFile(LPCWSTR FileName)
 {
-	FILE* Stream;
-	if ( (Stream = _wfsopen(FileName, READ_ONLY, _SH_DENYNO)) == NULL)
+	CFile *Stream;
+	if ( (Stream = CFile::openFile(FileName, READ_ONLY, _SH_DENYNO)) == NULL)
 	{
 		CTools::instance().setLastError(errno);
 		return false;
 	}
-	long length = _filelength(_fileno(Stream));
+	long length = (long)toSizeClamped(Stream->size());
 	CBlob arr(length);
 	arr.FileRead(length, Stream);
-	fclose(Stream);
+	CFile::closeFile(Stream);
 	return AddPictureArray(arr.m_pData, length);
 }
 
@@ -530,11 +530,11 @@ void CMP4::RemoveTag()
 bool CMP4::SaveToFile(LPCWSTR FileName)
 {
 	// determine the start of the data area
-	FILE *Source;
-	FILE *Destination;
+	CFile *Source;
+	CFile *Destination;
 	CAtlString NewFileName(FileName);
 	//long FrameOldSize = 0;
-	if ( (Source = _wfsopen(FileName, READ_AND_WRITE, _SH_DENYNO)) == NULL)
+	if ( (Source = CFile::openFile(FileName, READ_AND_WRITE, _SH_DENYNO)) == NULL)
 	{
 		CTools::instance().setLastError(errno);
 		return false;
@@ -546,17 +546,16 @@ bool CMP4::SaveToFile(LPCWSTR FileName)
 	{
 		oldTaggings = atom->copy();
 	}
-	_fseeki64(Source, CTools::ID3v2Size, SEEK_SET);
+	Source->seek(CTools::ID3v2Size);
 	CTools::FileSize = CTools::fileLength(Source);
 	CMP4_MainContainer *newData = new CMP4_MainContainer();
-	CFile oldFile(Source);
-	newData->load(&oldFile, CTools::ID3v2Size, (u64)(CTools::FileSize - CTools::ID3v1Size));
+	newData->load(Source, CTools::ID3v2Size, (u64)(CTools::FileSize - CTools::ID3v1Size));
 	atom = newData->find(MDAT_PFAD);
 	if (atom == NULL)
 	{
 		CTools::instance().setLastError(ERR_INVALID_FORMAT);
 		delete newData;
-		fclose(Source);
+		CFile::closeFile(Source);
 		return false;
 	}
 	CMP4_MDAT *mdat = cMDAT(atom);
@@ -585,18 +584,31 @@ bool CMP4::SaveToFile(LPCWSTR FileName)
 		optimalSize = ((sizeAfter / (u64)paddingBlockSize) + 1) * (u64)paddingBlockSize;
 
 	// a padding box has 8 bytes of header: a gap of 1..7 bytes cannot be filled in place
-	if (sizeAfter > sizeBefore || (sizeBefore - sizeAfter > 0 && sizeBefore - sizeAfter < 8) || optimalSize < sizeBefore || paddingBlockSize == 0)
+	bool rebuild = (sizeAfter > sizeBefore || (sizeBefore - sizeAfter > 0 && sizeBefore - sizeAfter < 8) || optimalSize < sizeBefore || paddingBlockSize == 0);
+	if (!rebuild)
+	{
+		// the padding fills the space that the smaller tag has left (in front of the mdat atom). If the atoms in front of the mdat atom change their
+		// size (the metadata are behind the mdat atom), the mdat atom would move inside of the file: the data cannot be copied inside of the same
+		// file (the new padding overwrites the start of the old data) and the chunk offsets would be wrong, so the file is rebuilt
+		newData->adjustPadding((sizeBefore > sizeAfter) ? (__int64)(sizeBefore - sizeAfter) - 8 : -1);
+		if ((__int64)CTools::ID3v2Size + newData->sizeBeforeMdat() != oldMDATPosition)
+		{
+			newData->adjustPadding(-1);
+			rebuild = true;
+		}
+	}
+	if (rebuild)
 	{ 
 		CTools::instance().writeDebug(_T("Rebuild mp4 tag")); 
 		mdat->setSameFile(false);
 		// rebuild File
 		NewFileName+=TILDE;
 		/* Create file streams */
-		if ( (Destination = _wfsopen(NewFileName, WRITE_ONLY, _SH_DENYWR)) == NULL)
+		if ( (Destination = CFile::openFile(NewFileName, WRITE_ONLY, _SH_DENYWR)) == NULL)
 		{
 			delete newData;		
 			CTools::instance().setLastError(errno);
-			fclose(Source);
+			CFile::closeFile(Source);
 			return false;
 		};
 		/* adjust padding  */
@@ -631,8 +643,8 @@ bool CMP4::SaveToFile(LPCWSTR FileName)
 		if (!offsetsOk)
 		{
 			// an offset does not fit into a 32 bit table: the file is not changed
-			fclose(Destination);
-			fclose(Source);
+			CFile::closeFile(Destination);
+			CFile::closeFile(Source);
 			_wremove(NewFileName);
 			CTools::instance().setLastError(ERR_FRAME_TOO_BIG);
 			return false;
@@ -640,15 +652,13 @@ bool CMP4::SaveToFile(LPCWSTR FileName)
 		return CTools::finishRewrite(Source, Destination, NewFileName, FileName);
 	}
 	CTools::instance().writeDebug(_T("Rewrite mp4 tag")); 
-	mdat->setSameFile(false);
-	// adjust padding
+	// the mdat atom stays where it is: the audio data are not copied
+	mdat->setSameFile(true);
 	errno = 0;
-	// the size of the padding box is its payload plus 8 bytes of header
-	newData->adjustPadding((sizeBefore > sizeAfter) ? (__int64)(sizeBefore - sizeAfter) - 8 : -1);
-	_fseeki64(Source, CTools::ID3v2Size, SEEK_SET);
+	Source->seek(CTools::ID3v2Size);
 	newData->save(Source);
-	fflush(Source);
-	fclose(Source);
+	Source->flush();
+	CFile::closeFile(Source);
 	newData->remove();
 	delete newData;
 	if (errno != 0)

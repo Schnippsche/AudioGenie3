@@ -73,12 +73,12 @@ bool CID3V1::OpenFile(LPCWSTR FileName, bool WriteModus)
 		modus = READ_ONLY;
 	id3v1tag._exists = false;			
 	fileEnhanced = false;
-	if ( (Stream = _wfsopen(FileName, modus, _SH_DENYNO)) != NULL)
+	if ( (Stream = CFile::openFile(FileName, modus, _SH_DENYNO)) != NULL)
   {
 		/* Read tag */
 		char ap[10];
-		_fseeki64(Stream, -131, SEEK_END);
-		fread(ap, 1, 8, Stream);
+		Stream->seekEnd(-131);
+		Stream->read(ap, 8);
 		if (ap[0] == 'A' && ap[1] == 'P' && ap[2] == 'E' && ap[3] == 'T' && ap[4] == 'A'&& ap[5] == 'G' && ap[6] == 'E' && ap[7] == 'X')
 		{
 			id3v1tag._exists = false;			
@@ -88,12 +88,12 @@ bool CID3V1::OpenFile(LPCWSTR FileName, bool WriteModus)
 			id3v1tag._exists = true;
 		}
 		// enhanced tag "TAG+" in front of the id3v1 tag
-		if (id3v1tag._exists && _fseeki64(Stream, -(ID3V1_TAG_SIZE + ID3V1_ENHANCED_SIZE), SEEK_END) == 0)
+		if (id3v1tag._exists && Stream->seekEnd(-(ID3V1_TAG_SIZE + ID3V1_ENHANCED_SIZE)))
 		{
 			char plus[4];
-			fileEnhanced = (fread(plus, 1, 4, Stream) == 4 && memcmp(plus, "TAG+", 4) == 0);
+			fileEnhanced = (Stream->read(plus, 4) == 4 && memcmp(plus, "TAG+", 4) == 0);
 		}
-		_fseeki64(Stream, -(fileEnhanced ? ID3V1_TAG_SIZE + ID3V1_ENHANCED_SIZE : ID3V1_TAG_SIZE), SEEK_END);
+		Stream->seekEnd(-(fileEnhanced ? ID3V1_TAG_SIZE + ID3V1_ENHANCED_SIZE : ID3V1_TAG_SIZE));
 		return true;
 	}
 	CTools::instance().setLastError(errno);
@@ -103,13 +103,13 @@ bool CID3V1::OpenFile(LPCWSTR FileName, bool WriteModus)
 void CID3V1::CloseFile()
 {
 	if (Stream != NULL)
-		fclose(Stream);
+		CFile::closeFile(Stream);
 }
 
 void CID3V1::ReadFromFile(CFile *file)
 {
 	/* Reset and load tag data from file to variable */
-	//_fseeki64(Stream, -ID3V1_TAG_SIZE, SEEK_END);
+	//Stream->seekEnd(-ID3V1_TAG_SIZE);
 	if (id3v1tag.ReadFromFile(file))
 	{
 		CTools::ID3v1Size = id3v1tag._enhanced ? ID3V1_TAG_SIZE + ID3V1_ENHANCED_SIZE : ID3V1_TAG_SIZE;
@@ -170,10 +170,10 @@ bool CID3V1::AddTag(LPCWSTR FileName)
 {
 	bool result = false;
 	/* Write tag */
-	if ( (Stream = _wfsopen(FileName, APPEND, _SH_DENYWR)) != NULL)
+	if ( (Stream = CFile::openFile(FileName, APPEND, _SH_DENYWR)) != NULL)
   {
 		result = id3v1tag.WriteToFile(Stream);
-		fclose(Stream);
+		CFile::closeFile(Stream);
 	}
 	else
 		CTools::instance().setLastError(errno);
@@ -188,7 +188,7 @@ bool CID3V1::SaveToFile(LPCWSTR FileName)
 	{
 		if (id3v1tag.needsEnhanced() == fileEnhanced)
 		{
-			_fseeki64(Stream, -id3v1tag.GetSize(), SEEK_END);
+			Stream->seekEnd(-id3v1tag.GetSize());
 			Result = id3v1tag.WriteToFile(Stream);
 			CloseFile();
 		}

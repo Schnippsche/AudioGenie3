@@ -412,7 +412,7 @@ bool CFLAC::BuildFrame(bool withComment)
 // the end of the metadata blocks in the file as it is now (an earlier save may have changed its size)
 bool CFLAC::CurrentMetadataSize(LPCWSTR FileName, long &size)
 {
-	FILE *Stream = _wfsopen(FileName, READ_ONLY, _SH_DENYNO);
+	CFile *Stream = CFile::openFile(FileName, READ_ONLY, _SH_DENYNO);
 	if (Stream == NULL)
 	{
 		CTools::instance().setLastError(errno);
@@ -422,14 +422,14 @@ bool CFLAC::CurrentMetadataSize(LPCWSTR FileName, long &size)
 	BYTE header[4];
 	const __int64 fileLength = CTools::fileLength(Stream);   // an earlier save may have changed the size of the file
 	__int64 pos = CTools::ID3v2Size;
-	_fseeki64(Stream, pos, SEEK_SET);
-	if (fread(header, 1, 4, Stream) == 4 && memcmp(header, FLAC_ID, 4) == 0)
+	Stream->seek(pos);
+	if (Stream->read(header, 4) == 4 && memcmp(header, FLAC_ID, 4) == 0)
 	{
 		pos += 4;
 		while (true)
 		{
-			_fseeki64(Stream, pos, SEEK_SET);
-			if (fread(header, 1, 4, Stream) != 4 || (header[0] & 0x7F) == 127)
+			Stream->seek(pos);
+			if (Stream->read(header, 4) != 4 || (header[0] & 0x7F) == 127)
 				break;
 			pos += 4 + ((header[1] << 16) + (header[2] << 8) + header[3]);
 			if (pos > fileLength)
@@ -441,7 +441,7 @@ bool CFLAC::CurrentMetadataSize(LPCWSTR FileName, long &size)
 			}
 		}
 	}
-	fclose(Stream);
+	CFile::closeFile(Stream);
 	if (ok)
 		size = (long)(pos - CTools::ID3v2Size);
 	return ok;
@@ -470,11 +470,11 @@ bool CFLAC::SaveToFile(LPCWSTR FileName)
 
 bool CFLAC::RebuildFile(LPCWSTR FileName)
 {
-	FILE *Source;
-	FILE *Destination;
+	CFile *Source;
+	CFile *Destination;
 	CAtlString NewFileName(FileName);
 	CBlob tmp;
-	if ( (Source = _wfsopen(FileName, READ_ONLY, _SH_DENYNO)) == NULL)
+	if ( (Source = CFile::openFile(FileName, READ_ONLY, _SH_DENYNO)) == NULL)
 	{
 		CTools::instance().setLastError(errno);
 		return false;
@@ -482,9 +482,9 @@ bool CFLAC::RebuildFile(LPCWSTR FileName)
 
 	/* Create file streams */
 	NewFileName+=TILDE;
-	if ( (Destination = _wfsopen(NewFileName, WRITE_ONLY, _SH_DENYWR)) == NULL)
+	if ( (Destination = CFile::openFile(NewFileName, WRITE_ONLY, _SH_DENYWR)) == NULL)
 	{
-		fclose(Source);
+		CFile::closeFile(Source);
 		CTools::instance().setLastError(errno);
 		return false;
 	};
@@ -495,13 +495,13 @@ bool CFLAC::RebuildFile(LPCWSTR FileName)
 		tmp.FileWrite(CTools::ID3v2Size, Destination);
 	}
 	// skip old block
-	_fseeki64(Source, oldLen, SEEK_CUR);
+	Source->seek(Source->tell() + (oldLen));
 	Daten.FileWrite(Daten.GetLength(), Destination);
 	// copy the rest of the file block by block, do not load it completely into memory
 	if (!CTools::copyStream(Source, Destination, -1))
 	{
-		fclose(Destination);
-		fclose(Source);
+		CFile::closeFile(Destination);
+		CFile::closeFile(Source);
 		_wremove(NewFileName);
 		CTools::instance().setLastError(EIO);
 		return false;
@@ -511,13 +511,13 @@ bool CFLAC::RebuildFile(LPCWSTR FileName)
 
 bool CFLAC::ReplaceTag(LPCWSTR FileName)
 {
-	FILE *Stream;
-	if ( (Stream = _wfsopen(FileName, READ_AND_WRITE, _SH_DENYWR)) != NULL)
+	CFile *Stream;
+	if ( (Stream = CFile::openFile(FileName, READ_AND_WRITE, _SH_DENYWR)) != NULL)
 	{
-		_fseeki64(Stream, CTools::ID3v2Size, SEEK_SET);
+		Stream->seek(CTools::ID3v2Size);
 		Daten.FileWrite(Daten.GetLength(), Stream);
-		fflush(Stream);
-		fclose(Stream);
+		Stream->flush();
+		CFile::closeFile(Stream);
 		return true;
 	}
 	CTools::instance().setLastError(errno);

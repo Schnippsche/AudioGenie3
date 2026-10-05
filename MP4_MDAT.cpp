@@ -38,7 +38,7 @@ void CMP4_MDAT::load(CFile *Stream, u64 offset, u64 size)
 {
 	offset;
 	Stream;
-	//_fseeki64(Stream, offset, SEEK_SET);
+	//Stream->seek(offset);
 	// remember position and length but do not read the data
 	// is only read when saving
 	_position = offset - headerSize();
@@ -53,14 +53,14 @@ u64 CMP4_MDAT::getSize()
 	return _size;
 }
 
-void CMP4_MDAT::save(FILE *Destination)
+void CMP4_MDAT::save(CFile *Destination)
 {
 	// if source and destination position are identical and it is the same file, do nothing
-	__int64 newPos = _ftelli64(Destination);
+	__int64 newPos = Destination->tell();
 	if (newPos == (__int64)_position && _sameFile)
 	{
 		// move to the end of the block
-		_fseeki64(Destination, _position + _size, SEEK_SET);	
+		Destination->seek(_position + _size);	
 		return;
 	}
 	// different positions, so copy from old to new
@@ -69,11 +69,11 @@ void CMP4_MDAT::save(FILE *Destination)
 	if (!_sourcefile.IsEmpty())
 	{
 		CBlob tmp(blockSize);	
-		FILE *Source;
+		CFile *Source;
 		/* Copy data blocks */
-		if ( (Source = _wfsopen(_sourcefile, READ_ONLY, _SH_DENYNO)) != NULL)
+		if ( (Source = CFile::openFile(_sourcefile, READ_ONLY, _SH_DENYNO)) != NULL)
 		{
-			_fseeki64(Source, _position, SEEK_SET);
+			Source->seek(_position);
 			long tmpSize = 0;
 			while (frameSize > 0)
 			{
@@ -85,7 +85,7 @@ void CMP4_MDAT::save(FILE *Destination)
 				CTools::instance().doEvents();
 				frameSize-=tmpSize;
 			}
-			fclose(Source);
+			CFile::closeFile(Source);
 			_position = (u64)newPos;
 		} 
 		else

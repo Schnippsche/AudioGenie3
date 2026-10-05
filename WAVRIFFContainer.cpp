@@ -41,7 +41,7 @@ CWAVRIFFContainer::~CWAVRIFFContainer(void)
 	formatChunk = NULL;
 }
 
-bool CWAVRIFFContainer::save(FILE* Source, FILE *Destination)
+bool CWAVRIFFContainer::save(CFile *Source, CFile *Destination)
 {
 	s_bigEndian = _isRIFX;   // reassert: sibling chunks read this static flag while they save their own size fields below
 	u64 totalSize = 0;

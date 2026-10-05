@@ -33,7 +33,7 @@ public:
 	~CWAVRIFFContainer(void);
 	bool load(CFile *Stream, u64 offset, u64 size);
 	void save(CBlob *blob);
-	bool save(FILE* Source, FILE *Destination);
+	bool save(CFile *Source, CFile *Destination);
 	CWAVFormatChunk* getFormatChunk() { return formatChunk; };
 	void Remove();
 	CWAVCARTChunk* addCartChunk();

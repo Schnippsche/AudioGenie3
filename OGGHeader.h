@@ -47,7 +47,7 @@ public:
 	//
 	bool ReadFromFile(CFile *Stream);
 	bool ReadFromMemory(const BYTE *data, size_t length);   // the page header (27 bytes and the lacing values) from memory
-	bool WriteToFile(FILE *Stream);
+	bool WriteToFile(CFile *Stream);
 	void CopyToChar(BYTE buf[]);
 	void Reset();	
 };

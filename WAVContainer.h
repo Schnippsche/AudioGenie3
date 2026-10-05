@@ -31,7 +31,7 @@ public:
 	virtual u64 getSize();
 	virtual bool load(CFile *Stream, u64 offset, u64 size);
 	virtual void save(CBlob *blob);
-	virtual bool save(FILE* Source, FILE *Destination);
+	virtual bool save(CFile *Source, CFile *Destination);
 	void Remove();
 	CWAVChunk* find(u32 ID);
 	CAtlArray<CWAVChunk *> _children;

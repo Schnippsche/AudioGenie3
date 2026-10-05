@@ -115,7 +115,7 @@ void CWAVContainer::save(CBlob *blob)
 	}
 }
 
-bool CWAVContainer::save(FILE* Source, FILE *Destination)
+bool CWAVContainer::save(CFile *Source, CFile *Destination)
 {
 	if (getSize() > 0)
 	{

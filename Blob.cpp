@@ -52,22 +52,6 @@ static size_t limitToFileRest(size_t nLen, CFile *Stream)
 	return nLen;
 }
 
-static size_t limitToFileRest(size_t nLen, FILE *Stream)
-{
-	if (nLen <= BLOB_CHECK_FILE_LIMIT || Stream == NULL)
-		return nLen;
-	__int64 pos = _ftelli64(Stream);
-	if (pos < 0)
-		return nLen;
-	__int64 fileLen = CTools::fileLength(Stream);
-	if (fileLen < 0)
-		return nLen;
-	unsigned __int64 rest = (fileLen > pos) ? (unsigned __int64)(fileLen - pos) : 0;
-	if ((unsigned __int64)nLen > rest)
-		return (size_t)rest;
-	return nLen;
-}
-
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////
@@ -301,27 +285,6 @@ void CBlob::FileRead(size_t nLen, CFile *Stream)
 	m_CurrentLength = Stream->read(m_pData, nLen);
 }
 
-void CBlob::FileRead(size_t nLen, FILE *Stream)
-{
-	if (nLen < 1 || Stream == NULL)
-	{
-		m_CurrentLength = 0;
-		return;
-	}
-	nLen = limitToFileRest(nLen, Stream);
-	if (nLen < 1)
-	{
-		m_CurrentLength = 0;
-		return;
-	}
-	if (!AllocNewBuffer(nLen))
-	{
-		m_CurrentLength = 0;
-		return;
-	}
-	m_CurrentLength = fread(m_pData, 1, nLen, Stream);
-}
-
 void CBlob::FileReadAt(CFile *Stream, __int64 pos, size_t nLen)
 {
 	if (nLen < 1 || Stream == NULL)
@@ -353,16 +316,16 @@ void CBlob::FileReadAt(CFile *Stream, __int64 pos, size_t nLen)
 	m_CurrentLength = CTools::readAt(Stream, pos, m_pData, nLen);
 }
 
-size_t CBlob::FileWrite(size_t nLen, FILE *Stream)
+size_t CBlob::FileWrite(size_t nLen, CFile *Stream)
 {
 	if (nLen > m_CurrentLength)
 		nLen = m_CurrentLength;
 	if (nLen == 0 || Stream == NULL || m_pData == NULL)
 		return 0;
-	return fwrite(m_pData, 1, nLen, Stream);
+	return Stream->write(m_pData, nLen);
 }
 
-void CBlob::AddFile(size_t nLen, FILE* Stream)
+void CBlob::AddFile(size_t nLen, CFile *Stream)
 {
 	if (nLen < 1 || Stream == NULL)
 		return;
@@ -372,7 +335,7 @@ void CBlob::AddFile(size_t nLen, FILE* Stream)
 	if (!GrowBuffer(m_CurrentLength + nLen))
 		return;
 	// fast reading
-	size_t tmpLen = fread(&m_pData[m_CurrentLength], 1, nLen, Stream);
+	size_t tmpLen = Stream->read(&m_pData[m_CurrentLength], nLen);
 	m_CurrentLength += tmpLen;
 }
 

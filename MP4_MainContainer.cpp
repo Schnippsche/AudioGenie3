@@ -80,7 +80,20 @@ void CMP4_MainContainer::adjustPadding(__int64 size)
 	}
 }
 
-void CMP4_MainContainer::save(FILE *stream)
+__int64 CMP4_MainContainer::sizeBeforeMdat()
+{
+	__int64 size = 0;
+	const size_t counts = _children.GetCount();
+	for (size_t i = 0; i < counts; i++)
+	{
+		if (_children[i]->getFrameID() == MP4_MDAT)
+			return size;
+		size += (__int64)_children[i]->getSize();
+	}
+	return -1;
+}
+
+void CMP4_MainContainer::save(CFile *stream)
 {
 	size_t counts = _children.GetCount();
 	for (size_t i = 0; i < counts; i++)

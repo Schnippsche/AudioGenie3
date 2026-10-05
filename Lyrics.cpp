@@ -265,14 +265,13 @@ void CLyrics::ReadFromFile(CFile *Stream)
 
 bool CLyrics::RemoveFromFile(LPCWSTR FileName)
 {
-	FILE *Stream;
-	if ( (Stream = _wfsopen(FileName, READ_ONLY, _SH_DENYNO)) != NULL)
+	CFile *Stream;
+	if ( (Stream = CFile::openFile(FileName, READ_ONLY, _SH_DENYNO)) != NULL)
 	{
-		CFile source(Stream);
-		bool Result = ReadHeader(&source);
+		bool Result = ReadHeader(Stream);
 		if (Result)
-			Result = (FVersion == LYRICS_VERSION_200) ? ReadFramesNew(&source, true) : ReadFramesOld(&source, true);
-		fclose(Stream);
+			Result = (FVersion == LYRICS_VERSION_200) ? ReadFramesNew(Stream, true) : ReadFramesOld(Stream, true);
+		CFile::closeFile(Stream);
 		if (!Result)
 		{
 			CTools::instance().setLastError(ERR_TAG_NOT_EXIST);
@@ -365,17 +364,16 @@ void CLyrics::BuildTagData()
 bool CLyrics::SaveToFile(LPCWSTR FileName)
 {
 	/* Prepare tag record */
-	FILE *Stream;
+	CFile *Stream;
 	bool hadTag = false;
-	if ( (Stream = _wfsopen(FileName, READ_ONLY, _SH_DENYNO)) == NULL)
+	if ( (Stream = CFile::openFile(FileName, READ_ONLY, _SH_DENYNO)) == NULL)
 	{
 		CTools::instance().setLastError(errno);
 		return false;
 	}
-	CFile source(Stream);
-	if (ReadHeader(&source))
-		hadTag = (FVersion == LYRICS_VERSION_200) ? ReadFramesNew(&source, true) : ReadFramesOld(&source, true);
-	fclose(Stream);
+	if (ReadHeader(Stream))
+		hadTag = (FVersion == LYRICS_VERSION_200) ? ReadFramesNew(Stream, true) : ReadFramesOld(Stream, true);
+	CFile::closeFile(Stream);
 	/*  ID3v1-Tag must exist! */
 	if (ID3v1AreaSize == 0)
 	{

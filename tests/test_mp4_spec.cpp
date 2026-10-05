@@ -413,7 +413,7 @@ TEST_CASE("MP4: metadata items", "[mp4][spec][tags]")
 
 TEST_CASE("MP4: writing tags keeps the media and the chunk offsets of all tracks", "[mp4][spec][write]")
 {
-    struct Case { const char* name; bool co64; bool moovLast; bool ext; size_t padding; int tracks; };
+    struct Case { const char* name; bool co64; bool moovLast; bool ext; size_t padding; int tracks; bool large = false; };
     const Case cases[] = {
         { "stco, moov in front", false, false, false, 0, 1 },
         { "stco, moov in front, two tracks", false, false, false, 0, 2 },
@@ -421,12 +421,16 @@ TEST_CASE("MP4: writing tags keeps the media and the chunk offsets of all tracks
         { "moov behind the media", false, true, false, 0, 1 },
         { "extended mdat size", false, false, true, 0, 1 },
         { "padding in front of the mdat", false, false, false, 4096, 1 },
+        { "moov behind the media, a small padding box in front", false, true, false, 8, 1 },
+        { "moov behind the media, padding in front", false, true, false, 4096, 1 },
+        { "moov behind the media, a small padding box in front, large media data (more than a block)", false, true, false, 8, 1, true },
     };
     for (const Case& c : cases) {
         INFO(c.name);
         Mp4 m;
         m.moovLast = c.moovLast; m.extendedMdat = c.ext; m.padding = c.padding;
         m.tracks[0].co64 = c.co64;
+        if (c.large) m.tracks[0].chunkSizes = { 150000, 120000, 90000 };   // the media data are copied in several blocks
         if (c.tracks == 2) { m.tracks.push_back(Track()); m.tracks[1].co64 = c.co64; m.tracks[1].marker = 0x60; m.tracks[1].chunkSizes = { 2500, 2500 }; }
         const Bytes f = mp4File(m);
         checkChunks(f, m);

@@ -83,11 +83,11 @@ CFlacCover::CFlacCover(CBlob *tmpData)
 	{
 		_isLink = true;
 		_pictureLink = tmpData->getNextString(TEXT_ENCODED_ANSI, start);
-		FILE *tmpSource;
-		if ( (tmpSource = _wfsopen(_pictureLink, READ_ONLY, _SH_DENYNO)) != NULL)
+		CFile *tmpSource;
+		if ( (tmpSource = CFile::openFile(_pictureLink, READ_ONLY, _SH_DENYNO)) != NULL)
 		{
-			data.FileRead(_filelength(_fileno(tmpSource)), tmpSource);
-			fclose(tmpSource);
+			data.FileRead(toSizeClamped(tmpSource->size()), tmpSource);
+			CFile::closeFile(tmpSource);
 		}
 		else
 			CTools::instance().setLastError(ERR_IMAGEURL_NOT_FOUND, (LPCTSTR)_pictureLink);
@@ -118,13 +118,13 @@ CFlacCover::~CFlacCover(void)
 
 bool CFlacCover::getPictureFile(LPCWSTR fileName)
 {
-	FILE *Stream;
+	CFile *Stream;
 	ATLTRACE(_T("open %s WRITE_ONLY\n"), fileName);
-	if ( (Stream = _wfsopen(fileName, WRITE_ONLY, _SH_DENYNO)) != NULL)
+	if ( (Stream = CFile::openFile(fileName, WRITE_ONLY, _SH_DENYNO)) != NULL)
 	{
 		data.FileWrite(data.GetLength(), Stream);	  
-		fflush(Stream);
-		fclose(Stream);
+		Stream->flush();
+		CFile::closeFile(Stream);
 		return true;
 	}
 	CTools::instance().setLastError(errno);
@@ -166,15 +166,15 @@ CAtlString CFlacCover::getPictureTypeAsText()
 
 bool CFlacCover::setPictureFile(LPCWSTR fileName)
 {
-	FILE *Stream;
+	CFile *Stream;
 	ATLTRACE(_T("open %s READ_ONLY\n"), fileName);
 	data.Clear();
 	_isLink = false;
 	_pictureLink.Empty();
-	if ( (Stream = _wfsopen(fileName, READ_ONLY, _SH_DENYNO)) != NULL)
+	if ( (Stream = CFile::openFile(fileName, READ_ONLY, _SH_DENYNO)) != NULL)
 	{
-		data.FileRead(_filelength(_fileno(Stream)), Stream); 
-		fclose(Stream);
+		data.FileRead(toSizeClamped(Stream->size()), Stream); 
+		CFile::closeFile(Stream);
 		// rebuild the MIME type
 		_mime = CTools::instance().ExtractMimeFromPicture(data.m_pData);
 		calcInfos();
@@ -200,7 +200,7 @@ void CFlacCover::setPictureData(const BYTE *arr, size_t length)
 
 bool CFlacCover::setFileLink(LPCWSTR fileName)
 {
-	FILE *Stream;
+	CFile *Stream;
 	data.Clear();
 	_isLink = true;
 	_pictureLink.Empty();
@@ -208,10 +208,10 @@ bool CFlacCover::setFileLink(LPCWSTR fileName)
 	{
 		_pictureLink = fileName;
 		_mime = MIME_LINK;
-		if ( (Stream = _wfsopen(fileName, READ_ONLY, _SH_DENYNO)) != NULL)
+		if ( (Stream = CFile::openFile(fileName, READ_ONLY, _SH_DENYNO)) != NULL)
 		{
-			data.FileRead(_filelength(_fileno(Stream)), Stream); 
-			fclose(Stream);
+			data.FileRead(toSizeClamped(Stream->size()), Stream); 
+			CFile::closeFile(Stream);
 		}
 		calcInfos();
 		return true;

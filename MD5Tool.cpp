@@ -39,34 +39,34 @@ CMD5Tool::~CMD5Tool(void)
 bool CMD5Tool::calcHashFromFile(LPCWSTR FileName, __int64 startPos, __int64 endPos)
 {
 	md5->MD5Init(&ctx);
-	FILE *Stream;
+	CFile *Stream;
 	__int64 end, start, maxLoad;
 	hash.Empty();
-	if ( (Stream = _wfsopen(FileName, READ_ONLY, _SH_DENYWR)) != NULL)
+	if ( (Stream = CFile::openFile(FileName, READ_ONLY, _SH_DENYWR)) != NULL)
 	{
 		int len;
 		end = (endPos == 0) ? CTools::fileLength(Stream) - 1 : endPos;		
 		start = min(startPos, end);
 		maxLoad = end - start + 1;
 		ATLTRACE(_T("MD5calc, start=%I64d ende=%I64d maxLoad=%I64d\n"), start, end, maxLoad);
-		if (_fseeki64(Stream, start, SEEK_SET) == 0)
+		if (Stream->seek(start))
 		{
-			while ( (len = (int)fread(buffer, 1, (size_t)min((__int64)MAX_MD5_BUFFER, maxLoad), Stream)) )
+			while ( (len = (int)Stream->read(buffer, (size_t)min((__int64)MAX_MD5_BUFFER, maxLoad))) )
 			{
-				//ATLTRACE(_T("Old StartPos: %d "), (long)_ftelli64(Stream) - len);
-				//ATLTRACE(_T("Next StartPos: %d "), (long)_ftelli64(Stream));
+				//ATLTRACE(_T("Old StartPos: %d "), (long)Stream->tell() - len);
+				//ATLTRACE(_T("Next StartPos: %d "), (long)Stream->tell());
 				//ATLTRACE(_T("maxLoad: %d len:%d \n"), maxLoad, len);
 				md5->MD5Update(&ctx, buffer, len);
 				CTools::instance().doEvents();
 				maxLoad-=len;				
 			}		
 			hashIt();
-			fflush(Stream);
-			fclose(Stream);
+			Stream->flush();
+			CFile::closeFile(Stream);
 			ATLTRACE(_T("MD5: %s\n"), hash);
 			return true;
 		}
-		fclose(Stream);		
+		CFile::closeFile(Stream);		
 	}
 	CTools::instance().setLastError(errno);
 	return false;	

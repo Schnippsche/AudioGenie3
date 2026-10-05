@@ -67,7 +67,7 @@ bool CApeTagItem::ReadFromFile(CFile *Stream)
   return (errno == 0);
 }
 
-bool CApeTagItem::WriteToFile(FILE *Stream)
+bool CApeTagItem::WriteToFile(CFile *Stream)
 {
   errno = 0;
   CBlob tmp;
