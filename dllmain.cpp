@@ -210,9 +210,8 @@ extern "C" long __stdcall AUDIOAnalyzeFileW(LPCWSTR FileName)
 	{
 		CTools::FileSize = CTools::fileLength(Source);
 		CAnalysisStream analysisStream(Source);   // CTools::fileLength() answers for this stream from FileSize, until the end of the analysis
-		// A buffer of 8 KB instead of the 4 KB of the C library: the start of the file (header, ID3v2 tag, first MPEG frames) is read with
-		// fewer calls. Measured on 22876 files (analysis time, warm cache): 6 KB -12.0 %, 8 KB -12.5 %, 12 KB -11.2 %, 16 KB -10.9 %, 64 KB -2.1 %.
-		Source->setBuffer(8192);
+		// (the buffer of CFile has 8 KB: the start of the file is read with fewer calls than with the 4 KB of the C library; measured on 22876
+		// files, analysis time, warm cache: 6 KB -12.0 %, 8 KB -12.5 %, 12 KB -11.2 %, 16 KB -10.9 %, 64 KB -2.1 %)
 		CTools::instance().writeInfo(L"parse file '%s' [%I64d bytes]...", FileName, CTools::FileSize);
 		CTools::instance().doEvents();
 		lastFile = FileName;

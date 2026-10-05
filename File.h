@@ -20,6 +20,7 @@
 
 #pragma once
 #include <stdio.h>
+#include <memory>
 
 // The access of the library to a file that is read: the readers (ReadFromFile, load, ...) read from a CFile and not from a C stream or a handle of
 // the system, so the system functions are used in one place only (File.cpp). The sequential functions (read, seek, tell, getByte) have the meaning of
@@ -28,14 +29,14 @@
 class CFile
 {
 public:
-	CFile() : m_file(NULL), m_owned(false) {}
-	explicit CFile(FILE *file) : m_file(file), m_owned(false) {}   // a C stream that the caller has opened, it stays open
+	CFile();
+	explicit CFile(FILE *file);   // a C stream that the caller has opened, it stays open
 	~CFile() { close(); }
-	// opens the file for reading, other programs may read and write it at the same time; false if it cannot be opened (errno is set)
+	// opens the file for reading with the functions of the system, other programs may read and write it at the same time; false if it cannot be
+	// opened (errno is set). The reads are positioned reads (one system call each, no seek) and are buffered for the sequential functions.
 	bool openRead(LPCWSTR fileName);
 	void close();
-	bool isOpen() const { return m_file != NULL; }
-	FILE *stream() const { return m_file; }   // the C stream, for the functions that copy or write
+	bool isOpen() const { return m_handle != INVALID_HANDLE_VALUE || m_file != NULL; }
 	// size of the file in bytes, -1 on an error
 	__int64 size();
 	// sequential access
@@ -44,16 +45,21 @@ public:
 	__int64 tell();
 	size_t read(void *destination, size_t length);
 	int getByte();                     // -1 at the end of the file
-	// Reads length bytes from the position pos directly from the file (no buffer): afterwards the buffer of the stream is empty, the position is
-	// behind the last byte. For large blocks and for filling the caches of CTools::readAt.
+	// Reads length bytes from the position pos directly from the file (no buffer, one system call); the position is behind the last byte.
+	// For large blocks and for filling the caches of CTools::readAt.
 	size_t readDirect(__int64 pos, void *destination, size_t length);
-	// like readDirect, directly at the current position of the file; only valid if the buffer of the stream is empty (behind readDirect or a seek)
+	// like readDirect, directly at the current position of the file
 	size_t readDirectHere(void *destination, size_t length);
-	void setBuffer(size_t size);       // buffer of the sequential reads, before the first read
 
 private:
 	CFile(const CFile &);
 	CFile &operator=(const CFile &);
-	FILE *m_file;
-	bool m_owned;
+	static const size_t BUFFER_SIZE = 8192;
+	size_t readRaw(__int64 pos, void *destination, size_t length);   // positioned read of the system
+	FILE *m_file;               // a C stream of the caller (the functions that write a file read the old one that way)
+	HANDLE m_handle;            // the file opened by openRead
+	__int64 m_pos;              // the position of the sequential functions (handle)
+	__int64 m_bufferStart;      // the buffer holds the bytes of the file from m_bufferStart on (handle)
+	size_t m_bufferLength;
+	std::unique_ptr<BYTE[]> m_buffer;   // allocated with the first sequential read
 };
