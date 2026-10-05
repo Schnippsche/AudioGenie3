@@ -53,7 +53,7 @@ static unsigned __int64 GranulePosition(COGGHeader &page)
 
 // Reads the last page of the stream that has a granule position (the number of the samples): the file is searched from its end
 // backwards. A page is only accepted if it is complete and belongs to the stream.
-__int64 COggVorbis::GetSamples(FILE *Source)
+__int64 COggVorbis::GetSamples(CFile *Source)
 {
 	const __int64 fileSize = CTools::FileSize;
 	const long BLOCK = 65536 + 512;
@@ -96,7 +96,7 @@ __int64 COggVorbis::GetSamples(FILE *Source)
 }
 
 // Reads the identification header (Vorbis or Opus) and the packets of the comment header and, for Vorbis, the setup header.
-bool COggVorbis::GetInfo(FILE *Source, bool withComments)
+bool COggVorbis::GetInfo(CFile *Source, bool withComments)
 {
 	commentPacket.Clear();
 	setupLacing.Clear();
@@ -222,7 +222,7 @@ bool COggVorbis::GetInfo(FILE *Source, bool withComments)
 	return true;
 }
 
-void COggVorbis::ReadTag(FILE *Source)
+void COggVorbis::ReadTag(CFile *Source)
 {
 	Source;
 	AnalyzeVorbisComments(commentPacket.m_pData + TagIdLength(), commentPacket.GetLength() - TagIdLength());
@@ -469,7 +469,7 @@ void COggVorbis::ApplyParameters()
 	FSamples = Samples;
 }
 
-bool COggVorbis::ReadFromFile(FILE *Stream)
+bool COggVorbis::ReadFromFile(CFile *Stream)
 {
 	/* Read data from file */
 	if (GetInfo(Stream, true))
@@ -487,7 +487,8 @@ bool COggVorbis::SaveTag(LPCWSTR FileName)
 	FILE *Source;
 	if ( (Source = _wfsopen(FileName, READ_ONLY, _SH_DENYWR)) != NULL)
 	{
-		Result = GetInfo(Source, false);
+		CFile source(Source);
+		Result = GetInfo(&source, false);
 		fclose(Source);
 		if (Result && (multiplexed || !valid))
 		{

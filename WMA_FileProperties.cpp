@@ -41,7 +41,7 @@ void CWMA_FileProperties::addToFileSize(__int64 delta)
 		_data.m_pData[16 + i] = (BYTE)((newSize >> (8 * i)) & 0xFF);
 }
 
-bool CWMA_FileProperties::load(FILE *Stream, size_t maxLen)
+bool CWMA_FileProperties::load(CFile *Stream, size_t maxLen)
 {
 	ATLTRACE(_T("FileProperties with %i bytes\n"), maxLen);
 	_data.FileRead(80, Stream);

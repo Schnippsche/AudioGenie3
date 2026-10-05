@@ -46,7 +46,7 @@ CMonkeyTagInfo::~CMonkeyTagInfo()
 // (32 bit) only with the flag 16. From 3.98: a descriptor ("MAC ", version, padding, descriptor bytes, header bytes, seek table bytes, header data
 // bytes, frame data bytes, high part, terminating bytes, MD5) and behind it, at the offset descriptor bytes, the header: compression level,
 // format flags, blocks per frame, blocks of the final frame, frames, bits per sample, channels, sample rate.
-bool CMonkeyTagInfo::ReadFromFile(FILE *Stream)
+bool CMonkeyTagInfo::ReadFromFile(CFile *Stream)
 {
 	const __int64 start = CTools::seqTell(Stream);
 	CBlob tmp;

@@ -31,7 +31,7 @@ public:
 	CWMA_Padding();
 	CWMA_Padding(size_t newSize);
 	~CWMA_Padding(void);
-	bool load(FILE *Stream, size_t maxLen);
+	bool load(CFile *Stream, size_t maxLen);
 	size_t getDataSize() { return _size; };
 	void buildData();
 	void setPaddingSize(size_t newSize);

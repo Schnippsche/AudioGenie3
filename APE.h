@@ -58,11 +58,11 @@ private:
 	CID3V1 tmpid3v1;
 	CApeTagItem* item{};
 	CBlob Data;
-	bool ReadFooter(FILE *Stream);
+	bool ReadFooter(CFile *Stream);
 	__int64 _footerPos;	// position of the footer of an APE tag at the end of the file
 	bool LocateTail(LPCWSTR FileName, __int64 &start, __int64 &total);
-	bool ReadFields(FILE *Stream, __int64 headOffset);
-	bool ReadHeadTag(FILE *Stream, __int64 offset, __int64 length);
+	bool ReadFields(CFile *Stream, __int64 headOffset);
+	bool ReadHeadTag(CFile *Stream, __int64 offset, __int64 length);
 	bool RewriteRegion(LPCWSTR FileName, __int64 offset, __int64 oldLength, CBlob *data);
 	void BuildTagData();
 	bool TruncateFile(LPCWSTR FileName, int Offset);
@@ -78,13 +78,13 @@ public:
 	// a tag at the end of the file or at the beginning (behind an ID3v2 tag)
 	bool Exists()          { return (CTools::APESize > 0 || (CTools::APEHeadSize > 0 && TagInfo.Version != 0)); };
 	// looks for a tag at the beginning of the file: directly at the start or behind an ID3v2 tag; it begins with a header
-	static bool FindHeadTag(FILE *Stream, __int64 &offset, __int64 &length);
+	static bool FindHeadTag(CFile *Stream, __int64 &offset, __int64 &length);
 	// looks for the footer of a tag at the end of the file: directly in front of the ID3v1 data or in front of a Lyrics3 v2.00 tag
 	// that is between them (lyricsAfter = its size)
-	static bool FindTailFooter(FILE *Stream, int id3v1Size, bool checkLyrics, __int64 &footerPos, __int64 &lyricsAfter);
+	static bool FindTailFooter(CFile *Stream, int id3v1Size, bool checkLyrics, __int64 &footerPos, __int64 &lyricsAfter);
 	void ResetData();
 	void Print();
-	bool ReadFromFile(FILE *Stream);
+	bool ReadFromFile(CFile *Stream);
 	bool RemoveFromFile(LPCWSTR FileName, bool saveID3v1Tag);
 	bool SaveToFile(LPCWSTR FileName);
 	CAtlString GetTagVersion();  

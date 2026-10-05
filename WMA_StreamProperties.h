@@ -33,7 +33,7 @@ class CWMA_StreamProperties :
 public:
 	CWMA_StreamProperties(void);
 	~CWMA_StreamProperties(void);
-	bool load(FILE *Stream, size_t maxLen);
+	bool load(CFile *Stream, size_t maxLen);
 	void Empty();
 	u16 CodecID;
 	bool isAudio() { return IsEqualIID(StreamType, WMA_AUDIO_MEDIA_ID) != 0; };   // a stream can be a video stream (the file has several)

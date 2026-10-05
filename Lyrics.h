@@ -55,14 +55,14 @@ static const char *FIELD_LIST[] = {
 		BYTE FVersion;
 		bool WriteRegion(LPCWSTR FileName, __int64 start, __int64 oldLength, CBlob *data);
 		bool SetTagItem(const char ID[], long Pos, long DataSize);
-		bool ReadHeader(FILE *Stream);
-		bool ReadFramesOld(FILE *Stream, bool isDeleting);
-		bool ReadFramesNew(FILE *Stream, bool isDeleting);
+		bool ReadHeader(CFile *Stream);
+		bool ReadFramesOld(CFile *Stream, bool isDeleting);
+		bool ReadFramesNew(CFile *Stream, bool isDeleting);
 		void BuildTagData();
 	public:
 		CLyrics();
 		virtual ~CLyrics();
-		void ReadFromFile(FILE *Stream);
+		void ReadFromFile(CFile *Stream);
 		bool RemoveFromFile(LPCWSTR FileName);
 		bool SaveToFile(LPCWSTR FileName);
 		CAtlString GetTagVersion();

@@ -38,7 +38,7 @@ CWMA_Padding::~CWMA_Padding(void)
 {
 }
 
-bool CWMA_Padding::load(FILE *Stream, size_t maxLen)
+bool CWMA_Padding::load(CFile *Stream, size_t maxLen)
 {
 	ATLTRACE(_T("Padding with %i bytes\n"), maxLen);
 	CTools::seqSeek(Stream, CTools::seqTell(Stream) + (__int64)(long)maxLen);

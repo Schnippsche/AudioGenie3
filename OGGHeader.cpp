@@ -40,7 +40,7 @@ COGGHeader::~COGGHeader()
 {
 
 }
-bool COGGHeader::ReadFromFile(FILE *Stream)
+bool COGGHeader::ReadFromFile(CFile *Stream)
 {
   errno = 0;
   // the first 27 bytes of the page in one read (the identification "OggS", then 23 bytes)

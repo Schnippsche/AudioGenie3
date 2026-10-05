@@ -25,7 +25,7 @@
 #include "stdafx.h"
 #include "ApeTagInfo.h"
 
-bool CApeTagInfo::ReadFromFile(FILE *Stream)
+bool CApeTagInfo::ReadFromFile(CFile *Stream)
 {
   errno = 0;
   CBlob tmp;

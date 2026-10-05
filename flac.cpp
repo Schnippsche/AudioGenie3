@@ -176,7 +176,7 @@ static bool ParseFrameHeader(const BYTE *h, size_t available, int channels, int 
 
 // The total number of the samples is unknown (0) in the STREAMINFO of a stream that was written to a pipe. It is the end of the last
 // frame: the file is searched from its end for the last frame header.
-__int64 CFLAC::SamplesOfLastFrame(FILE *Stream)
+__int64 CFLAC::SamplesOfLastFrame(CFile *Stream)
 {
 	const __int64 low = firstAudioPosition;
 	const long BLOCK = 256 * 1024;
@@ -188,8 +188,7 @@ __int64 CFLAC::SamplesOfLastFrame(FILE *Stream)
 		__int64 start = end - BLOCK;
 		if (start < low)
 			start = low;
-		_fseeki64(Stream, start, SEEK_SET);
-		block.FileRead((size_t)(end - start) + 32, Stream);
+		block.FileReadAt(Stream, start, (size_t)(end - start) + 32);
 		const long length = (long)block.GetLength();
 		for (long i = (long)(end - start) - 1; i >= 0; i--)
 		{
@@ -207,7 +206,7 @@ __int64 CFLAC::SamplesOfLastFrame(FILE *Stream)
 	return 0;
 }
 
-bool CFLAC::ReadFromFile(FILE *Stream)
+bool CFLAC::ReadFromFile(CFile *Stream)
 {
 	/* Read FLAC's Audio header data */
 	ResetData();
@@ -242,7 +241,7 @@ bool CFLAC::ReadFromFile(FILE *Stream)
 }
 
 // the header of a metadata block: last-metadata-block flag (1 bit), block type (7 bits, 127 is invalid), length (24 bits, without the header)
-bool CFLAC::ReadBlockHeader(FILE *Stream)
+bool CFLAC::ReadBlockHeader(CFile *Stream)
 {
 	memset(tmpHdr, 0, 4);
 	const size_t got = CTools::readAt(Stream, readPosition, tmpHdr, 4);
@@ -269,7 +268,7 @@ void CFLAC::BuildBlockHeader(int Len, BYTE typ)
 }
 
 // false if the block is damaged: the header is invalid or the block reaches over the end of the file (a block of length 0 is valid)
-bool CFLAC::ReadBlock(FILE *Stream, bool first)
+bool CFLAC::ReadBlock(CFile *Stream, bool first)
 {
 	if (!ReadBlockHeader(Stream))
 	{

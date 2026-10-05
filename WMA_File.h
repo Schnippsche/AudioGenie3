@@ -46,7 +46,7 @@ class CWMA_File: public CAudio
 public:
 	CWMA_File(void);
 	~CWMA_File(void);
-	bool ReadFromFile(FILE *Stream);
+	bool ReadFromFile(CFile *Stream);
 	bool SaveToFile(LPCWSTR FileName);
 	CAtlString GetUserItem(CAtlString key);
     void SetUserItem(LPCWSTR key, LPCWSTR item);

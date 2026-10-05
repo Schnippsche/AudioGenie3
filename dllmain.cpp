@@ -48,7 +48,7 @@ static bool IsOggFormat(BYTE format)
 	return format == AUDIO_FORMAT_OGGVORBIS || format == AUDIO_FORMAT_OGGOPUS;
 }
 
-BYTE GetFileFormat(FILE *Stream)
+BYTE GetFileFormat(CFile *Stream)
 {
 	CTools::APEHeadSize = 0;
 	BYTE result = header.ReadFromFileAt(Stream, 0);
@@ -73,8 +73,7 @@ BYTE GetFileFormat(FILE *Stream)
 	if (header.IsApeHeader() && CAPE::FindHeadTag(Stream, apeOffset, apeLength))
 	{
 		CTools::APEHeadSize = (int)apeLength;
-		_fseeki64(Stream, apeOffset + apeLength, SEEK_SET);
-		result = header.ReadFromFile(Stream);
+		result = header.ReadFromFileAt(Stream, apeOffset + apeLength);
 		if (result == AUDIO_FORMAT_INVALID)
 			result = AUDIO_FORMAT_UNKNOWN;
 	}
@@ -91,10 +90,11 @@ BYTE GetFileFormat(FILE *Stream)
 
 BYTE GetFormat(LPCWSTR FileName)
 {
-	FILE *Source;
+	CFile sourceFile;
+	CFile *Source = &sourceFile;
 	BYTE result = AUDIO_FORMAT_UNKNOWN;
 	FileName = getValidPointer(FileName);
-	if ( (Source = _wfsopen(FileName, READ_ONLY, _SH_DENYNO)) != NULL)
+	if (sourceFile.openRead(FileName))
 	{
 		result = GetFileFormat(Source);
 		if (result == AUDIO_FORMAT_UNKNOWN || result == AUDIO_FORMAT_WAV) // either AAC or MPEG or MPEG with a WAV header in front 
@@ -122,7 +122,7 @@ BYTE GetFormat(LPCWSTR FileName)
 				tmpMpeg.ResetData();
 			}
 		}
-		fclose(Source);
+		Source->close();
 	}
 	return result;
 }
@@ -196,7 +196,8 @@ void ClearAllTags()
 extern "C" long __stdcall AUDIOAnalyzeFileW(LPCWSTR FileName)
 {
 	ClearAllTags();
-	FILE *Source;
+	CFile sourceFile;
+	CFile *Source = &sourceFile;
 	// copy, because FileName may point to lastFile (internal calls AUDIOAnalyzeFileW(lastFile))
 	CAtlString requestedFile(getValidPointer(FileName));
 	// "last analyzed file" only counts again once this analysis was able to open the file. Otherwise a following
@@ -205,13 +206,13 @@ extern "C" long __stdcall AUDIOAnalyzeFileW(LPCWSTR FileName)
 	FileName = requestedFile;
 	errno = 0;
 	ATLTRACE(_T("Analyzing %s\n"), FileName);
-	if ( (Source = _wfsopen(FileName, READ_ONLY, _SH_DENYNO)) != NULL)
+	if (sourceFile.openRead(FileName))
 	{
 		CTools::FileSize = CTools::fileLength(Source);
 		CAnalysisStream analysisStream(Source);   // CTools::fileLength() answers for this stream from FileSize, until the end of the analysis
 		// A buffer of 8 KB instead of the 4 KB of the C library: the start of the file (header, ID3v2 tag, first MPEG frames) is read with
 		// fewer calls. Measured on 22876 files (analysis time, warm cache): 6 KB -12.0 %, 8 KB -12.5 %, 12 KB -11.2 %, 16 KB -10.9 %, 64 KB -2.1 %.
-		setvbuf(Source, NULL, _IOFBF, 8192);
+		Source->setBuffer(8192);
 		CTools::instance().writeInfo(L"parse file '%s' [%I64d bytes]...", FileName, CTools::FileSize);
 		CTools::instance().doEvents();
 		lastFile = FileName;
@@ -226,7 +227,7 @@ extern "C" long __stdcall AUDIOAnalyzeFileW(LPCWSTR FileName)
 		// distinguish cases by format
 		if (possibleFormat == AUDIO_FORMAT_INVALID) // clearly invalid format
 		{
-			fclose(Source);
+			Source->close();
 			CTools::instance().writeInfo(_T("no valid audio format detected"));
 			return AUDIO_FORMAT_UNKNOWN;
 		}
@@ -477,7 +478,7 @@ extern "C" long __stdcall AUDIOAnalyzeFileW(LPCWSTR FileName)
 		}
 
 ende:
-		fclose(Source);
+		Source->close();
 		if (Format == 0)
 			CTools::instance().writeInfo(_T("unknown or invalid audio format detected"));					
 	}

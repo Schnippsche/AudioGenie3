@@ -27,7 +27,7 @@ public:
 	CMP4_MDAT(void);
 	~CMP4_MDAT(void);
 	u64 getSize();
-	void load(FILE *stream, u64 offset, u64 size);
+	void load(CFile *stream, u64 offset, u64 size);
 	__int64 getPosition() { return _position; };
 	void save(FILE *Destination);
 	void setSourceFile(CAtlString file) { _sourcefile = file; };

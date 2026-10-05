@@ -41,7 +41,7 @@ CWMA_MetadataLibrary::~CWMA_MetadataLibrary(void)
 }
 
 
-bool CWMA_MetadataLibrary::load(FILE *Stream, size_t maxLen)
+bool CWMA_MetadataLibrary::load(CFile *Stream, size_t maxLen)
 {
 	ATLTRACE(_T("Metadata Library with %i bytes\n"), maxLen);
 	_data.FileRead(2, Stream);

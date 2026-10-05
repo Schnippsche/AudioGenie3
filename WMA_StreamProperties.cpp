@@ -43,7 +43,7 @@ void CWMA_StreamProperties::Empty()
 	BitsPerSample = 0;
 	CodecSpecificDataSize = 0;
 }
-bool CWMA_StreamProperties::load(FILE *Stream, size_t maxLen)
+bool CWMA_StreamProperties::load(CFile *Stream, size_t maxLen)
 {
 	ATLTRACE(_T("StreamProperties with %u Bytes\n"), maxLen);
 	_data.FileRead(maxLen, Stream);

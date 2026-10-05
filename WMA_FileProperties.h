@@ -29,7 +29,7 @@ class CWMA_FileProperties:public CWMA_Object
 public:
 	CWMA_FileProperties(void);
 	~CWMA_FileProperties(void);
-	bool load(FILE *Stream, size_t maxLen);	
+	bool load(CFile *Stream, size_t maxLen);	
 	long getBitRate() { return MaxBitrate / 1000; };
 	// the play duration (100 ns) contains the preroll (ms); a live stream (broadcast flag) has no duration
 	float getDuration() { const double d = PlayDuration / 10000000.0 - Preroll / 1000.0; return (d > 0.0 && (Flags & 1) == 0) ? (float)d : 0.0f; };

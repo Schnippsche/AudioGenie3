@@ -27,7 +27,7 @@ class CMP4_SOUN:public CMP4Atom
 public:
 	CMP4_SOUN(void);
 	~CMP4_SOUN(void);
-	void load(FILE *stream, u64 offset, u64 size);
+	void load(CFile *stream, u64 offset, u64 size);
 	int version;
 	int revision, vendor, channels, sampleSize, compressionID, packetSize, sampleRate;
 	int samplesPerPacket, bytesPerPacket, bytesPerFrame, bytesPerSample;
@@ -41,7 +41,7 @@ class CMP4_STSD : public CMP4Atom
 public:
 	CMP4_STSD(void);
 	~CMP4_STSD(void);
-	void load(FILE *stream, u64 offset, u64 size);
+	void load(CFile *stream, u64 offset, u64 size);
 	CMP4_MDHD *mdhd;		// media header of the track: it knows whether the track is a sound track
 	int channels;
 	long sampleRate;		// Hz, 0 if the entry does not have one

@@ -45,7 +45,7 @@ CWAVFile::~CWAVFile()
 	delete mainContainer;
 }
 
-bool CWAVFile::ReadWAV(FILE *Stream)
+bool CWAVFile::ReadWAV(CFile *Stream)
 {
 	return mainContainer->load(Stream, CTools::ID3v2Size, (u64)(CTools::FileSize - CTools::ID3v1Size));
 }
@@ -364,7 +364,7 @@ float CWAVFile::GetDuration()
 	return 0;
 }
 
-bool CWAVFile::ReadFromFile(FILE *Stream)
+bool CWAVFile::ReadFromFile(CFile *Stream)
 {
 	/* Process data if loaded and header valid */
 	if (ReadWAV(Stream))
@@ -557,7 +557,8 @@ bool CWAVFile::SaveToFile(LPCWSTR FileName)
 	_fseeki64(Source, CTools::ID3v2Size, SEEK_SET);
 	CTools::FileSize = CTools::fileLength(Source);
 	CWAVRIFFContainer *newData = new CWAVRIFFContainer();
-	if (!newData->load(Source, CTools::ID3v2Size, (u64)(CTools::FileSize -  CTools::ID3v1Size)))
+	CFile oldFile(Source);
+	if (!newData->load(&oldFile, CTools::ID3v2Size, (u64)(CTools::FileSize -  CTools::ID3v1Size)))
 	{
 		CTools::instance().setLastError(ERR_INVALID_FORMAT);
 		newData->Remove();

@@ -43,7 +43,7 @@ CMP4_SOUN::~CMP4_SOUN(void)
 {
 }
 
-void CMP4_SOUN::load(FILE *Stream, u64 offset, u64 size)
+void CMP4_SOUN::load(CFile *Stream, u64 offset, u64 size)
 {
 	_blob.FileReadAt(Stream, (__int64)offset, (size_t)size);
 	if (_blob.GetLength() >= 20)
@@ -85,7 +85,7 @@ CMP4_STSD::~CMP4_STSD(void)
 {
 }
 
-void CMP4_STSD::load(FILE *Stream, u64 offset, u64 size)
+void CMP4_STSD::load(CFile *Stream, u64 offset, u64 size)
 {
 	_blob.FileReadAt(Stream, (__int64)offset, (size_t)size);
 	channels = 0;

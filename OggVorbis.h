@@ -113,9 +113,9 @@ static const unsigned int CRC_TABLE[] = {
 		float FGetDuration();
 		int FGetBitRate();
 		bool FIsValid();
-		void ReadTag(FILE * Source);
-		__int64 GetSamples(FILE * Source);
-		bool GetInfo(FILE *Stream, bool withComments);
+		void ReadTag(CFile *Source);
+		__int64 GetSamples(CFile *Source);
+		bool GetInfo(CFile *Stream, bool withComments);
 		void BuildTag();
 		int BuildHeaderPages(CBlob &out);
 		bool CopyPages(FILE *Source, FILE *Destination, int delta);
@@ -127,7 +127,7 @@ static const unsigned int CRC_TABLE[] = {
 		COggVorbis();
 		virtual ~COggVorbis();
 		void ResetData();
-		bool ReadFromFile(FILE *Stream);                               /* Load data */
+		bool ReadFromFile(CFile *Stream);                               /* Load data */
 		bool SaveTag(LPCWSTR FileName);                                /* Save tag data */
 		bool RemoveTag(LPCWSTR FileName);                               /* Clear tag data */
 		long GetChannels()       { return FChannelModeID; }

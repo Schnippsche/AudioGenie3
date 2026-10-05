@@ -78,10 +78,10 @@ private:
 	long FChannels;
 	__int64 FSamples;
 	__int64 FBeginSilence;
-	bool ReadHeaderSV8(FILE *Stream);
+	bool ReadHeaderSV8(CFile *Stream);
 	static BYTE ProfileFromIndex(BYTE index);
 	bool FIsCorrupted();
-	bool ReadHeader(FILE *Stream);
+	bool ReadHeader(CFile *Stream);
 	int GetBitRateIntern();
 	__int64 GetSamples64();
 	BYTE GetChannelModeID();
@@ -91,7 +91,7 @@ public:
 	CMPEGPlus();
 	virtual ~CMPEGPlus();
 	void ResetData();
-	bool ReadFromFile(FILE *Stream);
+	bool ReadFromFile(CFile *Stream);
 	bool IsValid()             { return FValid; };
 	long GetChannels()         { return FChannels; }
 	CAtlString GetChannelMode();

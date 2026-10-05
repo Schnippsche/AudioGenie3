@@ -40,7 +40,7 @@ CVorbisHeader::~CVorbisHeader()
 {
 
 }
-bool CVorbisHeader::ReadFromFile(FILE *Stream)
+bool CVorbisHeader::ReadFromFile(CFile *Stream)
 {
 	errno = 0;
 	CTools::seqRead(Stream, ID, 7);                          /* Always #1 + "vorbis" */

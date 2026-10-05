@@ -41,7 +41,7 @@ u64 CWAVDataChunk::getSize()
 	return _size + 8;	
 }
 
-bool CWAVDataChunk::load(FILE *Stream, u64 offset, u64 size)
+bool CWAVDataChunk::load(CFile *Stream, u64 offset, u64 size)
 {
 	Stream;
 	_offset = offset;

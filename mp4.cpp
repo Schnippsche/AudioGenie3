@@ -64,7 +64,7 @@ void CMP4::ResetData()
 	CMP4_AtomFactory::lastAudioPos = 0;
 }
 
-bool CMP4::ReadFromFile(FILE *Stream)
+bool CMP4::ReadFromFile(CFile *Stream)
 {
 	//ResetData();
 	CMP4_AtomFactory::lastAudioPos = CTools::FileSize;
@@ -549,7 +549,8 @@ bool CMP4::SaveToFile(LPCWSTR FileName)
 	_fseeki64(Source, CTools::ID3v2Size, SEEK_SET);
 	CTools::FileSize = CTools::fileLength(Source);
 	CMP4_MainContainer *newData = new CMP4_MainContainer();
-	newData->load(Source, CTools::ID3v2Size, (u64)(CTools::FileSize - CTools::ID3v1Size));
+	CFile oldFile(Source);
+	newData->load(&oldFile, CTools::ID3v2Size, (u64)(CTools::FileSize - CTools::ID3v1Size));
 	atom = newData->find(MDAT_PFAD);
 	if (atom == NULL)
 	{

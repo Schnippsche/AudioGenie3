@@ -30,7 +30,7 @@ CMP4_FTYP::CMP4_FTYP(void)
 CMP4_FTYP::~CMP4_FTYP(void)
 {
 }
-void CMP4_FTYP::load(FILE *Stream,  u64 offset, u64 size)
+void CMP4_FTYP::load(CFile *Stream,  u64 offset, u64 size)
 {
 	_blob.FileReadAt(Stream, (__int64)offset, (size_t)size);
 	if (_blob.GetLength() > 8)

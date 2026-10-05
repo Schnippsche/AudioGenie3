@@ -37,7 +37,7 @@ public:
 	CAtlString Key;
 	CBlob Value;
 
-	bool ReadFromFile(FILE *Stream);
+	bool ReadFromFile(CFile *Stream);
 	bool WriteToFile(FILE *Stream);
 	bool isBinary();
 	void Reset();

@@ -147,19 +147,18 @@ bool ParseAdtsHeader(const BYTE *h, size_t available, AdtsHeader &f)
 // reads a file in blocks: At() gives a pointer to the bytes at a position of the file (NULL behind the end)
 class FileWindow
 {
-	FILE *file;
+	CFile *file;
 	__int64 start;
 	size_t length;
 	std::vector<BYTE> buffer;   // 64 KB, on the heap: as a member of an object on the stack it made the function use 66 KB of stack
 public:
-	FileWindow(FILE *f) : file(f), start(0), length(0), buffer(64 * 1024) {}
+	FileWindow(CFile *f) : file(f), start(0), length(0), buffer(64 * 1024) {}
 	const BYTE* At(__int64 position, size_t need, size_t &available)
 	{
 		if (position < start || position + (__int64)need > start + (__int64)length)
 		{
-			_fseeki64(file, position, SEEK_SET);
 			start = position;
-			length = fread(buffer.data(), 1, buffer.size(), file);
+			length = CTools::readAt(file, position, buffer.data(), buffer.size());
 		}
 		if (length == 0 || position >= start + (__int64)length)
 		{
@@ -234,12 +233,11 @@ bool CAAC::IsValid()
 		FBitRate > 0);
 }
 
-BYTE CAAC::RecognizeHeaderType(FILE *Source)
+BYTE CAAC::RecognizeHeaderType(CFile *Source)
 {
 	BYTE Header[9] = { 0 };
 	/* Get header type of the file */
-	_fseeki64(Source, CTools::audioStart(), SEEK_SET);
-	const size_t count = fread(Header, 1, sizeof(Header), Source);
+	const size_t count = CTools::readAt(Source, CTools::audioStart(), Header, sizeof(Header));
 	if (count >= 4 && memcmp(Header, ADIF, 4) == 0)
 		return AAC_HEADER_TYPE_ADIF;
 	AdtsHeader adts;
@@ -251,11 +249,10 @@ BYTE CAAC::RecognizeHeaderType(FILE *Source)
 // ADIF: "ADIF", copyright_id_present (1 bit, then 72 bits), original_copy, home, bitstream_type (0: constant rate, 1: variable rate),
 // bitrate (23 bits), number_of_program_config_elements - 1 (4 bits), the buffer fullness (20 bits, only with a constant rate), then the
 // program config elements
-bool CAAC::ReadADIF(FILE *Source)
+bool CAAC::ReadADIF(CFile *Source)
 {
 	BYTE header[512];
-	_fseeki64(Source, CTools::audioStart(), SEEK_SET);
-	const size_t count = fread(header, 1, sizeof(header), Source);
+	const size_t count = CTools::readAt(Source, CTools::audioStart(), header, sizeof(header));
 	BitReader bits(header, count, 32);
 	if (bits.Get(1))
 		bits.Get(24), bits.Get(24), bits.Get(24);   // copyright_id, 72 bits
@@ -278,7 +275,7 @@ bool CAAC::ReadADIF(FILE *Source)
 
 // ADTS: all frames are counted, the duration is the number of the samples (1024 per raw data block) divided by the sample rate. After
 // damaged data the next frame is looked for: it has to be followed by a frame or by the end of the file.
-bool CAAC::ReadADTS(FILE *Source)
+bool CAAC::ReadADTS(CFile *Source)
 {
 	FileWindow window(Source);
 	const __int64 end = CTools::FileSize;
@@ -319,8 +316,7 @@ bool CAAC::ReadADTS(FILE *Source)
 			if (f.channelConfig == 0 && f.blocks == 1)
 			{
 				BYTE raw[256];
-				_fseeki64(Source, position + f.headerLength, SEEK_SET);
-				BitReader bits(raw, fread(raw, 1, sizeof(raw), Source));
+				BitReader bits(raw, CTools::readAt(Source, position + f.headerLength, raw, sizeof(raw)));
 				ProgramConfig pce = { 0, 0, 0 };
 				if (bits.Get(3) == 5 && ReadProgramConfig(bits, pce))   // id_syn_ele: ID_PCE
 					FChannels = (BYTE)pce.channels;
@@ -341,7 +337,7 @@ bool CAAC::ReadADTS(FILE *Source)
 	return true;
 }
 
-bool CAAC::ReadFromFile(FILE *Source)
+bool CAAC::ReadFromFile(CFile *Source)
 {
 	/* Read data from file */
 	ResetData();

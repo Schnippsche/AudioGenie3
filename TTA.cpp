@@ -100,7 +100,7 @@ bool CTTA::CheckValid()
 	return false;
 }
 
-bool CTTA::ReadFromFile(FILE *Stream)
+bool CTTA::ReadFromFile(CFile *Stream)
 {
 	/* Read header data */
 	ResetData();

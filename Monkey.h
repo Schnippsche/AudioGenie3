@@ -53,7 +53,7 @@ private:
 public:
 	CMonkey();
 	virtual ~CMonkey();
-	bool ReadFromFile(FILE *Stream);
+	bool ReadFromFile(CFile *Stream);
 	void ResetData();
 	bool IsValid();
 	CAtlString GetFileVersion();

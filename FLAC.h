@@ -71,9 +71,9 @@ private:
   bool metadataComplete;                              // the metadata blocks were read up to the last block
   bool commentRead;                                // the first Vorbis comment block was read
   strBlockHeader BlockHeader;
-  bool ReadBlockHeader(FILE *Stream);
-  bool ReadBlock(FILE *Stream, bool first);
-  __int64 SamplesOfLastFrame(FILE *Stream);
+  bool ReadBlockHeader(CFile *Stream);
+  bool ReadBlock(CFile *Stream, bool first);
+  __int64 SamplesOfLastFrame(CFile *Stream);
   void AnalyzeComment();
   void AnalyzeStreamInfo();
   void BuildComment();
@@ -86,7 +86,7 @@ public:
   CFLAC();
   virtual ~CFLAC();
   void ResetData();
-  bool ReadFromFile(FILE *Stream);
+  bool ReadFromFile(CFile *Stream);
   bool SaveToFile(LPCWSTR FileName);
   bool IsValid();
   CAtlArray<CFlacCover *> covers;

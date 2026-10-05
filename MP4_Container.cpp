@@ -168,7 +168,7 @@ CMP4Atom* CMP4_Container::find(CAtlString atomID)
 	return NULL;
 }
 
-void CMP4_Container::load(FILE *Stream, u64 offset, u64 size)
+void CMP4_Container::load(CFile *Stream, u64 offset, u64 size)
 {
 	_size = size;
 	_offset = offset;

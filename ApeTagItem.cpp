@@ -41,7 +41,7 @@ CApeTagItem::~CApeTagItem()
 
 }
 
-bool CApeTagItem::ReadFromFile(FILE *Stream)
+bool CApeTagItem::ReadFromFile(CFile *Stream)
 {
   errno = 0;
   CBlob tmp;

@@ -81,7 +81,7 @@ static CAtlString ReadFieldWithExtension(CBlob *blob, size_t pos, size_t len, CB
   return text.TrimRight();
 }
 
-bool CID3V1TagInfo::ReadFromFile(FILE *Stream)
+bool CID3V1TagInfo::ReadFromFile(CFile *Stream)
 {
   errno = 0;
   _exists = false;

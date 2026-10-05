@@ -153,7 +153,7 @@ long CWavPack::GetChannels()
 
 // The blocks of the first frame (up to the block with the final flag): the number of the channels (a mono block has 1 channel, another block 2)
 // and the sample rate if it is in a sub-block. A frame has at most 255 blocks.
-void CWavPack::ReadFrame(FILE *Stream, __int64 position)
+void CWavPack::ReadFrame(CFile *Stream, __int64 position)
 {
 	_channels = 0;
 	for (int block = 0; block < 255; block++)
@@ -202,7 +202,7 @@ void CWavPack::ReadFrame(FILE *Stream, __int64 position)
 
 // The total number of the samples is unknown in a file that was written to a pipe: it is the end of the last block (block index + samples).
 // The file is searched from its end for the last block header.
-__int64 CWavPack::SamplesOfLastBlock(FILE *Stream)
+__int64 CWavPack::SamplesOfLastBlock(CFile *Stream)
 {
 	const long BLOCK = 256 * 1024;
 	CBlob block;
@@ -233,7 +233,7 @@ __int64 CWavPack::SamplesOfLastBlock(FILE *Stream)
 	return 0;
 }
 
-bool CWavPack::ReadFromFile(FILE *Stream)
+bool CWavPack::ReadFromFile(CFile *Stream)
 {
 	/* Read header data */
 	ResetData();

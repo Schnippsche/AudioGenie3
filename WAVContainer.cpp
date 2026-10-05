@@ -63,7 +63,7 @@ CWAVChunk* CWAVContainer::find(u32 ID)
 	return NULL;
 }
 
-bool CWAVContainer::load(FILE *Stream, u64 offset, u64 size)
+bool CWAVContainer::load(CFile *Stream, u64 offset, u64 size)
 {
 	const u64 endPos = offset + size;
 	CBlob header;

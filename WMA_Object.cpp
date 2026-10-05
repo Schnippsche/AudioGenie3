@@ -57,7 +57,7 @@ size_t CWMA_Object::getDataSize()
 	return _data.GetLength();
 }
 
-bool CWMA_Object::load(FILE *Stream, size_t dataSize)
+bool CWMA_Object::load(CFile *Stream, size_t dataSize)
 {
 	ATLTRACE(_T("WMA_Object with %i bytes\n"), dataSize);
 	_data.FileRead(dataSize, Stream);

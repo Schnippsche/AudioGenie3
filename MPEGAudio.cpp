@@ -748,7 +748,7 @@ bool CMPEGAudio::FindFrame()
 	return true;
 }
 
-bool CMPEGAudio::ReadFromFile(FILE *Stream)
+bool CMPEGAudio::ReadFromFile(CFile *Stream)
 {
 	long Transferred;
 	bool result;
@@ -842,7 +842,8 @@ bool CMPEGAudio::SetBit(LPCWSTR FileName, int HdrPos, BYTE BitPos, bool neu)
 	FILE *Stream;
 	if ( (Stream = _wfsopen(FileName, READ_AND_WRITE, _SH_DENYWR)) != NULL)
 	{
-		result = ReadFromFile(Stream);
+		CFile source(Stream);
+		result = ReadFromFile(&source);
 		if (Frame.Found == false)
 		{
 			fclose(Stream);
@@ -989,7 +990,7 @@ __int64 CMPEGAudio::LastFrameRunEnd(const BYTE *buffer, size_t length, __int64 b
 // Without Xing, Info or VBRI header the duration is estimated from the size of the audio data. Data behind the last frame (junk, tags
 // that are not recognized) would make it too long, so the end of the last frames is searched in the block at the end of the file, which
 // was read anyway (no additional read). Only if there is no run of frames in it, up to 128 KB are read in front of it.
-void CMPEGAudio::FindTrailingBytes(FILE *Stream, __int64 tailStart)
+void CMPEGAudio::FindTrailingBytes(CFile *Stream, __int64 tailStart)
 {
 	const __int64 audioEnd = CTools::FileSize - CTools::ID3v1Size - CTools::LyricsSize - CTools::APESize;
 	const __int64 audioStart = Frame.FramePosition + Frame.FrameSize;
@@ -1014,10 +1015,10 @@ void CMPEGAudio::FindTrailingBytes(FILE *Stream, __int64 tailStart)
 			__int64 start = audioEnd - sizes[s];
 			if (start < audioStart)
 				start = audioStart;
-			if (audioEnd - start < 4 || _fseeki64(Stream, start, SEEK_SET) != 0)
+			if (audioEnd - start < 4)
 				return;
 			BYTE *buffer = new BYTE[(size_t)(audioEnd - start)];
-			const size_t read = fread(buffer, 1, (size_t)(audioEnd - start), Stream);
+			const size_t read = CTools::readAt(Stream, start, buffer, (size_t)(audioEnd - start));
 			end = LastFrameRunEnd(buffer, read, start, open, tailBitrates);
 			delete [] buffer;
 			if (start == audioStart)
@@ -1034,7 +1035,7 @@ void CMPEGAudio::FindTrailingBytes(FILE *Stream, __int64 tailStart)
 		trailingBytes = audioEnd - end;
 }
 
-void CMPEGAudio::ReadAllFrames(FILE *Stream)
+void CMPEGAudio::ReadAllFrames(CFile *Stream)
 {
 	// Scans the audio data frame by frame. The file is read in blocks (one read per frame would be very slow, especially
 	// on network drives). The scan stops in front of the tags at the end of the file; data that is not a frame is skipped byte by byte.
@@ -1072,8 +1073,7 @@ void CMPEGAudio::ReadAllFrames(FILE *Stream)
 			// not in the current block: read the next block starting at this position
 			blockStart = StartPos;
 			blockLen = 0;
-			if (_fseeki64(Stream, StartPos, SEEK_SET) == 0)
-				blockLen = fread(block, 1, SCAN_BLOCK_SIZE, Stream);
+			blockLen = CTools::readAt(Stream, StartPos, block, SCAN_BLOCK_SIZE);
 			if (blockLen < 4)
 				break; // end of the file or read error
 		}

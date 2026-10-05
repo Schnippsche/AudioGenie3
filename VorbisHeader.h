@@ -45,7 +45,7 @@ public:
 	BYTE BlockSize;                                    /* Coded size for small and long blocks */
 	BYTE StopFlag;                                     /* Always 1 */
 	//
-	bool ReadFromFile(FILE *Stream);
+	bool ReadFromFile(CFile *Stream);
 	void Reset();
 	bool exists();
 };

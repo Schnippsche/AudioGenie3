@@ -30,7 +30,7 @@ class CWMA_StreamBitrateProperties :
 public:
 	CWMA_StreamBitrateProperties(void);
 	~CWMA_StreamBitrateProperties(void);
-	bool load(FILE *Stream, size_t maxLen);
+	bool load(CFile *Stream, size_t maxLen);
 	void Empty();
 	u16 Flags{};
     u32 AverageBitrate{};

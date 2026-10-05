@@ -29,7 +29,7 @@ public:
 	CWAVContainer(u32 ID);
 	~CWAVContainer(void);
 	virtual u64 getSize();
-	virtual bool load(FILE *Stream, u64 offset, u64 size);
+	virtual bool load(CFile *Stream, u64 offset, u64 size);
 	virtual void save(CBlob *blob);
 	virtual bool save(FILE* Source, FILE *Destination);
 	void Remove();

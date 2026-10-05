@@ -252,7 +252,7 @@ private:
 	void FindVendorID();
 	bool FindFrame();
 	__int64 LastFrameRunEnd(const BYTE *buffer, size_t length, __int64 bufferStart, bool &openEnd, unsigned long &bitrates);
-	void FindTrailingBytes(FILE *Stream, __int64 tailStart);
+	void FindTrailingBytes(CFile *Stream, __int64 tailStart);
 	void CheckPadding(long start, BYTE Data[]);
 	bool PaddingRequired(int count);
 	bool SetBit(LPCWSTR FileName, int HdrPos, BYTE BitPos, bool neu);
@@ -261,7 +261,7 @@ public:
 	CMPEGAudio();
 	virtual ~CMPEGAudio();
 	void ResetData();
-	bool ReadFromFile(FILE *Stream);
+	bool ReadFromFile(CFile *Stream);
 	/* Getter */
 	CAtlString GetFileVersion();
 	CAtlString GetLayer();
@@ -302,7 +302,7 @@ public:
 	bool SetCopyrightBit(LPCWSTR FileName, bool neu);
 	bool SetOriginalBit(LPCWSTR FileName, bool neu);
 	bool IsValid();
-	void ReadAllFrames(FILE *Stream);
+	void ReadAllFrames(CFile *Stream);
 	__int64 GetFirstAudioPosition() { return firstAudioPos; };
 	__int64 GetLastAudioPosition()  { return lastAudioPos; };
 	void setLastAudioPosition(__int64 tmp) { lastAudioPos = tmp; };

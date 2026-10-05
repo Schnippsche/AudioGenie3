@@ -52,14 +52,14 @@ void CID3V1::ResetData()
 	CTools::ID3v1Size = 0;
 }
 
-int CID3V1::DetectSize(FILE *Stream)
+int CID3V1::DetectSize(CFile *Stream)
 {
 	const __int64 fileSize = CTools::fileLength(Stream);
 	char id[4];
-	if (fileSize < ID3V1_TAG_SIZE || _fseeki64(Stream, fileSize - ID3V1_TAG_SIZE, SEEK_SET) != 0 || fread(id, 1, 3, Stream) != 3 || memcmp(id, ID3V1_ID, 3) != 0)
+	if (fileSize < ID3V1_TAG_SIZE || CTools::readAt(Stream, fileSize - ID3V1_TAG_SIZE, id, 3) != 3 || memcmp(id, ID3V1_ID, 3) != 0)
 		return 0;
-	if (fileSize >= ID3V1_TAG_SIZE + ID3V1_ENHANCED_SIZE && _fseeki64(Stream, fileSize - ID3V1_TAG_SIZE - ID3V1_ENHANCED_SIZE, SEEK_SET) == 0
-		&& fread(id, 1, 4, Stream) == 4 && memcmp(id, "TAG+", 4) == 0)
+	if (fileSize >= ID3V1_TAG_SIZE + ID3V1_ENHANCED_SIZE && CTools::readAt(Stream, fileSize - ID3V1_TAG_SIZE - ID3V1_ENHANCED_SIZE, id, 4) == 4
+		&& memcmp(id, "TAG+", 4) == 0)
 		return ID3V1_TAG_SIZE + ID3V1_ENHANCED_SIZE;
 	return ID3V1_TAG_SIZE;
 }
@@ -106,7 +106,7 @@ void CID3V1::CloseFile()
 		fclose(Stream);
 }
 
-void CID3V1::ReadFromFile(FILE *file)
+void CID3V1::ReadFromFile(CFile *file)
 {
 	/* Reset and load tag data from file to variable */
 	//_fseeki64(Stream, -ID3V1_TAG_SIZE, SEEK_END);

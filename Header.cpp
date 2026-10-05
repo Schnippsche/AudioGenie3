@@ -40,14 +40,13 @@ CHeader::~CHeader()
 
 }
 // check the file header for known data types
-BYTE CHeader::ReadFromFile(FILE *Stream)
+BYTE CHeader::ReadFromFile(CFile *Stream)
 {
-  // _fseeki64(Stream, 0, SEEK_SET);
-  fread(Buf, 1, 8, Stream);
+  Stream->read(Buf, 8);
   return Detect();
 }
 
-BYTE CHeader::ReadFromFileAt(FILE *Stream, __int64 pos)
+BYTE CHeader::ReadFromFileAt(CFile *Stream, __int64 pos)
 {
   CTools::readAt(Stream, pos, Buf, 8);
   return Detect();

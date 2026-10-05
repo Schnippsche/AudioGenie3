@@ -27,6 +27,6 @@ class CWAVFormatChunk :
 public:
 	CWAVFormatChunk(void);
 	~CWAVFormatChunk(void);
-	bool load(FILE *Stream, u64 offset, u64 size);
+	bool load(CFile *Stream, u64 offset, u64 size);
 	u32 FormatID, ChannelNumber, SampleRate, BytesPerSecond, BlockAlign, BitsPerSample;	
 };

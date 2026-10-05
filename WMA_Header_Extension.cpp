@@ -37,7 +37,7 @@ void CWMA_Header_Extension::Empty()
 	Remove();
 }
 
-bool CWMA_Header_Extension::load(FILE *Stream, size_t maxLen)
+bool CWMA_Header_Extension::load(CFile *Stream, size_t maxLen)
 {
 	IID testIID;
 	_data.FileRead(22, Stream);

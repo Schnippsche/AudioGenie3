@@ -101,7 +101,7 @@ u64 CMP4Atom::getSize()
 	return (u64)_blob.GetLength() + headerSize();
 }
 
-void CMP4Atom::load(FILE *Stream, u64 offset, u64 size)
+void CMP4Atom::load(CFile *Stream, u64 offset, u64 size)
 {
 	_blob.FileReadAt(Stream, (__int64)offset, (size_t)size);
 }

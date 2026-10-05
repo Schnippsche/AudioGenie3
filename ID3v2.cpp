@@ -72,7 +72,7 @@ bool CID3V2::setTargetFormatAndEncoding(BYTE newFormat, BYTE newEncoding)
 	return true;
 }
 
-bool CID3V2::ReadHeader(FILE *Stream)
+bool CID3V2::ReadHeader(CFile *Stream)
 {
 	// An ID3v2 tag can be detected with the following pattern:
 	// $49 44 33 yy yy xx zz zz zz zz
@@ -132,7 +132,7 @@ void CID3V2::WriteHeader(CBlob *blob, long tagSize, bool unsynchronised)
 	blob->AddS4B(tagSize); // SyncSafe Integer
 }
 
-void CID3V2::ReadFromFile(FILE *Stream)
+void CID3V2::ReadFromFile(CFile *Stream)
 {
 	CTools::ID3V2oldTagVersion = 0;
 	size_t count = _frames.GetCount();
@@ -349,7 +349,8 @@ bool CID3V2::SaveToFile(LPCWSTR FileName)
 	ATLTRACE(_T("open %s READ_ONLY\n"), FileName); 
 	if ( (Stream = _wfsopen(FileName, READ_ONLY, _SH_DENYNO)) != NULL)
 	{
-		ReadHeader(Stream);
+		CFile source(Stream);
+		ReadHeader(&source);
 		oldTagSize = Size;
 		fclose(Stream);
 		return SaveTag(FileName);
@@ -471,7 +472,8 @@ bool CID3V2::RebuildFile(LPCWSTR FileName, CBlob* data)
 	}
 
 	/* Rebuild file with old file data and new tag data (optional) */
-	ReadHeader(Source);
+	CFile oldFile(Source);
+	ReadHeader(&oldFile);
 	FrameOldSize = Size;
 	if (data == NULL && FrameOldSize == 0)
 	{

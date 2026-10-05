@@ -23,6 +23,7 @@
 /* by Stefan Toengi (c) 2003                                                  */
 #pragma once
 
+class CFile;
 #define BLOCKSIZE 256
 static const LPCWSTR EMPTY(_T(""));
 static const LPCWSTR UNKNOWN(_T("Unknown"));
@@ -76,7 +77,7 @@ public:
 	// general methods
 	void AddMemory(const void *src, size_t nLen);
 	// replaces the content with the nLen bytes (at most) at the position pos of the file, see CTools::readAt()
-	void FileReadAt(FILE *Stream, __int64 pos, size_t nLen);
+	void FileReadAt(CFile *Stream, __int64 pos, size_t nLen);
 	void Add2B(int value);
 	void Add3B(int value);
 	void Add4B(unsigned int value);
@@ -102,7 +103,8 @@ public:
 	CAtlString GetStringAt(size_t nPos, size_t nLength);
 	void Clear() { Free(); };
 	size_t GetLength() { return m_CurrentLength; };
-	void FileRead(size_t nLen, FILE *Stream);
+	void FileRead(size_t nLen, CFile *Stream);
+	void FileRead(size_t nLen, FILE *Stream);   // a C stream (the functions that copy a file)
 	size_t FileWrite(size_t nLen, FILE *Stream);
 	bool isEmpty()    { return (m_CurrentLength == 0); };
 	bool isNotEmpty() { return (m_CurrentLength > 0); };

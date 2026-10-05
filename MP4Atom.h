@@ -39,7 +39,7 @@ public:
 	CAtlString _txtid;
 	void print();
 	virtual void replaceAtom(CMP4Atom* atom) { atom; } ;
-	virtual void load(FILE *stream, u64 offset, u64 size);
+	virtual void load(CFile *stream, u64 offset, u64 size);
 	virtual void save(FILE *stream);
 	virtual void Empty();
 	virtual void remove() { };

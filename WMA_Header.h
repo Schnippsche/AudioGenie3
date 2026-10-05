@@ -32,8 +32,8 @@ class CWMA_Header :
 public:
 	CWMA_Header(void);
 	virtual ~CWMA_Header(void);
-	bool load(FILE *Stream, size_t maxLen);
-	__int64 loadHeaderOnly(FILE *Stream);
+	bool load(CFile *Stream, size_t maxLen);
+	__int64 loadHeaderOnly(CFile *Stream);
 	void buildData();
 	void Empty();
 	CWMA_Object* findObject(IID objectID);

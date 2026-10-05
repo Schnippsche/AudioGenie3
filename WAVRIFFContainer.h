@@ -31,7 +31,7 @@ class CWAVRIFFContainer :
 public:
 	CWAVRIFFContainer(void);
 	~CWAVRIFFContainer(void);
-	bool load(FILE *Stream, u64 offset, u64 size);
+	bool load(CFile *Stream, u64 offset, u64 size);
 	void save(CBlob *blob);
 	bool save(FILE* Source, FILE *Destination);
 	CWAVFormatChunk* getFormatChunk() { return formatChunk; };

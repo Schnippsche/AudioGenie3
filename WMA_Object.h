@@ -34,7 +34,7 @@ public:
 	virtual ~CWMA_Object();
 	virtual size_t getDataSize();
 	virtual bool isIID(IID otherID);
-	virtual bool load(FILE *Stream, size_t maxLen);
+	virtual bool load(CFile *Stream, size_t maxLen);
 	virtual void save(CBlob *blob);
 	virtual void buildData();
 	virtual void Remove();

@@ -41,7 +41,7 @@ CWMA_ExtContentDescription::~CWMA_ExtContentDescription(void)
 	_data.Clear();
 }
 
-bool CWMA_ExtContentDescription::load(FILE *Stream, size_t maxLen)
+bool CWMA_ExtContentDescription::load(CFile *Stream, size_t maxLen)
 {
 	ATLTRACE(_T("ExtContentDescription with %i bytes\n"), maxLen);
 	_data.FileRead(2, Stream);

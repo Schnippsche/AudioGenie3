@@ -101,7 +101,7 @@ bool CLyrics::SetTagItem(const char ID[], long Pos, long DataSize)
 	return false;
 }
 
-bool CLyrics::ReadHeader(FILE *Stream)
+bool CLyrics::ReadHeader(CFile *Stream)
 {
 	FVersion = LYRICS_VERSION_UNKNOWN;
 	ID3v1AreaSize = 0;
@@ -170,7 +170,7 @@ bool CLyrics::ReadHeader(FILE *Stream)
 }
 
 // Lyrics3 v1.00: "LYRICSBEGIN", the text (up to 5100 bytes), "LYRICSEND"
-bool CLyrics::ReadFramesOld(FILE *Stream, bool isDeleting)
+bool CLyrics::ReadFramesOld(CFile *Stream, bool isDeleting)
 {
 	__int64 StartPosition = FEndPosition - (5100 + 11);
 	if (StartPosition < 0)
@@ -179,8 +179,7 @@ bool CLyrics::ReadFramesOld(FILE *Stream, bool isDeleting)
 	Data.Clear();
 	if (!isDeleting)
 		FUnknown.Clear();
-	_fseeki64(Stream, StartPosition, SEEK_SET);
-	Data.FileRead(DataSize, Stream);
+	Data.FileReadAt(Stream, StartPosition, DataSize);
 	/* Search for Begin: the last one belongs to the tag */
 	for (long Iterator = (long)Data.GetLength() - 11; Iterator >= 0; Iterator--)
 	{
@@ -199,7 +198,7 @@ bool CLyrics::ReadFramesOld(FILE *Stream, bool isDeleting)
 }
 
 // Lyrics3 v2.00: "LYRICSBEGIN", fields (ID, size with 5 digits, data), size of "LYRICSBEGIN" and the fields (6 digits), "LYRICS200"
-bool CLyrics::ReadFramesNew(FILE *Stream, bool isDeleting)
+bool CLyrics::ReadFramesNew(CFile *Stream, bool isDeleting)
 {
 	char Buffer[8];
 	memset(Buffer, 0, sizeof(Buffer));
@@ -207,8 +206,7 @@ bool CLyrics::ReadFramesNew(FILE *Stream, bool isDeleting)
 	if (!isDeleting)
 		FUnknown.Clear();
 	/* Get information from Lyrics (Version 2.00) */
-	_fseeki64(Stream, FEndPosition - 6, SEEK_SET);
-	if (fread(Buffer, 1, 6, Stream) != 6)
+	if (CTools::readAt(Stream, FEndPosition - 6, Buffer, 6) != 6)
 		return false;
 	/* Convert from Char into Size: six digits */
 	long DataSize = 0;
@@ -221,8 +219,7 @@ bool CLyrics::ReadFramesNew(FILE *Stream, bool isDeleting)
 	if (DataSize < 11 || (FEndPosition - 6 - DataSize) < 0)
 		return false;
 	FStartPosition = FEndPosition - 6 - DataSize;
-	_fseeki64(Stream, FStartPosition, SEEK_SET);
-	Data.FileRead(DataSize, Stream);
+	Data.FileReadAt(Stream, FStartPosition, DataSize);
 	/* the tag has to begin with LYRICSBEGIN */
 	if ((long)Data.GetLength() != DataSize || memcmp(Data.m_pData, LYRICS_BEGIN, 11) != 0)
 	{
@@ -253,7 +250,7 @@ bool CLyrics::ReadFramesNew(FILE *Stream, bool isDeleting)
 	return true;
 }
 
-void CLyrics::ReadFromFile(FILE *Stream)
+void CLyrics::ReadFromFile(CFile *Stream)
 {
 	/* Process data if loaded and header valid */
 	if (ReadHeader(Stream))
@@ -271,9 +268,10 @@ bool CLyrics::RemoveFromFile(LPCWSTR FileName)
 	FILE *Stream;
 	if ( (Stream = _wfsopen(FileName, READ_ONLY, _SH_DENYNO)) != NULL)
 	{
-		bool Result = ReadHeader(Stream);
+		CFile source(Stream);
+		bool Result = ReadHeader(&source);
 		if (Result)
-			Result = (FVersion == LYRICS_VERSION_200) ? ReadFramesNew(Stream, true) : ReadFramesOld(Stream, true);
+			Result = (FVersion == LYRICS_VERSION_200) ? ReadFramesNew(&source, true) : ReadFramesOld(&source, true);
 		fclose(Stream);
 		if (!Result)
 		{
@@ -374,8 +372,9 @@ bool CLyrics::SaveToFile(LPCWSTR FileName)
 		CTools::instance().setLastError(errno);
 		return false;
 	}
-	if (ReadHeader(Stream))
-		hadTag = (FVersion == LYRICS_VERSION_200) ? ReadFramesNew(Stream, true) : ReadFramesOld(Stream, true);
+	CFile source(Stream);
+	if (ReadHeader(&source))
+		hadTag = (FVersion == LYRICS_VERSION_200) ? ReadFramesNew(&source, true) : ReadFramesOld(&source, true);
 	fclose(Stream);
 	/*  ID3v1-Tag must exist! */
 	if (ID3v1AreaSize == 0)

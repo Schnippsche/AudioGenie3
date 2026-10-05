@@ -38,7 +38,7 @@ void CWMA_Header::Empty()
 	Remove();
 }
 
-__int64 CWMA_Header::loadHeaderOnly(FILE *Stream)
+__int64 CWMA_Header::loadHeaderOnly(CFile *Stream)
 {
 	// is this the right ID?
 	__int64 HeaderSize;
@@ -50,7 +50,7 @@ __int64 CWMA_Header::loadHeaderOnly(FILE *Stream)
 }
 
 
-bool CWMA_Header::load(FILE *Stream, size_t maxLen)
+bool CWMA_Header::load(CFile *Stream, size_t maxLen)
 {
 	
 	__int64 HeaderSize = loadHeaderOnly(Stream);

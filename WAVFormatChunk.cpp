@@ -36,7 +36,7 @@ CWAVFormatChunk::~CWAVFormatChunk(void)
 {
 }
 
-bool CWAVFormatChunk::load(FILE *Stream, u64 offset, u64 size)
+bool CWAVFormatChunk::load(CFile *Stream, u64 offset, u64 size)
 {
 	_data.FileReadAt(Stream, (__int64)offset, (size_t)size);
 	if (_data.GetLength() < 16)

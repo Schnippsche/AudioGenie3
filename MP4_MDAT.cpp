@@ -34,7 +34,7 @@ CMP4_MDAT::CMP4_MDAT(void)
 CMP4_MDAT::~CMP4_MDAT(void)
 {
 }
-void CMP4_MDAT::load(FILE *Stream, u64 offset, u64 size)
+void CMP4_MDAT::load(CFile *Stream, u64 offset, u64 size)
 {
 	offset;
 	Stream;

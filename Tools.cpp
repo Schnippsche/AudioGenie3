@@ -27,7 +27,7 @@
 
 int CTools::lastError;
 __int64 CTools::FileSize;
-FILE *CTools::analysisStream = NULL;
+CFile *CTools::analysisStream = NULL;
 static std::unique_ptr<BYTE[]> g_headBuffer;   // the cache of the start of the file
 static size_t g_headCapacity = 0;
 size_t CTools::headCacheLength = 0;
@@ -35,7 +35,7 @@ bool CTools::streamAtStart = false;
 bool CTools::streamAtHeadEnd = false;
 BYTE CTools::tailCache[CTools::TAIL_CACHE_SIZE];
 size_t CTools::tailCacheLength = 0;
-FILE *CTools::seqStream = NULL;
+CFile *CTools::seqStream = NULL;
 __int64 CTools::seqPosition = 0;
 
 // makes room for count bytes in the cache of the start of the file, the bytes that are in it stay
@@ -53,7 +53,7 @@ static bool reserveHead(size_t count)
 	return true;
 }
 
-size_t CTools::readAt(FILE *Stream, __int64 pos, void *destination, size_t length)
+size_t CTools::readAt(CFile *Stream, __int64 pos, void *destination, size_t length)
 {
 	if (Stream == NULL || length == 0)
 		return 0;
@@ -67,7 +67,7 @@ size_t CTools::readAt(FILE *Stream, __int64 pos, void *destination, size_t lengt
 			{
 				const size_t count = (size_t)headEnd;
 				// a stream that was just opened is at the start of the file: no seek
-				if ((streamAtStart || _fseeki64(Stream, 0, SEEK_SET) == 0) && fread(g_headBuffer.get(), 1, count, Stream) == count)
+				if ((streamAtStart || Stream->seek(0)) && Stream->read(g_headBuffer.get(), count) == count)
 				{
 					headCacheLength = count;
 					streamAtHeadEnd = true;
@@ -90,7 +90,7 @@ size_t CTools::readAt(FILE *Stream, __int64 pos, void *destination, size_t lengt
 				{
 					const size_t count = (size_t)(FileSize - cacheStart);
 					streamAtStart = streamAtHeadEnd = false;
-					if (_fseeki64(Stream, cacheStart, SEEK_SET) == 0 && fread(tailCache, 1, count, Stream) == count)
+					if (Stream->seek(cacheStart) && Stream->read(tailCache, count) == count)
 						tailCacheLength = count;
 				}
 				if (tailCacheLength != 0)
@@ -104,57 +104,44 @@ size_t CTools::readAt(FILE *Stream, __int64 pos, void *destination, size_t lengt
 	streamAtStart = streamAtHeadEnd = false;
 	if (length < DIRECT_READ_MIN)
 	{
-		if (_fseeki64(Stream, pos, SEEK_SET) != 0)
+		if (!Stream->seek(pos))
 			return 0;
-		return fread(destination, 1, length, Stream);
+		return Stream->read(destination, length);
 	}
-	// A large read: fread would split it into a read of a multiple of the buffer size (8 KB) and one more read of 8 KB for the rest, so it is read
-	// from the file directly. The C library may keep older data in the buffer of the stream (a seek to a position inside of the buffer does not
-	// move the file) and takes the position of the next refill from the file: afterwards the stream is brought to a known state (an empty buffer).
-	if (_lseeki64(_fileno(Stream), pos, SEEK_SET) < 0)
-		return 0;
-	size_t done = 0;
-	while (done < length)
-	{
-		const size_t part = length - done < 0x40000000 ? length - done : 0x40000000;
-		const int got = _read(_fileno(Stream), (BYTE *)destination + done, (unsigned int)part);
-		if (got <= 0)
-			break;
-		done += (size_t)got;
-	}
-	_fseeki64(Stream, 0, SEEK_END);
-	return done;
+	// A large read: the buffered read of the C library would split it into a read of a multiple of the buffer size (8 KB) and one more read of
+	// 8 KB for the rest, so it is read from the file directly.
+	return Stream->readDirect(pos, destination, length);
 }
 
-size_t CTools::seqRead(FILE *Stream, void *destination, size_t length)
+size_t CTools::seqRead(CFile *Stream, void *destination, size_t length)
 {
 	if (Stream == NULL)
 		return 0;
 	if (Stream != seqStream)
-		return fread(destination, 1, length, Stream);
+		return Stream->read(destination, length);
 	const size_t got = readAt(Stream, seqPosition, destination, length);
 	seqPosition += (__int64)got;
 	return got;
 }
 
-void CTools::seqSeek(FILE *Stream, __int64 pos)
+void CTools::seqSeek(CFile *Stream, __int64 pos)
 {
 	if (Stream == NULL)
 		return;
 	if (Stream == seqStream)
 		seqPosition = pos;
 	else
-		_fseeki64(Stream, pos, SEEK_SET);
+		Stream->seek(pos);
 }
 
-__int64 CTools::seqTell(FILE *Stream)
+__int64 CTools::seqTell(CFile *Stream)
 {
 	if (Stream == NULL)
 		return -1;
-	return Stream == seqStream ? seqPosition : _ftelli64(Stream);
+	return Stream == seqStream ? seqPosition : Stream->tell();
 }
 
-void CTools::extendHeadCache(FILE *Stream, __int64 end)
+void CTools::extendHeadCache(CFile *Stream, __int64 end)
 {
 	if (Stream == NULL || Stream != analysisStream || headCacheLength == 0)
 		return;   // only after the first read of the start
@@ -166,31 +153,30 @@ void CTools::extendHeadCache(FILE *Stream, __int64 end)
 		return;
 	const size_t have = headCacheLength;
 	const size_t count = (size_t)end - have;
-	// directly behind the first read of the start the stream is at the right position
+	// directly behind the first read of the start the stream is at the right position (the read does not need a seek)
 	const bool seek = !streamAtHeadEnd;
 	streamAtStart = streamAtHeadEnd = false;
-	if (seek && _lseeki64(_fileno(Stream), (__int64)have, SEEK_SET) < 0)
-		return;
-	// One read of exactly count bytes: fread would split it into a read of a multiple of the buffer size (8 KB) and one more read of 8 KB for the
-	// rest. Directly behind the first read of the start the buffer of the stream is empty and the position of the file is the one of the stream;
-	// otherwise the stream is brought to an empty buffer after the read (see readAt).
-	const int got = _read(_fileno(Stream), g_headBuffer.get() + have, (unsigned int)count);
+	// one read of exactly count bytes
+	const size_t got = seek ? Stream->readDirect((__int64)have, g_headBuffer.get() + have, count) : Stream->readDirectHere(g_headBuffer.get() + have, count);
 	if (got > 0)
-		headCacheLength = have + (size_t)got;
-	if (seek)
-		_fseeki64(Stream, 0, SEEK_END);
+		headCacheLength = have + got;
+}
+
+__int64 CTools::fileLength(CFile *Stream)
+{
+	if (Stream == NULL)
+		return -1;
+	if (Stream == analysisStream)
+		return FileSize;
+	return Stream->size();
 }
 
 __int64 CTools::fileLength(FILE *Stream)
 {
 	if (Stream == NULL)
 		return -1;
-	if (Stream == analysisStream)
-		return FileSize;
-	LARGE_INTEGER size;
-	if (!GetFileSizeEx((HANDLE)_get_osfhandle(_fileno(Stream)), &size))
-		return -1;
-	return size.QuadPart;
+	CFile file(Stream);
+	return file.size();
 }
 int CTools::ID3v1Size;
 long CTools::ID3v2Size;

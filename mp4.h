@@ -158,7 +158,7 @@ public:
 	CMP4();
 	virtual ~CMP4();
 	CAtlString GetFileVersion();
-	bool ReadFromFile(FILE *Stream);
+	bool ReadFromFile(CFile *Stream);
 	bool IsValid()                        { return (GetSampleRate() > 100); };
 	long GetSampleRate();
 	float GetDuration();

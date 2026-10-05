@@ -21,6 +21,7 @@
 #pragma once
 
 #include "Blob.h"
+#include "File.h"
 
 enum ERR_NUMBERS {
 	ERR_V1TAG_MISSING = 201,
@@ -150,29 +151,29 @@ public:
 	static bool rewriteRegion(LPCWSTR FileName, __int64 offset, __int64 oldLength, CBlob *data);
 	static __int64 FileSize;
 	// the stream that AUDIOAnalyzeFileW has opened (NULL outside of the analysis): its file size was read when it was opened, FileSize
-	static FILE *analysisStream;
+	static CFile *analysisStream;
 	// Reads length bytes at the position pos (like fseek and fread, returns the number of bytes read). The analysis reads the same few places of
 	// a file one after the other: the start (the format, the ID3v2 header and tag, the first MPEG frames) and the end (ID3v1, Lyrics3, APE and the last
 	// MPEG frames). For the stream of the running analysis the first HEAD_CACHE_SIZE bytes (more with extendHeadCache) and the last TAIL_CACHE_SIZE
 	// bytes of the file are read once (with the first request that is inside of them), the other requests inside of them are answered from memory. A
 	// request that is not completely inside of one of them, and every other stream, is read with fseek and fread. (A seek on the stream would throw away
 	// its read buffer, so the start of the file was read twice before.) The position of the stream is not changed by a request that is answered from memory.
-	static size_t readAt(FILE *Stream, __int64 pos, void *destination, size_t length);
+	static size_t readAt(CFile *Stream, __int64 pos, void *destination, size_t length);
 	static const size_t HEAD_CACHE_SIZE = 8192;
 	static const size_t HEAD_CACHE_MAX = 256 * 1024;
 	// Sequential reads (the objects of a WMA header read one after the other): between CSequentialRead and its end the reads of the stream
 	// (CBlob::FileRead, seqRead) continue at seqPosition and go through readAt, so they are served from the caches and need no ftell. seqSeek and
 	// seqTell replace _fseeki64 and _ftelli64; for any other stream (or outside of CSequentialRead) all of them are the C functions.
-	static FILE *seqStream;
+	static CFile *seqStream;
 	static __int64 seqPosition;
-	static size_t seqRead(FILE *Stream, void *destination, size_t length);
-	static void seqSeek(FILE *Stream, __int64 pos);
-	static __int64 seqTell(FILE *Stream);
+	static size_t seqRead(CFile *Stream, void *destination, size_t length);
+	static void seqSeek(CFile *Stream, __int64 pos);
+	static __int64 seqTell(CFile *Stream);
 	static const size_t DIRECT_READ_MIN = 8192;   // from this length on readAt reads from the file directly (one read instead of the split of the C library)
 	static size_t headCacheLength;   // 0: not read yet (or for another analysis); the bytes are in Tools.cpp
 	// Extends the cache of the start of the file to the position end (not more than HEAD_CACHE_MAX bytes, not behind the end of the file) with one read.
 	// Called when the size of the ID3v2 tag is known: the tag and the first MPEG frames behind it are then answered from the cache as well.
-	static void extendHeadCache(FILE *Stream, __int64 end);
+	static void extendHeadCache(CFile *Stream, __int64 end);
 	// the state of the stream of the analysis: just opened (at the start of the file), directly behind the first read of the start; the first
 	// read of the start and the extension do not need a seek then
 	static bool streamAtStart;
@@ -182,7 +183,8 @@ public:
 	static size_t tailCacheLength;   // 0: not read yet (or for another analysis)
 	// length of the file of the stream in bytes, -1 on an error. One system call (_filelengthi64 needs about four: it seeks to the end and back);
 	// for the stream of the running analysis no call at all, because the file is not changed during the analysis and its size is known
-	static __int64 fileLength(FILE *Stream);
+	static __int64 fileLength(CFile *Stream);
+	static __int64 fileLength(FILE *Stream);   // a C stream of a function that writes
 	static int ID3v1Size;
 	static long ID3v2Size;
 	static int LyricsSize;
@@ -237,10 +239,10 @@ private:
 class CSequentialRead
 {
 public:
-	CSequentialRead(FILE *Stream, __int64 pos) : previousStream(CTools::seqStream), previousPosition(CTools::seqPosition) { CTools::seqStream = Stream; CTools::seqPosition = pos; }
+	CSequentialRead(CFile *Stream, __int64 pos) : previousStream(CTools::seqStream), previousPosition(CTools::seqPosition) { CTools::seqStream = Stream; CTools::seqPosition = pos; }
 	~CSequentialRead() { CTools::seqStream = previousStream; CTools::seqPosition = previousPosition; }
 private:
-	FILE *previousStream;
+	CFile *previousStream;
 	__int64 previousPosition;
 	CSequentialRead(const CSequentialRead &);
 	CSequentialRead &operator=(const CSequentialRead &);
@@ -249,6 +251,6 @@ private:
 class CAnalysisStream
 {
 public:
-	explicit CAnalysisStream(FILE *Stream) { CTools::analysisStream = Stream; CTools::headCacheLength = 0; CTools::tailCacheLength = 0; CTools::streamAtStart = true; CTools::streamAtHeadEnd = false; }
+	explicit CAnalysisStream(CFile *Stream) { CTools::analysisStream = Stream; CTools::headCacheLength = 0; CTools::tailCacheLength = 0; CTools::streamAtStart = true; CTools::streamAtHeadEnd = false; }
 	~CAnalysisStream() { CTools::analysisStream = NULL; }
 };

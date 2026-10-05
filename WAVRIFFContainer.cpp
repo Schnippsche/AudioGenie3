@@ -86,7 +86,7 @@ void CWAVRIFFContainer::save(CBlob *blob)
 	}
 }
 
-bool CWAVRIFFContainer::load(FILE *Stream, u64 offset, u64 size)
+bool CWAVRIFFContainer::load(CFile *Stream, u64 offset, u64 size)
 {
 	// RIFF container, structure is mandatory:
 	// 4 bytes 'RIFF', or 'RF64' for files of 4 GB or more (EBU Tech 3306): the size field is 0xFFFFFFFF then and the real sizes are in the

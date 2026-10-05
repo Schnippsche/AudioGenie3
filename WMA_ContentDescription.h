@@ -31,7 +31,7 @@ public:
 	CWMA_ContentDescription(void);
 	CWMA_ContentDescription(CBlob *datas);
 	~CWMA_ContentDescription(void);
-	bool load(FILE *Stream, size_t maxLen);
+	bool load(CFile *Stream, size_t maxLen);
 	void buildData();
 	void Empty();
 	// Getter

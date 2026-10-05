@@ -100,9 +100,9 @@ private:
 public:
 	CHeader();
 	virtual ~CHeader();
-	BYTE ReadFromFile(FILE *Stream);
+	BYTE ReadFromFile(CFile *Stream);
 	// the same for the bytes at the position pos (see CTools::readAt(): the position of the stream is not used and not changed)
-	BYTE ReadFromFileAt(FILE *Stream, __int64 pos);
+	BYTE ReadFromFileAt(CFile *Stream, __int64 pos);
 	// the bytes that were read start an APE tag (header of a tag at the beginning of the file)
 	bool IsApeHeader() { return memcmp(Buf, "APETAGEX", 8) == 0; }
 };

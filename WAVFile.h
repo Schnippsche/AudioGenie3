@@ -66,7 +66,7 @@ class CWAVFile: public CAudio
 private:
 
 	CWAVRIFFContainer *mainContainer;
-	bool ReadWAV(FILE *Stream);
+	bool ReadWAV(CFile *Stream);
 	bool HeaderIsValid();
 public:
 	CWAVFile();
@@ -76,7 +76,7 @@ public:
 	short GetFormatID();
 	CAtlString GetChannelMode();
 	float GetDuration();
-	bool ReadFromFile(FILE *Stream);
+	bool ReadFromFile(CFile *Stream);
 	bool SaveToFile(LPCWSTR FileName);
 	bool IsValid();
 	long GetChannels();

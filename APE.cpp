@@ -52,7 +52,7 @@ void CAPE::ResetData()
 	Data.Clear();
 }
 
-bool CAPE::FindTailFooter(FILE *Stream, int id3v1Size, bool checkLyrics, __int64 &footerPos, __int64 &lyricsAfter)
+bool CAPE::FindTailFooter(CFile *Stream, int id3v1Size, bool checkLyrics, __int64 &footerPos, __int64 &lyricsAfter)
 {
 	const __int64 end = CTools::fileLength(Stream) - id3v1Size;
 	BYTE id[8];
@@ -87,7 +87,7 @@ bool CAPE::FindTailFooter(FILE *Stream, int id3v1Size, bool checkLyrics, __int64
 	return false;
 }
 
-bool CAPE::ReadFooter(FILE *Stream)
+bool CAPE::ReadFooter(CFile *Stream)
 {
 	/* Read footer data */
 	__int64 lyricsAfter;
@@ -106,11 +106,12 @@ bool CAPE::LocateTail(LPCWSTR FileName, __int64 &start, __int64 &total)
 		return false;
 	__int64 footerPos, lyricsAfter;
 	CApeTagInfo info;
-	bool found = FindTailFooter(Source, CID3V1::DetectSize(Source), true, footerPos, lyricsAfter) && lyricsAfter > 0;
+	CFile in(Source);
+	bool found = FindTailFooter(&in, CID3V1::DetectSize(&in), true, footerPos, lyricsAfter) && lyricsAfter > 0;
 	if (found)
 	{
-		_fseeki64(Source, footerPos, SEEK_SET);
-		found = info.ReadFromFile(Source);
+		in.seek(footerPos);
+		found = info.ReadFromFile(&in);
 	}
 	fclose(Source);
 	if (!found)
@@ -203,7 +204,7 @@ CAtlString CAPE::GetTagItem(LPCWSTR FieldName)
 	return EMPTY;
 }
 
-bool CAPE::ReadFields(FILE *Stream, __int64 headOffset)
+bool CAPE::ReadFields(CFile *Stream, __int64 headOffset)
 {
 	CAtlString FieldName;
 	long Iterator;
@@ -230,7 +231,7 @@ bool CAPE::ReadFields(FILE *Stream, __int64 headOffset)
 	return true;
 }
 
-bool CAPE::FindHeadTag(FILE *Stream, __int64 &offset, __int64 &length)
+bool CAPE::FindHeadTag(CFile *Stream, __int64 &offset, __int64 &length)
 {
 	BYTE id3[10];
 	offset = 0;
@@ -261,7 +262,7 @@ bool CAPE::FindHeadTag(FILE *Stream, __int64 &offset, __int64 &length)
 	return true;
 }
 
-bool CAPE::ReadHeadTag(FILE *Stream, __int64 offset, __int64 length)
+bool CAPE::ReadHeadTag(CFile *Stream, __int64 offset, __int64 length)
 {
 	{
 		CSequentialRead sequence(Stream, offset);
@@ -404,7 +405,7 @@ bool CAPE::SaveTag(LPCWSTR FileName)
 	return result;
 }
 
-bool CAPE::ReadFromFile(FILE *Stream)
+bool CAPE::ReadFromFile(CFile *Stream)
 {
 	// a tag at the beginning of the file has a header and was found when the format was detected
 	if (CTools::APEHeadSize > 0)
@@ -429,7 +430,8 @@ bool CAPE::RemoveFromFile(LPCWSTR FileName, bool saveID3v1Tag)
 	if ( (Source = _wfsopen(FileName, READ_ONLY, _SH_DENYNO)) != NULL)
 	{
 		__int64 headOffset, headLength;
-		const bool head = FindHeadTag(Source, headOffset, headLength);
+		CFile in(Source);
+		const bool head = FindHeadTag(&in, headOffset, headLength);
 		fclose(Source);
 		if (head)
 		{
@@ -450,9 +452,10 @@ bool CAPE::RemoveFromFile(LPCWSTR FileName, bool saveID3v1Tag)
 	{
 		// read and remember the ID3v1 tag
 		CTools::ID3v1Size = 0;
-		tmpid3v1.ReadFromFile(Source);
+		CFile in(Source);
+		tmpid3v1.ReadFromFile(&in);
 
-		bool result = ReadFooter(Source);
+		bool result = ReadFooter(&in);
 		fclose(Source);
 		if (result)
 		{
@@ -486,7 +489,8 @@ bool CAPE::SaveToFile(LPCWSTR FileName)
 	if (Source != NULL)
 	{
 		__int64 headOffset, headLength;
-		const bool head = FindHeadTag(Source, headOffset, headLength);
+		CFile in(Source);
+		const bool head = FindHeadTag(&in, headOffset, headLength);
 		fclose(Source);
 		if (head)
 		{

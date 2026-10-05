@@ -36,6 +36,22 @@ static inline bool blobSizeOverflow(size_t current, size_t add)
 }
 
 // limits nLen to the number of bytes that are left in the file from the current position
+static size_t limitToFileRest(size_t nLen, CFile *Stream)
+{
+	if (nLen <= BLOB_CHECK_FILE_LIMIT || Stream == NULL)
+		return nLen;
+	const __int64 pos = Stream->tell();
+	if (pos < 0)
+		return nLen;
+	const __int64 fileLen = CTools::fileLength(Stream);
+	if (fileLen < 0)
+		return nLen;
+	const unsigned __int64 rest = (fileLen > pos) ? (unsigned __int64)(fileLen - pos) : 0;
+	if ((unsigned __int64)nLen > rest)
+		return (size_t)rest;
+	return nLen;
+}
+
 static size_t limitToFileRest(size_t nLen, FILE *Stream)
 {
 	if (nLen <= BLOB_CHECK_FILE_LIMIT || Stream == NULL)
@@ -257,7 +273,7 @@ long CBlob::Get3B(size_t nIndex)
 	return (m_pData[nIndex] << 16) + (m_pData[nIndex + 1] << 8) + m_pData[nIndex + 2];
 }
 
-void CBlob::FileRead(size_t nLen, FILE *Stream)
+void CBlob::FileRead(size_t nLen, CFile *Stream)
 {
 	if (Stream != NULL && Stream == CTools::seqStream)
 	{
@@ -282,10 +298,31 @@ void CBlob::FileRead(size_t nLen, FILE *Stream)
 		m_CurrentLength = 0;
 		return;
 	}
+	m_CurrentLength = Stream->read(m_pData, nLen);
+}
+
+void CBlob::FileRead(size_t nLen, FILE *Stream)
+{
+	if (nLen < 1 || Stream == NULL)
+	{
+		m_CurrentLength = 0;
+		return;
+	}
+	nLen = limitToFileRest(nLen, Stream);
+	if (nLen < 1)
+	{
+		m_CurrentLength = 0;
+		return;
+	}
+	if (!AllocNewBuffer(nLen))
+	{
+		m_CurrentLength = 0;
+		return;
+	}
 	m_CurrentLength = fread(m_pData, 1, nLen, Stream);
 }
 
-void CBlob::FileReadAt(FILE *Stream, __int64 pos, size_t nLen)
+void CBlob::FileReadAt(CFile *Stream, __int64 pos, size_t nLen)
 {
 	if (nLen < 1 || Stream == NULL)
 	{

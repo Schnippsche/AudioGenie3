@@ -168,7 +168,7 @@ bool CVorbisComment::IsValidKey(LPCWSTR key)
 	return true;
 }
 
-void CVorbisComment::AnalyzeVorbisComments(FILE *Stream)
+void CVorbisComment::AnalyzeVorbisComments(CFile *Stream)
 {
 	long i, len = 0, Separator;
 	CBlob tmpBlob;

@@ -33,7 +33,7 @@ CWMA_File::~CWMA_File(void)
 	ResetData();
 }
 
-bool CWMA_File::ReadFromFile(FILE *Stream)
+bool CWMA_File::ReadFromFile(CFile *Stream)
 {
 	ResetData();
 	/* Read file data */
@@ -156,7 +156,8 @@ bool CWMA_File::SaveToFile(LPCWSTR FileName)
 	}
 
 	_fseeki64(Stream, CTools::ID3v2Size, SEEK_SET);
-	u32 oldHeaderSize = (u32)header.loadHeaderOnly(Stream);
+	CFile oldFile(Stream);
+	u32 oldHeaderSize = (u32)header.loadHeaderOnly(&oldFile);
 	if (oldHeaderSize == 0) 
 	{
 		fclose(Stream);
@@ -198,7 +199,7 @@ bool CWMA_File::SaveToFile(LPCWSTR FileName)
 
 	ResetData();
 	_fseeki64(Stream, CTools::ID3v2Size, SEEK_SET);
-	header.load(Stream, toSizeClamped(CTools::FileSize));
+	header.load(&oldFile, toSizeClamped(CTools::FileSize));
 	// throw out all paddings	
 	size_t oldPadding = 0;
 	while ((obj = header.findObject(WMA_PADDING_ID)) != NULL)

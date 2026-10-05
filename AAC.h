@@ -83,14 +83,14 @@ private:
 	long FBitRate{};
 	BYTE FBitRateTypeID{};
 	double FDuration{};                                      /* ADTS: sum of the frames */
-	BYTE RecognizeHeaderType(FILE *Source);
-	bool ReadADIF(FILE *Source);
-	bool ReadADTS(FILE *Source);
+	BYTE RecognizeHeaderType(CFile *Source);
+	bool ReadADIF(CFile *Source);
+	bool ReadADTS(CFile *Source);
 public:
 	CAAC();
 	virtual ~CAAC();
 	void ResetData();
-	bool ReadFromFile(FILE *Stream);                       /* Load header */
+	bool ReadFromFile(CFile *Stream);                       /* Load header */
 	BYTE GetHeaderTypeID()   { return FHeaderTypeID; };    /* Header type code */
 	CAtlString GetHeaderType();                               /* Header type name */
 	BYTE GetMPEGVersionID()   { return FMPEGVersionID; };  /* MPEG version code */

@@ -56,7 +56,7 @@ public:
 	long FinalFrameBlocks;
   WORD BitsPerSample;                                        /* 8, 16 or 24 (or the value of the header of the new format) */
   //
-  bool ReadFromFile(FILE *Stream);
+  bool ReadFromFile(CFile *Stream);
   void Reset();
   bool exists();
 };

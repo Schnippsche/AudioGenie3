@@ -31,7 +31,7 @@ class CWMA_Header_Extension :
 public:
 	CWMA_Header_Extension(void);
 	~CWMA_Header_Extension(void);
-	bool load(FILE *Stream, size_t maxLen);
+	bool load(CFile *Stream, size_t maxLen);
 	void Empty();
 	CWMA_Object* findObject(IID objectID);
 	bool deleteObject(IID objectID);

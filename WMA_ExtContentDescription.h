@@ -33,7 +33,7 @@ public:
 	CWMA_ExtContentDescription(void);
 	CWMA_ExtContentDescription(CBlob *datas);
 	~CWMA_ExtContentDescription(void);
-	bool load(FILE *Stream, size_t maxLen);	
+	bool load(CFile *Stream, size_t maxLen);	
 	void buildData();
 private:
 	bool _mustBuild;

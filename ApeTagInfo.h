@@ -44,7 +44,7 @@ public:
 	long Flags;                                               // Tag flags
 	// char Reserved[8];                                      // Reserved for later use
 	// methods
-	bool ReadFromFile(FILE *Stream);
+	bool ReadFromFile(CFile *Stream);
 	//bool WriteToFile(FILE *Stream);
 	void WriteToBlob(CBlob &blob);
 	void Reset();	

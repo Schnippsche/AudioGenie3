@@ -16,4 +16,6 @@
 #include <atlbase.h>
 #include <atlstr.h>
 
+class CFile;   // the access to a file that is read (File.h)
+
 // TODO: reference additional headers that the program requires here.

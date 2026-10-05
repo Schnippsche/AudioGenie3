@@ -32,7 +32,7 @@ public:
 	virtual CWAVChunk* find(u32 ID);
 	virtual u64 getSize();
 	virtual bool isID(u32 ID) { return ( _chunkID == ID ); };
-	virtual bool load(FILE *Stream, u64 offset, u64 size);
+	virtual bool load(CFile *Stream, u64 offset, u64 size);
 	virtual void save(CBlob *blob);	
 	virtual bool save(FILE* Source, FILE *Destination);
 	virtual void Remove();

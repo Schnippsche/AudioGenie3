@@ -39,7 +39,7 @@ CMPEGPlus::~CMPEGPlus()
 {
 }
 
-bool CMPEGPlus::ReadHeader(FILE *Stream)
+bool CMPEGPlus::ReadHeader(CFile *Stream)
 {
   FIsSV8 = false;
   CSequentialRead sequence(Stream, CTools::audioStart());   // read from the cache of the start of the file
@@ -83,7 +83,7 @@ static bool ReadVarInt(const BYTE *data, size_t length, size_t &pos, unsigned __
 // Stream version 8: after "MPCK" packets follow: 2 byte key, length as variable-length integer (including key
 // and length field itself), then the payload. "SH" (stream header) contains sample count, sample rate and channels, "EI" (encoder
 // info) the profile. As soon as audio data ("AP") or the end ("SE") begins, the header is finished.
-bool CMPEGPlus::ReadHeaderSV8(FILE *Stream)
+bool CMPEGPlus::ReadHeaderSV8(CFile *Stream)
 {
   static const long SAMPLE_RATES[4] = { 44100, 48000, 37800, 32000 };
   const size_t MAX_PACKET_PAYLOAD = 4096;   // header packets are tiny; larger ones are skipped
@@ -343,7 +343,7 @@ float CMPEGPlus::GetDuration()
     return 0.0f;
 }
 
-bool CMPEGPlus::ReadFromFile(FILE *Stream)
+bool CMPEGPlus::ReadFromFile(CFile *Stream)
 {
   /* Process data if loaded and file valid */
   if (ReadHeader(Stream))

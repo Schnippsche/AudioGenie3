@@ -37,7 +37,7 @@ void CWMA_StreamBitrateProperties::Empty()
 	Flags = 0;
 	AverageBitrate = 0;
 }
-bool CWMA_StreamBitrateProperties::load(FILE *Stream, size_t maxLen)
+bool CWMA_StreamBitrateProperties::load(CFile *Stream, size_t maxLen)
 {
 	ATLTRACE(_T("StreamBitrate Properties with %i bytes\n"), maxLen);
 	_data.FileRead(6, Stream);

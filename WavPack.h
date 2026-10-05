@@ -31,13 +31,13 @@ private:
 	__int64 _samples;                 // total number of the samples
 	long _flags;
 	long _channels, _sampleRate;
-	void ReadFrame(FILE *Stream, __int64 position);
-	__int64 SamplesOfLastBlock(FILE *Stream);
+	void ReadFrame(CFile *Stream, __int64 position);
+	__int64 SamplesOfLastBlock(CFile *Stream);
 	BYTE _majorversion, _minorversion; 
 	public:
 	CWavPack(void);
 	virtual ~CWavPack();
-	bool ReadFromFile(FILE *Stream);
+	bool ReadFromFile(CFile *Stream);
 	void ResetData();
 	bool IsValid();
 	CAtlString GetFileVersion();

@@ -34,7 +34,7 @@ public:
 	CWMA_MetadataLibrary(void);
 	CWMA_MetadataLibrary(CBlob *datas);
 	~CWMA_MetadataLibrary(void);
-	bool load(FILE *Stream, size_t maxLen);	
+	bool load(CFile *Stream, size_t maxLen);	
 	void buildData();
 private:
 	bool _mustBuild;

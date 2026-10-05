@@ -32,7 +32,7 @@ class CTTA : public CAudio
 public:
 	CTTA(void);
 	virtual ~CTTA();
-	bool ReadFromFile(FILE *Stream);
+	bool ReadFromFile(CFile *Stream);
 	void ResetData();
 	bool IsValid();
 	CAtlString GetFileVersion();

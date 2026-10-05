@@ -37,7 +37,7 @@ public:
 	CWMA_TagData(BYTE art);
 	CWMA_TagData(CAtlString fieldName, CAtlString fieldValue);
 	~CWMA_TagData(void);
-	bool load(FILE *Stream, size_t maxLen); 
+	bool load(CFile *Stream, size_t maxLen); 
 	bool IsFieldName(CAtlString tstString);
 	void setNewValue(CAtlString newValue);
 	void ConvertPicture();

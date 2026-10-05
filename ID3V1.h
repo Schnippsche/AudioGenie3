@@ -34,7 +34,7 @@ public:
 	CID3V1();
 	~CID3V1();
 	void ResetData();
-	void ReadFromFile(FILE *file);
+	void ReadFromFile(CFile *file);
 	bool Exists()              { return (CTools::ID3v1Size > 0);          };
 	/* Getter */
 	CAtlString GetAlbum()         { return id3v1tag.Album;           };
@@ -70,7 +70,7 @@ public:
 	bool SaveToFile(LPCWSTR FileName);
 	bool OpenFile(LPCWSTR FileName, bool WriteModus);
 	// size of the id3v1 data at the end of a file: 128 (id3v1 tag), 355 (with the enhanced tag) or 0 (none)
-	static int DetectSize(FILE *Stream);
+	static int DetectSize(CFile *Stream);
 
 private:
 	bool RemoveTag(LPCWSTR FileName);

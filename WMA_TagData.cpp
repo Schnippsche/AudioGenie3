@@ -130,7 +130,7 @@ void CWMA_TagData::setNewValue(CAtlString newValue)
 	}     	
 }
 
-bool CWMA_TagData::load(FILE *Stream, size_t maxLen)
+bool CWMA_TagData::load(CFile *Stream, size_t maxLen)
 {
 	_data.Clear();
 	u32	DataSize = 0;
@@ -151,7 +151,7 @@ bool CWMA_TagData::load(FILE *Stream, size_t maxLen)
 		_data.FileRead(4, Stream);
 		Type = _data.GetR2B(0);
 		DataSize = (u32)_data.GetR2B(2);
-		ATLTRACE(_T("   FieldName ExtContent: %s at:%d with %u bytes "), FieldName, (long)_ftelli64(Stream), DataSize);
+		ATLTRACE(_T("   FieldName ExtContent: %s at:%d with %u bytes "), FieldName, (long)CTools::seqTell(Stream), DataSize);
 		_data.FileRead(DataSize, Stream);
 	}
 	else if (_art == METADATA_ART)
@@ -165,7 +165,7 @@ bool CWMA_TagData::load(FILE *Stream, size_t maxLen)
 		/* Read field name */
 		_data.FileRead(FieldSize, Stream);
 		FieldName = _data.ConvertToUnicodeString(TEXT_ENCODED_UTF16LE);
-		ATLTRACE(_T("   FieldName Metadata: %s at:%d with %u bytes "), FieldName, (long)_ftelli64(Stream), DataSize);
+		ATLTRACE(_T("   FieldName Metadata: %s at:%d with %u bytes "), FieldName, (long)CTools::seqTell(Stream), DataSize);
 		_data.FileRead(DataSize, Stream);
 	}
 	else 

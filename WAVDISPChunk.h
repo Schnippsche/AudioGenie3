@@ -26,7 +26,7 @@ class CWAVDISPChunk :
 public:
 	CWAVDISPChunk(void);
 	~CWAVDISPChunk(void);
-	bool load(FILE *Stream, u64 offset, u64 size);	
+	bool load(CFile *Stream, u64 offset, u64 size);	
 	u32 getType() { return _type; };
 	CAtlString getText();
 	void setText(LPCWSTR text);

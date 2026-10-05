@@ -52,7 +52,7 @@ void CWMA_ContentDescription::Empty()
 	_mustBuild = true;
 }
 
-bool CWMA_ContentDescription::load(FILE *Stream, size_t maxLen)
+bool CWMA_ContentDescription::load(CFile *Stream, size_t maxLen)
 {
 	//ATLTRACE(_T("ContentDescription with %i bytes\n"), maxLen);
 	_data.FileRead(10, Stream);

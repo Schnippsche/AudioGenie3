@@ -61,8 +61,8 @@ public:
 	u16 FrameFlags{};
 	//static BYTE oldTagVersion, newTagVersion, defaultEncodingID, Flags;
 	BYTE Revision{}, Version{};	
-	bool ReadHeader(FILE *Stream);
-	void ReadFromFile(FILE *Stream);
+	bool ReadHeader(CFile *Stream);
+	void ReadFromFile(CFile *Stream);
 	void WriteHeader(CBlob *blob, long tagSize, bool unsynchronised = false);
 	bool SaveTag(LPCWSTR FileName);
 	bool ReplaceTag(LPCWSTR FileName, CBlob* data);
