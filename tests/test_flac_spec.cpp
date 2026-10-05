@@ -636,3 +636,37 @@ TEST_CASE("FLAC: several large blocks one behind the other (reads of the cache, 
         }
     }
 }
+
+TEST_CASE("FLAC: a comment value that is larger than the text buffer (256 KB characters)", "[flac][spec]")
+{
+    // The value is converted into the text buffer: a value that fits is read, a larger one is not (empty); the other fields are not affected. A text of
+    // ASCII characters gives one character for every byte, a character with 3 bytes (euro) one for three.
+    struct Case { const char* name; std::string value; bool fits; };
+    std::string euro;
+    for (int i = 0; i < 90000; i++) euro += "€";   // 270,000 bytes, 90,000 characters
+    std::string euroLarge;
+    for (int i = 0; i < 300000; i++) euroLarge += "€";   // 900,000 bytes: more than three times the buffer
+    const Case cases[] = {
+        { "ASCII, 100,000", std::string(100000, 'a'), true },
+        { "ASCII, 262,143 (the largest that fits)", std::string(262143, 'a'), true },
+        { "ASCII, 262,144", std::string(262144, 'a'), false },
+        { "ASCII, 468,462", std::string(468462, 'a'), false },
+        { "ASCII, 900,000", std::string(900000, 'a'), false },
+        { "euro, 90,000 characters", euro, true },
+        { "euro, 300,000 characters", euroLarge, false },
+    };
+    for (const Case& c : cases) {
+        INFO(c.name);
+        FlacSpec spec;
+        spec.comments = { "TITLE=Before", "COMMENT=" + c.value, "ARTIST=After" };
+        auto p = writeTemp("flac_large_value.flac", flacFile(spec));
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == FLAC);
+        CHECK(take(FLACGetUserItemW(L"TITLE")) == L"Before");
+        CHECK(take(FLACGetUserItemW(L"ARTIST")) == L"After");
+        const std::wstring comment = take(FLACGetUserItemW(L"COMMENT"));
+        if (c.fits)
+            CHECK(!comment.empty());
+        else
+            CHECK(comment.empty());
+    }
+}

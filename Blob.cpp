@@ -30,6 +30,23 @@ static const size_t BLOB_MAX_SIZE = 0x40000000; // 1 GB
 // From this size on, a requested read size is checked against the remaining size of the file
 static const size_t BLOB_CHECK_FILE_LIMIT = 65536;
 
+// true if all bytes are ASCII (below 0x80); 8 bytes at a time
+static bool isAscii(const BYTE *data, size_t length)
+{
+	size_t i = 0;
+	for (; i + 8 <= length; i += 8)
+	{
+		unsigned __int64 word;
+		memcpy(&word, data + i, 8);
+		if ((word & 0x8080808080808080ULL) != 0)
+			return false;
+	}
+	for (; i < length; i++)
+		if (data[i] >= 0x80)
+			return false;
+	return true;
+}
+
 static inline bool blobSizeOverflow(size_t current, size_t add)
 {
 	return (add > BLOB_MAX_SIZE) || (current > BLOB_MAX_SIZE - add);
@@ -492,6 +509,16 @@ static UINT ansiCodePage()
 	return (codePage > 0) ? (UINT)codePage : CP_ACP;
 }
 
+// true if a text of size bytes (with the terminator) cannot be converted from the ANSI code page into maxBuffer characters
+static bool ansiTextTooLarge(size_t size, size_t maxBuffer)
+{
+	if (size <= maxBuffer)
+		return false;
+	CPINFO info;
+	const size_t bytesPerCharacter = GetCPInfo(ansiCodePage(), &info) ? (size_t)info.MaxCharSize : 4;
+	return size > maxBuffer * (bytesPerCharacter > 0 ? bytesPerCharacter : 1);
+}
+
 CAtlString CBlob::getNextString(BYTE encoding, int& startPos)
 {
 	if (m_CurrentLength == 0 || m_pData == NULL || startPos < 0 || (size_t)startPos > m_CurrentLength)
@@ -510,8 +537,9 @@ CAtlString CBlob::getNextString(BYTE encoding, int& startPos)
 	}
 	else
 	{
-		while (endPos < m_CurrentLength && m_pData[endPos] != 0)
-			endPos++;
+		// (memchr: a text of several MB has a terminator that is far away)
+		const BYTE *terminator = (const BYTE *)memchr(m_pData + endPos, 0, m_CurrentLength - endPos);
+		endPos = (terminator != NULL) ? (size_t)(terminator - m_pData) : m_CurrentLength;
 		endPos++;
 	}
 	// set end position to the next value
@@ -526,7 +554,9 @@ CAtlString CBlob::getNextString(BYTE encoding, int& startPos)
 	switch (encoding) // Encoding ID
 	{
 	case TEXT_ENCODED_ANSI: // ANSI or ISO-8859-1
-		if (MultiByteToWideChar(ansiCodePage(), 0, (const char*)(m_pData + startPos), -1, po, (int)maxBuffer) > 0)
+		// a text with more bytes than the text buffer has characters cannot be converted into it (a character of the code page has 1 byte, 2 bytes in
+		// the code pages of East Asia), and the system would first look at all of the text (a field of some MB) to find that out
+		if (!ansiTextTooLarge(size, maxBuffer) && MultiByteToWideChar(ansiCodePage(), 0, (const char*)(m_pData + startPos), -1, po, (int)maxBuffer) > 0)
 			result = CAtlString(po);
 		else
 		{
@@ -575,7 +605,9 @@ CAtlString CBlob::getNextString(BYTE encoding, int& startPos)
 		result = CAtlString(po);
 		break;
 	case TEXT_ENCODED_UTF8:   // UTF-8
-		if (MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, (const char*)(m_pData + startPos), -1, po, (int)maxBuffer) > 0)
+		// a wchar_t needs at most 3 bytes (a character with 4 bytes gives 2): more than 3 times the size of the text buffer does not fit, and a text
+		// of ASCII characters gives one wchar_t for every byte
+		if (size <= 3 * maxBuffer && !(size > maxBuffer && isAscii(m_pData + startPos, size - 1)) && MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, (const char*)(m_pData + startPos), -1, po, (int)maxBuffer) > 0)
 			result = CAtlString(po);
 		else
 		{
