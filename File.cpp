@@ -110,12 +110,30 @@ bool CFile::open(LPCWSTR fileName, Mode mode, Share share)
 		errno = errnoOf(GetLastError());
 		return false;
 	}
+	if (mode != Mode::Read && !isFile())
+	{
+		close();
+		errno = ENODEV;
+		return false;
+	}
 	m_append = append;
 	m_failed = false;
 	m_pos = 0;
 	m_bufferStart = 0;
 	m_bufferLength = 0;
 	return true;
+}
+
+// CreateFileW also opens devices: the console (CON), NUL, COM ports, pipes and, with a path like \\.\C: or \\.\PhysicalDrive0, a whole
+// volume or disk. Files on a local, removable or network drive are FILE_TYPE_DISK; so are volumes and disks, but the system has
+// no file information for them. Only for writing, where a tag written to a disk would destroy it: for reading, the check would cost
+// 1.2 % of the analysis, and a device is harmless there (its size is not known, nothing is read).
+bool CFile::isFile() const
+{
+	if (GetFileType(m_handle) != FILE_TYPE_DISK)
+		return false;
+	BY_HANDLE_FILE_INFORMATION info;
+	return GetFileInformationByHandle(m_handle, &info) && (info.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) == 0;
 }
 
 bool CFile::openRead(LPCWSTR fileName)

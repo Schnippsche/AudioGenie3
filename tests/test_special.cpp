@@ -206,6 +206,40 @@ TEST_CASE("Invalid paths: NULL, empty, directory, wildcards, drive, very long", 
     CHECK(AUDIOSaveChangesToFileW(L"Z:\\gibt\\es\\nicht.mp3") == 0);
 }
 
+namespace {
+struct PipeCall { std::wstring path; short analyzed; short saved; long error; };
+
+DWORD WINAPI analyzeAndSave(LPVOID p)
+{
+    PipeCall* c = static_cast<PipeCall*>(p);
+    c->analyzed = AUDIOAnalyzeFileW(c->path.c_str());
+    ID3V1SetTitleW(L"darf nicht in die Pipe");
+    c->saved = ID3V1SaveChangesToFileW(c->path.c_str());
+    c->error = AUDIOGetLastErrorNumberW();
+    return 0;
+}
+}  // namespace
+
+TEST_CASE("Devices are not files: nothing is written into a named pipe", "[special][invalid][device]")
+{
+    PipeCall call{ L"\\\\.\\pipe\\ag3test_" + std::to_wstring(GetCurrentProcessId()) + L".mp3", -1, -1, 0 };
+    HANDLE server = CreateNamedPipeW(call.path.c_str(), PIPE_ACCESS_DUPLEX, PIPE_TYPE_BYTE, PIPE_UNLIMITED_INSTANCES, 0, 0, 0, nullptr);
+    REQUIRE(server != INVALID_HANDLE_VALUE);
+    HANDLE thread = CreateThread(nullptr, 0, analyzeAndSave, &call, 0, nullptr);
+    REQUIRE(thread != nullptr);
+    const bool finished = WaitForSingleObject(thread, 10000) == WAIT_OBJECT_0;
+    DWORD written = 0;
+    PeekNamedPipe(server, nullptr, 0, nullptr, &written, nullptr);   // what the library wrote into the pipe
+    CloseHandle(server);   // a read that blocks returns now, so the test does not hang
+    WaitForSingleObject(thread, INFINITE);
+    CloseHandle(thread);
+    CHECK(finished);
+    CHECK(call.analyzed == UNKNOWN);
+    CHECK(call.saved == 0);
+    CHECK(call.error != 0);
+    CHECK(written == 0);
+}
+
 TEST_CASE("Empty and tiny files with every extension", "[special][invalid]")
 {
     const fs::path dir = freshDir(L"winzig");

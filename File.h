@@ -45,7 +45,7 @@ public:
 		All,            // read and write
 		Read            // only read
 	};
-	// false if the file cannot be opened (errno is set)
+	// false if the file cannot be opened (errno is set; ENODEV if a mode for writing opens a device such as CON, NUL, a pipe, a volume or a disk)
 	bool open(LPCWSTR fileName, Mode mode, Share share);
 	bool openRead(LPCWSTR fileName);   // Mode::Read and Share::All
 	void close();
@@ -83,6 +83,7 @@ private:
 	CFile &operator=(const CFile &);
 	static const size_t BUFFER_SIZE = 8192;
 	size_t readRaw(__int64 pos, void *destination, size_t length);   // positioned read of the system
+	bool isFile() const;   // the handle is a file and not a device, a volume or a disk
 	HANDLE m_handle;
 	bool m_append;              // the writes go to the end of the file
 	bool m_failed;
