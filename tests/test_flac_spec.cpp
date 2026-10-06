@@ -519,6 +519,83 @@ TEST_CASE("FLAC: the picture block has the width, height, depth and colors of th
     }
 }
 
+namespace {
+// a FLAC file with a picture block that links to a file (MIME type -->, the link instead of the picture data)
+Bytes flacWithLinkedPicture(const std::string& link)
+{
+    Bytes pic;
+    be32(pic, 3);
+    be32(pic, 3); put(pic, "-->");
+    be32(pic, 0);                                   // no description
+    be32(pic, 0); be32(pic, 0); be32(pic, 0); be32(pic, 0);
+    be32(pic, static_cast<uint32_t>(link.size())); put(pic, link.c_str());
+    Bytes f = flacFile(FlacSpec());
+    const Bytes b = block(6, false, pic);
+    f.insert(f.begin() + 4 + 4 + 34, b.begin(), b.end());   // behind STREAMINFO
+    return f;
+}
+
+std::string narrow(const std::wstring& w) { return std::string(w.begin(), w.end()); }
+
+// switches LINKEDPICTURES on and back off, also if a REQUIRE ends the section
+struct LinkedPictures {
+    LinkedPictures() { SetConfigValueW(8, 1); }
+    ~LinkedPictures() { SetConfigValueW(8, 0); }
+};
+}  // namespace
+
+TEST_CASE("FLAC: linked pictures come from the file: only loaded if configured, never from a network path", "[flac][spec][picture]")
+{
+    const fs::path target = writeTemp("flac_linked_target.bin", Bytes(10, 0x42));
+    const std::string local = narrow(target.wstring());
+    SECTION("default: the link is kept, the picture is not loaded") {
+        auto p = writeTemp("flac_link.flac", flacWithLinkedPicture(local));
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == FLAC);
+        REQUIRE(FLACGetPictureCountW() == 1);
+        CHECK(FLACGetPictureSizeW(1) == 0);
+        CHECK(take(FLACGetPictureMimeW(1)) == L"-->" + target.wstring());
+    }
+    SECTION("configured: a local path is loaded") {
+        LinkedPictures on;
+        auto p = writeTemp("flac_link.flac", flacWithLinkedPicture(local));
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == FLAC);
+        CHECK(FLACGetPictureSizeW(1) == 10);
+    }
+    SECTION("configured: paths that start with \\ or / are not followed") {
+        LinkedPictures on;
+        for (const std::string& link : { std::string("\\\\gibt.es.nicht.example\\share\\cover.jpg"), std::string("//gibt.es.nicht.example/share/cover.jpg"),
+                                         "\\\\?\\" + local, "\\??\\" + local, "\\\\.\\" + local }) {
+            INFO(link);
+            auto p = writeTemp("flac_link.flac", flacWithLinkedPicture(link));
+            REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == FLAC);
+            REQUIRE(FLACGetPictureCountW() == 1);
+            CHECK(FLACGetPictureSizeW(1) == 0);
+        }
+    }
+    SECTION("configured: a linked file larger than 64 MB is not loaded") {
+        LinkedPictures on;
+        const fs::path big = writeTemp("flac_linked_big.bin", Bytes(1, 0));
+        fs::resize_file(big, 64ull * 1024 * 1024 + 1);
+        auto p = writeTemp("flac_link.flac", flacWithLinkedPicture(narrow(big.wstring())));
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == FLAC);
+        CHECK(FLACGetPictureSizeW(1) == 0);
+        fs::remove(big);
+    }
+    SECTION("a link with characters outside of ASCII is written and read as UTF-8") {
+        const fs::path umlaut = tempDir() / L"flac_link_äöü.bin";
+        { Bytes b(10, 0x42); FILE* fp = _wfopen(umlaut.c_str(), L"wb"); REQUIRE(fp); fwrite(b.data(), 1, b.size(), fp); fclose(fp); }
+        auto p = writeTemp("flac_link.flac", flacFile(FlacSpec()));
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == FLAC);
+        REQUIRE(FLACAddPictureFileW(umlaut.c_str(), L"", 3, 1) != 0);
+        REQUIRE(FLACSaveChangesW() != 0);
+        LinkedPictures on;
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == FLAC);
+        CHECK(take(FLACGetPictureMimeW(1)) == L"-->" + umlaut.wstring());
+        CHECK(FLACGetPictureSizeW(1) == 10);
+        fs::remove(umlaut);
+    }
+}
+
 TEST_CASE("FLAC: a Vorbis comment block does not read into the next block", "[flac][spec]")
 {
     // the count of the comments says 50, the block only has 2: the following picture block must still be read

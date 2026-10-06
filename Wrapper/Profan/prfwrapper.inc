@@ -202,7 +202,7 @@ DEF &CF_MAXTEXTBUFFER 4
 DEF &CF_WMAPADDINGSIZE 5
 DEF &CF_MP4PADDINGSIZE 6
 DEF &CF_ANSICODEPAGE 7 'code page of ISO-8859-1 text, default 1252, 0 = code page of the system
-DEF &CF_ID3V2LINKEDPICTURES 8 '1 = read pictures that an ID3v2 frame links to
+DEF &CF_ID3V2LINKEDPICTURES 8 '1 = read pictures that an ID3v2 frame or a FLAC picture block links to
 DEF &CF_ID3V1MAXTEXTLENGTH 9 '30 to 90, longest title, artist and album of an ID3v1 tag (more than 30 characters: enhanced tag)
 
 Proc GetTextframeConst 'Typ,Tagname übergeben erst ab XProfan 12 wegen explode() mit leerstring

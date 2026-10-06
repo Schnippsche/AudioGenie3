@@ -456,6 +456,33 @@ void CTools::write(LPCWSTR art, LPCWSTR entry)
 	}
 }
 
+// The link comes from the tag of the audio file, so a manipulated file chooses the path. It is followed only if this is configured
+// (LINKEDPICTURES), never to a path that starts with \ or / (\\server\share, \\?\, \\.\, \??\: for a server Windows would send the
+// credentials of the user), and only up to LINKED_PICTURE_MAX bytes. Local paths and mapped drives (Z:\...) work.
+bool CTools::readLinkedPicture(const CAtlString &link, CBlob &data)
+{
+	data.Clear();
+	if (configValues[CONFIG_ID3V2LINKEDPICTURES] == 0)
+		return false;   // the link is kept, the picture is not loaded
+	bool ok = !link.IsEmpty() && link[0] != _T('\\') && link[0] != _T('/');
+	if (ok)
+	{
+		CFile *source = CFile::openFile(link, CFile::Mode::Read, CFile::Share::All);
+		ok = (source != NULL);
+		if (ok)
+		{
+			const __int64 length = source->size();
+			ok = (length >= 0 && length <= LINKED_PICTURE_MAX);
+			if (ok)
+				data.FileRead((size_t)length, source);
+			CFile::closeFile(source);
+		}
+	}
+	if (!ok)
+		setLastError(ERR_IMAGEURL_NOT_FOUND, (LPCTSTR)link);
+	return ok;
+}
+
 CAtlString CTools::ExtractMimeFromPicture(const BYTE *buf)
 {
 	return IMAGE_LONG[CalcMimeFromPicture(buf)];

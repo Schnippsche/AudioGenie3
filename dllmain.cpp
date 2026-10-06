@@ -4662,7 +4662,7 @@ extern "C" short __stdcall ID3V2GetEncodingW(u32 FrameID)
  * | 5 | WMAPADDINGSIZE | 4096 | the padding size in bytes for a WMA tag |
  * | 6 | MP4PADDINGSIZE | 4096 | the padding size in bytes for an MP4 tag |
  * | 7 | ANSICODEPAGE | 1252 | the code page of ISO-8859-1 / ANSI strings, 0 = the code page of the system (see below) |
- * | 8 | ID3V2LINKEDPICTURES | 0 | 1 = read the picture that an ID3v2 APIC frame links to (MIME type <tt>--></tt>) from disk |
+ * | 8 | ID3V2LINKEDPICTURES | 0 | 1 = read the picture that an ID3v2 APIC frame or a FLAC picture block links to (MIME type <tt>--></tt>) from disk |
  * | 9 | ID3V1MAXTEXTLENGTH | 90 | 30 to 90 = the longest title, artist and album that is written to an ID3v1 tag (see below) |
  *
  * <b>ANSICODEPAGE</b>
@@ -4682,9 +4682,12 @@ extern "C" short __stdcall ID3V2GetEncodingW(u32 FrameID)
  *
  * <b>ID3V2LINKEDPICTURES</b>
  *
- * An ID3v2 picture frame can contain a link to a file instead of the picture (MIME type <tt>--></tt>). The link comes from the
- * tag of the audio file, so it is not followed by default (the picture size is 0); otherwise a manipulated file could make
- * an application read any file of the computer. Set the value to 1 to load such pictures.
+ * An ID3v2 picture frame or a FLAC picture block can contain a link to a file instead of the picture (MIME type <tt>--></tt>).
+ * The link comes from the tag of the audio file, so it is not followed by default (the picture size is 0); otherwise a manipulated
+ * file could make an application read any file of the computer. Set the value to 1 to load such pictures. Even then a link that
+ * starts with \\ or / (a network path such as <tt>\\\\server\\share</tt>, or a device) is not followed, because Windows would log on
+ * to the server with the credentials of the user, and a linked file larger than 64 MB is not loaded. Local paths and mapped network
+ * drives (such as <tt>Z:\\Covers\\cover.jpg</tt>) work.
  *
  * <b>DOEVENTSMILLIS</b>
  *
@@ -4755,7 +4758,7 @@ extern "C" void __stdcall SetConfigValueW(long key, long value)
  * | 5 | WMAPADDINGSIZE | the padding size in bytes for a WMA tag |
  * | 6 | MP4PADDINGSIZE | the padding size in bytes for an MP4 tag |
  * | 7 | ANSICODEPAGE | the code page of ISO-8859-1 / ANSI strings |
- * | 8 | ID3V2LINKEDPICTURES | 1 if linked pictures are read from disk |
+ * | 8 | ID3V2LINKEDPICTURES | 1 if linked pictures (ID3v2, FLAC) are read from disk |
  * | 9 | ID3V1MAXTEXTLENGTH | the longest text that is written to an ID3v1 tag |
  *
  * @ingroup UNIVERSAL

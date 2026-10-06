@@ -81,16 +81,10 @@ CFlacCover::CFlacCover(CBlob *tmpData)
 	if (_mime.Compare(_T("-->")) == 0)
 	{
 		_isLink = true;
-		_pictureLink = tmpData->getNextString(TEXT_ENCODED_ANSI, start);
-		CFile *tmpSource;
-		if ( (tmpSource = CFile::openFile(_pictureLink, CFile::Mode::Read, CFile::Share::All)) != NULL)
-		{
-			data.FileRead(toSizeClamped(tmpSource->size()), tmpSource);
-			CFile::closeFile(tmpSource);
-		}
-		else
-			CTools::instance().setLastError(ERR_IMAGEURL_NOT_FOUND, (LPCTSTR)_pictureLink);
-
+		// UTF-8 like the description (and as the link is written)
+		_pictureLink = tmpData->getNextString(TEXT_ENCODED_UTF8, start);
+		// the link comes from the file: it is only followed if this is configured (LINKEDPICTURES)
+		CTools::readLinkedPicture(_pictureLink, data);
 	}
 	else
 	{

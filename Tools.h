@@ -133,7 +133,7 @@ enum CONFIGKEYS {
 	CONFIG_WMAPADDINGSIZE,
 	CONFIG_MP4PADDINGSIZE,
 	CONFIG_ANSICODEPAGE,           // code page of ISO-8859-1 / ANSI strings, 0 = code page of the system
-	CONFIG_ID3V2LINKEDPICTURES,    // 1 = read pictures that an ID3v2 APIC frame links to (MIME type -->) from disk
+	CONFIG_ID3V2LINKEDPICTURES,    // 1 = read pictures that an ID3v2 APIC frame or a FLAC picture block links to (MIME type -->) from disk
 	CONFIG_ID3V1MAXTEXTLENGTH      // 30 to 90: longest title, artist and album of an ID3v1 tag; more than 30 characters need the enhanced tag (TAG+)
 };
 
@@ -206,6 +206,9 @@ public:
 	static void writeWarning(LPCWSTR entry, ...);
 	static void setLastError(int error, ...);
 	void reset();
+	// Loads the picture that a tag links to (MIME type -->) into data; false if it is not loaded (data is empty then).
+	static bool readLinkedPicture(const CAtlString &link, CBlob &data);
+	static const __int64 LINKED_PICTURE_MAX = 64 * 1024 * 1024;   // a larger linked file is not loaded
 	static CAtlString ExtractMimeFromPicture(const BYTE *buf);
 	static CAtlString ExtractSmallMimeFromPicture(const BYTE *buf);
 	static int CalcMimeFromPicture(const BYTE *buf);

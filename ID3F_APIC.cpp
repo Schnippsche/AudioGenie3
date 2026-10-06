@@ -156,18 +156,7 @@ void CID3F_APIC::decode()
 				_isLink = true;
 				_pictureLink = _blob.getNextString(TEXT_ENCODED_ANSI, start);
 				// the link comes from the tag of the file: it is only followed if this is configured (LINKEDPICTURES)
-				CFile *tmpSource = NULL;
-				if (CTools::configValues[CONFIG_ID3V2LINKEDPICTURES] == 0)
-				{
-					// the link is kept, the picture is not loaded
-				}
-				else if ( (tmpSource = CFile::openFile(_pictureLink, CFile::Mode::Read, CFile::Share::All)) != NULL)
-				{
-					_data.FileRead(toSizeClamped(tmpSource->size()), tmpSource);
-					CFile::closeFile(tmpSource);
-				}
-				else
-					CTools::instance().setLastError(ERR_IMAGEURL_NOT_FOUND, (LPCTSTR)_pictureLink);				
+				CTools::readLinkedPicture(_pictureLink, _data);
 			}
 			else // read picture from memory
 			{

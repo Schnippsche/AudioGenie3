@@ -597,6 +597,25 @@ TEST_CASE("ID3v2: linked pictures are not read from disk unless configured", "[i
         CHECK(ID3V2GetPictureSizeW(1) == 10);
         SetConfigValueW(8, 0);
     }
+    SECTION("configured: a network path or a file larger than 64 MB is not loaded") {
+        const fs::path big = writeTemp("spec_linked_big.bin", Bytes(1, 0));
+        fs::resize_file(big, 64ull * 1024 * 1024 + 1);
+        SetConfigValueW(8, 1);
+        for (const std::string& link : { std::string("\\\\gibt.es.nicht.example\\share\\cover.jpg"), "\\\\?\\" + pic.string(), big.string() }) {
+            INFO(link);
+            Bytes a = { 0x00 };
+            put(a, "-->");
+            a.push_back(0);
+            a.push_back(3);
+            a.push_back(0);
+            put(a, link.c_str());
+            auto q = writeTagged("spec_link.mp3", tagBytes(4, 0, frame("APIC", a), 100));
+            CHECK(AUDIOAnalyzeFileW(q.c_str()) == MPEG);
+            CHECK(ID3V2GetPictureSizeW(1) == 0);
+        }
+        SetConfigValueW(8, 0);
+        fs::remove(big);
+    }
 }
 
 // ---------------------------------------------------------------- frames the DLL does not know
