@@ -6,6 +6,8 @@
 #include <winioctl.h>
 #include <algorithm>
 #include <cstring>
+#include <fstream>
+#include <iterator>
 
 #pragma comment(lib, "user32.lib")   // PeekMessageW, PostThreadMessageW, PostQuitMessage
 
@@ -142,6 +144,96 @@ TEST_CASE("Long paths: around MAX_PATH (260) and far beyond (\\\\?\\ prefix)", "
             fs::remove_all(base, ec2);
         }
     }
+}
+
+namespace {
+// a path of exactly 'total' characters below root (directories of at most 200 characters)
+std::wstring exactPath(const std::wstring& root, size_t total, const std::wstring& fileName)
+{
+    std::wstring p = root;
+    while (p.size() + 1 + fileName.size() < total) {
+        size_t left = total - p.size() - 1 - fileName.size();   // characters for "\dir" components in front of the file name
+        size_t n = std::min<size_t>(200, left - 1);
+        if (left - 1 - n == 1) n--;                                // never leave exactly one character (a component needs a backslash too)
+        p += L"\\" + std::wstring(n, L'd');
+    }
+    return p + L"\\" + fileName;
+}
+}  // namespace
+
+TEST_CASE("Long paths without the \\\\?\\ prefix: analysis and saving that writes the file again", "[special][longpath]")
+{
+    const fs::path base = freshDir(L"lang_plain");
+    // 258: the backup (~~) has 260 characters, 259: the temporary file (~), 260 and more: the file itself
+    for (size_t total : { 250u, 258u, 259u, 260u, 300u, 600u }) {
+        DYNAMIC_SECTION("total length " << total << " characters") {
+            const std::wstring plain = exactPath(base.wstring(), total, L"lied.mp3");   // as an application passes it
+            REQUIRE(plain.size() == total);
+            const fs::path prefixed = L"\\\\?\\" + plain;
+            std::error_code ec;
+            fs::create_directories(prefixed.parent_path(), ec);
+            if (ec) SKIP("directory cannot be created: " << ec.message());
+            copyTo(fixture("mp3/tagged.mp3"), prefixed);
+            REQUIRE(AUDIOAnalyzeFileW(plain.c_str()) == MPEG);
+            AUDIOSetTitleW(L"Lang");
+            AUDIOSetCommentW(std::wstring(40000, L'x').c_str());   // the file is written again: temporary file and backup are longer still
+            CHECK(AUDIOSaveChangesW() != 0);
+            REQUIRE(AUDIOAnalyzeFileW(plain.c_str()) == MPEG);
+            CHECK(take(AUDIOGetTitleW()) == L"Lang");
+            size_t files = 0;
+            for (const auto& e : fs::directory_iterator(prefixed.parent_path())) { (void)e; files++; }
+            CHECK(files == 1);   // no temporary file or backup is left
+            std::error_code ec2;
+            fs::remove_all(base, ec2);
+        }
+    }
+}
+
+namespace {
+void writeText(const fs::path& p, const std::string& text, DWORD attributes = FILE_ATTRIBUTE_NORMAL)
+{
+    std::ofstream(p, std::ios::binary).write(text.data(), static_cast<std::streamsize>(text.size()));
+    SetFileAttributesW(p.c_str(), attributes);
+}
+
+std::string readText(const fs::path& p)
+{
+    const Bytes b = readFile(p);
+    return std::string(b.begin(), b.end());
+}
+}  // namespace
+
+TEST_CASE("Writing a file again: files with the names of the temporary file and of the backup stay untouched", "[special][replace]")
+{
+    const fs::path dir = freshDir(L"tempnames");
+    const fs::path p = dir / L"song.mp3";
+    copyTo(fixture("mp3/tagged.mp3"), p);
+    struct Other { std::wstring suffix; DWORD attributes; };
+    const Other others[] = {
+        { L"~", FILE_ATTRIBUTE_NORMAL }, { L"~1", FILE_ATTRIBUTE_HIDDEN }, { L"~2", FILE_ATTRIBUTE_READONLY },
+        { L"~~", FILE_ATTRIBUTE_NORMAL }, { L"~~1", FILE_ATTRIBUTE_NORMAL },
+    };
+    for (const Other& o : others)
+        writeText(p.wstring() + o.suffix, "a file of the user: song.mp3" + ascii(o.suffix), o.attributes);
+
+    REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+    AUDIOSetTitleW(L"Neu");
+    AUDIOSetCommentW(std::wstring(40000, L'x').c_str());   // the file is written again
+    REQUIRE(AUDIOSaveChangesW() != 0);
+    REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+    CHECK(take(AUDIOGetTitleW()) == L"Neu");
+
+    for (const Other& o : others) {
+        const fs::path q = p.wstring() + o.suffix;
+        INFO(q.filename().string());
+        CHECK(readText(q) == "a file of the user: song.mp3" + ascii(o.suffix));
+        CHECK(GetFileAttributesW(q.c_str()) == o.attributes);
+    }
+    size_t files = 0;
+    for (const auto& e : fs::directory_iterator(dir)) { (void)e; files++; }
+    CHECK(files == 1 + std::size(others));   // the temporary file (~3) and the backup (~~2) are gone
+    for (const Other& o : others)
+        SetFileAttributesW((p.wstring() + o.suffix).c_str(), FILE_ATTRIBUTE_NORMAL);
 }
 
 // ============================ Regressions from the misuse test

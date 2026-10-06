@@ -3,6 +3,7 @@
 // files that are written are checked with an own reader of the metadata blocks.
 #include "id3v2_support.h"
 #include <cmath>
+#include <fstream>
 #include <map>
 #include <string>
 
@@ -535,8 +536,6 @@ Bytes flacWithLinkedPicture(const std::string& link)
     return f;
 }
 
-std::string narrow(const std::wstring& w) { return std::string(w.begin(), w.end()); }
-
 // switches LINKEDPICTURES on and back off, also if a REQUIRE ends the section
 struct LinkedPictures {
     LinkedPictures() { SetConfigValueW(8, 1); }
@@ -547,7 +546,7 @@ struct LinkedPictures {
 TEST_CASE("FLAC: linked pictures come from the file: only loaded if configured, never from a network path", "[flac][spec][picture]")
 {
     const fs::path target = writeTemp("flac_linked_target.bin", Bytes(10, 0x42));
-    const std::string local = narrow(target.wstring());
+    const std::string local = ascii(target.wstring());
     SECTION("default: the link is kept, the picture is not loaded") {
         auto p = writeTemp("flac_link.flac", flacWithLinkedPicture(local));
         REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == FLAC);
@@ -576,14 +575,14 @@ TEST_CASE("FLAC: linked pictures come from the file: only loaded if configured, 
         LinkedPictures on;
         const fs::path big = writeTemp("flac_linked_big.bin", Bytes(1, 0));
         fs::resize_file(big, 64ull * 1024 * 1024 + 1);
-        auto p = writeTemp("flac_link.flac", flacWithLinkedPicture(narrow(big.wstring())));
+        auto p = writeTemp("flac_link.flac", flacWithLinkedPicture(ascii(big.wstring())));
         REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == FLAC);
         CHECK(FLACGetPictureSizeW(1) == 0);
         fs::remove(big);
     }
     SECTION("a link with characters outside of ASCII is written and read as UTF-8") {
         const fs::path umlaut = tempDir() / L"flac_link_äöü.bin";
-        { Bytes b(10, 0x42); FILE* fp = _wfopen(umlaut.c_str(), L"wb"); REQUIRE(fp); fwrite(b.data(), 1, b.size(), fp); fclose(fp); }
+        std::ofstream(umlaut, std::ios::binary).write("0123456789", 10);
         auto p = writeTemp("flac_link.flac", flacFile(FlacSpec()));
         REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == FLAC);
         REQUIRE(FLACAddPictureFileW(umlaut.c_str(), L"", 3, 1) != 0);

@@ -599,9 +599,8 @@ bool CMP4::SaveToFile(LPCWSTR FileName)
 		CTools::instance().writeDebug(_T("Rebuild mp4 tag")); 
 		mdat->setSameFile(false);
 		// rebuild File
-		NewFileName+=TILDE;
 		/* Create file streams */
-		if ( (Destination = CFile::openFile(NewFileName, CFile::Mode::Write, CFile::Share::Read)) == NULL)
+		if ( (Destination = CTools::createTemporary(FileName, CFile::Mode::Write, NewFileName)) == NULL)
 		{
 			delete newData;		
 			CTools::instance().setLastError(errno);

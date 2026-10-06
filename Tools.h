@@ -147,6 +147,8 @@ public:
 	// copies count bytes block by block (count < 0: until the end of the file). Returns false on a read or write error
 	static bool copyStream(CFile *source, CFile *destination, __int64 count);
 	static bool finishRewrite(CFile *source, CFile *destination, LPCWSTR newFileName, LPCWSTR origFileName);
+	// the new file next to FileName when it is written again (CFile::createTemporary); NULL if it cannot be created (errno is set)
+	static CFile *createTemporary(LPCWSTR FileName, CFile::Mode mode, CAtlString &NewFileName);
 	// writes the file again: the data before the region, the new data (may be NULL) and the data behind the old region
 	static bool rewriteRegion(LPCWSTR FileName, __int64 offset, __int64 oldLength, CBlob *data);
 	static __int64 FileSize;

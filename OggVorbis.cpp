@@ -367,8 +367,7 @@ bool COggVorbis::RebuildFile(LPCWSTR FileName)
 	}
 	/* Create file streams */
 	// read and write permissions are required!
-	NewFileName+=TILDE;
-	if ( (Destination = CFile::openFile(NewFileName, CFile::Mode::ReadWriteNew, CFile::Share::Read)) == NULL)
+	if ( (Destination = CTools::createTemporary(FileName, CFile::Mode::ReadWriteNew, NewFileName)) == NULL)
 	{
 		CTools::instance().setLastError(errno);
 		CFile::closeFile(Source);

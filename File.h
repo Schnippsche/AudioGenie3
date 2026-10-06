@@ -20,6 +20,7 @@
 
 #pragma once
 #include <memory>
+#include <string>
 
 // The access of the library to a file: the readers (ReadFromFile, load, ...) and the functions that write a file use a CFile and not a C stream
 // or a handle of the system, so the system functions are used in one place only (File.cpp), the one that has to be written again for another
@@ -45,7 +46,8 @@ public:
 		All,            // read and write
 		Read            // only read
 	};
-	// false if the file cannot be opened (errno is set; ENODEV if a mode for writing opens a device such as CON, NUL, a pipe, a volume or a disk)
+	// false if the file cannot be opened (errno is set; ENODEV if a mode for writing opens a device such as CON, NUL, a pipe, a volume or a disk).
+	// A path of MAX_PATH characters or more works without the prefix \\?\ as well (here and in removeFile, replaceFile).
 	bool open(LPCWSTR fileName, Mode mode, Share share);
 	bool openRead(LPCWSTR fileName);   // Mode::Read and Share::All
 	void close();
@@ -53,10 +55,14 @@ public:
 	// for the functions that keep a pointer to the file: NULL if the file cannot be opened, closeFile closes and deletes (NULL is allowed)
 	static CFile *openFile(LPCWSTR fileName, Mode mode, Share share);
 	static void closeFile(CFile *file);
+	// Creates a new temporary file next to fileName for writing it again: fileName + "~", or "~1" to "~99" if that name is taken (by a file
+	// of the user or one left over from a crash). An existing file is never overwritten. mode is Write or ReadWriteNew; the others may only read.
+	// temporaryName gets the name; NULL if no file can be created (errno is set).
+	static CFile *createTemporary(LPCWSTR fileName, Mode mode, std::wstring &temporaryName);
 	// deletes a file; false if it cannot be deleted
 	static bool removeFile(LPCWSTR fileName);
 	// replaces the file origFileName with the file newFileName (ReplaceFileW: the creation time, the attributes, the alternate data streams
-	// and the ACL of the original stay; origFileName + "~~" is the backup during the replace); false if that is not possible.
+	// and the ACL of the original stay; origFileName + "~~" (or "~~1" ... if that exists) is the backup during the replace); false if that is not possible.
 	// The rename does not write the data of the new file to the disk: sync() it before it is closed, otherwise it can be incomplete after a crash of the system.
 	static bool replaceFile(LPCWSTR newFileName, LPCWSTR origFileName);
 	// size of the file in bytes, -1 on an error (errno is set)
@@ -82,6 +88,7 @@ private:
 	CFile(const CFile &);
 	CFile &operator=(const CFile &);
 	static const size_t BUFFER_SIZE = 8192;
+	bool open(LPCWSTR fileName, Mode mode, Share share, bool createNew);   // createNew: Write and ReadWriteNew fail if the file exists
 	size_t readRaw(__int64 pos, void *destination, size_t length);   // positioned read of the system
 	bool isFile() const;   // the handle is a file and not a device, a volume or a disk
 	HANDLE m_handle;

@@ -575,9 +575,8 @@ bool CWAVFile::SaveToFile(LPCWSTR FileName)
 
 	CTools::instance().writeDebug(_T("Rebuild wav tag"));
 	// rebuild File
-	NewFileName+=TILDE;
 	/* Create file streams */
-	if ( (Destination = CFile::openFile(NewFileName, CFile::Mode::Write, CFile::Share::Read)) == NULL)
+	if ( (Destination = CTools::createTemporary(FileName, CFile::Mode::Write, NewFileName)) == NULL)
 	{
 		CTools::instance().setLastError(errno);
 		CFile::closeFile(Source);

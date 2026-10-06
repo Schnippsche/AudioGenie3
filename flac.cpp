@@ -480,8 +480,7 @@ bool CFLAC::RebuildFile(LPCWSTR FileName)
 	}
 
 	/* Create file streams */
-	NewFileName+=TILDE;
-	if ( (Destination = CFile::openFile(NewFileName, CFile::Mode::Write, CFile::Share::Read)) == NULL)
+	if ( (Destination = CTools::createTemporary(FileName, CFile::Mode::Write, NewFileName)) == NULL)
 	{
 		CFile::closeFile(Source);
 		CTools::instance().setLastError(errno);

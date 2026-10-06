@@ -259,8 +259,7 @@ bool CWMA_File::SaveToFile(LPCWSTR FileName)
 		}
 		CFile *Destination;
 		CAtlString NewFileName(FileName);
-		NewFileName+=TILDE;
-		if ( (Destination = CFile::openFile(NewFileName, CFile::Mode::Write, CFile::Share::Read)) == NULL)
+		if ( (Destination = CTools::createTemporary(FileName, CFile::Mode::Write, NewFileName)) == NULL)
 		{
 			CTools::instance().setLastError(errno);
 			CFile::closeFile(Stream);

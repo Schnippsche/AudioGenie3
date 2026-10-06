@@ -69,7 +69,34 @@ static int errnoOf(DWORD error)
 	}
 }
 
+// A path of MAX_PATH characters or more works only with the prefix \\?\ (unless the application declares longPathAware): the full path
+// gets it (\\?\UNC\ for \\server\share). A shorter path and a path that already has a prefix stay as they are, without a copy (the analysis
+// opens many files). buffer holds the converted path.
+static LPCWSTR systemPath(LPCWSTR fileName, std::wstring &buffer)
+{
+	if (wcslen(fileName) < MAX_PATH || wcsncmp(fileName, L"\\\\?\\", 4) == 0 || wcsncmp(fileName, L"\\\\.\\", 4) == 0 || wcsncmp(fileName, L"\\??\\", 4) == 0)
+		return fileName;
+	const DWORD needed = GetFullPathNameW(fileName, 0, NULL, NULL);
+	if (needed == 0)
+		return fileName;
+	std::wstring full(needed, L'\0');
+	const DWORD length = GetFullPathNameW(fileName, needed, &full[0], NULL);
+	if (length == 0 || length >= needed)
+		return fileName;
+	full.resize(length);
+	if (full.compare(0, 2, L"\\\\") == 0)
+		buffer = L"\\\\?\\UNC\\" + full.substr(2);
+	else
+		buffer = L"\\\\?\\" + full;
+	return buffer.c_str();
+}
+
 bool CFile::open(LPCWSTR fileName, Mode mode, Share share)
+{
+	return open(fileName, mode, share, false);
+}
+
+bool CFile::open(LPCWSTR fileName, Mode mode, Share share, bool createNew)
 {
 	close();
 	if (fileName == NULL)
@@ -103,8 +130,11 @@ bool CFile::open(LPCWSTR fileName, Mode mode, Share share)
 		append = true;
 		break;  
 	}
+	if (createNew && creation == CREATE_ALWAYS)
+		creation = CREATE_NEW;
 	const DWORD sharing = (share == Share::Read) ? FILE_SHARE_READ : (FILE_SHARE_READ | FILE_SHARE_WRITE);
-	m_handle = CreateFileW(fileName, access, sharing, NULL, creation, FILE_ATTRIBUTE_NORMAL, NULL);
+	std::wstring longPath;
+	m_handle = CreateFileW(systemPath(fileName, longPath), access, sharing, NULL, creation, FILE_ATTRIBUTE_NORMAL, NULL);
 	if (m_handle == INVALID_HANDLE_VALUE)
 	{
 		errno = errnoOf(GetLastError());
@@ -170,6 +200,38 @@ void CFile::closeFile(CFile *file)
 	delete file;
 }
 
+CFile *CFile::createTemporary(LPCWSTR fileName, Mode mode, std::wstring &temporaryName)
+{
+	temporaryName.clear();
+	if (fileName == NULL || (mode != Mode::Write && mode != Mode::ReadWriteNew))
+	{
+		errno = EINVAL;
+		return NULL;
+	}
+	CFile *file = new (std::nothrow) CFile();
+	if (file == NULL)
+	{
+		errno = ENOMEM;
+		return NULL;
+	}
+	for (int number = 0; number < 100; number++)
+	{
+		std::wstring name(fileName);
+		name += L"~";
+		if (number > 0)
+			name += std::to_wstring(number);
+		if (file->open(name.c_str(), mode, Share::Read, true))
+		{
+			temporaryName = name;
+			return file;
+		}
+		if (errno != EEXIST && errno != EACCES)
+			break;   // EACCES: a hidden or read-only file of that name, or one that is open elsewhere
+	}
+	delete file;
+	return NULL;
+}
+
 bool CFile::removeFile(LPCWSTR fileName)
 {
 	if (fileName == NULL)
@@ -177,7 +239,8 @@ bool CFile::removeFile(LPCWSTR fileName)
 		errno = EINVAL;
 		return false;
 	}
-	if (!DeleteFileW(fileName))
+	std::wstring longPath;
+	if (!DeleteFileW(systemPath(fileName, longPath)))
 	{
 		errno = errnoOf(GetLastError());
 		return false;
@@ -192,22 +255,37 @@ bool CFile::replaceFile(LPCWSTR newFileName, LPCWSTR origFileName)
 		errno = EINVAL;
 		return false;
 	}
+	std::wstring newLongPath, origLongPath;
+	newFileName = systemPath(newFileName, newLongPath);
+	origFileName = systemPath(origFileName, origLongPath);
 	// ReplaceFileW keeps what belongs to the original: the creation time, the attributes, the alternate data streams and the ACL.
-	// It is several steps: with a backup name the original is never lost if one of them fails.
-	std::wstring backupFileName(origFileName);
-	backupFileName += L"~~";
-	if (ReplaceFileW(origFileName, newFileName, backupFileName.c_str(), REPLACEFILE_IGNORE_MERGE_ERRORS | REPLACEFILE_IGNORE_ACL_ERRORS, NULL, NULL))
+	// It is several steps: with a backup name the original is never lost if one of them fails. The backup name must be free:
+	// ReplaceFileW would overwrite a file of that name (and it is deleted afterwards).
+	std::wstring backupFileName;
+	for (int number = 0; number < 100 && backupFileName.empty(); number++)
 	{
-		DeleteFileW(backupFileName.c_str());
-		return true;
+		std::wstring name(origFileName);
+		name += L"~~";
+		if (number > 0)
+			name += std::to_wstring(number);
+		if (GetFileAttributesW(name.c_str()) == INVALID_FILE_ATTRIBUTES && GetLastError() == ERROR_FILE_NOT_FOUND)
+			backupFileName = name;
 	}
-	const DWORD error = GetLastError();
-	if (error == ERROR_UNABLE_TO_MOVE_REPLACEMENT_2)
+	if (!backupFileName.empty())
 	{
-		// the original has the backup name, the new file still has its own name: the original gets its name back
-		MoveFileExW(backupFileName.c_str(), origFileName, 0);
-		errno = errnoOf(error);
-		return false;
+		if (ReplaceFileW(origFileName, newFileName, backupFileName.c_str(), REPLACEFILE_IGNORE_MERGE_ERRORS | REPLACEFILE_IGNORE_ACL_ERRORS, NULL, NULL))
+		{
+			DeleteFileW(backupFileName.c_str());
+			return true;
+		}
+		const DWORD error = GetLastError();
+		if (error == ERROR_UNABLE_TO_MOVE_REPLACEMENT_2)
+		{
+			// the original has the backup name, the new file still has its own name: the original gets its name back
+			MoveFileExW(backupFileName.c_str(), origFileName, 0);
+			errno = errnoOf(error);
+			return false;
+		}
 	}
 	// Both files are unchanged (e.g. a file system without ReplaceFileW): the rename, which loses what belongs to the original.
 	if (!MoveFileExW(newFileName, origFileName, MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH))

@@ -324,8 +324,7 @@ bool CTools::rewriteRegion(LPCWSTR FileName, __int64 offset, __int64 oldLength, 
 		instance().setLastError(errno);
 		return false;
 	}
-	NewFileName += TILDE;
-	if ( (Destination = CFile::openFile(NewFileName, CFile::Mode::ReadWriteNew, CFile::Share::Read)) == NULL)
+	if ( (Destination = createTemporary(FileName, CFile::Mode::ReadWriteNew, NewFileName)) == NULL)
 	{
 		instance().setLastError(errno);
 		CFile::closeFile(Source);
@@ -345,6 +344,14 @@ bool CTools::rewriteRegion(LPCWSTR FileName, __int64 offset, __int64 oldLength, 
 		return false;
 	}
 	return finishRewrite(Source, Destination, NewFileName, FileName);
+}
+
+CFile *CTools::createTemporary(LPCWSTR FileName, CFile::Mode mode, CAtlString &NewFileName)
+{
+	std::wstring name;
+	CFile *file = CFile::createTemporary(FileName, mode, name);
+	NewFileName = name.c_str();
+	return file;
 }
 
 bool CTools::finishRewrite(CFile *source, CFile *destination, LPCWSTR newFileName, LPCWSTR origFileName)

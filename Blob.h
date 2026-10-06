@@ -32,7 +32,6 @@ static const LPCWSTR STEREO(_T("Stereo"));
 static const LPCWSTR JOINTSTEREO(_T("Joint Stereo"));
 static const LPCWSTR DUALCHANNEL(_T("Dual Channel"));
 static const LPCWSTR MULTICHANNEL(_T("Multi Channel"));
-static const LPCWSTR TILDE(_T("~"));
 
 // the encoding of a text (the first byte of most ID3v2 text frames; the other tags use the ones they need)
 enum class TextEncoding : BYTE

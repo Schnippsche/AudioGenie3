@@ -284,8 +284,7 @@ bool CAPE::RewriteRegion(LPCWSTR FileName, __int64 offset, __int64 oldLength, CB
 		CTools::instance().setLastError(errno);
 		return false;
 	}
-	NewFileName += TILDE;
-	if ( (Destination = CFile::openFile(NewFileName, CFile::Mode::ReadWriteNew, CFile::Share::Read)) == NULL)
+	if ( (Destination = CTools::createTemporary(FileName, CFile::Mode::ReadWriteNew, NewFileName)) == NULL)
 	{
 		CTools::instance().setLastError(errno);
 		CFile::closeFile(Source);
