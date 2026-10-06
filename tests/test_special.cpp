@@ -295,6 +295,63 @@ TEST_CASE("Locked files: a read lock allows reading, writing fails; an exclusive
     }
 }
 
+// ======================================== Replacing the file when it is written again
+
+namespace {
+FILETIME creationTime(const fs::path& p)
+{
+    WIN32_FILE_ATTRIBUTE_DATA a{};
+    GetFileAttributesExW(p.c_str(), GetFileExInfoStandard, &a);
+    return a.ftCreationTime;
+}
+}  // namespace
+
+TEST_CASE("A file that is written again keeps its creation time, attributes and alternate data streams", "[special][replace]")
+{
+    const fs::path dir = freshDir(L"replace");
+    for (const Sample& s : kSamples) {
+        if (!fs::exists(fixture(s.rel))) continue;
+        DYNAMIC_SECTION(s.rel) {
+            const fs::path p = dir / fs::path(s.rel).filename();
+            copyTo(fixture(s.rel), p);
+            const auto sizeBefore = fs::file_size(p);
+            // creation time 2001-01-01, hidden, a stream of another program
+            SYSTEMTIME st{ 2001, 1, 1, 1, 12, 0, 0, 0 };
+            FILETIME old{};
+            SystemTimeToFileTime(&st, &old);
+            HANDLE h = CreateFileW(p.c_str(), FILE_WRITE_ATTRIBUTES, 0, nullptr, OPEN_EXISTING, 0, nullptr);
+            REQUIRE(h != INVALID_HANDLE_VALUE);
+            REQUIRE(SetFileTime(h, &old, nullptr, nullptr));
+            CloseHandle(h);
+            const fs::path stream = p.wstring() + L":ag3test";
+            h = CreateFileW(stream.c_str(), GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, 0, nullptr);
+            REQUIRE(h != INVALID_HANDLE_VALUE);
+            DWORD written = 0;
+            WriteFile(h, "stream", 6, &written, nullptr);
+            CloseHandle(h);
+            REQUIRE(SetFileAttributesW(p.c_str(), FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_ARCHIVE));
+
+            // a long comment: the tag does not fit into the room of the old one, the file is written again
+            REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == s.format);
+            AUDIOSetCommentW(std::wstring(40000, L'x').c_str());
+            REQUIRE(AUDIOSaveChangesW() != 0);
+            CHECK(fs::file_size(p) != sizeBefore);
+
+            const FILETIME now = creationTime(p);
+            CHECK(CompareFileTime(&now, &old) == 0);
+            CHECK((GetFileAttributesW(p.c_str()) & FILE_ATTRIBUTE_HIDDEN) != 0);
+            h = CreateFileW(stream.c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, 0, nullptr);
+            CHECK(h != INVALID_HANDLE_VALUE);
+            if (h != INVALID_HANDLE_VALUE) CloseHandle(h);
+            // neither the temporary file nor the backup is left
+            CHECK(!fs::exists(p.wstring() + L"~"));
+            CHECK(!fs::exists(p.wstring() + L"~~"));
+            REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == s.format);
+            CHECK(take(AUDIOGetCommentW()).size() > 1000);
+        }
+    }
+}
+
 // ================================================ Large (sparse) files
 
 namespace {

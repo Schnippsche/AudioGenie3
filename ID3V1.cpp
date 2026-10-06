@@ -69,9 +69,14 @@ bool CID3V1::OpenFile(LPCWSTR FileName, bool WriteModus)
 	if ( (Stream = CFile::openFile(FileName, modus, CFile::Share::All)) != NULL)
   {
 		/* Read tag */
-		char ap[10];
-		Stream->seekEnd(-131);
-		Stream->read(ap, 8);
+		// "APETAGEX" 131 bytes before the end, "TAG" 128 bytes before the end; a file of 128 to 130 bytes can only hold the "TAG",
+		// a smaller one neither (without the seek the bytes at the start of the file would be read)
+		char ap[8];
+		memset(ap, 0, sizeof(ap));
+		if (Stream->seekEnd(-131))
+			Stream->read(ap, 8);
+		else if (Stream->seekEnd(-ID3V1_TAG_SIZE))
+			Stream->read(ap + 3, 3);
 		if (ap[0] == 'A' && ap[1] == 'P' && ap[2] == 'E' && ap[3] == 'T' && ap[4] == 'A'&& ap[5] == 'G' && ap[6] == 'E' && ap[7] == 'X')
 		{
 			id3v1tag._exists = false;			
@@ -133,9 +138,14 @@ bool CID3V1::RemoveTag(LPCWSTR FileName)
 	/* Open a file */
 	if (file.open(FileName, CFile::Mode::ReadWrite, CFile::Share::Read))
 	{
-		const __int64 ln = file.size() - (fileEnhanced ? ID3V1_TAG_SIZE + ID3V1_ENHANCED_SIZE : ID3V1_TAG_SIZE);
-		if (ln > 0)
-			file.truncate(ln);
+		const __int64 fileLength = file.size();
+		const __int64 ln = fileLength - (fileEnhanced ? ID3V1_TAG_SIZE + ID3V1_ENHANCED_SIZE : ID3V1_TAG_SIZE);
+		// 0: the file holds only the tag; fileLength < 0: the size is not known (errno is set)
+		if (fileLength < 0 || (ln >= 0 && !file.truncate(ln)))
+		{
+			CTools::instance().setLastError(errno);
+			return false;
+		}
 		return true;
 	}
 	else

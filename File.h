@@ -55,9 +55,11 @@ public:
 	static void closeFile(CFile *file);
 	// deletes a file; false if it cannot be deleted
 	static bool removeFile(LPCWSTR fileName);
-	// replaces the file origFileName with the file newFileName in one step (the new file is written to disk first); false if that is not possible
+	// replaces the file origFileName with the file newFileName (ReplaceFileW: the creation time, the attributes, the alternate data streams
+	// and the ACL of the original stay; origFileName + "~~" is the backup during the replace); false if that is not possible.
+	// The rename does not write the data of the new file to the disk: sync() it before it is closed, otherwise it can be incomplete after a crash of the system.
 	static bool replaceFile(LPCWSTR newFileName, LPCWSTR origFileName);
-	// size of the file in bytes, -1 on an error
+	// size of the file in bytes, -1 on an error (errno is set)
 	__int64 size();
 	// sequential access
 	bool seek(__int64 pos);            // from the start of the file
@@ -66,11 +68,12 @@ public:
 	size_t read(void *destination, size_t length);
 	int getByte();                     // -1 at the end of the file
 	size_t write(const void *source, size_t length);   // the bytes written (less than length on an error)
-	bool flush();                      // the writes are not buffered here: nothing is left to write
+	bool flush();                      // the writes are not buffered here: nothing is left to write (the data is not forced to the disk)
+	bool sync();                       // writes the data from the cache of the system to the disk (FlushFileBuffers); false on an error
 	bool truncate(__int64 length);     // the file gets this length (shorter: the end is cut off, longer: zeros)
 	bool failed() const { return m_failed; }   // a read or write error happened (like ferror)
 	// Reads length bytes from the position pos directly from the file (no buffer, one system call); the position is behind the last byte.
-	// For large blocks and for filling the caches of CTools::readAt.
+	// For large blocks and for filling the caches of CTools::readAt. A negative pos reads nothing and leaves the position unchanged.
 	size_t readDirect(__int64 pos, void *destination, size_t length);
 	// like readDirect, directly at the current position of the file
 	size_t readDirectHere(void *destination, size_t length);

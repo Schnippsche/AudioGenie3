@@ -353,7 +353,8 @@ bool CTools::finishRewrite(CFile *source, CFile *destination, LPCWSTR newFileNam
 	int err = 0;
 	if (destination != NULL)
 	{
-		if (destination->failed() || !destination->flush())
+		// the data of the new file on the disk before the rename (sync is false after an error of a write as well)
+		if (!destination->sync())
 		{
 			ok = false;
 			err = errno;

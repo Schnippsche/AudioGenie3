@@ -21,7 +21,14 @@
 #include "StdAfx.h"
 #include "File.h"
 #include <errno.h>
+#include <limits.h>
 #include <new>
+#include <string>
+
+// WinBase.h defines it only for _WIN32_WINNT >= 0x0600 (targetver.h has 0x0500); a system without it falls back to MoveFileExW
+#ifndef REPLACEFILE_IGNORE_ACL_ERRORS
+#define REPLACEFILE_IGNORE_ACL_ERRORS 0x00000004
+#endif
 
 CFile::CFile() : m_handle(INVALID_HANDLE_VALUE), m_append(false), m_failed(false), m_pos(0), m_bufferStart(0), m_bufferLength(0)
 {
@@ -65,6 +72,11 @@ static int errnoOf(DWORD error)
 bool CFile::open(LPCWSTR fileName, Mode mode, Share share)
 {
 	close();
+	if (fileName == NULL)
+	{
+		errno = EINVAL;
+		return false;
+	}
 	DWORD access = GENERIC_READ, creation = OPEN_EXISTING;
 	bool append = false;
 	switch (mode)
@@ -89,7 +101,7 @@ bool CFile::open(LPCWSTR fileName, Mode mode, Share share)
 		access = FILE_APPEND_DATA | FILE_READ_ATTRIBUTES | SYNCHRONIZE;   // every write goes to the end of the file
 		creation = OPEN_ALWAYS;
 		append = true;
-		break;
+		break;  
 	}
 	const DWORD sharing = (share == Share::Read) ? FILE_SHARE_READ : (FILE_SHARE_READ | FILE_SHARE_WRITE);
 	m_handle = CreateFileW(fileName, access, sharing, NULL, creation, FILE_ATTRIBUTE_NORMAL, NULL);
@@ -142,19 +154,65 @@ void CFile::closeFile(CFile *file)
 
 bool CFile::removeFile(LPCWSTR fileName)
 {
-	return DeleteFileW(fileName) != FALSE;
+	if (fileName == NULL)
+	{
+		errno = EINVAL;
+		return false;
+	}
+	if (!DeleteFileW(fileName))
+	{
+		errno = errnoOf(GetLastError());
+		return false;
+	}
+	return true;
 }
 
 bool CFile::replaceFile(LPCWSTR newFileName, LPCWSTR origFileName)
 {
-	return MoveFileExW(newFileName, origFileName, MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH) != FALSE;
+	if (newFileName == NULL || origFileName == NULL)
+	{
+		errno = EINVAL;
+		return false;
+	}
+	// ReplaceFileW keeps what belongs to the original: the creation time, the attributes, the alternate data streams and the ACL.
+	// It is several steps: with a backup name the original is never lost if one of them fails.
+	std::wstring backupFileName(origFileName);
+	backupFileName += L"~~";
+	if (ReplaceFileW(origFileName, newFileName, backupFileName.c_str(), REPLACEFILE_IGNORE_MERGE_ERRORS | REPLACEFILE_IGNORE_ACL_ERRORS, NULL, NULL))
+	{
+		DeleteFileW(backupFileName.c_str());
+		return true;
+	}
+	const DWORD error = GetLastError();
+	if (error == ERROR_UNABLE_TO_MOVE_REPLACEMENT_2)
+	{
+		// the original has the backup name, the new file still has its own name: the original gets its name back
+		MoveFileExW(backupFileName.c_str(), origFileName, 0);
+		errno = errnoOf(error);
+		return false;
+	}
+	// Both files are unchanged (e.g. a file system without ReplaceFileW): the rename, which loses what belongs to the original.
+	if (!MoveFileExW(newFileName, origFileName, MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH))
+	{
+		errno = errnoOf(GetLastError());
+		return false;
+	}
+	return true;
 }
 
 __int64 CFile::size()
 {
 	LARGE_INTEGER length;
-	if (m_handle == INVALID_HANDLE_VALUE || !GetFileSizeEx(m_handle, &length))
+	if (m_handle == INVALID_HANDLE_VALUE)
+	{
+		errno = EBADF;
 		return -1;
+	}
+	if (!GetFileSizeEx(m_handle, &length))
+	{
+		errno = errnoOf(GetLastError());
+		return -1;
+	}
 	return length.QuadPart;
 }
 
@@ -169,7 +227,7 @@ bool CFile::seek(__int64 pos)
 bool CFile::seekEnd(__int64 offset)
 {
 	const __int64 length = size();
-	if (length < 0 || length + offset < 0)
+	if (length < 0 || offset > 0 || length + offset < 0)
 		return false;
 	m_pos = length + offset;
 	return true;
@@ -183,6 +241,12 @@ __int64 CFile::tell()
 // a positioned read: the file pointer is not used (the system takes the offset from the request)
 size_t CFile::readRaw(__int64 pos, void *destination, size_t length)
 {
+	// A negative offset is not a position: the system reads -2 (FILE_USE_FILE_POINTER_POSITION) at its file pointer.
+	if (pos < 0)
+		return 0;
+	// pos + length must not overflow (a position from a damaged file)
+	if ((unsigned __int64)length > (unsigned __int64)(_I64_MAX - pos))
+		length = (size_t)(_I64_MAX - pos);
 	size_t done = 0;
 	while (done < length)
 	{
@@ -195,8 +259,20 @@ size_t CFile::readRaw(__int64 pos, void *destination, size_t length)
 		DWORD got = 0;
 		if (!ReadFile(m_handle, (BYTE *)destination + done, part, &got, &where))
 		{
-			if (GetLastError() != ERROR_HANDLE_EOF)
+			// The end of the file is not an error; a real error sets errno like fread (the readers check errno).
+			// A position far behind the end (from a damaged file, larger than the file system allows) is the end of the file as well.
+			const DWORD error = GetLastError();
+			bool endOfFile = (error == ERROR_HANDLE_EOF);
+			if (error == ERROR_INVALID_PARAMETER)
+			{
+				const __int64 fileLength = size();
+				endOfFile = (fileLength >= 0 && at >= fileLength);
+			}
+			if (!endOfFile)
+			{
 				m_failed = true;
+				errno = errnoOf(error);
+			}
 			break;
 		}
 		if (got == 0)
@@ -274,17 +350,29 @@ size_t CFile::write(const void *source, size_t length)
 		where.Offset = (DWORD)(m_pos & 0xFFFFFFFF);
 		where.OffsetHigh = (DWORD)(m_pos >> 32);
 		DWORD written = 0;
-		if (!WriteFile(m_handle, (const BYTE *)source + done, part, &written, m_append ? NULL : &where) || written == 0)
+		if (!WriteFile(m_handle, (const BYTE *)source + done, part, &written, m_append ? NULL : &where))
 		{
 			m_failed = true;
 			errno = errnoOf(GetLastError());
+			break;
+		}
+		if (written == 0)
+		{
+			// no error of the system, but nothing written: GetLastError holds an old value
+			m_failed = true;
+			errno = EIO;
 			break;
 		}
 		done += written;
 		m_pos += (__int64)written;
 	}
 	if (m_append)
-		m_pos = size();   // the writes went to the end of the file
+	{
+		// the writes went to the end of the file; if its size is not known, the position stays behind the bytes written
+		const __int64 end = size();
+		if (end >= 0)
+			m_pos = end;
+	}
 	return done;
 }
 
@@ -309,9 +397,22 @@ bool CFile::flush()
 	return m_handle != INVALID_HANDLE_VALUE && !m_failed;
 }
 
+bool CFile::sync()
+{
+	if (m_handle == INVALID_HANDLE_VALUE || m_failed)
+		return false;
+	if (!FlushFileBuffers(m_handle))
+	{
+		m_failed = true;
+		errno = errnoOf(GetLastError());
+		return false;
+	}
+	return true;
+}
+
 size_t CFile::readDirect(__int64 pos, void *destination, size_t length)
 {
-	if (m_handle == INVALID_HANDLE_VALUE)
+	if (m_handle == INVALID_HANDLE_VALUE || pos < 0)
 		return 0;
 	const size_t got = readRaw(pos, destination, length);
 	m_pos = pos + (__int64)got;

@@ -312,9 +312,14 @@ bool CAPE::TruncateFile(LPCWSTR FileName, int Offset)
 	CFile file;
 	if (file.open(FileName, CFile::Mode::ReadWrite, CFile::Share::Read))
 	{
-		const __int64 ln = file.size() - Offset;
-		if (ln > 0)
-			file.truncate(ln);
+		const __int64 fileLength = file.size();
+		const __int64 ln = fileLength - Offset;
+		// 0: the file holds only the tags; fileLength < 0: the size is not known (errno is set)
+		if (fileLength < 0 || (ln >= 0 && !file.truncate(ln)))
+		{
+			CTools::instance().setLastError(errno);
+			return false;
+		}
 		return true;
 	}
 	CTools::instance().setLastError(errno);
@@ -505,8 +510,8 @@ bool CAPE::SaveToFile(LPCWSTR FileName)
 	CTools::instance().setLastError(0);
 	// the ID3v1 tag is in front of the end of the file only if there was no APE tag: then it is moved behind the new APE tag.
 	// Otherwise RemoveFromFile has removed it together with the old APE tag.
-	if (!result && tmpid3v1.GetSize() > 0)
-		TruncateFile(FileName, tmpid3v1.GetSize());
+	if (!result && tmpid3v1.GetSize() > 0 && !TruncateFile(FileName, tmpid3v1.GetSize()))
+		return false;
 	return SaveTag(FileName);  
 }
 

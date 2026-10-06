@@ -162,6 +162,44 @@ TEST_CASE("ID3v1.1: layout of the tag", "[tags][spec][id3v1]")
     }
 }
 
+TEST_CASE("ID3v1: a file of 128 to 130 bytes that holds only the tag", "[tags][spec][id3v1]")
+{
+    const Bytes tag = id3v1("Title", "Artist", "Album", "1999", pad30("comment"), 9);
+    SECTION("130 bytes: the tag is replaced, not added a second time") {
+        Bytes b = { 0x01, 0x02 };
+        put(b, tag);
+        auto p = writeTemp("only_tag_130.mp3", b);
+        AUDIOAnalyzeFileW(p.c_str());
+        ID3V1SetTitleW(L"New");
+        REQUIRE(ID3V1SaveChangesToFileW(p.c_str()) != 0);
+        const Bytes f = readFile(p);
+        REQUIRE(f.size() == 130);
+        CHECK(f[0] == 0x01);
+        CHECK(Bytes(f.begin() + 2, f.begin() + 5) == bytesOf("TAG"));
+        CHECK(Bytes(f.begin() + 5, f.begin() + 9) == Bytes({ 'N', 'e', 'w', 0 }));
+    }
+    SECTION("128 bytes: removing the tag leaves an empty file") {
+        auto p = writeTemp("only_tag_128.mp3", tag);
+        AUDIOAnalyzeFileW(p.c_str());
+        REQUIRE(ID3V1RemoveTagFromFileW(p.c_str()) != 0);
+        CHECK(readFile(p).empty());
+    }
+    SECTION("fewer than 8 bytes: no tag") {
+        auto p = writeTemp("tiny.mp3", bytesOf("TAGx"));
+        AUDIOAnalyzeFileW(p.c_str());
+        CHECK(ID3V1RemoveTagFromFileW(p.c_str()) == 0);
+        CHECK(readFile(p).size() == 4);
+    }
+}
+
+TEST_CASE("APE v2: a file that holds only the tag becomes empty when the tag is removed", "[tags][spec][ape]")
+{
+    auto p = writeTemp("only_ape.mp3", apeTag(2000, { apeItem("Title", text("T")) }));
+    AUDIOAnalyzeFileW(p.c_str());
+    REQUIRE(APERemoveTagFromFileW(p.c_str()) != 0);
+    CHECK(readFile(p).empty());
+}
+
 TEST_CASE("ID3v1: the track number is one byte", "[tags][spec][id3v1]")
 {
     auto p = writeWithTail("v11_track.mp3", id3v1("T", "A", "B", "2001", pad30("c"), 255));

@@ -526,7 +526,8 @@ bool CID3V2::RebuildFile(LPCWSTR FileName, CBlob* data)
 			break;
 		}
 	}
-	if (ok && (Destination->failed() || !Destination->flush()))
+	// the data of the new file on the disk before the rename (sync is false after an error of a write as well)
+	if (ok && !Destination->sync())
 		ok = false;
 	int writeErr = errno;
 	CFile::closeFile(Destination);
@@ -540,7 +541,7 @@ bool CID3V2::RebuildFile(LPCWSTR FileName, CBlob* data)
 	}
 	CTools::instance().doEventsNow();
 	/* replace the old file with the new file in one step */
-	if (!MoveFileExW(NewFileName, FileName, MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH))
+	if (!CFile::replaceFile(NewFileName, FileName))
 	{
 		CFile::removeFile(NewFileName);
 		CTools::instance().setLastError(EACCES);
