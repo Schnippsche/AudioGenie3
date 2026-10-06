@@ -68,7 +68,9 @@ more) to catch what synthetic tests alone miss.
 - **Gives full access to the format-specific tags**: ID3v1, ID3v2 (v2.2/2.3/2.4, all frame types including chapters,
   synchronized lyrics and pictures), APE, Lyrics3, Vorbis comments (FLAC, OGG Vorbis, OGG Opus), WMA fields, MP4 atoms
   and WAV chunks.
-- **Handles cover art** (embedded pictures) in ID3v2, FLAC, WMA and MP4.
+- **Handles cover art** (embedded pictures) in ID3v2, FLAC, WMA and MP4. A picture that an ID3v2 or FLAC tag only links to
+  (MIME type `-->`) is loaded only if the configuration value `ID3V2LINKEDPICTURES` is set, never from a network path and
+  only up to 64 MB: the link comes from the file, so a manipulated file could otherwise make the application read any file.
 - **Reads OGG Opus** (format ID 12) with the same `OGG*` functions as OGG Vorbis; an OGG file that also contains a
   video stream (Theora, VP8) is read but not written.
 
@@ -126,9 +128,15 @@ The DLL is **single-threaded by design** and keeps the data of the last analyzed
 4. `AUDIOSaveChangesW()` writes the changes back into the analyzed file, and returns 0 on error, otherwise -1.
    `AUDIOSaveChangesToFileW(path)` writes into another file.
 
+If the new tags fit into the room of the old ones (padding), the file is changed in place. Otherwise it is written again into a
+temporary file next to it (`<name>~`, or `~1`, `~2`, ... if that name is taken; an existing file is never overwritten), which is
+written to the disk and then replaces the original with `ReplaceFileW`: the creation time, the attributes, alternate data streams
+and the permissions of the original stay. If anything fails, the original stays unchanged and the temporary file is removed.
+
 All file access (reading and writing) goes through one small class, `CFile` (`File.h`, `File.cpp`): the rest of the library reads and writes with
-`read`, `write`, `seek`, `size` and positioned reads, and only `File.cpp` uses system functions (`CreateFileW`, `ReadFile`, `WriteFile`). A port to
-another platform has to replace that file and the Windows-specific parts (ATL strings, COM export).
+`read`, `write`, `seek`, `size` and positioned reads, and only `File.cpp` uses system functions (`CreateFileW`, `ReadFile`, `WriteFile`, ...). A port to
+another platform has to replace that file and the Windows-specific parts (ATL strings, COM export). Paths longer than `MAX_PATH`
+(260 characters) work without the prefix `\\?\`, and a function that writes does not open a device, a volume or a disk.
 
 Because of this you must not call the DLL from several threads at the same time. Analyze the file again
 before you access a different one.
@@ -242,6 +250,23 @@ where the duration and bit rate of MP3 files are deliberately more accurate now 
 VBR files without a header; see the release notes of 3.0.1 to 3.0.3). On a network drive the cost of the first access to each file dominates; if you scan large libraries
 repeatedly, keep the results in your application and analyze only new or changed files.
 
+### Saving files that are written again
+
+A save that fits into the room of the old tags changes only the tags. A save that does not fit writes the whole file again (see
+"How it works"); the new file is written to the disk (`FlushFileBuffers`) before it replaces the original, so a crash of the system
+or a drive that is pulled out cannot leave a damaged file. Time per save of a tag that grows by 40,000 characters (the mean of 3 to 5
+saves, two to three rounds):
+
+| File | NVMe SSD | of that: writing to the disk | SATA hard disk on USB 3 | of that: writing to the disk |
+|---|---|---|---|---|
+| MP3, 8.5 MB | 12 ms | 3 to 6 ms | 340 to 430 ms | 300 to 350 ms |
+| MP3, 22 MB | 20 to 24 ms | 7 to 10 ms | 570 ms | 100 to 180 ms |
+| FLAC, 22 MB | 19 to 22 ms | 6 to 11 ms | - | - |
+| M4A, 36 MB | 25 to 26 ms | 10 ms | 850 to 920 ms | about 250 ms |
+
+Without the wait for the disk the system writes the data later in the background; that is why the share is largest for the small file
+on the slow disk. Replacing the original with `ReplaceFileW` (which keeps its creation time, attributes and streams) costs 0.5 to 3 ms.
+
 ### Optimizations
 
 | Area | Change | Effect |
@@ -259,7 +284,7 @@ repeatedly, keep the results in your application and analyze only new or changed
 
 A sampling profile of the analysis before the cache of the start of the file (warm cache, 22,876 files) shows where the time goes: 91 % is spent in system calls (opening the file 32 %,
 reading 36 %, of that the start of the file 16 % and the end 9 %, closing 7 %, the file size and positioning 11 %), only 8 % in the code of the library.
-The C library's file functions are the floor; going lower would mean replacing them with direct `ReadFile` calls.
+The file functions of the C library were the floor then; the class `CFile` (see the table) has since replaced them with direct `ReadFile` calls.
 
 ### Tried without a gain (not adopted)
 
