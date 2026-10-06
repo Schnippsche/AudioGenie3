@@ -414,11 +414,17 @@ bool CWMA_File::SetPicture(LPCWSTR FileName, LPCWSTR Description, short Index, s
 	long ln = 0;
 	if ( (Stream = CFile::openFile(FileName, CFile::Mode::Read, CFile::Share::All)) != NULL)
 	{
-		ln = (long)toSizeClamped(Stream->size());
-		CBlob tmp(ln);
-		tmp.FileRead(ln, Stream);
+		const __int64 size = Stream->size();
+		CBlob tmp;
+		// a picture of 2 GB or more does not fit into the long of SetPictureArray; only the bytes that were read are passed
+		const bool read = (size >= 0 && size < 0x7FFFFFFF) && tmp.FileRead((size_t)size, Stream);
 		CFile::closeFile(Stream);
-
+		if (!read)
+		{
+			CTools::instance().setLastError(ERR_NOT_ENOUGH_MEMORY, (unsigned)toU32Clamped(size));
+			return false;
+		}
+		ln = (long)tmp.GetLength();
 		return SetPictureArray(tmp.m_pData, ln, Description, Index, PictureType);
 	}
 	CTools::instance().setLastError(errno);

@@ -317,7 +317,8 @@ bool COggVorbis::CopyPages(CFile *Source, CFile *Destination, int delta)
 	CBlob page;
 	while (true)
 	{
-		page.FileRead(27, Source);
+		if (!page.FileRead(27, Source))
+			return false;   // no memory: not the end of the file
 		if (page.GetLength() == 0)
 			return true;
 		if (page.GetLength() < 27 || memcmp(page.m_pData, OGG_PAGE_ID, 4) != 0)
@@ -331,7 +332,8 @@ bool COggVorbis::CopyPages(CFile *Source, CFile *Destination, int delta)
 		for (int k = 0; k < segments; k++)
 			length += lacing.m_pData[k];
 		CBlob body;
-		body.FileRead(length, Source);
+		if (!body.FileRead(length, Source))
+			return false;
 		page.AddBlob(lacing);
 		page.AddBlob(body);
 		if ((long)body.GetLength() != length)

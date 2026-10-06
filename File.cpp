@@ -488,6 +488,12 @@ bool CFile::truncate(__int64 length)
 	return true;
 }
 
+void CFile::setFailed(int error)
+{
+	m_failed = true;
+	errno = error;
+}
+
 bool CFile::flush()
 {
 	return m_handle != INVALID_HANDLE_VALUE && !m_failed;

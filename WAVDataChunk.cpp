@@ -80,9 +80,20 @@ bool CWAVDataChunk::save(CFile *Source, CFile *Destination)
 		while (dataLen > 0)
 		{
 			tmpSize = (long)((dataLen > (unsigned __int64)blockSize) ? blockSize : dataLen);
-			blob->FileRead(tmpSize, Source);
+			// a block that cannot be read completely (no memory, the file is shorter than the chunk) or written: the new file lacks
+			// audio data, so it must not replace the original
+			if (!blob->FileRead(tmpSize, Source) || blob->GetLength() != (size_t)tmpSize)
+			{
+				Destination->setFailed(EIO);
+				delete blob;
+				return false;
+			}
 			CTools::instance().doEvents();
-			blob->FileWrite(tmpSize, Destination);
+			if (blob->FileWrite(tmpSize, Destination) != (size_t)tmpSize)
+			{
+				delete blob;
+				return false;   // the write error is set in Destination
+			}
 			CTools::instance().doEvents();
 			dataLen-=(unsigned __int64)tmpSize;
 		}

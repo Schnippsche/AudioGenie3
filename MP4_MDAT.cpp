@@ -78,16 +78,26 @@ void CMP4_MDAT::save(CFile *Destination)
 			{
 				tmpSize = (long)((frameSize > blockSize) ? blockSize : frameSize);
 				ATLTRACE(_T("write %i bytes\n"), tmpSize);
-				tmp.FileRead(tmpSize, Source);
+				// a block that cannot be read completely (no memory, the file is shorter than the atom) or written: the new file
+				// lacks audio data, so it must not replace the original
+				if (!tmp.FileRead(tmpSize, Source) || tmp.GetLength() != (size_t)tmpSize)
+				{
+					Destination->setFailed(EIO);
+					break;
+				}
 				CTools::instance().doEvents();
-				tmp.FileWrite(tmpSize, Destination);
+				if (tmp.FileWrite(tmpSize, Destination) != (size_t)tmpSize)
+					break;   // the write error is set in Destination
 				CTools::instance().doEvents();
 				frameSize-=tmpSize;
 			}
 			CFile::closeFile(Source);
 			_position = (u64)newPos;
-		} 
+		}
 		else
+		{
 			CTools::instance().setLastError(errno);
+			Destination->setFailed(errno);   // without the audio data the new file must not replace the original
+		}
 	}	
 }

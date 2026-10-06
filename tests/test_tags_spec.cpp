@@ -1237,3 +1237,38 @@ TEST_CASE("APE v2: tags around the size of the cache of the end (8 KB) and with 
         }
     }
 }
+
+namespace {
+// ANSICODEPAGE (7) for one test, back to the default 1252 also if a REQUIRE ends it
+struct AnsiCodePage {
+    explicit AnsiCodePage(long codePage) { SetConfigValueW(7, codePage); }
+    ~AnsiCodePage() { SetConfigValueW(7, 1252); }
+};
+}  // namespace
+
+TEST_CASE("ID3v1 and Lyrics3: the texts are read with the code page they are written with (ANSICODEPAGE)", "[tags][spec][id3v1][lyrics][codepage]")
+{
+    // the byte 0xE9 is U+0439 (Cyrillic short i) in code page 1251, U+00E9 (e acute) in 1252
+    AnsiCodePage cp(1251);
+    SECTION("ID3v1") {
+        auto p = writeParts("cp_v1.mp3", Bytes(), id3v1("Caf\xE9", "Artist", "Album", "2001", pad30("comment"), 17));
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        CHECK(take(ID3V1GetTitleW()) == L"Cafй");
+        ID3V1SetTitleW(L"йц");   // 0xE9 0xF6 in 1251
+        REQUIRE(ID3V1SaveChangesW() != 0);
+        const Bytes f = readFile(p);
+        CHECK(Bytes(f.end() - 125, f.end() - 122) == Bytes({ 0xE9, 0xF6, 0x00 }));
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        CHECK(take(ID3V1GetTitleW()) == L"йц");
+    }
+    SECTION("Lyrics3") {
+        auto p = writeParts("cp_lyr.mp3", Bytes(), concat({ lyrics200({ lyricsField("LYR", "text"), lyricsField("ETT", "Caf\xE9") }), kV1() }));
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        CHECK(take(LYRICSGetTitleW()) == L"Cafй");
+        LYRICSSetTitleW(L"йц");
+        REQUIRE(LYRICSSaveChangesW() != 0);
+        CHECK(findBytes(readFile(p), Bytes({ 'E', 'T', 'T', '0', '0', '0', '0', '2', 0xE9, 0xF6 })) != static_cast<size_t>(-1));
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        CHECK(take(LYRICSGetTitleW()) == L"йц");
+    }
+}

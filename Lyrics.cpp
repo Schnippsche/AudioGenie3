@@ -92,7 +92,7 @@ bool CLyrics::SetTagItem(const char ID[], long Pos, long DataSize)
 	{
 		if (memcmp(ID, FIELD_LIST[Iterator], 3) == 0)
 		{
-			FField[Iterator] = Data.GetStringAt(Pos, DataSize);
+			FField[Iterator] = Data.GetAnsiStringAt(Pos, DataSize);
 			return true;
 		}
 	}
@@ -187,7 +187,7 @@ bool CLyrics::ReadFramesOld(CFile *Stream, bool isDeleting)
 			if (!isDeleting)
 			{
 				CTools::LyricsSize = (int)(FEndPosition + 9 - FStartPosition);   // the whole tag including LYRICSBEGIN and LYRICSEND
-				FField[1] = Data.GetStringAt(Iterator + 11, DataSize - Iterator - 11);
+				FField[1] = Data.GetAnsiStringAt(Iterator + 11, DataSize - Iterator - 11);
 			}
 			return true;
 		}

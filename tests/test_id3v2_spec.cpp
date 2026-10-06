@@ -1136,3 +1136,20 @@ TEST_CASE("ID3v2 tag sizes around the cache of the start of the file give the sa
         CHECK(take(AUDIOGetTitleW()) == L"Changed");
     }
 }
+
+TEST_CASE("ID3v2: a CUE sheet becomes chapters; an INDEX without a time and an open quotation mark at the end do not crash", "[id3v2][spec][chapter]")
+{
+    const std::string cue =
+        "PERFORMER \"Band\"\r\nTITLE \"Album\"\r\nFILE \"x.mp3\" MP3\r\n"
+        "  TRACK 01 AUDIO\r\n    TITLE \"One\"\r\n    INDEX 01 00:00:00\r\n"
+        "  TRACK 02 AUDIO\r\n    TITLE \"Two\"\r\n    INDEX 01 01:02:30\r\n"
+        "  TRACK 03 AUDIO\r\n    INDEX 01\r\n    TITLE \"Three";   // no time; quotation mark not closed, no line end
+    auto c = writeTemp("spec_chapters.cue", Bytes(cue.begin(), cue.end()));
+    auto p = writeTemp("spec_chapters.mp3", makeMp3(40));
+    REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+    REQUIRE(ID3V2ImportCueFileW(c.c_str()) != 0);
+    CHECK(ID3V2GetFrameCountW(ID3F_CHAP) == 3);
+    CHECK(ID3V2GetChapterStartTimeW(L"ch1") == 0);
+    CHECK(ID3V2GetChapterEndTimeW(L"ch1") == 62400);     // the start of track 2
+    CHECK(ID3V2GetChapterStartTimeW(L"ch2") == 62400);   // 1 min 2 s and 30 of 75 frames = 400 ms
+}

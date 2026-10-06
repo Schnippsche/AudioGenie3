@@ -510,7 +510,11 @@ bool CID3V2::RebuildFile(LPCWSTR FileName, CBlob* data)
 	while (ok)
 	{
 		ATLTRACE(_T("write %u bytes\n"), (unsigned)blockSize);
-		tmp.FileRead(blockSize, Source);
+		if (!tmp.FileRead(blockSize, Source))
+		{
+			ok = false;   // no memory for the block: not the end of the file
+			break;
+		}
 		size_t got = tmp.GetLength();
 		if (got > 0 && tmp.FileWrite(got, Destination) != got)
 		{
@@ -810,11 +814,17 @@ bool CID3V2::parseCueFile(LPCWSTR FileName)
 		CTools::instance().setLastError(errno);
 		return false;
 	}
-	// read everything into the blob
-	int ln = (int)toSizeClamped(Source->size());
-	CBlob dummy(ln + 1);
-	dummy.FileRead(ln, Source);
+	// read everything into the blob (a CUE sheet is a small text file); the loop below works with the bytes that were read
+	const __int64 fileSize = Source->size();
+	CBlob dummy;
+	if (fileSize < 0 || fileSize > 0x1000000 || !dummy.FileRead((size_t)fileSize, Source))
+	{
+		CFile::closeFile(Source);
+		CTools::instance().setLastError(ERR_INVALID_FORMAT);
+		return false;
+	}
 	CFile::closeFile(Source);
+	const int ln = (int)dummy.GetLength();
 	// split the blob into pieces; separators are 0D, 0A, EOL and blanks
 	int pos = 0, start = 0;
 	CAtlArray<CAtlString> tokens;
@@ -828,16 +838,16 @@ bool CID3V2::parseCueFile(LPCWSTR FileName)
 	{
 		if (dummy.GetAt(pos) == '"') // quotation marks
 		{
-			do // read up to the next quotation mark or the end of the line
+			do // read up to the next quotation mark or the end of the line (at the latest the CR added behind the text)
 			{
 				pos++;
 			}
-			while (!(dummy.GetAt(pos) == '"' || dummy.GetAt(pos) == 13 || dummy.GetAt(pos) == 10));
+			while (pos < ln && !(dummy.GetAt(pos) == '"' || dummy.GetAt(pos) == 13 || dummy.GetAt(pos) == 10));
 			if (pos - start > 0)
 				tokens.Add(dummy.GetStringAt(start + 1, pos - start - 1));
 			start = pos + 1;
 		}
-		if (dummy.GetAt(pos) == ' ') // blank	
+		if (dummy.GetAt(pos) == ' ') // blank
 		{
 			if (pos - start > 0)
 				tokens.Add(dummy.GetStringAt(start, pos - start));
@@ -854,7 +864,7 @@ bool CID3V2::parseCueFile(LPCWSTR FileName)
 			{
 				CAtlString key(tokens.GetAt(0));
 				CAtlString tmp;
-				if (key.CompareNoCase(_T("INDEX")) == 0)
+				if (key.CompareNoCase(_T("INDEX")) == 0 && tokens.GetCount() > 2)   // INDEX nn mm:ss:ff (GetAt behind the end throws)
 				{
 					// int nr = _wtoi(tokens.GetAt(1));
 					tmp = tokens.GetAt(2); // the time is given in minutes (mm), seconds (ss) and frames (ff), where each second is divided into 75(!) frames.
@@ -864,7 +874,7 @@ bool CID3V2::parseCueFile(LPCWSTR FileName)
 					p2 = tmp.Find(':', p1 + 1);
 					long startTime = 0;
 					if (p1 != -1 && p2 != -1)
-						startTime = ( _wtoi(tmp.Left(p1)) * 60000l) + (_wtoi(tmp.Mid(p1 + 1, p2 - p1 - 1)) * 1000l) + (_wtoi(tmp.Mid(p2 + 1)) * 1000l / 76l);
+						startTime = ( _wtoi(tmp.Left(p1)) * 60000l) + (_wtoi(tmp.Mid(p1 + 1, p2 - p1 - 1)) * 1000l) + (_wtoi(tmp.Mid(p2 + 1)) * 1000l / 75l);
 					lastTime = startTime;			
 					if (chap != NULL)
 						chap->setTimes(startTime, startTime);

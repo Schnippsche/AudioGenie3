@@ -78,6 +78,9 @@ public:
 	bool sync();                       // writes the data from the cache of the system to the disk (FlushFileBuffers); false on an error
 	bool truncate(__int64 length);     // the file gets this length (shorter: the end is cut off, longer: zeros)
 	bool failed() const { return m_failed; }   // a read or write error happened (like ferror)
+	// a writer that could not produce all of the file (e.g. a copy that read less than it needs) marks it, so that it does not replace
+	// the original (sync and CTools::finishRewrite fail); errno is set to error
+	void setFailed(int error);
 	// Reads length bytes from the position pos directly from the file (no buffer, one system call); the position is behind the last byte.
 	// For large blocks and for filling the caches of CTools::readAt. A negative pos reads nothing and leaves the position unchanged.
 	size_t readDirect(__int64 pos, void *destination, size_t length);

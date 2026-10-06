@@ -62,7 +62,7 @@ CID3V1TagInfo::~CID3V1TagInfo()
 // so cut off at the first NUL and then remove trailing blanks.
 static CAtlString ReadFixedField(CBlob *blob, size_t pos, size_t len)
 {
-	CAtlString raw = blob->GetStringAt(pos, len);
+	CAtlString raw = blob->GetAnsiStringAt(pos, len);
 	CAtlString text((LPCTSTR)raw);   // stops at the first NUL
 	return text.TrimRight();
 }
@@ -70,14 +70,14 @@ static CAtlString ReadFixedField(CBlob *blob, size_t pos, size_t len)
 // Fixed field of the id3v1 tag; a field that is full continues in the enhanced tag (ext, may be NULL)
 static CAtlString ReadFieldWithExtension(CBlob *blob, size_t pos, size_t len, CBlob *ext, size_t extPos, size_t extLen)
 {
-  CAtlString raw = blob->GetStringAt(pos, len);
+  CAtlString raw = blob->GetAnsiStringAt(pos, len);
   bool full = ((size_t)raw.GetLength() >= len);
   for (int i = 0; full && i < raw.GetLength(); i++)
     if (raw[i] == 0)
       full = false;
   CAtlString text((LPCTSTR)raw);
   if (full && ext != NULL)
-    text += CAtlString((LPCTSTR)ext->GetStringAt(extPos, extLen));
+    text += CAtlString((LPCTSTR)ext->GetAnsiStringAt(extPos, extLen));
   return text.TrimRight();
 }
 

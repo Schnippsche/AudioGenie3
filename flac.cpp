@@ -489,8 +489,10 @@ bool CFLAC::RebuildFile(LPCWSTR FileName)
 	// if an ID3v2 tag is present, carry it along as well
 	if (CTools::ID3v2Size > 0)
 	{
-		tmp.FileRead(CTools::ID3v2Size, Source);
-		tmp.FileWrite(CTools::ID3v2Size, Destination);
+		if (!tmp.FileRead(CTools::ID3v2Size, Source) || tmp.GetLength() != (size_t)CTools::ID3v2Size)
+			Destination->setFailed(EIO);   // the ID3v2 tag would be lost: finishRewrite keeps the original
+		else
+			tmp.FileWrite(CTools::ID3v2Size, Destination);
 	}
 	// skip old block
 	Source->seek(Source->tell() + (oldLen));

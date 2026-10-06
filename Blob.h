@@ -85,8 +85,9 @@ public:
 	void AddString(const LPCWSTR string);
 	// general methods
 	void AddMemory(const void *src, size_t nLen);
-	// replaces the content with the nLen bytes (at most) at the position pos of the file, see CTools::readAt()
-	void FileReadAt(CFile *Stream, __int64 pos, size_t nLen);
+	// replaces the content with the nLen bytes (at most) at the position pos of the file, see CTools::readAt(); false if no memory for them
+	// (the blob is empty then; at the end of the file it is shorter and the result is true)
+	bool FileReadAt(CFile *Stream, __int64 pos, size_t nLen);
 	void Add2B(int value);
 	void Add3B(int value);
 	void Add4B(unsigned int value);
@@ -98,7 +99,7 @@ public:
 	void AddValue(BYTE ch, size_t nRepeat);
 	void AddNullByte();
 	void AddBlob(const CBlob& blob, size_t start = 0);
-	void AddFile(size_t nLen, CFile *Stream);
+	bool AddFile(size_t nLen, CFile *Stream);   // false if no memory for the bytes
 	BYTE GetAt(size_t nIndex);
 	long Get4B(size_t nIndex);
 	long GetR4B(size_t nIndex);
@@ -109,10 +110,12 @@ public:
 	long GetS4B(size_t nIndex);
 	unsigned __int16 GetS2B(size_t nIndex);
 	
-	CAtlString GetStringAt(size_t nPos, size_t nLength);
+	CAtlString GetStringAt(size_t nPos, size_t nLength);       // ASCII (MIME types, IDs) and files of this computer: the code page of the system
+	CAtlString GetAnsiStringAt(size_t nPos, size_t nLength);   // ISO-8859-1 / ANSI texts of a tag: the code page of ANSICODEPAGE
 	void Clear() { Free(); };
 	size_t GetLength() { return m_CurrentLength; };
-	void FileRead(size_t nLen, CFile *Stream);
+	// replaces the content with nLen bytes (at most) of the file; false if no memory for them (see FileReadAt)
+	bool FileRead(size_t nLen, CFile *Stream);
 	size_t FileWrite(size_t nLen, CFile *Stream);
 	bool isEmpty()    { return (m_CurrentLength == 0); };
 	bool isNotEmpty() { return (m_CurrentLength > 0); };

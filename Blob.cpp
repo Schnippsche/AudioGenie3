@@ -46,6 +46,13 @@ static bool isAscii(const BYTE *data, size_t length)
 	return true;
 }
 
+// code page of ISO-8859-1 / ANSI strings (configuration ANSICODEPAGE, 0 = code page of the system)
+static UINT ansiCodePage()
+{
+	const long codePage = CTools::configValues[CONFIG_ANSICODEPAGE];
+	return (codePage > 0) ? (UINT)codePage : CP_ACP;
+}
+
 static inline bool blobSizeOverflow(size_t current, size_t add)
 {
 	return (add > BLOB_MAX_SIZE) || (current > BLOB_MAX_SIZE - add);
@@ -211,6 +218,24 @@ CAtlString CBlob::GetStringAt(size_t nPos, size_t nLength)
 	return tmp;
 }
 
+// like GetStringAt, but with the code page that the texts of the tags are written with (AddEncodedString): what is written is read back
+CAtlString CBlob::GetAnsiStringAt(size_t nPos, size_t nLength)
+{
+	if (m_CurrentLength == 0 || m_pData == NULL || nPos >= m_CurrentLength)
+		return EMPTY;
+	if (nLength > m_CurrentLength - nPos)
+		nLength = m_CurrentLength - nPos;
+	const UINT codePage = ansiCodePage();
+	const int chars = MultiByteToWideChar(codePage, 0, (LPCSTR)(m_pData + nPos), (int)nLength, NULL, 0);
+	CAtlString result;
+	if (chars > 0)
+	{
+		MultiByteToWideChar(codePage, 0, (LPCSTR)(m_pData + nPos), (int)nLength, result.GetBuffer(chars), chars);
+		result.ReleaseBuffer(chars);
+	}
+	return result;
+}
+
 long CBlob::Get4B(size_t nIndex) // MSB Big Endian
 {
 	if (!BLOB_IN_RANGE(nIndex, 4))
@@ -273,40 +298,42 @@ long CBlob::Get3B(size_t nIndex)
 	return (m_pData[nIndex] << 16) + (m_pData[nIndex + 1] << 8) + m_pData[nIndex + 2];
 }
 
-void CBlob::FileRead(size_t nLen, CFile *Stream)
+bool CBlob::FileRead(size_t nLen, CFile *Stream)
 {
 	if (Stream != NULL && Stream == CTools::seqStream)
 	{
 		// a sequential read (CSequentialRead): from the position of the sequence
-		FileReadAt(Stream, CTools::seqPosition, nLen);
+		const bool ok = FileReadAt(Stream, CTools::seqPosition, nLen);
 		CTools::seqPosition += (__int64)m_CurrentLength;
-		return;
+		return ok;
 	}
 	if (nLen < 1 || Stream == NULL)
 	{
 		m_CurrentLength = 0;
-		return;
+		return true;
 	}
 	nLen = limitToFileRest(nLen, Stream);
 	if (nLen < 1)
 	{
 		m_CurrentLength = 0;
-		return;
+		return true;
 	}
 	if (!AllocNewBuffer(nLen))
 	{
 		m_CurrentLength = 0;
-		return;
+		return false;
 	}
 	m_CurrentLength = Stream->read(m_pData, nLen);
+	return true;
 }
 
-void CBlob::FileReadAt(CFile *Stream, __int64 pos, size_t nLen)
+bool CBlob::FileReadAt(CFile *Stream, __int64 pos, size_t nLen)
 {
-	if (nLen < 1 || Stream == NULL)
+	// a negative position (from a damaged file) has no bytes: without this the size would be limited to the file size + |pos| and allocated
+	if (nLen < 1 || Stream == NULL || pos < 0)
 	{
 		m_CurrentLength = 0;
-		return;
+		return true;
 	}
 	// a large size (for example from a damaged tag) is limited to what is left in the file, like in FileRead()
 	if (nLen > BLOB_CHECK_FILE_LIMIT)
@@ -321,15 +348,16 @@ void CBlob::FileReadAt(CFile *Stream, __int64 pos, size_t nLen)
 		if (nLen < 1)
 		{
 			m_CurrentLength = 0;
-			return;
+			return true;
 		}
 	}
 	if (!AllocNewBuffer(nLen))
 	{
 		m_CurrentLength = 0;
-		return;
+		return false;
 	}
 	m_CurrentLength = CTools::readAt(Stream, pos, m_pData, nLen);
+	return true;
 }
 
 size_t CBlob::FileWrite(size_t nLen, CFile *Stream)
@@ -341,18 +369,19 @@ size_t CBlob::FileWrite(size_t nLen, CFile *Stream)
 	return Stream->write(m_pData, nLen);
 }
 
-void CBlob::AddFile(size_t nLen, CFile *Stream)
+bool CBlob::AddFile(size_t nLen, CFile *Stream)
 {
 	if (nLen < 1 || Stream == NULL)
-		return;
+		return true;
 	nLen = limitToFileRest(nLen, Stream);
-	if (nLen < 1 || blobSizeOverflow(m_CurrentLength, nLen))
-		return;
-	if (!GrowBuffer(m_CurrentLength + nLen))
-		return;
+	if (nLen < 1)
+		return true;
+	if (blobSizeOverflow(m_CurrentLength, nLen) || !GrowBuffer(m_CurrentLength + nLen))
+		return false;
 	// fast reading
 	size_t tmpLen = Stream->read(&m_pData[m_CurrentLength], nLen);
 	m_CurrentLength += tmpLen;
+	return true;
 }
 
 void CBlob::AddMemory(const void* src, size_t nLen)
@@ -499,13 +528,6 @@ void CBlob::AddString(const LPCWSTR string)
 	if (string == NULL)
 		return;
 	ConcatInPlace(wcslen(string) * 2, string);
-}
-
-// code page of ISO-8859-1 / ANSI strings (configuration ANSICODEPAGE, 0 = code page of the system)
-static UINT ansiCodePage()
-{
-	const long codePage = CTools::configValues[CONFIG_ANSICODEPAGE];
-	return (codePage > 0) ? (UINT)codePage : CP_ACP;
 }
 
 // true if a text of size bytes (with the terminator) cannot be converted from the ANSI code page into maxBuffer characters
@@ -691,24 +713,33 @@ void CBlob::AddEncodedString(TextEncoding encoding, const CAtlString source, Enc
 	case TEXT_ENCODED_UTF16BOM: // UTF-16 with BOM
 		AddValue(0xFF);
 		AddValue(0xFE);
-		ConcatInPlace(wcslen(source) * 2, source);
+		ConcatInPlace((size_t)source.GetLength() * 2, source);
 		if (withNullBytes == NullBytes::With)
 			AddValue(0, 2);
 		break;
 	case TEXT_ENCODED_UTF16: // UTF-16BE without BOM (ID3v2.4, encoding $02)
 		{
-			const size_t chars = wcslen(source);
-			for (size_t i = 0; i < chars; i++)
+			// the buffer grows once, then the bytes are swapped directly into it
+			const size_t bytes = (size_t)source.GetLength() * 2;
+			if (blobSizeOverflow(m_CurrentLength, bytes))
+				CTools::instance().setLastError(ERR_NOT_ENOUGH_MEMORY, bytes);
+			else if (GrowBuffer(m_CurrentLength + bytes))
 			{
-				AddValue((BYTE)((source[(int)i] >> 8) & 0xFF));
-				AddValue((BYTE)(source[(int)i] & 0xFF));
+				LPCWSTR from = source;
+				BYTE *to = m_pData + m_CurrentLength;
+				for (size_t i = 0; i < bytes / 2; i++)
+				{
+					*to++ = (BYTE)(from[i] >> 8);
+					*to++ = (BYTE)(from[i] & 0xFF);
+				}
+				m_CurrentLength += bytes;
 			}
 		}
 		if (withNullBytes == NullBytes::With)
 			AddValue(0, 2);
 		break;
 	case TEXT_ENCODED_UTF16LE: // UTF-16 little endian without BOM (internal)
-		ConcatInPlace(wcslen(source) * 2, source);
+		ConcatInPlace((size_t)source.GetLength() * 2, source);
 		if (withNullBytes == NullBytes::With)
 			AddValue(0, 2);
 		break;

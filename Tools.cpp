@@ -301,7 +301,8 @@ bool CTools::copyStream(CFile *source, CFile *destination, __int64 count)
 	while (count != 0)
 	{
 		size_t want = (count < 0 || count > (__int64)blockSize) ? blockSize : (size_t)count;
-		tmp.FileRead(want, source);
+		if (!tmp.FileRead(want, source))
+			return false;   // no memory for the block: not the end of the file
 		size_t got = tmp.GetLength();
 		if (got > 0 && tmp.FileWrite(got, destination) != got)
 			return false; // write error
