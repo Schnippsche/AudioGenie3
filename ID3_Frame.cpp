@@ -314,7 +314,7 @@ long CID3_Frame::getData(BYTE *destination, long maxLen)
 	long ln = (long)_data.GetLength();
 	if (ln > maxLen)
 	{
-		CTools::instance().setLastError(ERR_NOT_ENOUGH_MEMORY);
+		CTools::instance().setLastError(ERR_NOT_ENOUGH_MEMORY, (unsigned)ln);   // the array of the caller is too small: the size it needs
 		return 0;
 	}
 	if (ln > 0)

@@ -77,7 +77,7 @@ bool CWMA_TagData::setNewPicture(BYTE *arr, u32 len, LPCWSTR Description, BYTE p
 	_data.Clear();
 	_data.AddValue(picType);
 	_data.AddR4B(int(len));
-	_data.AddEncodedString(TEXT_ENCODED_UTF16LE, CTools::instance().ExtractMimeFromPicture(arr), TEXT_WITHOUT_ENCODING, TEXT_WITH_NULLBYTES);
+	_data.AddEncodedString(TEXT_ENCODED_UTF16LE, CTools::instance().ExtractMimeFromPicture(arr, len), TEXT_WITHOUT_ENCODING, TEXT_WITH_NULLBYTES);
 	_data.AddEncodedString(TEXT_ENCODED_UTF16LE, Description, TEXT_WITHOUT_ENCODING, TEXT_WITH_NULLBYTES);
 	_data.AddMemory(arr, len);
 	return false;

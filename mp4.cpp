@@ -250,7 +250,7 @@ long CMP4::GetPictureArray(BYTE *destination, long maxLen, short Index)
 	long ln =(long)atom->_blob.GetLength() - 8;
 	if (ln > maxLen)
 	{
-		CTools::instance().setLastError(ERR_NOT_ENOUGH_MEMORY);
+		CTools::instance().setLastError(ERR_NOT_ENOUGH_MEMORY, (unsigned)ln);   // the array of the caller is too small: the size it needs
 		return -1;
 	}
 	if (ln > 0)
@@ -408,7 +408,7 @@ void CMP4::SetTrack(LPCWSTR newTrack)
 
 CAtlString CMP4::GetGenre()
 {
-	// genre either as ©gen (text) or as gnre (number)
+	// genre either as ï¿½gen (text) or as gnre (number)
 	// look for a text frame first
 	CMP4Atom* atom = mainContainer->find(TEXT_GENRE_PFAD);
 	if (atom != NULL)

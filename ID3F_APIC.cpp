@@ -180,7 +180,7 @@ void CID3F_APIC::encode()
 			if (_isLink)
 				_mime = MIME_LINK;
 			else
-				_mime = CTools::instance().ExtractSmallMimeFromPicture(_data.m_pData);
+				_mime = CTools::instance().ExtractSmallMimeFromPicture(_data.m_pData, _data.GetLength());
 			_blob.AddFixedAnsiString(_mime, 3);
 		}
 		else
@@ -188,7 +188,7 @@ void CID3F_APIC::encode()
 			if (_isLink)
 				_mime = MIME_LINK;
 			else
-				_mime = CTools::instance().ExtractMimeFromPicture(_data.m_pData);
+				_mime = CTools::instance().ExtractMimeFromPicture(_data.m_pData, _data.GetLength());
 			_blob.AddEncodedString(TEXT_ENCODED_ANSI, _mime, TEXT_WITHOUT_ENCODING, TEXT_WITH_NULLBYTES);		
 		}
 		_blob.AddValue(_pictureType);
@@ -290,9 +290,9 @@ bool CID3F_APIC::setPictureFile(LPCWSTR fileName)
 		CFile::closeFile(Stream);
 		// rebuild the MIME type
 		if (CTools::ID3V2oldTagVersion == TAG_VERSION_2_2)
-			_mime = CTools::instance().ExtractSmallMimeFromPicture(_data.m_pData);
+			_mime = CTools::instance().ExtractSmallMimeFromPicture(_data.m_pData, _data.GetLength());
 		else
-			_mime = CTools::instance().ExtractMimeFromPicture(_data.m_pData);
+			_mime = CTools::instance().ExtractMimeFromPicture(_data.m_pData, _data.GetLength());
 		return true;
 	}
 	CTools::instance().setLastError(errno);

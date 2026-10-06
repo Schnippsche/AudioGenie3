@@ -228,7 +228,7 @@ void CID3F_COMR::setPicture(BYTE *arr, u32 length)
 {
 	setData(arr, length);
 	if (length >= 4)
-		_mime = CTools::instance().ExtractMimeFromPicture(arr);
+		_mime = CTools::instance().ExtractMimeFromPicture(arr, length);
 	else
 		_mime.Empty();
 }

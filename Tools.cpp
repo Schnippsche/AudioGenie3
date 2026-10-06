@@ -24,6 +24,7 @@
 #include <new>
 
 int CTools::lastError;
+bool CTools::dispatching = false;
 __int64 CTools::FileSize;
 CFile *CTools::analysisStream = NULL;
 static std::unique_ptr<BYTE[]> g_headBuffer;   // the cache of the start of the file
@@ -252,12 +253,13 @@ void CTools::doEvents()
 void CTools::doEventsNow()
 {
 	const int MAX_MESSAGES = 100;
-	// a message handler of the host can call the library again: that inner call does not process messages itself
-	static bool processing = false;
-	if (processing)
+	// a message handler of the host can call the library again: that inner call does not process messages itself, and the exports that
+	// change the state refuse it (inHostHandler)
+	if (dispatching)
 		return;
-	processing = true;
+	dispatching = true;
 	MSG message;   // local: the handlers can use the library again, which would overwrite a member
+	// (PeekMessageW also calls the handlers of messages that other threads send)
 	for (int i = 0; i < MAX_MESSAGES && PeekMessageW(&message, (HWND) NULL, 0, 0, PM_REMOVE); i++)
 	{
 		if (message.message == WM_QUIT)
@@ -268,14 +270,17 @@ void CTools::doEventsNow()
 		TranslateMessage(&message);
 		DispatchMessageW(&message);
 	}
-	processing = false;
+	dispatching = false;
 }
 
 void CTools::setLastError(int error, ...)
 {
 	lastError = error;
 	if (error == 0)
+	{
+		lastErrorText.Empty();   // no error: no text of an earlier one
 		return;
+	}
 	if (error > 200 && error < 250 && (size_t)(error - 201) < _countof(ERR_TEXT)) // user-defined error text
 	{
 		va_list vlist;
@@ -491,34 +496,35 @@ bool CTools::readLinkedPicture(const CAtlString &link, CBlob &data)
 	return ok;
 }
 
-CAtlString CTools::ExtractMimeFromPicture(const BYTE *buf)
+CAtlString CTools::ExtractMimeFromPicture(const BYTE *buf, size_t length)
 {
-	return IMAGE_LONG[CalcMimeFromPicture(buf)];
+	return IMAGE_LONG[CalcMimeFromPicture(buf, length)];
 }
 
-CAtlString CTools::ExtractSmallMimeFromPicture(const BYTE *buf)
+CAtlString CTools::ExtractSmallMimeFromPicture(const BYTE *buf, size_t length)
 {
-	return IMAGE_SHORT[CalcMimeFromPicture(buf)];	
+	return IMAGE_SHORT[CalcMimeFromPicture(buf, length)];	
 }
 
-int CTools::CalcMimeFromPicture(const BYTE *buf)
+int CTools::CalcMimeFromPicture(const BYTE *buf, size_t length)
 {
-	if (buf == NULL)
-		return IMAGE_UNKNOWN; 
-	if (buf[0] == 0xFF && buf[1] == 0xD8 && buf[2] == 0xFF)
-		return IMAGE_JPG; 
-	if (buf[0] == 'G' && buf[1] == 'I' && buf[2] == 'F')
-		return IMAGE_GIF; 
-	if (buf[0] == 0x89 && buf[1] == 0x50 && buf[2] == 0x4E && buf[3] == 0x47)
-		return IMAGE_PNG; 
+	// every signature is only compared with as many bytes as the picture has
+	if (buf == NULL || length < 2)
+		return IMAGE_UNKNOWN;
+	if (length >= 3 && buf[0] == 0xFF && buf[1] == 0xD8 && buf[2] == 0xFF)
+		return IMAGE_JPG;
+	if (length >= 3 && buf[0] == 'G' && buf[1] == 'I' && buf[2] == 'F')
+		return IMAGE_GIF;
+	if (length >= 4 && buf[0] == 0x89 && buf[1] == 0x50 && buf[2] == 0x4E && buf[3] == 0x47)
+		return IMAGE_PNG;
 	if (buf[0] == 'B' && buf[1] == 'M')
-		return IMAGE_BMP; 
-	if (buf[0] == 0x49 && buf[1] == 0x49 && buf[2] == 0x2A && buf[3] == 0x00)
+		return IMAGE_BMP;
+	if (length >= 4 && buf[0] == 0x49 && buf[1] == 0x49 && buf[2] == 0x2A && buf[3] == 0x00)
 		return IMAGE_TIFF;   // little endian
-	if (buf[0] == 0x4D && buf[1] == 0x4D && buf[2] == 0x00 && buf[3] == 0x2A)
+	if (length >= 4 && buf[0] == 0x4D && buf[1] == 0x4D && buf[2] == 0x00 && buf[3] == 0x2A)
 		return IMAGE_TIFF;   // big endian
-	if (buf[0] == '-' && buf[1] == '-' && buf[2] == '>')
-		return IMAGE_LINK; 
+	if (length >= 3 && buf[0] == '-' && buf[1] == '-' && buf[2] == '>')
+		return IMAGE_LINK;
 	return IMAGE_UNKNOWN;
 }
 

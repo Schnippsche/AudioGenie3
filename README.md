@@ -139,7 +139,9 @@ another platform has to replace that file and the Windows-specific parts (ATL st
 (260 characters) work without the prefix `\\?\`, and a function that writes does not open a device, a volume or a disk.
 
 Because of this you must not call the DLL from several threads at the same time. Analyze the file again
-before you access a different one.
+before you access a different one. During an analysis or a save the DLL lets the application process its window messages (so that the
+user interface stays responsive); a message handler that calls a function which changes the data or writes a file then gets error 228
+(busy) and the function does nothing. Getters may be called.
 
 Note that `AUDIOSaveChangesW` writes the abstract fields (title, artist, ...) and thereby overwrites the matching
 ID3v2 frames. If you edit ID3v2 frames directly, save with `ID3V2SaveChangesW` instead.

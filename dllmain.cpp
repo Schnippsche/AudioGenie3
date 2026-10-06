@@ -28,6 +28,12 @@
 #include <winver.h>
 #pragma comment(lib, "version.lib")
 
+// The first line of every export that changes the state or writes a file (all but the getters): called from a message handler of the host
+// while the library processes the messages during an analysis or a save (CTools::doEvents), it does nothing and fails with ERR_BUSY. Such a
+// call would work on the state of the running operation: a save wrote into the file that a handler had analyzed in between.
+#define REFUSE_IN_HOST_HANDLER(failValue) if (CTools::inHostHandler()) { CTools::instance().setLastError(ERR_BUSY); return failValue; }
+#define REFUSE_IN_HOST_HANDLER_VOID() if (CTools::inHostHandler()) { CTools::instance().setLastError(ERR_BUSY); return; }
+
 
 CAudioGenie3Module _AtlModule;
 
@@ -195,6 +201,7 @@ void ClearAllTags()
  */
 extern "C" long __stdcall AUDIOAnalyzeFileW(LPCWSTR FileName)
 {
+	REFUSE_IN_HOST_HANDLER(0);
 	ClearAllTags();
 	CFile sourceFile;
 	CFile *Source = &sourceFile;
@@ -553,6 +560,7 @@ static bool syncID3v1IfPresent(LPCWSTR FileName)
  */
 extern "C" short __stdcall AUDIOSaveChangesToFileW(LPCWSTR FileName)
 {
+	REFUSE_IN_HOST_HANDLER(0);
 	CTools::instance().setLastError(0);
 	FileName = getValidPointer(FileName);
 	Format = (short)GetFormat(FileName);
@@ -713,6 +721,7 @@ extern "C" short __stdcall AUDIOSaveChangesToFileW(LPCWSTR FileName)
  */
 extern "C" short __stdcall AUDIOSaveChangesW()
 {
+	REFUSE_IN_HOST_HANDLER(0);
 	return AUDIOSaveChangesToFileW(lastFile);
 }
 
@@ -802,6 +811,11 @@ extern "C" BSTR __stdcall AUDIOGetChannelModeW()
 
 /**
  * @brief get the error number of the last error
+ *
+ * Besides the errors of the system (errno values) the library has its own numbers from 201 on. 228 (busy): during an analysis or a
+ * save the library lets the application process its window messages (see DOEVENTSMILLIS in SetConfigValueW); a message handler that
+ * calls a function which changes the data or writes a file then (all functions but the getters) gets this error, and the function does
+ * nothing. Such a call would work on the data of the running operation. Getters may be called.
  *
  * @ingroup AUDIO
  * @since 2.0.1.0
@@ -894,6 +908,7 @@ extern "C" BSTR __stdcall AUDIOGetTitleW()
  */
 extern "C" void __stdcall AUDIOSetTitleW(LPCWSTR textString) 
 {
+	REFUSE_IN_HOST_HANDLER_VOID();
 	textString = getValidPointer(textString);
 	Title = textString;  
 }
@@ -919,6 +934,7 @@ extern "C" BSTR __stdcall AUDIOGetArtistW()
  */
 extern "C" void __stdcall AUDIOSetArtistW(LPCWSTR textString) 
 { 
+	REFUSE_IN_HOST_HANDLER_VOID();
 	Artist = getValidPointer(textString);
 }
 
@@ -943,6 +959,7 @@ extern "C" BSTR __stdcall AUDIOGetAlbumW()
  */
 extern "C" void __stdcall AUDIOSetAlbumW(LPCWSTR textString) 
 {
+	REFUSE_IN_HOST_HANDLER_VOID();
 	Album = getValidPointer(textString);  
 }
 
@@ -967,6 +984,7 @@ extern "C" BSTR __stdcall AUDIOGetCommentW()
  */
 extern "C" void __stdcall AUDIOSetCommentW(LPCWSTR textString) 
 {
+	REFUSE_IN_HOST_HANDLER_VOID();
 	Comment = getValidPointer(textString);
 }
 
@@ -991,6 +1009,7 @@ extern "C" BSTR __stdcall AUDIOGetComposerW()
  */
 extern "C" void __stdcall AUDIOSetComposerW(LPCWSTR textString) 
 {
+	REFUSE_IN_HOST_HANDLER_VOID();
 	Composer = getValidPointer(textString);
 }
 
@@ -1015,6 +1034,7 @@ extern "C" BSTR __stdcall AUDIOGetGenreW()
  */
 extern "C" void __stdcall AUDIOSetGenreW(LPCWSTR textString) 
 {
+	REFUSE_IN_HOST_HANDLER_VOID();
 	Genre = getValidPointer(textString);  
 }
 
@@ -1039,6 +1059,7 @@ extern "C" BSTR __stdcall AUDIOGetTrackW()
  */
 extern "C" void __stdcall AUDIOSetTrackW(LPCWSTR textString) 
 {
+	REFUSE_IN_HOST_HANDLER_VOID();
 	Track = getValidPointer(textString);  
 }
 
@@ -1063,6 +1084,7 @@ extern "C" BSTR __stdcall AUDIOGetYearW()
  */
 extern "C" void __stdcall AUDIOSetYearW(LPCWSTR textString) 
 {
+	REFUSE_IN_HOST_HANDLER_VOID();
 	Year = getValidPointer(textString);
 }
 
@@ -1220,6 +1242,7 @@ extern "C" BSTR __stdcall FLACGetVendorW()
  */
 extern "C" void __stdcall FLACSetVendorW(LPCWSTR textString) 
 {
+	REFUSE_IN_HOST_HANDLER_VOID();
 	flac.SetVendor(getValidPointer(textString));
 }
 
@@ -1250,6 +1273,7 @@ extern "C" BSTR __stdcall FLACGetUserItemW(LPCWSTR ItemKey)
  */
 extern "C" void __stdcall FLACSetUserItemW(LPCWSTR ItemKey, LPCWSTR textString) 
 {
+	REFUSE_IN_HOST_HANDLER_VOID();
 	flac.SetUserItem(getValidPointer(ItemKey), getValidPointer(textString));
 }
 /**
@@ -1282,6 +1306,7 @@ extern "C" BSTR __stdcall FLACGetItemKeysW()
  */
 extern "C" short __stdcall FLACAddPictureFileW(LPCWSTR FileName, LPCWSTR Description, short PictureType, short asLink)
 {
+	REFUSE_IN_HOST_HANDLER(0);
 	CFlacCover *pic = new CFlacCover( (BYTE)PictureType, Description);
 	bool result = (asLink) ? pic->setFileLink(getValidPointer(FileName)) : pic->setPictureFile(getValidPointer(FileName));
 	if (result)
@@ -1310,6 +1335,7 @@ extern "C" short __stdcall FLACAddPictureFileW(LPCWSTR FileName, LPCWSTR Descrip
  */
 extern "C" short __stdcall FLACAddPictureArrayW(BYTE *arr, u32 Length, LPCWSTR Description, short PictureType)
 {
+	REFUSE_IN_HOST_HANDLER(0);
 	CFlacCover *pic = new CFlacCover( (BYTE)PictureType, getValidPointer(Description));
 	pic->setPictureData(arr, Length);
 	return b2s(flac.replaceCover(pic));
@@ -1324,6 +1350,7 @@ extern "C" short __stdcall FLACAddPictureArrayW(BYTE *arr, u32 Length, LPCWSTR D
  */
 extern "C" void __stdcall FLACDeletePicturesW() 
 {
+	REFUSE_IN_HOST_HANDLER_VOID();
 	flac.DeletePictures();
 }
 
@@ -1337,6 +1364,7 @@ extern "C" void __stdcall FLACDeletePicturesW()
  */
 extern "C" short __stdcall FLACDeletePictureW(short Index) 
 {
+	REFUSE_IN_HOST_HANDLER(0);
 	return b2s(flac.DeletePicture(Index));
 }
 
@@ -1471,6 +1499,7 @@ extern "C" long __stdcall FLACGetPictureArrayW(BYTE *arr, u32 maxLen, short Inde
  */
 extern "C" short __stdcall FLACSaveChangesToFileW(LPCWSTR FileName)
 {
+	REFUSE_IN_HOST_HANDLER(0);
 	FileName = getValidPointer(FileName);
 	if (GetFormat(FileName) == AUDIO_FORMAT_FLAC)
 		return b2s(flac.SaveToFile(FileName));
@@ -1487,6 +1516,7 @@ extern "C" short __stdcall FLACSaveChangesToFileW(LPCWSTR FileName)
  */
 extern "C" short __stdcall FLACSaveChangesW()
 {
+	REFUSE_IN_HOST_HANDLER(0);
 	return FLACSaveChangesToFileW(lastFile);
 }
 
@@ -1617,6 +1647,7 @@ extern "C" BSTR __stdcall MP4GetTextFrameW(u32 FrameID)
  */
 extern "C" void __stdcall MP4SetTextFrameW(u32 FrameID, LPCWSTR textString)
 {
+	REFUSE_IN_HOST_HANDLER_VOID();
 	mp4.SetILSTText(FrameID, getValidPointer(textString));
 }
 
@@ -1643,6 +1674,7 @@ extern "C" BSTR __stdcall MP4GetiTuneFrameW(LPCWSTR FrameID)
  */
 extern "C" void __stdcall MP4SetiTuneFrameW(LPCWSTR FrameID, LPCWSTR textString)
 {
+	REFUSE_IN_HOST_HANDLER_VOID();
 	mp4.SetItuneText(getValidPointer(FrameID), getValidPointer(textString));
 }
 
@@ -1679,6 +1711,7 @@ extern "C" BSTR __stdcall MP4GetGenreW()
  */
 extern "C" void __stdcall MP4SetGenreW(LPCWSTR textString)
 {
+	REFUSE_IN_HOST_HANDLER_VOID();
 	mp4.SetGenre(getValidPointer(textString)); 
 }
 
@@ -1717,6 +1750,7 @@ extern "C" BSTR __stdcall MP4GetTrackW()
  */
 extern "C" void __stdcall MP4SetTrackW(LPCWSTR textString)
 {
+	REFUSE_IN_HOST_HANDLER_VOID();
 	mp4.SetTrack(getValidPointer(textString));
 }
 
@@ -1788,6 +1822,7 @@ extern "C" long __stdcall MP4GetPictureSizeW(short Index)
  */
 extern "C" short __stdcall MP4AddPictureArrayW(BYTE *arr, u32 Length)
 {
+	REFUSE_IN_HOST_HANDLER(0);
 	return  b2s(mp4.AddPictureArray(arr, Length));
 }
 
@@ -1801,6 +1836,7 @@ extern "C" short __stdcall MP4AddPictureArrayW(BYTE *arr, u32 Length)
  */
 extern "C" short __stdcall MP4AddPictureFileW(LPCWSTR FileName)
 {
+	REFUSE_IN_HOST_HANDLER(0);
 	return b2s(mp4.AddPictureFile(getValidPointer(FileName)));
 }
 
@@ -1813,6 +1849,7 @@ extern "C" short __stdcall MP4AddPictureFileW(LPCWSTR FileName)
  */
 extern "C" void __stdcall MP4DeletePicturesW() 
 {
+	REFUSE_IN_HOST_HANDLER_VOID();
 	mp4.DeletePictures();
 }
 
@@ -1826,6 +1863,7 @@ extern "C" void __stdcall MP4DeletePicturesW()
  */
 extern "C" short __stdcall MP4DeletePictureW(short Index) 
 {
+	REFUSE_IN_HOST_HANDLER(0);
 	return b2s(mp4.DeletePictureFrame(Index));
 }
 
@@ -1838,6 +1876,7 @@ extern "C" short __stdcall MP4DeletePictureW(short Index)
  */
 extern "C" void __stdcall MP4DeleteEntriesW()
 {
+	REFUSE_IN_HOST_HANDLER_VOID();
 	mp4.RemoveTag();
 }
 
@@ -1851,6 +1890,7 @@ extern "C" void __stdcall MP4DeleteEntriesW()
  */
 extern "C" short __stdcall MP4SaveChangesToFileW(LPCWSTR FileName)
 {
+	REFUSE_IN_HOST_HANDLER(0);
 	FileName = getValidPointer(FileName);
 	if (GetFormat(FileName) != AUDIO_FORMAT_INVALID)
 	{
@@ -1872,6 +1912,7 @@ extern "C" short __stdcall MP4SaveChangesToFileW(LPCWSTR FileName)
  */
 extern "C" short __stdcall MP4SaveChangesW()
 {
+	REFUSE_IN_HOST_HANDLER(0);
 	return MP4SaveChangesToFileW(lastFile);
 }
 
@@ -2309,6 +2350,7 @@ extern "C" short __stdcall MPEGIsVBRW()
  */
 extern "C" short __stdcall MPEGSetCopyrightedW(LPCWSTR FileName, short newValue)
 {
+	REFUSE_IN_HOST_HANDLER(0);
 	return b2s(mpeg.SetCopyrightBit(getValidPointer(FileName), (newValue != 0) ));
 }
 
@@ -2324,6 +2366,7 @@ extern "C" short __stdcall MPEGSetCopyrightedW(LPCWSTR FileName, short newValue)
  */
 extern "C" short __stdcall MPEGSetOriginalW(LPCWSTR FileName, short newValue)
 {
+	REFUSE_IN_HOST_HANDLER(0);
 	return b2s(mpeg.SetOriginalBit(getValidPointer(FileName), (newValue != 0) ));
 }
 
@@ -2339,6 +2382,7 @@ extern "C" short __stdcall MPEGSetOriginalW(LPCWSTR FileName, short newValue)
  */
 extern "C" short __stdcall MPEGSetPrivateW(LPCWSTR FileName, short newValue)
 {
+	REFUSE_IN_HOST_HANDLER(0);
 	return b2s(mpeg.SetPrivateBit(getValidPointer(FileName), (newValue != 0) ));
 }
 
@@ -2403,6 +2447,7 @@ extern "C" BSTR __stdcall OGGGetAlbumW()
  */
 extern "C" void __stdcall OGGSetAlbumW(LPCWSTR textString)
 {
+	REFUSE_IN_HOST_HANDLER_VOID();
 	ogg.SetUserItem(VORBIS_ALBUM, getValidPointer(textString));
 }
 
@@ -2429,6 +2474,7 @@ extern "C" BSTR __stdcall OGGGetArtistW()
  */
 extern "C" void __stdcall OGGSetArtistW(LPCWSTR textString)
 {
+	REFUSE_IN_HOST_HANDLER_VOID();
 	ogg.SetUserItem(VORBIS_ARTIST, getValidPointer(textString));
 }
 
@@ -2455,6 +2501,7 @@ extern "C" BSTR __stdcall OGGGetCommentW()
  */
 extern "C" void __stdcall OGGSetCommentW(LPCWSTR textString)
 {
+	REFUSE_IN_HOST_HANDLER_VOID();
 	ogg.SetUserItem(VORBIS_COMMENT, getValidPointer(textString));
 }
 
@@ -2481,6 +2528,7 @@ extern "C" BSTR __stdcall OGGGetDateW()
  */
 extern "C" void __stdcall OGGSetDateW(LPCWSTR textString)
 {
+	REFUSE_IN_HOST_HANDLER_VOID();
 	ogg.SetUserItem(VORBIS_DATE, getValidPointer(textString));
 }
 
@@ -2507,6 +2555,7 @@ extern "C" BSTR __stdcall OGGGetDescriptionW()
  */
 extern "C" void __stdcall OGGSetDescriptionW(LPCWSTR textString)
 {
+	REFUSE_IN_HOST_HANDLER_VOID();
 	ogg.SetUserItem(VORBIS_DESCRIPTION, getValidPointer(textString));
 }
 
@@ -2533,6 +2582,7 @@ extern "C" BSTR __stdcall OGGGetGenreW()
  */
 extern "C" void __stdcall OGGSetGenreW(LPCWSTR textString)
 {
+	REFUSE_IN_HOST_HANDLER_VOID();
 	ogg.SetUserItem(VORBIS_GENRE, getValidPointer(textString));
 }
 
@@ -2559,6 +2609,7 @@ extern "C" BSTR __stdcall OGGGetPerformerW()
  */
 extern "C" void __stdcall OGGSetPerformerW(LPCWSTR textString)
 {
+	REFUSE_IN_HOST_HANDLER_VOID();
 	ogg.SetUserItem(VORBIS_PERFORMER, getValidPointer(textString));
 }
 
@@ -2585,6 +2636,7 @@ extern "C" BSTR __stdcall OGGGetTitleW()
  */
 extern "C" void __stdcall OGGSetTitleW(LPCWSTR textString)
 {
+	REFUSE_IN_HOST_HANDLER_VOID();
 	ogg.SetUserItem(VORBIS_TITLE, getValidPointer(textString));
 }
 
@@ -2611,6 +2663,7 @@ extern "C" BSTR __stdcall OGGGetTrackW()
  */
 extern "C" void __stdcall OGGSetTrackW(LPCWSTR textString)
 {
+	REFUSE_IN_HOST_HANDLER_VOID();
 	ogg.SetUserItem(VORBIS_TRACKNUMBER, getValidPointer(textString));
 }
 
@@ -2637,6 +2690,7 @@ extern "C" BSTR __stdcall OGGGetVendorW()
  */
 extern "C" void __stdcall OGGSetVendorW(LPCWSTR textString)
 {
+	REFUSE_IN_HOST_HANDLER_VOID();
 	ogg.SetVendor(getValidPointer(textString));
 }
 
@@ -2661,6 +2715,7 @@ extern "C" BSTR __stdcall OGGGetVersionW()
  */
 extern "C" void __stdcall OGGSetVersionW(LPCWSTR textString) 
 {
+	REFUSE_IN_HOST_HANDLER_VOID();
 	ogg.SetUserItem(VORBIS_VERSION, getValidPointer(textString));
 }
 
@@ -2685,6 +2740,7 @@ extern "C" BSTR __stdcall OGGGetCopyrightW()
  */
 extern "C" void __stdcall OGGSetCopyrightW(LPCWSTR textString) 
 {
+	REFUSE_IN_HOST_HANDLER_VOID();
 	ogg.SetUserItem(VORBIS_COPYRIGHT, getValidPointer(textString));
 }
 
@@ -2709,6 +2765,7 @@ extern "C" BSTR __stdcall OGGGetLicenseW()
  */
 extern "C" void __stdcall OGGSetLicenseW(LPCWSTR textString) 
 {
+	REFUSE_IN_HOST_HANDLER_VOID();
 	ogg.SetUserItem(VORBIS_LICENSE, getValidPointer(textString));
 }
 
@@ -2733,6 +2790,7 @@ extern "C" BSTR __stdcall OGGGetOrganizationW()
  */
 extern "C" void __stdcall OGGSetOrganizationW(LPCWSTR textString) 
 {
+	REFUSE_IN_HOST_HANDLER_VOID();
 	ogg.SetUserItem(VORBIS_ORGANIZATION, getValidPointer(textString));
 }
 
@@ -2757,6 +2815,7 @@ extern "C" BSTR __stdcall OGGGetLocationW()
  */
 extern "C" void __stdcall OGGSetLocationW(LPCWSTR textString) 
 {
+	REFUSE_IN_HOST_HANDLER_VOID();
 	ogg.SetUserItem(VORBIS_LOCATION, getValidPointer(textString));
 }
 
@@ -2781,6 +2840,7 @@ extern "C" BSTR __stdcall OGGGetContactW()
  */
 extern "C" void __stdcall OGGSetContactW(LPCWSTR textString) 
 {
+	REFUSE_IN_HOST_HANDLER_VOID();
 	ogg.SetUserItem(VORBIS_CONTACT, getValidPointer(textString));
 }
 
@@ -2805,6 +2865,7 @@ extern "C" BSTR __stdcall OGGGetISRCW()
  */
 extern "C" void __stdcall OGGSetISRCW(LPCWSTR textString) 
 {
+	REFUSE_IN_HOST_HANDLER_VOID();
 	ogg.SetUserItem(VORBIS_ISRC, getValidPointer(textString));
 }
 
@@ -2851,6 +2912,7 @@ extern "C" BSTR __stdcall OGGGetUserItemW(LPCWSTR ItemKey)
  */
 extern "C" void __stdcall OGGSetUserItemW(LPCWSTR ItemKey, LPCWSTR textString) 
 {
+	REFUSE_IN_HOST_HANDLER_VOID();
 	ogg.SetUserItem(getValidPointer(ItemKey), getValidPointer(textString));
 }
 
@@ -2869,6 +2931,7 @@ extern "C" void __stdcall OGGSetUserItemW(LPCWSTR ItemKey, LPCWSTR textString)
  */
 extern "C" short __stdcall OGGSaveChangesToFileW(LPCWSTR FileName)
 {
+	REFUSE_IN_HOST_HANDLER(0);
 	FileName = getValidPointer(FileName);
 	if (IsOggFormat(GetFormat(FileName)))
 		return b2s(ogg.SaveTag(FileName));
@@ -2885,6 +2948,7 @@ extern "C" short __stdcall OGGSaveChangesToFileW(LPCWSTR FileName)
  */
 extern "C" short __stdcall OGGSaveChangesW()
 {
+	REFUSE_IN_HOST_HANDLER(0);
 	return OGGSaveChangesToFileW(lastFile);
 }
 
@@ -2899,6 +2963,7 @@ extern "C" short __stdcall OGGSaveChangesW()
  */
 extern "C" short __stdcall OGGRemoveTagFromFileW(LPCWSTR FileName)
 {
+	REFUSE_IN_HOST_HANDLER(0);
 	FileName = getValidPointer(FileName);
 	if (IsOggFormat(GetFormat(FileName)))
 		return b2s(ogg.RemoveTag(FileName));
@@ -2914,6 +2979,7 @@ extern "C" short __stdcall OGGRemoveTagFromFileW(LPCWSTR FileName)
  */
 extern "C" short __stdcall OGGRemoveTagW()
 {
+	REFUSE_IN_HOST_HANDLER(0);
 	if (IsOggFormat(GetFormat(lastFile)))
 		return b2s(ogg.RemoveTag(lastFile));
 	return b2s(false);
@@ -3177,6 +3243,7 @@ extern "C" short __stdcall WMAGetPictureCountW()
  */
 extern "C" short __stdcall WMAAddPictureFileW(LPCWSTR FileName, LPCWSTR Description, short PictureType, short Index) 
 {
+	REFUSE_IN_HOST_HANDLER(0);
 	return b2s(wma.SetPicture(getValidPointer(FileName), getValidPointer(Description), Index, PictureType));	
 }
 
@@ -3196,6 +3263,7 @@ extern "C" short __stdcall WMAAddPictureFileW(LPCWSTR FileName, LPCWSTR Descript
  */
 extern "C" short __stdcall WMAAddPictureArrayW(BYTE *arr, u32 Length, LPCWSTR Description, short PictureType, short index )
 {
+	REFUSE_IN_HOST_HANDLER(0);
   return b2s(wma.SetPictureArray(arr, Length, getValidPointer(Description), index, PictureType));  
 } 
 
@@ -3229,6 +3297,7 @@ extern "C" BSTR __stdcall WMAGetUserItemW(LPCWSTR ItemKey)
  */
 extern "C" void __stdcall WMASetUserItemW(LPCWSTR ItemKey, LPCWSTR textString) 
 {
+	REFUSE_IN_HOST_HANDLER_VOID();
 	wma.SetUserItem(getValidPointer(ItemKey), getValidPointer(textString));
 }
 
@@ -3256,6 +3325,7 @@ extern "C" BSTR __stdcall WMAGetItemKeysW()
  */
 extern "C" short __stdcall WMADeletePictureW(short Index) 
 {
+	REFUSE_IN_HOST_HANDLER(0);
 	return b2s(wma.DeletePictureFrame(Index));
 }
 
@@ -3269,6 +3339,7 @@ extern "C" short __stdcall WMADeletePictureW(short Index)
  */
 extern "C" void __stdcall WMADeletePicturesW() 
 {
+	REFUSE_IN_HOST_HANDLER_VOID();
 	wma.DeletePictures();
 }
 
@@ -3294,6 +3365,7 @@ extern "C" short __stdcall WMAIsVBRW()
  */
 extern "C" short __stdcall WMASaveChangesToFileW(LPCWSTR FileName) 
 {
+	REFUSE_IN_HOST_HANDLER(0);
 	FileName = getValidPointer(FileName);
 	if (GetFormat(FileName) == AUDIO_FORMAT_WMA)
 	{
@@ -3318,6 +3390,7 @@ extern "C" short __stdcall WMASaveChangesToFileW(LPCWSTR FileName)
  */
 extern "C" short __stdcall WMASaveChangesW()
 {
+	REFUSE_IN_HOST_HANDLER(0);
 	return WMASaveChangesToFileW(lastFile);
 }
 
@@ -3343,6 +3416,7 @@ extern "C" BSTR __stdcall APEGetAlbumW()
  */
 extern "C" void __stdcall APESetAlbumW(LPCWSTR textString)
 {
+	REFUSE_IN_HOST_HANDLER_VOID();
 	ape.SetTagItem(APE_ALBUM, getValidPointer(textString));
 }
 
@@ -3369,6 +3443,7 @@ extern "C" BSTR __stdcall APEGetArtistW()
  */
 extern "C" void __stdcall APESetArtistW(LPCWSTR textString)
 {
+	REFUSE_IN_HOST_HANDLER_VOID();
 	ape.SetTagItem(APE_ARTIST, getValidPointer(textString));
 }
 
@@ -3395,6 +3470,7 @@ extern "C" BSTR __stdcall APEGetCommentW()
  */
 extern "C" void __stdcall APESetCommentW(LPCWSTR textString)
 {
+	REFUSE_IN_HOST_HANDLER_VOID();
 	ape.SetTagItem(APE_COMMENT, getValidPointer(textString));
 }
 
@@ -3421,6 +3497,7 @@ extern "C" BSTR __stdcall APEGetCopyrightW()
  */
 extern "C" void __stdcall APESetCopyrightW(LPCWSTR textString)
 {
+	REFUSE_IN_HOST_HANDLER_VOID();
 	ape.SetTagItem(APE_COPYRIGHT, getValidPointer(textString));
 }
 
@@ -3447,6 +3524,7 @@ extern "C" BSTR __stdcall APEGetGenreW()
  */
 extern "C" void __stdcall APESetGenreW(LPCWSTR textString)
 {
+	REFUSE_IN_HOST_HANDLER_VOID();
 	ape.SetTagItem(APE_GENRE, getValidPointer(textString));
 }
 
@@ -3473,6 +3551,7 @@ extern "C" BSTR __stdcall APEGetTitleW()
  */
 extern "C" void __stdcall APESetTitleW(LPCWSTR textString)
 {
+	REFUSE_IN_HOST_HANDLER_VOID();
 	ape.SetTagItem(APE_TITLE, getValidPointer(textString));
 }
 
@@ -3499,6 +3578,7 @@ extern "C" BSTR __stdcall APEGetTrackW()
  */
 extern "C" void __stdcall APESetTrackW(LPCWSTR textString)
 {
+	REFUSE_IN_HOST_HANDLER_VOID();
 	ape.SetTagItem(APE_TRACK, getValidPointer(textString));
 }
 
@@ -3525,6 +3605,7 @@ extern "C" BSTR __stdcall APEGetYearW()
  */
 extern "C" void __stdcall APESetYearW(LPCWSTR textString)
 {
+	REFUSE_IN_HOST_HANDLER_VOID();
 	ape.SetTagItem(APE_YEAR, getValidPointer(textString));
 }
 
@@ -3605,6 +3686,7 @@ extern "C" BSTR __stdcall APEGetUserItemW(LPCWSTR Key)
  */
 extern "C" void __stdcall APESetUserItemW(LPCWSTR Key, LPCWSTR textString) 
 {
+	REFUSE_IN_HOST_HANDLER_VOID();
 	ape.SetUserDefined(getValidPointer(Key), getValidPointer(textString));
 }
 
@@ -3632,6 +3714,7 @@ extern "C" BSTR __stdcall APEGetItemKeysW()
  */
 extern "C" short __stdcall APESaveChangesToFileW(LPCWSTR FileName)
 {
+	REFUSE_IN_HOST_HANDLER(0);
 	FileName = getValidPointer(FileName);
 	if (GetFormat(FileName) != AUDIO_FORMAT_INVALID)
 		return b2s(ape.SaveToFile(FileName));
@@ -3648,6 +3731,7 @@ extern "C" short __stdcall APESaveChangesToFileW(LPCWSTR FileName)
  */
 extern "C" short __stdcall APESaveChangesW()
 {
+	REFUSE_IN_HOST_HANDLER(0);
 	return APESaveChangesToFileW(lastFile);
 }
 
@@ -3661,6 +3745,7 @@ extern "C" short __stdcall APESaveChangesW()
  */
 extern "C" short __stdcall APERemoveTagFromFileW(LPCWSTR FileName)
 {
+	REFUSE_IN_HOST_HANDLER(0);
 	FileName = getValidPointer(FileName);
 	if (ape.RemoveFromFile(FileName, true))
 	{
@@ -3679,6 +3764,7 @@ extern "C" short __stdcall APERemoveTagFromFileW(LPCWSTR FileName)
  */
 extern "C" short __stdcall APERemoveTagW()
 {
+	REFUSE_IN_HOST_HANDLER(0);
 	if (ape.RemoveFromFile(lastFile, true))
 	{
 		AUDIOAnalyzeFileW(lastFile);
@@ -3711,6 +3797,7 @@ extern "C" BSTR __stdcall ID3V1GetGenreW()
  */
 extern "C" void __stdcall ID3V1SetGenreW(LPCWSTR textString)
 {
+	REFUSE_IN_HOST_HANDLER_VOID();
 	id3v1.SetGenre(getValidPointer(textString));
 }
 
@@ -3741,6 +3828,7 @@ extern "C" BSTR __stdcall ID3V1GetAlbumW()
  */
 extern "C" void __stdcall ID3V1SetAlbumW(LPCWSTR textString)
 {
+	REFUSE_IN_HOST_HANDLER_VOID();
 	id3v1.SetAlbum(getValidPointer(textString));
 }
 
@@ -3771,6 +3859,7 @@ extern "C" BSTR __stdcall ID3V1GetArtistW()
  */
 extern "C" void __stdcall ID3V1SetArtistW(LPCWSTR textString)
 {
+	REFUSE_IN_HOST_HANDLER_VOID();
 	id3v1.SetArtist(getValidPointer(textString));
 }
 
@@ -3797,6 +3886,7 @@ extern "C" BSTR __stdcall ID3V1GetCommentW()
  */
 extern "C" void __stdcall ID3V1SetCommentW(LPCWSTR textString)
 {
+	REFUSE_IN_HOST_HANDLER_VOID();
 	id3v1.SetComment(getValidPointer(textString));
 }
 
@@ -3827,6 +3917,7 @@ extern "C" BSTR __stdcall ID3V1GetTitleW()
  */
 extern "C" void __stdcall ID3V1SetTitleW(LPCWSTR textString)
 {
+	REFUSE_IN_HOST_HANDLER_VOID();
 	id3v1.SetTitle(getValidPointer(textString));
 }
 
@@ -3857,6 +3948,7 @@ extern "C" BSTR __stdcall ID3V1GetTrackW()
  */
 extern "C" void __stdcall ID3V1SetTrackW(LPCWSTR textString)
 {
+	REFUSE_IN_HOST_HANDLER_VOID();
 	id3v1.SetTrack(getValidPointer(textString));
 }
 
@@ -3883,6 +3975,7 @@ extern "C" BSTR __stdcall ID3V1GetYearW()
  */
 extern "C" void __stdcall ID3V1SetYearW(LPCWSTR textString)
 {
+	REFUSE_IN_HOST_HANDLER_VOID();
 	id3v1.SetYear(getValidPointer(textString));
 }
 
@@ -3907,6 +4000,7 @@ extern "C" short __stdcall ID3V1GetGenreIDW()
  */
 extern "C" void __stdcall ID3V1SetGenreIDW(short nNewValue) 
 {
+	REFUSE_IN_HOST_HANDLER_VOID();
 	id3v1.SetGenreID(nNewValue);
 }
 
@@ -3962,6 +4056,7 @@ extern "C" short __stdcall ID3V1GetSpeedW()
  */
 extern "C" void __stdcall ID3V1SetSpeedW(short speed)
 {
+	REFUSE_IN_HOST_HANDLER_VOID();
 	id3v1.SetSpeed(speed);
 }
 
@@ -3992,6 +4087,7 @@ extern "C" BSTR __stdcall ID3V1GetEnhancedGenreW()
  */
 extern "C" void __stdcall ID3V1SetEnhancedGenreW(LPCWSTR textString)
 {
+	REFUSE_IN_HOST_HANDLER_VOID();
 	id3v1.SetEnhancedGenre(getValidPointer(textString));
 }
 
@@ -4021,6 +4117,7 @@ extern "C" BSTR __stdcall ID3V1GetStartTimeW()
  */
 extern "C" void __stdcall ID3V1SetStartTimeW(LPCWSTR textString)
 {
+	REFUSE_IN_HOST_HANDLER_VOID();
 	if (!id3v1.SetTime(false, getValidPointer(textString)))
 		CTools::instance().writeWarning(L"ID3v1 start time '%s' ignored: the form is mmm:ss", getValidPointer(textString));
 }
@@ -4051,6 +4148,7 @@ extern "C" BSTR __stdcall ID3V1GetEndTimeW()
  */
 extern "C" void __stdcall ID3V1SetEndTimeW(LPCWSTR textString)
 {
+	REFUSE_IN_HOST_HANDLER_VOID();
 	if (!id3v1.SetTime(true, getValidPointer(textString)))
 		CTools::instance().writeWarning(L"ID3v1 end time '%s' ignored: the form is mmm:ss", getValidPointer(textString));
 }
@@ -4092,6 +4190,7 @@ extern "C" BSTR __stdcall ID3V1GetVersionW()
  */
 extern "C" short __stdcall ID3V1RemoveTagFromFileW(LPCWSTR FileName)
 {
+	REFUSE_IN_HOST_HANDLER(0);
 	FileName = getValidPointer(FileName);
 	if (lyrics.Exists())
 		lyrics.RemoveFromFile(FileName);
@@ -4112,6 +4211,7 @@ extern "C" short __stdcall ID3V1RemoveTagFromFileW(LPCWSTR FileName)
  */
 extern "C" short __stdcall ID3V1RemoveTagW()
 {
+	REFUSE_IN_HOST_HANDLER(0);
 	if (lyrics.Exists())
 		lyrics.RemoveFromFile(lastFile);
 	if (id3v1.RemoveFromFile(lastFile))
@@ -4132,6 +4232,7 @@ extern "C" short __stdcall ID3V1RemoveTagW()
  */
 extern "C" short __stdcall ID3V1SaveChangesToFileW(LPCWSTR FileName)
 {
+	REFUSE_IN_HOST_HANDLER(0);
 	FileName = getValidPointer(FileName);
 	if (GetFormat(FileName) != AUDIO_FORMAT_INVALID)
 		return b2s(id3v1.SaveToFile(FileName));
@@ -4148,6 +4249,7 @@ extern "C" short __stdcall ID3V1SaveChangesToFileW(LPCWSTR FileName)
  */
 extern "C" short __stdcall ID3V1SaveChangesW()
 {
+	REFUSE_IN_HOST_HANDLER(0);
 	return ID3V1SaveChangesToFileW(lastFile);
 }
 
@@ -4228,6 +4330,7 @@ extern "C" BSTR __stdcall LYRICSGetAlbumW()
  */
 extern "C" void __stdcall LYRICSSetAlbumW(LPCWSTR textString)
 {
+	REFUSE_IN_HOST_HANDLER_VOID();
 	lyrics.SetAlbum(getValidPointer(textString));
 }
 
@@ -4254,6 +4357,7 @@ extern "C" BSTR __stdcall LYRICSGetArtistW()
  */
 extern "C" void __stdcall LYRICSSetArtistW(LPCWSTR textString)
 {
+	REFUSE_IN_HOST_HANDLER_VOID();
 	lyrics.SetArtist(getValidPointer(textString));
 }
 
@@ -4280,6 +4384,7 @@ extern "C" BSTR __stdcall LYRICSGetAuthorW()
  */
 extern "C" void __stdcall LYRICSSetAuthorW(LPCWSTR textString)
 {
+	REFUSE_IN_HOST_HANDLER_VOID();
 	lyrics.SetAuthor(getValidPointer(textString));
 }
 
@@ -4306,6 +4411,7 @@ extern "C" BSTR __stdcall LYRICSGetGenreW()
  */
 extern "C" void __stdcall LYRICSSetGenreW(LPCWSTR textString)
 {
+	REFUSE_IN_HOST_HANDLER_VOID();
 	lyrics.SetGenre(getValidPointer(textString));
 }
 
@@ -4332,6 +4438,7 @@ extern "C" BSTR __stdcall LYRICSGetImageLinkW()
  */
 extern "C" void __stdcall LYRICSSetImageLinkW(LPCWSTR textString)
 {
+	REFUSE_IN_HOST_HANDLER_VOID();
 	lyrics.SetImageLink(getValidPointer(textString));
 }
 
@@ -4358,6 +4465,7 @@ extern "C" BSTR __stdcall LYRICSGetIndicationW()
  */
 extern "C" void __stdcall LYRICSSetIndicationW(LPCWSTR textString)
 {
+	REFUSE_IN_HOST_HANDLER_VOID();
 	lyrics.SetIndication(getValidPointer(textString));
 }
 
@@ -4384,6 +4492,7 @@ extern "C" BSTR __stdcall LYRICSGetInformationW()
  */
 extern "C" void __stdcall LYRICSSetInformationW(LPCWSTR textString)
 {
+	REFUSE_IN_HOST_HANDLER_VOID();
 	lyrics.SetInformation(getValidPointer(textString));
 }
 
@@ -4410,6 +4519,7 @@ extern "C" BSTR __stdcall LYRICSGetLyricsW()
  */
 extern "C" void __stdcall LYRICSSetLyricsW(LPCWSTR textString)
 {
+	REFUSE_IN_HOST_HANDLER_VOID();
 	lyrics.SetLyrics(getValidPointer(textString));
 }
 
@@ -4436,6 +4546,7 @@ extern "C" BSTR __stdcall LYRICSGetTitleW()
  */
 extern "C" void __stdcall LYRICSSetTitleW(LPCWSTR textString)
 {
+	REFUSE_IN_HOST_HANDLER_VOID();
 	lyrics.SetTitle(getValidPointer(textString));
 }
 
@@ -4450,6 +4561,7 @@ extern "C" void __stdcall LYRICSSetTitleW(LPCWSTR textString)
  */
 extern "C" short __stdcall LYRICSRemoveTagFromFileW(LPCWSTR FileName)
 {
+	REFUSE_IN_HOST_HANDLER(0);
 	FileName = getValidPointer(FileName);
 	if (lyrics.RemoveFromFile(FileName))
 	{    
@@ -4468,6 +4580,7 @@ extern "C" short __stdcall LYRICSRemoveTagFromFileW(LPCWSTR FileName)
  */
 extern "C" short __stdcall LYRICSRemoveTagW()
 {
+	REFUSE_IN_HOST_HANDLER(0);
 	if (lyrics.RemoveFromFile(lastFile))
 	{    
 		AUDIOAnalyzeFileW(lastFile);
@@ -4486,6 +4599,7 @@ extern "C" short __stdcall LYRICSRemoveTagW()
  */
 extern "C" short __stdcall LYRICSSaveChangesToFileW(LPCWSTR FileName)
 {
+	REFUSE_IN_HOST_HANDLER(0);
 	FileName = getValidPointer(FileName);
 	if (GetFormat(FileName) != AUDIO_FORMAT_INVALID)
 		return b2s(lyrics.SaveToFile(FileName));
@@ -4508,6 +4622,7 @@ extern "C" short __stdcall LYRICSSaveChangesToFileW(LPCWSTR FileName)
  */
 extern "C" short __stdcall LYRICSSaveChangesW()
 {
+	REFUSE_IN_HOST_HANDLER(0);
 	return LYRICSSaveChangesToFileW(lastFile);
 }
 
@@ -4540,6 +4655,7 @@ extern "C" BSTR __stdcall ID3V2GetTextFrameW(u32 FrameID)
  */
 extern "C" void __stdcall ID3V2SetTextFrameW(u32 FrameID, LPCWSTR textString)
 {
+	REFUSE_IN_HOST_HANDLER_VOID();
 	if (textString == NULL || wcslen(textString) == 0)
 		id3v2.deleteFrame(FrameID);
 	else
@@ -4571,6 +4687,7 @@ extern "C" BSTR __stdcall ID3V2GetURLFrameW(u32 FrameID)
  */
 extern "C" void __stdcall ID3V2SetURLFrameW(u32 FrameID, LPCWSTR textString)
 {
+	REFUSE_IN_HOST_HANDLER_VOID();
 	if (textString == NULL || wcslen(textString) == 0)
 		id3v2.deleteFrame(FrameID);
 	else
@@ -4599,6 +4716,7 @@ extern "C" short __stdcall ID3V2GetFrameCountW(u32 FrameID)
  */
 extern "C" short __stdcall ID3V2DeleteAllFramesW(u32 FrameID)
 {
+	REFUSE_IN_HOST_HANDLER(0);
 	return (id3v2.deleteAllFrames(FrameID) == 0) ? 0 : -1 ;
 }
 
@@ -4613,6 +4731,7 @@ extern "C" short __stdcall ID3V2DeleteAllFramesW(u32 FrameID)
  */
 extern "C" short __stdcall ID3V2DeleteSelectedFrameW(u32 FrameID, short Index)
 {
+	REFUSE_IN_HOST_HANDLER(0);
 	return b2s(id3v2.deleteFrame(FrameID, Index));
 }
 
@@ -4631,6 +4750,7 @@ extern "C" short __stdcall ID3V2DeleteSelectedFrameW(u32 FrameID, short Index)
  */
 extern "C" short __stdcall ID3V2SetFormatAndEncodingW(short format, short encoding)
 {
+	REFUSE_IN_HOST_HANDLER(0);
 	return b2s(id3v2.setTargetFormatAndEncoding((BYTE)format, (BYTE)encoding));
 }
 
@@ -4692,12 +4812,14 @@ extern "C" short __stdcall ID3V2GetEncodingW(u32 FrameID)
  * <b>DOEVENTSMILLIS</b>
  *
  * During a long operation (reading a large file, calculating the MD5 value, rewriting a file) the library lets the thread that
- * called it process its window messages, like DoEvents of Visual Basic, so that the user interface of the application (for
- * example a progress bar) stays alive. This happens at most once in the given number of milliseconds; the value 0 means
- * at every opportunity, a very large value practically switches it off. Each time all messages that are waiting for the
- * thread are dispatched, but not more than 100. A message handler of the application can start another library call: that
- * inner call does not process messages again. A WM_QUIT message is posted again, so that the message loop of the application still
- * receives it. A thread without a message loop (for example a worker thread) has no waiting messages, nothing happens there.
+ * called it process its window messages, like DoEvents of Visual Basic, so that the user interface of the application stays alive
+ * (it is repainted and does not become "not responding"). The library reports no progress within one call: a progress bar can only
+ * advance between two calls. This happens at most once in the given number of milliseconds; the value 0 means at every opportunity,
+ * a very large value practically switches it off. Each time all messages that are waiting for the thread are dispatched, but not
+ * more than 100. A message handler of the application may call the getters then; a function that changes the data or writes a file
+ * does nothing and fails with error 228 (busy), because it would work on the data of the running operation. A WM_QUIT message is posted
+ * again, so that the message loop of the application still receives it. A thread without a message loop (for example a worker
+ * thread) has no waiting messages, nothing happens there.
  *
  * <b>MPEGEXACTREAD</b>
  *
@@ -4741,6 +4863,7 @@ extern "C" short __stdcall ID3V2GetEncodingW(u32 FrameID)
  */
 extern "C" void __stdcall SetConfigValueW(long key, long value)
 {
+	REFUSE_IN_HOST_HANDLER_VOID();
 	CTools::instance().setConfigValue(key, value);
 }
 /**
@@ -4797,6 +4920,7 @@ extern "C" BSTR __stdcall ID3V2GetGenreW()
  */
 extern "C" void __stdcall ID3V2SetGenreW(LPCWSTR textString)
 {
+	REFUSE_IN_HOST_HANDLER_VOID();
 	id3v2.SetText(F_TCON, getValidPointer(textString));
 }
 
@@ -4828,6 +4952,7 @@ extern "C" long __stdcall ID3V2GetPlayCounterW()
  */
 extern "C" void __stdcall ID3V2SetPlayCounterW(long counter) 
 {
+	REFUSE_IN_HOST_HANDLER_VOID();
 	id3v2.replaceFrame(new CID3F_PCNT(counter));	
 }
 
@@ -4897,6 +5022,7 @@ extern "C" BSTR __stdcall ID3V2GetVersionW()
  */
 extern "C" short __stdcall ID3V2AddCommentW(LPCWSTR Language, LPCWSTR Description, LPCWSTR Text)
 {
+	REFUSE_IN_HOST_HANDLER(0);
 	return b2s(id3v2.replaceFrame(new CID3F_COMM(getValidPointer(Language), getValidPointer(Description), getValidPointer(Text))));	
 }
 
@@ -4962,6 +5088,7 @@ extern "C" BSTR __stdcall ID3V2GetCommentW(short Index)
  */
 extern "C" short __stdcall ID3V2ImportCueFileW(LPCWSTR FileName)
 {
+	REFUSE_IN_HOST_HANDLER(0);
 	return b2s(id3v2.parseCueFile(getValidPointer(FileName)));
 }
 
@@ -4981,6 +5108,7 @@ extern "C" short __stdcall ID3V2ImportCueFileW(LPCWSTR FileName)
  */
 extern "C" short __stdcall ID3V2AddLyricW(LPCWSTR Language, LPCWSTR Description, LPCWSTR Text)
 {
+	REFUSE_IN_HOST_HANDLER(0);
 	return b2s(id3v2.replaceFrame(new CID3F_USLT(getValidPointer(Language), getValidPointer(Description), getValidPointer(Text))));	
 }
 
@@ -5174,6 +5302,7 @@ extern "C" long __stdcall ID3V2GetPictureArrayW(BYTE *arr, u32 maxLen, short Ind
  */
 extern "C" short __stdcall ID3V2AddPictureFileW(LPCWSTR FileName, LPCWSTR Description, short PictureType, short asLink)
 {
+	REFUSE_IN_HOST_HANDLER(0);
 	CID3F_APIC *pic = new CID3F_APIC((BYTE)PictureType, getValidPointer(Description));
 	bool result = (asLink) ? pic->setFileLink(getValidPointer(FileName)) : pic->setPictureFile(getValidPointer(FileName));
 	if (result)
@@ -5201,6 +5330,7 @@ extern "C" short __stdcall ID3V2AddPictureFileW(LPCWSTR FileName, LPCWSTR Descri
  */
 extern "C" short __stdcall ID3V2AddPictureArrayW(BYTE *arr, u32 Length, LPCWSTR Description, short PictureType)
 {
+	REFUSE_IN_HOST_HANDLER(0);
 	CID3F_APIC *pic = new CID3F_APIC((BYTE)PictureType, getValidPointer(Description));
 	pic->setData(arr, Length);	
 	return b2s(id3v2.replaceFrame(pic));
@@ -5227,6 +5357,7 @@ extern "C" short __stdcall ID3V2AddPictureArrayW(BYTE *arr, u32 Length, LPCWSTR 
  */
 extern "C" short __stdcall ID3V2AddAudioEncryptionW(BYTE *arr, u32 maxLen, LPCWSTR URL, short PreviewStart, short PreviewLength)
 {
+	REFUSE_IN_HOST_HANDLER(0);
 	CID3F_AENC *f = new CID3F_AENC(getValidPointer(URL), PreviewStart, PreviewLength);
 	f->setData(arr, maxLen);
 	return b2s(id3v2.replaceFrame(f));
@@ -5318,6 +5449,7 @@ extern "C" short __stdcall ID3V2GetAudioEncryptionPreviewLengthW(short Index)
  */
 extern "C" short __stdcall ID3V2AddAudioSeekPointW(BYTE *arr, u32 maxLen, long start, long length, short numbers, BYTE BitsPerPoint)
 {
+	REFUSE_IN_HOST_HANDLER(0);
 	CID3F_ASPI *f = new CID3F_ASPI(start, length, numbers, BitsPerPoint);
 	f->setData(arr, maxLen);
 	return b2s(id3v2.replaceFrame(f));
@@ -5417,6 +5549,7 @@ extern "C" long __stdcall ID3V2GetAudioSeekPointDataW(BYTE *arr, u32 maxLen)
  */
 extern "C" short __stdcall ID3V2AddCommercialFrameW(BYTE *arr, u32 maxLen, LPCWSTR Price, LPCWSTR validUntil, LPCWSTR contactUrl , short receivedAs , LPCWSTR seller, LPCWSTR description)
 {
+	REFUSE_IN_HOST_HANDLER(0);
 	CID3F_COMR *f = new CID3F_COMR(getValidPointer(Price), getValidPointer(validUntil), getValidPointer(contactUrl), (BYTE)receivedAs, getValidPointer(seller), getValidPointer(description));
 	f->setPicture(arr, maxLen);
 	return b2s(id3v2.replaceFrame(f));
@@ -5572,6 +5705,7 @@ extern "C" short __stdcall ID3V2GetCommercialFrameReceivedAsW(short Index)
  */
 extern "C" short __stdcall ID3V2AddTableOfContentW(LPCWSTR ID, LPCWSTR title, LPCWSTR Description, short isOrdered)
 {
+	REFUSE_IN_HOST_HANDLER(0);
 	// if no CTOC exists yet, set the ROOT flag to true
 	CID3F_CTOC *f = new CID3F_CTOC(getValidPointer(ID), getValidPointer(title), getValidPointer(Description), (isOrdered != 0));
 	if (id3v2.findFrame(F_CTOC) == NULL)
@@ -5597,6 +5731,7 @@ extern "C" short __stdcall ID3V2AddTableOfContentW(LPCWSTR ID, LPCWSTR title, LP
  */
 extern "C" short __stdcall ID3V2AddChapterW(LPCWSTR ID, LPCWSTR title, LPCWSTR Description, u32 startTime, u32 endTime)
 {
+	REFUSE_IN_HOST_HANDLER(0);
 	CID3F_CHAP *f = new CID3F_CHAP(getValidPointer(ID), getValidPointer(title), getValidPointer(Description));
 	f->setTimes(startTime, endTime);
 	return b2s(id3v2.replaceFrame(f));
@@ -5613,6 +5748,7 @@ extern "C" short __stdcall ID3V2AddChapterW(LPCWSTR ID, LPCWSTR title, LPCWSTR D
  */
 extern "C" short __stdcall ID3V2AddChildElementW(LPCWSTR ParentTocID, LPCWSTR ChildID)
 {
+	REFUSE_IN_HOST_HANDLER(0);
 	id3frame = id3v2.findFrame(getValidPointer(ParentTocID));
 	// findFrame(ID) also returns chapters (CHAP); only a table of contents (CTOC) has child elements
 	if (id3frame == NULL || !cCHAPTER(id3frame)->isCTOC())
@@ -5632,6 +5768,7 @@ extern "C" short __stdcall ID3V2AddChildElementW(LPCWSTR ParentTocID, LPCWSTR Ch
  */
 extern "C" short __stdcall ID3V2DeleteChildElementW(LPCWSTR ParentTocID, LPCWSTR ChildID)
 {
+	REFUSE_IN_HOST_HANDLER(0);
 	id3frame = id3v2.findFrame(getValidPointer(ParentTocID));
 	if (id3frame == NULL || !cCHAPTER(id3frame)->isCTOC())
 		return b2s(false);
@@ -5648,6 +5785,7 @@ extern "C" short __stdcall ID3V2DeleteChildElementW(LPCWSTR ParentTocID, LPCWSTR
  */
 extern "C" short __stdcall ID3V2DeleteAddendumW(LPCWSTR ID)
 {
+	REFUSE_IN_HOST_HANDLER(0);
 	ATLTRACE(_T("deleting %s\n"), ID);
 	CID3_Frame *delFrame = id3v2.findFrame(getValidPointer(ID));
 	if (delFrame == NULL)
@@ -5707,6 +5845,7 @@ extern "C" BSTR __stdcall ID3V2GetAddendumTitleW(LPCWSTR ID)
  */
 extern "C" short __stdcall ID3V2SetAddendumTitleW(LPCWSTR ID, LPCWSTR newTitle)
 {
+	REFUSE_IN_HOST_HANDLER(0);
 	id3frame = id3v2.findFrame(getValidPointer(ID));
 	if (id3frame == NULL)
 		return b2s(false);
@@ -5728,6 +5867,7 @@ extern "C" short __stdcall ID3V2SetAddendumTitleW(LPCWSTR ID, LPCWSTR newTitle)
  */
 extern "C" short __stdcall ID3V2SetChapterTimesW(LPCWSTR ID, u32 startTime, u32 endTime)
 {
+	REFUSE_IN_HOST_HANDLER(0);
 	id3frame = id3v2.findFrame(getValidPointer(ID));
 	if (id3frame == NULL)
 		return b2s(false);
@@ -5765,6 +5905,7 @@ extern "C" BSTR __stdcall ID3V2GetAddendumDescriptionW(LPCWSTR ID)
  */
 extern "C" short __stdcall ID3V2SetAddendumDescriptionW(LPCWSTR ID, LPCWSTR newDescription)
 {
+	REFUSE_IN_HOST_HANDLER(0);
 	id3frame = id3v2.findFrame(getValidPointer(ID));
 	if (id3frame == NULL)
 		return b2s(false);
@@ -6122,6 +6263,7 @@ extern "C" BSTR __stdcall ID3V2GetChildElementIDW(LPCWSTR ID, short Index)
  */
 extern "C" short __stdcall ID3V2SetTextSubFrameW(LPCWSTR ID, u32 FrameID, LPCWSTR textString, LPCWSTR description)
 {
+	REFUSE_IN_HOST_HANDLER(0);
 	id3frame = id3v2.findFrame(getValidPointer(ID));
 	if (id3frame == NULL)
 		return b2s(false);
@@ -6151,6 +6293,7 @@ extern "C" short __stdcall ID3V2SetTextSubFrameW(LPCWSTR ID, u32 FrameID, LPCWST
  */
 extern "C" short __stdcall ID3V2SetURLSubFrameW(LPCWSTR ID, u32 FrameID, LPCWSTR urlString, LPCWSTR description)
 {
+	REFUSE_IN_HOST_HANDLER(0);
 	id3frame = id3v2.findFrame(getValidPointer(ID));
 	if (id3frame == NULL)
 		return b2s(false);
@@ -6181,6 +6324,7 @@ extern "C" short __stdcall ID3V2SetURLSubFrameW(LPCWSTR ID, u32 FrameID, LPCWSTR
  */
 extern "C" short __stdcall ID3V2SetImageSubFrameW(BYTE *arr, u32 maxLen, LPCWSTR ID, LPCWSTR Description, short PictureType)
 {
+	REFUSE_IN_HOST_HANDLER(0);
 	id3frame = id3v2.findFrame(getValidPointer(ID));
 	if (id3frame == NULL)
 		return b2s(false);
@@ -6201,6 +6345,7 @@ extern "C" short __stdcall ID3V2SetImageSubFrameW(BYTE *arr, u32 maxLen, LPCWSTR
  */
 extern "C" short __stdcall ID3V2DeleteSubFrameW(LPCWSTR ID, u32 FrameID)
 {
+	REFUSE_IN_HOST_HANDLER(0);
 	id3frame = id3v2.findFrame(getValidPointer(ID));
 	if (id3frame == NULL)
 		return b2s(false);
@@ -6225,6 +6370,7 @@ extern "C" short __stdcall ID3V2DeleteSubFrameW(LPCWSTR ID, u32 FrameID)
  */
 extern "C" short __stdcall ID3V2AddEncryptionW(BYTE *arr, u32 maxLen, LPCWSTR URL, short Symbol)
 {
+	REFUSE_IN_HOST_HANDLER(0);
 	CID3F_ENCR *f = new CID3F_ENCR(getValidPointer(URL), (BYTE)Symbol);
 	f->setData(arr, maxLen);
 	return b2s(id3v2.replaceFrame(f));
@@ -6297,6 +6443,7 @@ extern "C" long __stdcall ID3V2GetEncryptionDataW(BYTE *arr, u32 maxLen, short I
  */
 extern "C" short __stdcall ID3V2AddEqualisationW(BYTE *arr, u32 maxLen, BYTE Interpolationmethod, LPCWSTR Identification)
 {
+	REFUSE_IN_HOST_HANDLER(0);
 	CID3F_EQUA *f = new CID3F_EQUA(Interpolationmethod, getValidPointer(Identification));
 	f->setData(arr, maxLen);
 	return b2s(id3v2.replaceFrame(f));
@@ -6381,6 +6528,7 @@ extern "C" long __stdcall ID3V2GetEqualisationDataW(BYTE *arr, u32 maxLen, short
  */
 extern "C" short __stdcall ID3V2AddEventTimingCodesW(BYTE *arr, u32 maxLen, BYTE TimestampFormat)
 {
+	REFUSE_IN_HOST_HANDLER(0);
 	CID3F_ETCO *f = new CID3F_ETCO(TimestampFormat);
 	f->setData(arr, maxLen);
 	return b2s(id3v2.replaceFrame(f));
@@ -6436,6 +6584,7 @@ extern "C" long __stdcall ID3V2GetEventTimingCodesDataW(BYTE *arr, u32 maxLen)
  */
 extern "C" short __stdcall ID3V2AddGeneralObjectW(BYTE *arr, u32 maxLen, LPCWSTR Mime, LPCWSTR FileName, LPCWSTR Description)
 {
+	REFUSE_IN_HOST_HANDLER(0);
 	CID3F_GEOB *f = new CID3F_GEOB(getValidPointer(Mime), getValidPointer(FileName), getValidPointer(Description));
 	f->setData(arr, maxLen);
 	return b2s(id3v2.replaceFrame(f));
@@ -6524,6 +6673,7 @@ extern "C" long __stdcall ID3V2GetGeneralObjectDataW(BYTE *arr, u32 maxLen, shor
  */
 extern "C" short __stdcall ID3V2AddGroupIdentificationW(BYTE *arr, u32 length, LPCWSTR Url, BYTE symbol)
 {
+	REFUSE_IN_HOST_HANDLER(0);
 	CID3F_GRID *f = new CID3F_GRID(getValidPointer(Url), symbol);
 	f->setData(arr, length);
 	return b2s(id3v2.replaceFrame(f));
@@ -6595,6 +6745,7 @@ extern "C" long __stdcall ID3V2GetGroupIdentificationDataW(BYTE *arr, u32 maxLen
  */
 extern "C" short __stdcall ID3V2AddLinkedInformationW(long FrameIdentifier, LPCWSTR URL, LPCWSTR additionalData)
 {
+	REFUSE_IN_HOST_HANDLER(0);
 	return b2s(id3v2.replaceFrame(new CID3F_LINK(FrameIdentifier, getValidPointer(URL), getValidPointer(additionalData))));	
 }
 /**
@@ -6658,6 +6809,7 @@ extern "C" BSTR __stdcall ID3V2GetLinkedInformationAdditionalDataW(short Index)
  */
 extern "C" short __stdcall ID3V2AddMusicCdIdentifierW(BYTE *arr, u32 length)
 {
+	REFUSE_IN_HOST_HANDLER(0);
 	CID3F_MCDI *f = new CID3F_MCDI();
 	f->setData(arr, length);
 	return b2s(id3v2.replaceFrame(f));
@@ -6699,6 +6851,7 @@ extern "C" long __stdcall ID3V2GetMusicCdIdentifierDataW(BYTE *arr, u32 maxLen)
  */
 extern "C" short __stdcall ID3V2AddMpegLocationLookupTableW(BYTE *arr, u32 length, long Frames, long Bytes, long Milliseconds, BYTE BytesDeviation, BYTE MillisecondsDeviation)
 {
+	REFUSE_IN_HOST_HANDLER(0);
 	CID3F_MLLT *f = new CID3F_MLLT(Frames, Bytes, Milliseconds, BytesDeviation, MillisecondsDeviation);
 	f->setData(arr, length);
 	return b2s(id3v2.replaceFrame(f));
@@ -6807,6 +6960,7 @@ extern "C" long __stdcall ID3V2GetMpegLocationLookupTableMillisecondsDeviationW(
  */
 extern "C" short __stdcall ID3V2AddOwnershipW(LPCWSTR Price, LPCWSTR dateString, LPCWSTR Seller)
 {
+	REFUSE_IN_HOST_HANDLER(0);
 	return b2s(id3v2.replaceFrame(new CID3F_OWNE(getValidPointer(Price), getValidPointer(dateString), getValidPointer(Seller))));	
 }
 
@@ -6871,6 +7025,7 @@ extern "C" BSTR __stdcall ID3V2GetOwnershipSellerW()
  */
 extern "C" short __stdcall ID3V2AddPositionSynchronisationW(BYTE TimestampFormat, long Position)
 {
+	REFUSE_IN_HOST_HANDLER(0);
 	return b2s(id3v2.replaceFrame(new CID3F_POSS(TimestampFormat, Position)));	
 }
 /**
@@ -6919,6 +7074,7 @@ extern "C" long __stdcall ID3V2GetPositionSynchronisationValueW()
  */
 extern "C" short __stdcall ID3V2AddPrivateFrameW(BYTE *arr, u32 length, LPCWSTR URL)
 {
+	REFUSE_IN_HOST_HANDLER(0);
 	CID3F_PRIV *f = new CID3F_PRIV(getValidPointer(URL));
 	f->setData(arr, length);
 	return b2s(id3v2.replaceFrame(f));
@@ -6975,6 +7131,7 @@ extern "C" long __stdcall ID3V2GetPrivateFrameDataW(BYTE *arr, u32 maxLen, short
  */
 extern "C" short __stdcall ID3V2AddRecommendedBufferSizeW(long BufferSize, BYTE EmbeddedInfoFlag, long Offset)
 {
+	REFUSE_IN_HOST_HANDLER(0);
 	return b2s(id3v2.replaceFrame(new CID3F_RBUF(BufferSize, EmbeddedInfoFlag, Offset )));
 }
 /**
@@ -7036,6 +7193,7 @@ extern "C" long __stdcall ID3V2GetRecommendedBufferSizeOffsetW()
  */
 extern "C" short __stdcall ID3V2AddRelativeVolumeAdjustmentW(BYTE *arr, u32 length, LPCWSTR Identifier)
 {
+	REFUSE_IN_HOST_HANDLER(0);
 	CID3F_RVAD *f = new CID3F_RVAD(getValidPointer(Identifier));
 	f->setData(arr, length);
 	return b2s(id3v2.replaceFrame(f));
@@ -7099,6 +7257,7 @@ extern "C" BSTR __stdcall ID3V2GetRelativeVolumeAdjustmentIdentifierW(short Inde
  */
 extern "C" short __stdcall ID3V2AddReverbW(short reverbLeft, short reverbRight, BYTE bouncesLeft, BYTE bouncesRight, BYTE feedbackLeftToLeft, BYTE feedbackLeftToRight, BYTE feedbackRightToRight, BYTE feedbackRightToLeft, BYTE premixLeftToRight, BYTE premixRightToLeft)
 {
+	REFUSE_IN_HOST_HANDLER(0);
 	return b2s(id3v2.replaceFrame(new CID3F_RVRB(reverbLeft, reverbRight, bouncesLeft, bouncesRight, feedbackLeftToLeft, feedbackLeftToRight, feedbackRightToRight, feedbackRightToLeft,  premixLeftToRight, premixRightToLeft)));
 }
 /**
@@ -7257,6 +7416,7 @@ extern "C" short __stdcall ID3V2GetReverbPremixRightToLeftW()
  */
 extern "C" short __stdcall ID3V2AddSeekOffsetW(long offset)
 {
+	REFUSE_IN_HOST_HANDLER(0);
 	return b2s(id3v2.replaceFrame(new CID3F_SEEK(offset)));
 }
 
@@ -7291,6 +7451,7 @@ extern "C" long __stdcall ID3V2GetSeekOffsetW()
  */
 extern "C" short __stdcall ID3V2AddSignatureFrameW(BYTE *arr, u32 length, short GroupSymbol)
 {
+	REFUSE_IN_HOST_HANDLER(0);
 	CID3F_SIGN *f = new CID3F_SIGN((BYTE)GroupSymbol);
 	f->setData(arr, length);
 	return b2s(id3v2.replaceFrame(f));
@@ -7347,6 +7508,7 @@ extern "C" short __stdcall ID3V2GetSignatureFrameGroupSymbolW(short Index)
  */
 extern "C" short __stdcall ID3V2AddSynchronizedTempoW(BYTE *arr, u32 length, short format)
 {
+	REFUSE_IN_HOST_HANDLER(0);
 	CID3F_SYTC *f = new CID3F_SYTC((BYTE)format);
 	f->setData(arr, length);
 	return b2s(id3v2.replaceFrame(f));
@@ -7401,6 +7563,7 @@ extern "C" short __stdcall ID3V2GetSynchronizedTempoFormatW()
  */
 extern "C" short __stdcall ID3V2AddUniqueFileIdentifierW(BYTE *arr, u32 length, LPCWSTR Owner)
 {
+	REFUSE_IN_HOST_HANDLER(0);
 	CID3F_UFID *f = new CID3F_UFID(getValidPointer(Owner));
 	f->setData(arr, length);
 	return b2s(id3v2.replaceFrame(f));
@@ -7455,6 +7618,7 @@ extern "C" long __stdcall ID3V2GetUniqueFileIdentifierDataW(BYTE *arr, u32 maxLe
  */
 extern "C" short __stdcall ID3V2AddUserFrameW(LPCWSTR Language, LPCWSTR Text)
 {
+	REFUSE_IN_HOST_HANDLER(0);
 	return b2s(id3v2.replaceFrame(new CID3F_USER(getValidPointer(Text), getValidPointer(Language))));	
 }
 
@@ -7507,6 +7671,7 @@ extern "C" BSTR __stdcall ID3V2GetUserFrameW(short Index)
  */
 extern "C" short __stdcall ID3V2AddUserTextW(LPCWSTR Description, LPCWSTR Text)
 {
+	REFUSE_IN_HOST_HANDLER(0);
 	return b2s(id3v2.replaceFrame(new CID3F_TXXX(getValidPointer(Description), getValidPointer(Text))));	
 }
 
@@ -7561,6 +7726,7 @@ extern "C" BSTR __stdcall ID3V2GetUserTextW(short Index)
  */
 extern "C" short __stdcall ID3V2AddUserURLW(LPCWSTR Description, LPCWSTR URL)
 {
+	REFUSE_IN_HOST_HANDLER(0);
 	return b2s(id3v2.replaceFrame(new CID3F_WXXX(getValidPointer(Description), getValidPointer(URL))));	
 }
 
@@ -7610,6 +7776,7 @@ extern "C" BSTR __stdcall ID3V2GetUserURLW(short Index)
  */
 extern "C" short __stdcall ID3V2RemoveTagFromFileW(LPCWSTR FileName)
 {
+	REFUSE_IN_HOST_HANDLER(0);
 	if (id3v2.RemoveFromFile(getValidPointer(FileName)))
 	{
 		AUDIOAnalyzeFileW(getValidPointer(FileName));
@@ -7626,6 +7793,7 @@ extern "C" short __stdcall ID3V2RemoveTagFromFileW(LPCWSTR FileName)
  */
 extern "C" short __stdcall ID3V2RemoveTagW()
 {
+	REFUSE_IN_HOST_HANDLER(0);
 	if (id3v2.RemoveFromFile(lastFile))
 	{
 		return b2s(true);	
@@ -7644,6 +7812,7 @@ extern "C" short __stdcall ID3V2RemoveTagW()
  */
 extern "C" short __stdcall ID3V2SaveChangesToFileW(LPCWSTR FileName)
 {
+	REFUSE_IN_HOST_HANDLER(0);
 	FileName = getValidPointer(FileName);	
 	if (GetFormat(FileName) != AUDIO_FORMAT_INVALID)
 		return b2s(id3v2.SaveToFile(FileName));
@@ -7660,6 +7829,7 @@ extern "C" short __stdcall ID3V2SaveChangesToFileW(LPCWSTR FileName)
  */
 extern "C" short __stdcall ID3V2SaveChangesW()
 {
+	REFUSE_IN_HOST_HANDLER(0);
 	return ID3V2SaveChangesToFileW(lastFile);
 }
 
@@ -7802,6 +7972,7 @@ extern "C" short __stdcall ID3V2GetSyncLyricContentTypeW(short Index)
  */
 extern "C" short __stdcall ID3V2AddSyncLyricW(LPCWSTR Language, LPCWSTR Description, LPCWSTR Text, short ContentType, short TimeStampFormat)
 {
+	REFUSE_IN_HOST_HANDLER(0);
 	return b2s(id3v2.replaceFrame(new CID3F_SYLT(Language, (BYTE)TimeStampFormat, (BYTE)ContentType,getValidPointer(Description), getValidPointer(Text))));
 }
 
@@ -7822,6 +7993,7 @@ extern "C" short __stdcall ID3V2AddSyncLyricW(LPCWSTR Language, LPCWSTR Descript
  */
 extern "C" short __stdcall ID3V2AddPopularimeterW(LPCWSTR Email, short Rating, long Counter) 
 {
+	REFUSE_IN_HOST_HANDLER(0);
 	return b2s(id3v2.replaceFrame(new CID3F_POPM(getValidPointer(Email), (BYTE)Rating, Counter)));
 }
 
@@ -7883,6 +8055,7 @@ extern "C" long __stdcall ID3V2GetPopularimeterCounterW(short Index)
  */
 extern "C" void __stdcall SetLogFileW(LPCWSTR fileName)
 {
+	REFUSE_IN_HOST_HANDLER_VOID();
 	CTools::instance().setLogFile(getValidPointer(fileName));
 }
 
@@ -7909,6 +8082,7 @@ extern "C" BSTR __stdcall WAVGetTextFrameW(u32 FrameID)
  */
 extern "C" void __stdcall WAVSetTextFrameW(u32 FrameID, LPCWSTR textString)
 {
+	REFUSE_IN_HOST_HANDLER_VOID();
 	wav.setTextFrame(FrameID, getValidPointer(textString));	
 }
 
@@ -7933,6 +8107,7 @@ extern "C" BSTR __stdcall WAVGetDisplayTextW()
  */
 extern "C" void __stdcall WAVSetDisplayTextW(LPCWSTR textString)
 {
+	REFUSE_IN_HOST_HANDLER_VOID();
 	wav.setDisplayText(getValidPointer(textString));	
 }
 
@@ -7946,6 +8121,7 @@ extern "C" void __stdcall WAVSetDisplayTextW(LPCWSTR textString)
  */
 extern "C" short __stdcall WAVSaveChangesToFileW(LPCWSTR FileName)
 {
+	REFUSE_IN_HOST_HANDLER(0);
 	FileName = getValidPointer(FileName);	
 	if (GetFormat(FileName) != AUDIO_FORMAT_INVALID)
 	{
@@ -7967,6 +8143,7 @@ extern "C" short __stdcall WAVSaveChangesToFileW(LPCWSTR FileName)
  */
 extern "C" short __stdcall WAVSaveChangesW()
 {
+	REFUSE_IN_HOST_HANDLER(0);
 	return WAVSaveChangesToFileW(lastFile);
 }
 
@@ -7994,6 +8171,7 @@ extern "C" BSTR __stdcall WAVGetCartChunkEntryW(short Index)
  */
 extern "C" void __stdcall WAVSetCartChunkEntryW(short Index, LPCWSTR textString)
 {
+	REFUSE_IN_HOST_HANDLER_VOID();
 	wav.setCartText((BYTE)Index, getValidPointer(textString));
 }
 

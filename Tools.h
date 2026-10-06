@@ -50,7 +50,8 @@ enum ERR_NUMBERS {
 	ERR_UTF8_NOT_ALLOWED = 224,
 	ERR_FRAME_CORRUPT = 225,
 	ERR_TEXTCONVERT = 226,
-	ERR_NO_DATACHUNK = 227
+	ERR_NO_DATACHUNK = 227,
+	ERR_BUSY = 228
 };
 
 static const LPCWSTR IMAGE_SHORT[] = { L"XXX", L"JPG", L"GIF", L"PNG", L"BMP",L"TIF",L"-->"} ;
@@ -93,7 +94,8 @@ static const LPCWSTR ERR_TEXT[] = {
 	_T("utf-8 is not allowed in this id3v2 format!"),
 	_T("id3v2 frame '%c%c%c%c' at pos %u is corrupt, framesize is bigger than id3v2 size"),
 	_T("text can not convert into %s, use an empty string instead"),
-	_T("no data chunk found; this is not a valid wav file or you forgot to analyze the file first")
+	_T("no data chunk found; this is not a valid wav file or you forgot to analyze the file first"),
+	_T("not allowed in a message handler while the library analyzes or saves a file")
 };
 
 static const CAtlString MIME_LINK = _T("-->");
@@ -201,6 +203,10 @@ public:
 	static char* cTextPuffer;
 	static void doEvents();
 	static void doEventsNow();
+	// true while doEventsNow dispatches the messages of the host: a message handler of the host runs inside of an analysis or a save then.
+	// The exports that change the state or write a file refuse such a call (ERR_BUSY): it would work on the state of the running operation
+	// (a save wrote into the file that the handler had analyzed). A call of one export by another is not affected.
+	static bool inHostHandler() { return dispatching; }
 	static void setLogFile(LPCWSTR file);
 	static void writeInfo(LPCWSTR entry, ...);
 	static void writeDebug(LPCWSTR entry, ...);
@@ -211,9 +217,10 @@ public:
 	// Loads the picture that a tag links to (MIME type -->) into data; false if it is not loaded (data is empty then).
 	static bool readLinkedPicture(const CAtlString &link, CBlob &data);
 	static const __int64 LINKED_PICTURE_MAX = 64 * 1024 * 1024;   // a larger linked file is not loaded
-	static CAtlString ExtractMimeFromPicture(const BYTE *buf);
-	static CAtlString ExtractSmallMimeFromPicture(const BYTE *buf);
-	static int CalcMimeFromPicture(const BYTE *buf);
+	static CAtlString ExtractMimeFromPicture(const BYTE *buf, size_t length);
+	static CAtlString ExtractSmallMimeFromPicture(const BYTE *buf, size_t length);
+	// the image type from the first bytes of the picture of length bytes (only the bytes that it has are compared)
+	static int CalcMimeFromPicture(const BYTE *buf, size_t length);
 	static CAtlString GetLastErrorText() { return lastErrorText; };
 	static int getLastError() { return lastError; };
 	static void restoreLastError(int error, const CAtlString &text) { lastError = error; lastErrorText = text; };
@@ -230,6 +237,7 @@ private:
 	static void write(LPCWSTR art, LPCWSTR entry);
 	static int lastError;
 	static CAtlString lastErrorText;
+	static bool dispatching;
 	static DWORD oldTickCount;
 	static CFile* log;
 	static CAtlString logFile;

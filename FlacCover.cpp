@@ -134,7 +134,7 @@ long CFlacCover::getPictureArray(BYTE *arr, size_t maxLen)
 	size_t ln = data.GetLength();
 	if (ln > maxLen)
 	{
-		CTools::instance().setLastError(ERR_NOT_ENOUGH_MEMORY);
+		CTools::instance().setLastError(ERR_NOT_ENOUGH_MEMORY, (unsigned)ln);   // the array of the caller is too small: the size it needs
 		return -1;
 	}
 	if (ln > 0)
@@ -169,7 +169,7 @@ bool CFlacCover::setPictureFile(LPCWSTR fileName)
 		data.FileRead(toSizeClamped(Stream->size()), Stream); 
 		CFile::closeFile(Stream);
 		// rebuild the MIME type
-		_mime = CTools::instance().ExtractMimeFromPicture(data.m_pData);
+		_mime = CTools::instance().ExtractMimeFromPicture(data.m_pData, data.GetLength());
 		calcInfos();
 		return true;
 	}
@@ -187,7 +187,7 @@ void CFlacCover::setPictureData(const BYTE *arr, size_t length)
 	if (arr != NULL && length > 0)
 		data.AddMemory(arr, length);
 	if (length >= 4)
-		_mime = CTools::instance().ExtractMimeFromPicture(data.m_pData);
+		_mime = CTools::instance().ExtractMimeFromPicture(data.m_pData, data.GetLength());
 	calcInfos();
 }
 
@@ -223,7 +223,7 @@ void CFlacCover::calcInfos()
 	const size_t length = data.GetLength();
 	if (length <= 4)
 		return;
-	switch (CTools::instance().CalcMimeFromPicture(data.m_pData))
+	switch (CTools::instance().CalcMimeFromPicture(data.m_pData, data.GetLength()))
 	{
 	case IMAGE_JPG:
 		{

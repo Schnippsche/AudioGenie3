@@ -386,7 +386,7 @@ size_t CWMA_File::GetPictureArray(BYTE *arr, u32 maxLen, short index)
 		return 0;
 	if (tps->PicSize > maxLen)
 	{
-		CTools::instance().setLastError(ERR_NOT_ENOUGH_MEMORY);
+		CTools::instance().setLastError(ERR_NOT_ENOUGH_MEMORY, (unsigned)tps->PicSize);   // the array of the caller is too small: the size it needs
 		return 0;
 	}
 	memcpy(arr, tps->PicDaten, tps->PicSize);

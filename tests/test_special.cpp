@@ -626,3 +626,86 @@ TEST_CASE("Message processing during an operation (DOEVENTSMILLIS)", "[special][
     }
     emptyQueue();
 }
+
+namespace {
+// what a message handler of the host does while the library saves a file (it runs in CTools::doEvents)
+struct HandlerCalls {
+    std::wstring otherFile;
+    int calls = 0;
+    long analyzed = -1, analyzeError = 0;
+    long setConfigError = 0;
+    std::wstring title;   // a getter is allowed
+};
+HandlerCalls* g_handler = nullptr;
+
+LRESULT CALLBACK handlerProc(HWND h, UINT msg, WPARAM w, LPARAM l)
+{
+    if (msg == WM_APP && g_handler != nullptr && g_handler->calls++ == 0) {
+        g_handler->analyzed = AUDIOAnalyzeFileW(g_handler->otherFile.c_str());
+        g_handler->analyzeError = AUDIOGetLastErrorNumberW();
+        SetConfigValueW(4, 1 << 20);   // the size of the text buffer: it must not change while the library uses it
+        g_handler->setConfigError = AUDIOGetLastErrorNumberW();
+        g_handler->title = take(AUDIOGetTitleW());
+        return 0;
+    }
+    return DefWindowProcW(h, msg, w, l);
+}
+}  // namespace
+
+TEST_CASE("A message handler cannot change the data or analyze another file while a file is saved", "[special][doevents]")
+{
+    struct EventsEveryTime {
+        long old;
+        EventsEveryTime() : old(GetConfigValueW(3)) { SetConfigValueW(3, 0); }
+        ~EventsEveryTime() { SetConfigValueW(3, old); }
+    } guard;
+    const fs::path dir = freshDir(L"reentry");
+    // Before the lock the analysis in the handler changed the name of the last file that the running save works with; depending on the
+    // lengths of the paths the save then replaced b with the new a, failed, or read the freed memory of the old name.
+    const fs::path a = dir / L"a.mp3";
+    const fs::path b = dir / L"b.mp3";
+    copyTo(fixture("mp3/tagged.mp3"), a);
+    copyTo(fixture("mp3/tagged.mp3"), b);
+    const Bytes bBefore = readFile(b);
+    const long textBuffer = GetConfigValueW(4);
+
+    WNDCLASSW wc = {};
+    wc.lpfnWndProc = handlerProc;
+    wc.lpszClassName = L"ag3tests_reentry";
+    RegisterClassW(&wc);
+    HWND wnd = CreateWindowW(L"ag3tests_reentry", L"", 0, 0, 0, 0, 0, HWND_MESSAGE, nullptr, nullptr, nullptr);
+    REQUIRE(wnd != nullptr);
+    HandlerCalls calls;
+    calls.otherFile = b.wstring();
+    g_handler = &calls;
+
+    REQUIRE(AUDIOAnalyzeFileW(a.c_str()) == MPEG);
+    const std::wstring titleOfA = take(AUDIOGetTitleW());
+    AUDIOSetCommentW(std::wstring(40000, L'x').c_str());   // a is written again: the copy loop processes the messages
+    PostMessageW(wnd, WM_APP, 0, 0);
+    const short saved = AUDIOSaveChangesW();
+    g_handler = nullptr;
+    DestroyWindow(wnd);
+
+    CHECK(saved != 0);
+    REQUIRE(calls.calls == 1);
+    CHECK(calls.analyzed == 0);
+    CHECK(calls.analyzeError == 228);
+    CHECK(calls.setConfigError == 228);
+    CHECK(GetConfigValueW(4) == textBuffer);
+    CHECK(calls.title == titleOfA);   // the getter sees the data of the running save
+    CHECK(readFile(b) == bBefore);    // the other file is untouched
+    REQUIRE(AUDIOAnalyzeFileW(a.c_str()) == MPEG);
+    CHECK(take(AUDIOGetCommentW()).size() == 40000);
+}
+
+TEST_CASE("A successful call does not leave the text of an earlier error", "[special][error]")
+{
+    auto p = writeTemp("error_text.mp3", makeMp3(40));
+    REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+    CHECK(AUDIOSaveChangesToFileW(L"") == 0);
+    CHECK(!take(AUDIOGetLastErrorTextW()).empty());
+    REQUIRE(AUDIOSaveChangesW() != 0);
+    CHECK(AUDIOGetLastErrorNumberW() == 0);
+    CHECK(take(AUDIOGetLastErrorTextW()).empty());
+}
