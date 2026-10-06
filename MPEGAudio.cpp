@@ -603,10 +603,10 @@ void CMPEGAudio::GetInternEncoder()
 	if (EncoderID == MPEG_ENCODER_LAME && temp[5] == '.')
 	{
 		Encoder+=_T(" ");
-		Encoder+= (char)temp[4];	
-		Encoder+= (char)temp[5];	
-		Encoder+= (char)temp[6];
-		Encoder+= (char)temp[7];	
+		// the version is ASCII; other bytes are left out (like in the LAME version, see ParseLameTag)
+		for (int i = 4; i < 8; i++)
+			if (temp[i] >= 0x20 && temp[i] < 0x7F)
+				Encoder += (wchar_t)temp[i];
 	}
 }
 

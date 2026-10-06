@@ -88,10 +88,7 @@ void CID3F_COMM::decode()
 		else
 		{
 			encodingID = textEncodingOf(_blob.GetAt(0));
-			_language = _T("   ");
-			_language.SetAt(0, _blob.GetAt(1));
-			_language.SetAt(1, _blob.GetAt(2));
-			_language.SetAt(2, _blob.GetAt(3)); 
+			_language = _blob.GetAnsiStringAt(1, 3);   // with the code page it is written with (AddFixedAnsiString)
 			int start = 4;
 			_description = _blob.getNextString(encodingID, start);		
 			_text = _blob.getNextString(encodingID, start);

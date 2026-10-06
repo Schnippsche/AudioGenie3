@@ -90,7 +90,7 @@ void CID3F_USLT::decode()
 		else
 		{
 			encodingID = textEncodingOf(_blob.GetAt(0));
-			_language = _blob.GetStringAt(1, 3);			
+			_language = _blob.GetAnsiStringAt(1, 3);
 			int start = 4;
 			_description = _blob.getNextString(encodingID, start);
 			_text = _blob.getNextString(encodingID, start);

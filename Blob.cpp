@@ -20,6 +20,7 @@
 
 #include "stdafx.h"
 #include <new>
+#include <limits.h>
 #include "Blob.h"
 #include "Tools.h"
 
@@ -218,14 +219,13 @@ CAtlString CBlob::GetStringAt(size_t nPos, size_t nLength)
 	return tmp;
 }
 
-// like GetStringAt, but with the code page that the texts of the tags are written with (AddEncodedString): what is written is read back
-CAtlString CBlob::GetAnsiStringAt(size_t nPos, size_t nLength)
+// the bytes nPos to nPos + nLength (at most to the end) converted with the code page; a zero byte becomes a zero character
+CAtlString CBlob::convertAt(size_t nPos, size_t nLength, UINT codePage)
 {
 	if (m_CurrentLength == 0 || m_pData == NULL || nPos >= m_CurrentLength)
 		return EMPTY;
 	if (nLength > m_CurrentLength - nPos)
 		nLength = m_CurrentLength - nPos;
-	const UINT codePage = ansiCodePage();
 	const int chars = MultiByteToWideChar(codePage, 0, (LPCSTR)(m_pData + nPos), (int)nLength, NULL, 0);
 	CAtlString result;
 	if (chars > 0)
@@ -234,6 +234,24 @@ CAtlString CBlob::GetAnsiStringAt(size_t nPos, size_t nLength)
 		result.ReleaseBuffer(chars);
 	}
 	return result;
+}
+
+// like GetStringAt, but with the code page that the texts of the tags are written with (AddEncodedString): what is written is read back
+CAtlString CBlob::GetAnsiStringAt(size_t nPos, size_t nLength)
+{
+	return convertAt(nPos, nLength, ansiCodePage());
+}
+
+CAtlString CBlob::GetUtf8StringAt(size_t nPos, size_t nLength)
+{
+	return convertAt(nPos, nLength, CP_UTF8);
+}
+
+bool CBlob::isUtf8()
+{
+	if (m_CurrentLength == 0 || m_pData == NULL || m_CurrentLength > INT_MAX)
+		return false;
+	return MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, (LPCSTR)m_pData, (int)m_CurrentLength, NULL, 0) > 0;
 }
 
 long CBlob::Get4B(size_t nIndex) // MSB Big Endian

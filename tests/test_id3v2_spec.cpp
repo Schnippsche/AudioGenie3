@@ -1153,3 +1153,47 @@ TEST_CASE("ID3v2: a CUE sheet becomes chapters; an INDEX without a time and an o
     CHECK(ID3V2GetChapterEndTimeW(L"ch1") == 62400);     // the start of track 2
     CHECK(ID3V2GetChapterStartTimeW(L"ch2") == 62400);   // 1 min 2 s and 30 of 75 frames = 400 ms
 }
+
+TEST_CASE("ID3v2: a CUE sheet in UTF-8 (with or without byte order mark) or in the code page of the system", "[id3v2][spec][chapter][codepage]")
+{
+    const std::string head = "  TRACK 01 AUDIO\r\n    TITLE \"";
+    const std::string tail = "\"\r\n    INDEX 01 00:00:00\r\n";
+    // what the code page of this computer makes of the byte 0xE9 (U+00E9 with 1252)
+    wchar_t systemChar = 0;
+    MultiByteToWideChar(CP_ACP, 0, "\xE9", 1, &systemChar, 1);
+    struct Case { const char* name; std::string cue; std::wstring title; };
+    const Case cases[] = {
+        { "UTF-8 with byte order mark", "\xEF\xBB\xBF" + head + "Caf\xC3\xA9" + tail, L"Café" },
+        { "UTF-8 without byte order mark", head + "Caf\xC3\xA9" + tail, L"Café" },
+        { "not UTF-8: the code page of the system", head + "Caf\xE9" + tail, std::wstring(L"Caf") + systemChar },
+    };
+    for (const Case& c : cases) {
+        DYNAMIC_SECTION(c.name) {
+            auto cue = writeTemp("spec_chapters_enc.cue", Bytes(c.cue.begin(), c.cue.end()));
+            auto p = writeTemp("spec_chapters_enc.mp3", makeMp3(40));
+            REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+            REQUIRE(ID3V2ImportCueFileW(cue.c_str()) != 0);
+            REQUIRE(ID3V2GetFrameCountW(ID3F_CHAP) == 1);
+            CHECK(take(ID3V2GetSubFrameTextW(L"ch1", 1)) == c.title);
+        }
+    }
+}
+
+TEST_CASE("ID3v2: the language of COMM, USER, USLT and SYLT is read with the code page it is written with", "[id3v2][spec][codepage]")
+{
+    CodePage cp(1251);   // the byte 0xE9 is U+0439 in 1251
+    const Bytes lang = { 'd', 0xE9, 'u' };
+    Bytes comm = { 0x00 }; comm.insert(comm.end(), lang.begin(), lang.end()); comm.push_back(0); comm.push_back('c');
+    Bytes uslt = comm;
+    Bytes user = { 0x00 }; user.insert(user.end(), lang.begin(), lang.end()); user.push_back('u');
+    Bytes sylt = { 0x00 }; sylt.insert(sylt.end(), lang.begin(), lang.end()); sylt.push_back(2); sylt.push_back(1); sylt.push_back(0);
+    Bytes body = frame("COMM", comm);
+    const Bytes more[] = { frame("USLT", uslt), frame("USER", user), frame("SYLT", sylt) };
+    for (const Bytes& f : more) body.insert(body.end(), f.begin(), f.end());
+    auto p = writeTagged("spec_language_cp.mp3", tagBytes(4, 0, body, 100));
+    REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+    CHECK(take(ID3V2GetCommentLanguageW(1)) == L"dйu");
+    CHECK(take(ID3V2GetLyricLanguageW(1)) == L"dйu");
+    CHECK(take(ID3V2GetUserFrameLanguageW(1)) == L"dйu");
+    CHECK(take(ID3V2GetSyncLyricLanguageW(1)) == L"dйu");
+}

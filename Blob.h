@@ -72,6 +72,7 @@ private:
 	void AssignCopy(size_t nSrcLen, LPCWSTR lpszSrcData);
 	void ConcatInPlace(size_t nSrcLen, LPCWSTR lpszSrcData);
 	bool GrowBuffer(size_t newLen);
+	CAtlString convertAt(size_t nPos, size_t nLength, UINT codePage);
 public:
 	BYTE *m_pData;
 	CBlob();
@@ -110,8 +111,10 @@ public:
 	long GetS4B(size_t nIndex);
 	unsigned __int16 GetS2B(size_t nIndex);
 	
-	CAtlString GetStringAt(size_t nPos, size_t nLength);       // ASCII (MIME types, IDs) and files of this computer: the code page of the system
-	CAtlString GetAnsiStringAt(size_t nPos, size_t nLength);   // ISO-8859-1 / ANSI texts of a tag: the code page of ANSICODEPAGE
+	CAtlString GetStringAt(size_t nPos, size_t nLength);       // files of this computer (CUE sheets, 4 byte IDs): the code page of the system
+	CAtlString GetAnsiStringAt(size_t nPos, size_t nLength);   // ISO-8859-1 / ANSI texts of a tag and ASCII identifiers: ANSICODEPAGE
+	CAtlString GetUtf8StringAt(size_t nPos, size_t nLength);   // UTF-8
+	bool isUtf8();                                             // all bytes are valid UTF-8
 	void Clear() { Free(); };
 	size_t GetLength() { return m_CurrentLength; };
 	// replaces the content with nLen bytes (at most) of the file; false if no memory for them (see FileReadAt)

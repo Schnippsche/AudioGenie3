@@ -96,10 +96,11 @@ void CID3F_USER::decode()
 		{
 			int start = 0;
 			encodingID = textEncodingOf(_blob.GetAt(start++));
-			_language = _T("   ");
-			_language.SetAt(0, _blob.GetAt(start++));
-			_language.SetAt(1, _blob.GetAt(start++));
-			_language.SetAt(2, _blob.GetAt(start++));
+			// with the code page it is written with (AddFixedAnsiString); a frame that is too short gives zero characters, as before
+			_language = _blob.GetAnsiStringAt(start, 3);
+			while (_language.GetLength() < 3)
+				_language.AppendChar(0);
+			start += 3;
 			_text = _blob.getNextString(encodingID, start);	
 		}		
 		isDecoded = true;

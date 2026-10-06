@@ -62,7 +62,7 @@ CFlacCover::CFlacCover(CBlob *tmpData)
 	int start = 8;
 	int dummy = 0;
 	size_t ln = clampLen(start, tmpData->Get4B(4)); // Length
-	_mime = tmpData->GetStringAt(start, ln); // ASCII Mime
+	_mime = tmpData->GetAnsiStringAt(start, ln); // ASCII Mime (with the code page it is written with)
 	start+=(int)ln;
 	ln = clampLen(start + 4, tmpData->Get4B(start)); // Length
 	start+=4;

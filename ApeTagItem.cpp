@@ -59,9 +59,13 @@ bool CApeTagItem::ReadFromFile(CFile *Stream)
   const size_t got = (left > 0) ? CTools::seqRead(Stream, keyBlock, left < (__int64)sizeof(keyBlock) ? (size_t)left : sizeof(keyBlock)) : 0;
   size_t keyLength = 0;
   while (keyLength < got && keyBlock[keyLength] != 0)
-    Key+= (char)keyBlock[keyLength++];
+    keyLength++;
   if (keyLength == got || keyLength > 255)   // the end of the file or no terminator within 256 characters
     return false;
+  // a key is ASCII; a byte outside of it (not allowed) is read with the code page the key is written with, so it is written back unchanged
+  CBlob keyBytes;
+  keyBytes.AddMemory(keyBlock, keyLength);
+  Key = keyBytes.GetAnsiStringAt(0, keyLength);
   CTools::seqSeek(Stream, keyStart + (__int64)keyLength + 1);
   Value.FileRead(Size, Stream);  
   return (errno == 0);

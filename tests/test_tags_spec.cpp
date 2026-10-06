@@ -1246,6 +1246,21 @@ struct AnsiCodePage {
 };
 }  // namespace
 
+TEST_CASE("APE: a key with a byte outside of ASCII (not allowed) is read with ANSICODEPAGE and written back unchanged", "[tags][spec][ape][codepage]")
+{
+    auto p = writeParts("ape_key_cp.mp3", Bytes(), apeTag(2000, { apeItem("Caf\xE9", text("value")), apeItem("Title", text("T")) }));
+    REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+    CHECK(take(APEGetUserItemW(L"Café")) == L"value");   // 0xE9 is U+00E9 in the default 1252
+    APESetTitleW(L"New");
+    REQUIRE(APESaveChangesW() != 0);
+    Bytes keyAndValue = bytesOf("Caf\xE9");
+    keyAndValue.push_back(0);
+    put(keyAndValue, "value");
+    CHECK(findBytes(readFile(p), keyAndValue) != static_cast<size_t>(-1));
+    REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+    CHECK(take(APEGetUserItemW(L"Café")) == L"value");
+}
+
 TEST_CASE("ID3v1 and Lyrics3: the texts are read with the code page they are written with (ANSICODEPAGE)", "[tags][spec][id3v1][lyrics][codepage]")
 {
     // the byte 0xE9 is U+0439 (Cyrillic short i) in code page 1251, U+00E9 (e acute) in 1252

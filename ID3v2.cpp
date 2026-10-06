@@ -825,8 +825,13 @@ bool CID3V2::parseCueFile(LPCWSTR FileName)
 	}
 	CFile::closeFile(Source);
 	const int ln = (int)dummy.GetLength();
+	// A CUE sheet has no defined encoding: UTF-8 if it starts with the byte order mark or all of it is valid UTF-8 (the programs of today),
+	// otherwise the code page of the system (older programs, e.g. EAC by default). The byte order mark is skipped.
+	const bool bom = ln >= 3 && dummy.GetAt(0) == 0xEF && dummy.GetAt(1) == 0xBB && dummy.GetAt(2) == 0xBF;
+	const bool utf8 = bom || dummy.isUtf8();
+	auto token = [&dummy, utf8](int from, int length) { return utf8 ? dummy.GetUtf8StringAt(from, length) : dummy.GetStringAt(from, length); };
 	// split the blob into pieces; separators are 0D, 0A, EOL and blanks
-	int pos = 0, start = 0;
+	int pos = bom ? 3 : 0, start = pos;
 	CAtlArray<CAtlString> tokens;
 	dummy.AddValue(13);
 	CID3F_CTOC *toc = new CID3F_CTOC(_T("toc1"), EMPTY, EMPTY, true);
@@ -844,19 +849,19 @@ bool CID3V2::parseCueFile(LPCWSTR FileName)
 			}
 			while (pos < ln && !(dummy.GetAt(pos) == '"' || dummy.GetAt(pos) == 13 || dummy.GetAt(pos) == 10));
 			if (pos - start > 0)
-				tokens.Add(dummy.GetStringAt(start + 1, pos - start - 1));
+				tokens.Add(token(start + 1, pos - start - 1));
 			start = pos + 1;
 		}
 		if (dummy.GetAt(pos) == ' ') // blank
 		{
 			if (pos - start > 0)
-				tokens.Add(dummy.GetStringAt(start, pos - start));
+				tokens.Add(token(start, pos - start));
 			start = pos + 1;
 		}
 		else if (dummy.GetAt(pos) == 13 || dummy.GetAt(pos) == 10)
 		{
 			if (pos - start > 0)
-				tokens.Add(dummy.GetStringAt(start, pos - start));
+				tokens.Add(token(start, pos - start));
 			start = pos + 1;
 			// now there is a line with all relevant words
 			// evaluate; if an error occurs, false is returned

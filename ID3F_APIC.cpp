@@ -140,7 +140,7 @@ void CID3F_APIC::decode()
 			encodingID = textEncodingOf(_blob.GetAt(start++));
 			if (CTools::ID3V2oldTagVersion == TAG_VERSION_2_2)
 			{
-				_mime = _blob.GetStringAt(start, 3);
+				_mime = _blob.GetAnsiStringAt(start, 3);
 				start+=3;
 			}
 			else

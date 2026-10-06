@@ -595,6 +595,29 @@ TEST_CASE("FLAC: linked pictures come from the file: only loaded if configured, 
     }
 }
 
+TEST_CASE("FLAC: the MIME type of a picture is read with the code page it is written with", "[flac][spec][picture][codepage]")
+{
+    SetConfigValueW(7, 1251);   // the byte 0xE9 is U+0439 in 1251
+    Bytes pic;
+    be32(pic, 3);
+    const std::string mime = "image/x\xE9";
+    be32(pic, static_cast<uint32_t>(mime.size())); put(pic, mime.c_str());
+    be32(pic, 0);
+    be32(pic, 0); be32(pic, 0); be32(pic, 0); be32(pic, 0);
+    be32(pic, 4); put(pic, "data");
+    Bytes f = flacFile(FlacSpec());
+    const Bytes b = block(6, false, pic);
+    f.insert(f.begin() + 4 + 4 + 34, b.begin(), b.end());
+    auto p = writeTemp("flac_mime_cp.flac", f);
+    const short format = AUDIOAnalyzeFileW(p.c_str());
+    const short count = FLACGetPictureCountW();
+    const std::wstring read = count > 0 ? take(FLACGetPictureMimeW(1)) : std::wstring();
+    SetConfigValueW(7, 1252);
+    REQUIRE(format == FLAC);
+    REQUIRE(count == 1);
+    CHECK(read == L"image/xй");
+}
+
 TEST_CASE("FLAC: a Vorbis comment block does not read into the next block", "[flac][spec]")
 {
     // the count of the comments says 50, the block only has 2: the following picture block must still be read

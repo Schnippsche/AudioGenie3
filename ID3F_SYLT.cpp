@@ -152,7 +152,7 @@ void CID3F_SYLT::decode()
 		else
 		{
 			encodingID = textEncodingOf(_blob.GetAt(0));
-			_language = _blob.GetStringAt(1, 3);
+			_language = _blob.GetAnsiStringAt(1, 3);
 			_timestampformat = _blob.GetAt(4);
 			_contenttype = _blob.GetAt(5);
 			int start = 6;
