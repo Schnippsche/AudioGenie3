@@ -146,6 +146,29 @@ void CVorbisComment::AnalyzeVorbisComments(const BYTE *data, size_t length)
 	}
 }
 
+size_t CVorbisComment::CommentsEnd(const BYTE *data, size_t length)
+{
+	auto read32 = [&](size_t pos) -> size_t { return (size_t)data[pos] | ((size_t)data[pos + 1] << 8) | ((size_t)data[pos + 2] << 16) | ((size_t)data[pos + 3] << 24); };
+	if (data == NULL || length < 4)
+		return length;
+	size_t pos = 4 + read32(0);   // the vendor
+	if (pos < 4 || pos > length || length - pos < 4)
+		return length;
+	size_t count = read32(pos);
+	pos += 4;
+	while (count-- > 0)
+	{
+		if (length - pos < 4)
+			return length;
+		const size_t len = read32(pos);
+		pos += 4;
+		if (len > length - pos)
+			return length;
+		pos += len;
+	}
+	return pos;
+}
+
 bool CVorbisComment::IsValidKey(LPCWSTR key)
 {
 	if (key == NULL || key[0] == 0)

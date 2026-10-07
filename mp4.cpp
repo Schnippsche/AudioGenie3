@@ -523,18 +523,6 @@ void CMP4::RemoveTag()
 	mainContainer->removeAtom(_T("moov.udta"));	
 }
 
-// the size of an ID3v2 tag at the start of the file (0 if there is none): the atoms begin behind it
-static __int64 id3v2SizeOf(CFile *Stream)
-{
-	BYTE h[10];
-	if (CTools::readAt(Stream, 0, h, 10) != 10 || h[0] != 'I' || h[1] != 'D' || h[2] != '3' || h[3] == 0xFF || h[4] == 0xFF || ((h[6] | h[7] | h[8] | h[9]) & 0x80) != 0)
-		return 0;
-	__int64 size = 10 + ((__int64)h[6] << 21) + ((__int64)h[7] << 14) + ((__int64)h[8] << 7) + h[9];
-	if (h[3] == 4 && (h[5] & 0x10) != 0)
-		size += 10;   // footer (v2.4)
-	return size;
-}
-
 bool CMP4::SaveToFile(LPCWSTR FileName)
 {
 	// determine the start of the data area
@@ -549,7 +537,7 @@ bool CMP4::SaveToFile(LPCWSTR FileName)
 	// the tags in front of and behind the atoms of this file (FileName is not always the analyzed file: its sizes and those of the analysis are
 	// not used, CTools::FileSize stays the size of the analyzed file)
 	const __int64 fileSize = Source->size();
-	const __int64 atomsStart = id3v2SizeOf(Source);
+	const __int64 atomsStart = CTools::id3v2SizeOf(Source);
 	const __int64 atomsEnd = fileSize - CID3V1::DetectSize(Source);
 	if (fileSize < 0 || atomsEnd <= atomsStart)
 	{

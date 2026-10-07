@@ -105,6 +105,8 @@ static const unsigned int CRC_TABLE[] = {
 		BYTE lastHeaderFlags;
 		int headerPages;                                 /* number of pages of the comment and setup headers */
 		bool multiplexed;                                /* pages of another stream are between the headers */
+		bool firstPageOnlyHeader;                        /* the identification header is the only packet of the first page (as Ogg Vorbis and Opus demand) */
+		CBlob opusExtra;                                 /* Opus: the data behind the comments that are kept (RFC 7845 5.2) */
 		bool valid;                                      /* the three headers were read (Opus: the two headers) */
 		bool opus;                                       /* Ogg Opus (RFC 7845) instead of Ogg Vorbis */
 		int preSkip;                                     /* Opus: samples (48 kHz) at the start that are not played */
@@ -114,8 +116,9 @@ static const unsigned int CRC_TABLE[] = {
 		int FGetBitRate();
 		bool FIsValid();
 		void ReadTag(CFile *Source);
-		__int64 GetSamples(CFile *Source);
-		bool GetInfo(CFile *Stream, bool withComments);
+		__int64 GetSamples(CFile *Source, __int64 fileSize);
+		// the headers of the stream; start: behind an ID3v2 tag, fileSize: of this file (the analysis or a file that is written)
+		bool GetInfo(CFile *Stream, bool withComments, __int64 start, __int64 fileSize);
 		void BuildTag();
 		int BuildHeaderPages(CBlob &out);
 		bool CopyPages(CFile *Source, CFile *Destination, int delta);

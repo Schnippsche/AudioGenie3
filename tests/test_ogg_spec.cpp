@@ -2,6 +2,7 @@
 // Vorbis I specification and the Vorbis comment specification. The checks of the written files are made with an own page reader
 // that verifies the checksums, the page sequence numbers, the flags and the packets.
 #include "id3v2_support.h"
+#include <chrono>
 #include <cmath>
 #include <map>
 #include <string>
@@ -799,4 +800,161 @@ TEST_CASE("Ogg Opus: a cut file is no Vorbis file and a Vorbis file stays one", 
     CHECK(AUDIOAnalyzeFileW(p.c_str()) != OGGVORBIS);
     p = writeTemp("vorbis_after.ogg", oggFile(OggSpec()));
     CHECK(AUDIOAnalyzeFileW(p.c_str()) == OGGVORBIS);
+}
+
+TEST_CASE("Ogg: saving into another file uses its own ID3v2 tag and size, the values of the analysis stay", "[ogg][spec][write]")
+{
+    // the analyzed file has an ID3v2 tag in front, the other one does not (and the other way round); the other file is longer
+    OggSpec s;
+    const Bytes plain = oggFile(s);
+    OggSpec l;
+    l.audioPackets = 400;
+    const Bytes longer = oggFile(l);
+    Bytes v2 = { 'I', 'D', '3', 3, 0, 0, 0, 0, 0x08, 0x00 };   // 1024 bytes of tag data (padding)
+    v2.resize(10 + 1024, 0);
+    for (bool analyzedTagged : { true, false }) {
+        INFO("the analyzed file has the ID3v2 tag: " << analyzedTagged);
+        Bytes a = analyzedTagged ? v2 : Bytes();
+        put(a, plain);
+        Bytes b = analyzedTagged ? Bytes() : v2;
+        put(b, longer);
+        const size_t prefix = analyzedTagged ? 0 : v2.size();
+        auto pa = writeTemp("ogg_save_a.ogg", a);
+        auto pb = writeTemp("ogg_save_b.ogg", b);
+        REQUIRE(AUDIOAnalyzeFileW(pa.c_str()) == OGGVORBIS);
+        const float duration = AUDIOGetDurationW();
+        OGGSetTitleW(L"Other file");
+        REQUIRE(OGGSaveChangesToFileW(pb.c_str()) != 0);
+        CHECK(AUDIOGetDurationW() == duration);   // still the values of the analyzed file
+        const Bytes g = readFile(pb);
+        REQUIRE(g.size() > prefix);
+        const bool prefixKept = std::equal(v2.begin(), v2.begin() + static_cast<std::ptrdiff_t>(prefix), g.begin());
+        CHECK(prefixKept);
+        const Bytes ogg(g.begin() + static_cast<std::ptrdiff_t>(prefix), g.end());
+        checkContainer(ogg);
+        const bool sameAudio = (audioPackets(ogg) == audioPackets(longer));
+        CHECK(sameAudio);
+        const Comments c = parseComments(ogg);
+        CHECK(std::find(c.list.begin(), c.list.end(), "TITLE=Other file") != c.list.end());
+        REQUIRE(AUDIOAnalyzeFileW(pb.c_str()) == OGGVORBIS);
+        CHECK(std::fabs(AUDIOGetDurationW() - 400000.0 / 44100) < 0.0005);
+    }
+}
+
+TEST_CASE("Ogg Vorbis: the last page is found behind data without pages", "[ogg][spec]")
+{
+    OggSpec s;
+    const Bytes f = oggFile(s);
+    const auto pages = readPages(f);
+    const size_t lastPage = pages.back().length;
+    // the header of the last page around the start of the first block of the search from the end (66048 bytes)
+    for (long d = -300; d <= 300; d += 7) {
+        const size_t junk = static_cast<size_t>(66048 - static_cast<long>(lastPage) + d);
+        INFO("bytes behind the last page: " << junk);
+        Bytes g = f;
+        g.resize(g.size() + junk, 0);
+        auto p = writeTemp("ogg_junk.ogg", g);
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == OGGVORBIS);
+        CHECK(std::fabs(AUDIOGetDurationW() - 200000.0 / 44100) < 0.0005);
+    }
+    // 8 MB without pages: the search goes back in whole blocks
+    Bytes g = f;
+    g.resize(g.size() + 8 * 1024 * 1024, 0);
+    auto p = writeTemp("ogg_junk8m.ogg", g);
+    const auto t0 = std::chrono::steady_clock::now();
+    REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == OGGVORBIS);
+    const double ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count();
+    CHECK(std::fabs(AUDIOGetDurationW() - 200000.0 / 44100) < 0.0005);
+    INFO("analysis with 8 MB behind the last page took " << ms << " ms");
+    CHECK(ms < 150.0);   // 741 bytes per block of 66 KB took about 500 ms
+}
+
+TEST_CASE("Ogg Vorbis: new sequence numbers in a large file, data behind the pages stay", "[ogg][spec][write]")
+{
+    // more than the block of 1 MB in which the pages are renumbered: pages lie across the ends of the blocks
+    OggSpec s;
+    s.audioPackets = 12000;
+    s.packetsPerPage = 17;
+    const Bytes f = oggFile(s);
+    const auto audioBefore = audioPackets(f);
+    const auto granulesBefore = audioGranules(f);
+    Bytes tail = { 'T', 'A', 'G' };
+    tail.resize(128, 'x');
+    for (bool withTail : { false, true }) {
+        INFO("data behind the last page: " << withTail);
+        Bytes in = f;
+        if (withTail) put(in, tail);
+        auto p = writeTemp("ogg_renumber.ogg", in);
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == OGGVORBIS);
+        OGGSetUserItemW(L"BIGFIELD", std::wstring(100000, L'x').c_str());   // the header gets more pages
+        REQUIRE(OGGSaveChangesW() != 0);
+        Bytes g = readFile(p);
+        if (withTail) {
+            REQUIRE(g.size() > tail.size());
+            const bool tailKept = std::equal(tail.begin(), tail.end(), g.end() - static_cast<std::ptrdiff_t>(tail.size()));
+            CHECK(tailKept);
+            g.resize(g.size() - tail.size());
+        }
+        checkContainer(g);
+        const bool sameAudio = (audioPackets(g) == audioBefore);
+        CHECK(sameAudio);
+        const bool sameGranules = (audioGranules(g) == granulesBefore);
+        CHECK(sameGranules);
+    }
+}
+
+TEST_CASE("Ogg Opus: data behind the comments are kept if their first bit is set", "[ogg][opus][spec][write]")
+{
+    // RFC 7845 5.2: binary data behind the comments are kept by editors if the lowest bit of their first byte is 1 (otherwise padding)
+    for (bool keep : { true, false }) {
+        INFO("keep: " << keep);
+        OpusSpec s;
+        Bytes tags = opusTags(s.vendor, s.comments);
+        const Bytes extra = { static_cast<uint8_t>(keep ? 0x01 : 0x00), 'b', 'i', 'n', 0x00, 0xFF };
+        put(tags, extra);
+        const uint32_t serial = 0x0BADCAFE;
+        Bytes f = paginate({ Packet{ opusHead(s), 0, true } }, serial, 0, true, false);
+        put(f, paginate({ Packet{ tags, 0, true } }, serial, 1, false, false));
+        const Bytes rest = opusFile(s);
+        const auto restPages = readPages(rest);
+        put(f, Bytes(rest.begin() + static_cast<std::ptrdiff_t>(restPages[2].offset), rest.end()));
+        checkOpusContainer(f);
+        auto p = writeTemp("opus_extra.ogg", f);
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == OGGOPUS);
+        OGGSetTitleW(L"New title");
+        REQUIRE(OGGSaveChangesW() != 0);
+        const Bytes g = readFile(p);
+        checkOpusContainer(g);
+        const Bytes packet = readPackets(readPages(g)).at(1);
+        const bool endsWithExtra = packet.size() > extra.size() && std::equal(extra.begin(), extra.end(), packet.end() - static_cast<std::ptrdiff_t>(extra.size()));
+        CHECK(endsWithExtra == keep);
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == OGGOPUS);
+        CHECK(take(OGGGetTitleW()) == L"New title");
+        CHECK(take(OGGGetArtistW()) == L"Speaker");
+    }
+}
+
+TEST_CASE("Ogg Vorbis: a first page with more than the identification header is not written", "[ogg][spec][write]")
+{
+    // the specification puts the identification header on a page of its own; here the comment header begins on the first page
+    OggSpec s;
+    const uint32_t serial = 0x1234ABCD;
+    std::vector<Packet> hdr = { Packet{ idHeader(2, 44100, -1, 128000, -1), 0, false }, Packet{ commentHeader(s.vendor, s.comments), -1, false },
+                                Packet{ setupHeader(s.setupSize), 0, true } };
+    Bytes f = paginate(hdr, serial, 0, true, false);
+    const auto headerPages = readPages(f).size();
+    const Bytes normal = oggFile(s);
+    // the audio pages of a normal file, numbered behind the header pages
+    std::vector<Packet> audio;
+    for (const Bytes& a : audioPackets(normal)) audio.push_back(Packet{ a, -1, false });
+    audio.back().granule = 200000;
+    audio.back().flushAfter = true;
+    put(f, paginate(audio, serial, static_cast<uint32_t>(headerPages), false, true));
+    auto p = writeTemp("ogg_sharedfirst.ogg", f);
+    REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == OGGVORBIS);
+    OGGSetTitleW(L"New title");
+    CHECK(OGGSaveChangesW() == 0);
+    CHECK(AUDIOGetLastErrorNumberW() == 218);
+    const bool unchanged = (readFile(p) == f);
+    CHECK(unchanged);
 }

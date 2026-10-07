@@ -68,6 +68,8 @@ public:
 	void BuildVorbisComments(CBlob &Data);
 	void AnalyzeVorbisComments(CFile *Stream);
 	void AnalyzeVorbisComments(const BYTE *data, size_t length);   // the comments in memory (behind the packet type of the Ogg comment header)
+	// the end of the list of the comments in data (vendor, number, fields): the position of the first byte behind it, length if the list is incomplete
+	static size_t CommentsEnd(const BYTE *data, size_t length);
 	// a field name has the characters $20 to $7D without '=' and at least one character
 	static bool IsValidKey(LPCWSTR key);
 	CAtlString GetUserItem(LPCWSTR key);

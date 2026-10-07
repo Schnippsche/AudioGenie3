@@ -191,6 +191,9 @@ public:
 	// length of the file in bytes, -1 on an error. One system call; for the file of the running analysis no call at all, because the file is not
 	// changed during the analysis and its size is known
 	static __int64 fileLength(CFile *Stream);
+	// the size of an ID3v2 tag at the start of the file (header, footer of v2.4), 0 if there is none: for a file that is written, which need not be
+	// the analyzed one (ID3v2Size belongs to the analysis)
+	static __int64 id3v2SizeOf(CFile *Stream);
 	static int ID3v1Size;
 	static long ID3v2Size;
 	static int LyricsSize;

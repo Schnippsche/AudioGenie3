@@ -160,6 +160,17 @@ void CTools::extendHeadCache(CFile *Stream, __int64 end)
 		headCacheLength = have + got;
 }
 
+__int64 CTools::id3v2SizeOf(CFile *Stream)
+{
+	BYTE h[10];
+	if (readAt(Stream, 0, h, 10) != 10 || h[0] != 'I' || h[1] != 'D' || h[2] != '3' || h[3] == 0xFF || h[4] == 0xFF || ((h[6] | h[7] | h[8] | h[9]) & 0x80) != 0)
+		return 0;
+	__int64 size = 10 + ((__int64)h[6] << 21) + ((__int64)h[7] << 14) + ((__int64)h[8] << 7) + h[9];
+	if (h[3] == 4 && (h[5] & 0x10) != 0)
+		size += 10;   // footer (v2.4)
+	return size;
+}
+
 __int64 CTools::fileLength(CFile *Stream)
 {
 	if (Stream == NULL)

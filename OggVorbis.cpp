@@ -24,6 +24,7 @@
 #include "io.h"
 #include "OggHeader.h"
 #include "vorbisheader.h"
+#include <memory>
 
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
@@ -51,10 +52,13 @@ static unsigned __int64 GranulePosition(COGGHeader &page)
 
 // Reads the last page of the stream that has a granule position (the number of the samples): the file is searched from its end
 // backwards. A page is only accepted if it is complete and belongs to the stream.
-__int64 COggVorbis::GetSamples(CFile *Source)
+__int64 COggVorbis::GetSamples(CFile *Source, __int64 fileSize)
 {
-	const __int64 fileSize = CTools::FileSize;
 	const long BLOCK = 65536 + 512;
+	// a page header has at most 27 + 255 bytes: the blocks overlap by that much, so every header is complete in one of them (the page itself
+	// does not have to be in the block). Before, the blocks overlapped by a whole page (65307 bytes), and the search went back only 741 bytes
+	// per block: data without pages at the end of the file (2 MB: 125 ms instead of 0.3 ms) or another stream behind it took very long
+	const long OVERLAP = 27 + 255;
 	const __int64 low = (firstAudioPos > 0) ? firstAudioPos : 0;
 	CSequentialRead sequence(Source, 0);
 	CBlob block;
@@ -88,13 +92,13 @@ __int64 COggVorbis::GetSamples(CFile *Source)
 		}
 		if (start <= low)
 			break;
-		end = start + 65307;   // a page has at most 65307 bytes: the pages that begin at the start of this block are checked again completely
+		end = start + OVERLAP;   // a header that is cut off at the end of the next block begins in the overlap: it was checked completely in this one
 	}
 	return 0;
 }
 
 // Reads the identification header (Vorbis or Opus) and the packets of the comment header and, for Vorbis, the setup header.
-bool COggVorbis::GetInfo(CFile *Source, bool withComments)
+bool COggVorbis::GetInfo(CFile *Source, bool withComments, __int64 start, __int64 fileSize)
 {
 	commentPacket.Clear();
 	setupLacing.Clear();
@@ -102,8 +106,9 @@ bool COggVorbis::GetInfo(CFile *Source, bool withComments)
 	headerPages = 0;
 	multiplexed = false;
 	valid = false;
+	firstPageOnlyHeader = false;
 	CSequentialRead sequence(Source, 0);   // the pages of the headers are read in sequence, from the cache of the start of the file
-	__int64 pos = CTools::ID3v2Size;
+	__int64 pos = start;
 	long bodyLength = 0;
 	__int64 bodyPos = 0;
 	bool found = false;
@@ -151,6 +156,11 @@ bool COggVorbis::GetInfo(CFile *Source, bool withComments)
 	if (!found)
 		return false;
 	serial = (unsigned int)FPage.Serial;
+	// the identification header has a page of its own: it ends with the last segment of the page (all segments in front of it have 255 bytes).
+	// A damaged file with the start of the comment header on this page is not written: the new headers would follow a part of the old one
+	firstPageOnlyHeader = (FPage.Segments > 0 && FPage.LacingValues[FPage.Segments - 1] < 255);
+	for (int k = 0; k + 1 < FPage.Segments && firstPageOnlyHeader; k++)
+		firstPageOnlyHeader = (FPage.LacingValues[k] == 255);
 	firstPagePos = pos;
 	pos = bodyPos + bodyLength;
 	secondPagePos = pos;
@@ -168,7 +178,7 @@ bool COggVorbis::GetInfo(CFile *Source, bool withComments)
 		for (int k = 0; k < page.Segments; k++)
 			length += page.LacingValues[k];
 		const __int64 pageEnd = pos + 27 + page.Segments + length;
-		if (pageEnd > CTools::FileSize)
+		if (pageEnd > fileSize)
 			break;
 		if ((unsigned int)page.Serial != serial)
 		{
@@ -202,7 +212,7 @@ bool COggVorbis::GetInfo(CFile *Source, bool withComments)
 					packetsDone = 2;
 			}
 			offset += lace;
-			if (commentPacket.GetLength() > (size_t)CTools::FileSize)
+			if ((__int64)commentPacket.GetLength() > fileSize)
 				break;
 		}
 		headerPages++;
@@ -216,7 +226,9 @@ bool COggVorbis::GetInfo(CFile *Source, bool withComments)
 	if (withComments && packetsDone >= 1 && commentPacket.GetLength() >= TagIdLength() && memcmp(commentPacket.m_pData, opus ? "OpusTags" : VORBIS_TAG_ID, TagIdLength()) == 0)
 		ReadTag(Source);
 	firstAudioPos = headerEndPos;
-	Samples = GetSamples(Source);
+	// the samples are only needed by the analysis (a save would search the end of the file for nothing)
+	if (withComments)
+		Samples = GetSamples(Source, fileSize);
 	return true;
 }
 
@@ -233,6 +245,7 @@ void COggVorbis::BuildTag()
 	{
 		Data.AddMemory("OpusTags", 8);
 		BuildVorbisComments(Data);   // Opus has no framing bit
+		Data.AddBlob(opusExtra);     // the data behind the comments that the file had
 		return;
 	}
 	Data.AddMemory(VORBIS_TAG_ID, 7);
@@ -240,14 +253,39 @@ void COggVorbis::BuildTag()
 	Data.AddValue(1);   // the framing bit
 }
 
+// The checksum of the pages (polynomial 0x04C11DB7, the highest bit first, start value 0) with 8 bytes per step ("slicing by 8"): the tables
+// CRC_SLICE[k][i] are the checksum of the byte i followed by k zero bytes. About four times as fast as one byte per step, which matters
+// when all pages of a file get new sequence numbers.
+static const unsigned int (*crcSlices())[256]
+{
+	static unsigned int table[8][256];
+	static bool ready = false;
+	if (!ready)
+	{
+		for (int i = 0; i < 256; i++)
+			table[0][i] = CRC_TABLE[i];
+		for (int k = 1; k < 8; k++)
+			for (int i = 0; i < 256; i++)
+				table[k][i] = (table[k - 1][i] << 8) ^ CRC_TABLE[table[k - 1][i] >> 24];
+		ready = true;
+	}
+	return table;
+}
+
 unsigned long COggVorbis::CalculateCRC(unsigned long CRC, BYTE buffer[], long Size)
 {
-	long Index;
-	// Calculate CRC through data
-	for (Index = 0; Index < Size; Index++)
-		CRC = (CRC << 8) XOR CRC_TABLE[((CRC >> 24) &0xff ) XOR buffer[Index]];
-
-	return CRC;
+	const unsigned int (*t)[256] = crcSlices();
+	unsigned int crc = (unsigned int)CRC;
+	const BYTE *p = buffer;
+	long n = Size;
+	for (; n >= 8; n -= 8, p += 8)
+	{
+		const unsigned int a = crc ^ (((unsigned int)p[0] << 24) | ((unsigned int)p[1] << 16) | ((unsigned int)p[2] << 8) | p[3]);
+		crc = t[7][a >> 24] ^ t[6][(a >> 16) & 0xFF] ^ t[5][(a >> 8) & 0xFF] ^ t[4][a & 0xFF] ^ t[3][p[4]] ^ t[2][p[5]] ^ t[1][p[6]] ^ t[0][p[7]];
+	}
+	for (; n > 0; n--, p++)
+		crc = (crc << 8) ^ CRC_TABLE[(crc >> 24) ^ *p];
+	return crc;
 }
 
 // the pages of the headers behind the identification header: the new comment header and the old setup header. A page has at most 255
@@ -308,51 +346,68 @@ int COggVorbis::BuildHeaderPages(CBlob &out)
 }
 
 // Copies the pages behind the headers. If the number of the header pages has changed, the sequence numbers of the pages of the stream
-// change by delta and their checksums are calculated again.
+// change by delta and their checksums are calculated again. The pages are read in large blocks and changed in the block (before, three
+// buffers were allocated for every page). Data that are not a page (a tag at the end) and a page cut off by the end of the file are copied unchanged.
 bool COggVorbis::CopyPages(CFile *Source, CFile *Destination, int delta)
 {
 	Source->seek(headerEndPos);
 	if (delta == 0)
 		return CTools::copyStream(Source, Destination, -1);
-	CBlob page;
+	const size_t BUFFER_SIZE = 1024 * 1024;   // more than a page (at most 27 + 255 + 255 * 255 bytes)
+	std::unique_ptr<BYTE[]> buffer(new (std::nothrow) BYTE[BUFFER_SIZE]);
+	if (!buffer)
+		return false;
+	BYTE *buf = buffer.get();
+	size_t have = 0;
+	bool end = false;
 	while (true)
 	{
-		if (!page.FileRead(27, Source))
-			return false;   // no memory: not the end of the file
-		if (page.GetLength() == 0)
-			return true;
-		if (page.GetLength() < 27 || memcmp(page.m_pData, OGG_PAGE_ID, 4) != 0)
-			return (page.FileWrite(page.GetLength(), Destination) == page.GetLength()) && CTools::copyStream(Source, Destination, -1);
-		const int segments = page.m_pData[26];
-		CBlob lacing;
-		lacing.FileRead(segments, Source);
-		if ((int)lacing.GetLength() != segments)
-			return false;
-		long length = 0;
-		for (int k = 0; k < segments; k++)
-			length += lacing.m_pData[k];
-		CBlob body;
-		if (!body.FileRead(length, Source))
-			return false;
-		page.AddBlob(lacing);
-		page.AddBlob(body);
-		if ((long)body.GetLength() != length)
-			return page.FileWrite(page.GetLength(), Destination) == page.GetLength();   // a truncated page at the end of the file
-		unsigned int pageSerial = 0, seq = 0;
-		memcpy(&pageSerial, page.m_pData + 14, 4);
-		memcpy(&seq, page.m_pData + 18, 4);
-		if (pageSerial == serial)
+		if (!end)
 		{
-			seq += (unsigned int)delta;
-			memcpy(page.m_pData + 18, &seq, 4);
-			memset(page.m_pData + 22, 0, 4);
-			const unsigned long crc = CalculateCRC(0, page.m_pData, (long)page.GetLength());
-			memcpy(page.m_pData + 22, &crc, 4);
+			const size_t want = BUFFER_SIZE - have;
+			const size_t got = Source->read(buf + have, want);
+			if (Source->failed())
+				return false;
+			have += got;
+			end = (got < want);
 		}
-		if (page.FileWrite(page.GetLength(), Destination) != page.GetLength())
+		size_t pos = 0;
+		while (have - pos >= 27)
+		{
+			BYTE *page = buf + pos;
+			if (memcmp(page, OGG_PAGE_ID, 4) != 0)
+			{
+				// no page: the pages in front of it and the rest of the file are copied as they are
+				return Destination->write(buf, have) == have && CTools::copyStream(Source, Destination, -1);
+			}
+			const size_t segments = page[26];
+			if (have - pos < 27 + segments)
+				break;
+			size_t length = 27 + segments;
+			for (size_t k = 0; k < segments; k++)
+				length += page[27 + k];
+			if (have - pos < length)
+				break;
+			unsigned int pageSerial = 0, seq = 0;
+			memcpy(&pageSerial, page + 14, 4);
+			memcpy(&seq, page + 18, 4);
+			if (pageSerial == serial)
+			{
+				seq += (unsigned int)delta;
+				memcpy(page + 18, &seq, 4);
+				memset(page + 22, 0, 4);
+				const unsigned int crc = (unsigned int)CalculateCRC(0, page, (long)length);
+				memcpy(page + 22, &crc, 4);
+			}
+			pos += length;
+		}
+		if (pos > 0 && Destination->write(buf, pos) != pos)
 			return false;
+		have -= pos;
+		memmove(buf, buf + pos, have);
+		if (end)
+			return have == 0 || Destination->write(buf, have) == have;   // a page cut off by the end of the file
 		CTools::instance().doEvents();
-		page.Clear();
 	}
 }
 
@@ -419,6 +474,8 @@ void COggVorbis::ResetData()
 	lastHeaderGranule = 0;
 	lastHeaderFlags = 0;
 	multiplexed = false;
+	firstPageOnlyHeader = false;
+	opusExtra.Clear();
 	valid = false;
 	opus = false;
 	preSkip = 0;
@@ -471,7 +528,7 @@ void COggVorbis::ApplyParameters()
 bool COggVorbis::ReadFromFile(CFile *Stream)
 {
 	/* Read data from file */
-	if (GetInfo(Stream, true))
+	if (GetInfo(Stream, true, CTools::ID3v2Size, CTools::FileSize))
 	{
 		ApplyParameters();
 		return true;
@@ -482,29 +539,47 @@ bool COggVorbis::ReadFromFile(CFile *Stream)
 bool COggVorbis::SaveTag(LPCWSTR FileName)
 {
 	// Save Vorbis tag
-	bool Result = false;
 	CFile *Source;
-	if ( (Source = CFile::openFile(FileName, CFile::Mode::Read, CFile::Share::Read)) != NULL)
+	if ( (Source = CFile::openFile(FileName, CFile::Mode::Read, CFile::Share::Read)) == NULL)
 	{
-		Result = GetInfo(Source, false);
-		CFile::closeFile(Source);
-		if (Result && (multiplexed || !valid))
-		{
-			// the headers of several streams are mixed: the pages cannot be written without the other streams
-			CTools::instance().setLastError(ERR_INVALID_FORMAT);
-			return false;
-		}
-		if (Result)
-		{
-			ApplyParameters();
-			/* Prepare tag data and save to file */
-			BuildTag();
-			Result = RebuildFile(FileName);
-		}
+		CTools::instance().setLastError(errno);
+		return false;
+	}
+	// The headers of the file that is written (it need not be the analyzed one): behind its own ID3v2 tag, with its own size. The values of the
+	// analysis (duration, Opus) stay as they are (before, the sizes of the analyzed file were used, and its values were replaced by those of
+	// the written file).
+	const bool wasOpus = opus;
+	const int wasPreSkip = preSkip;
+	const __int64 wasFirstAudioPos = firstAudioPos;
+	bool Result = GetInfo(Source, false, CTools::id3v2SizeOf(Source), Source->size());
+	CFile::closeFile(Source);
+	if (!Result || multiplexed || !valid || !firstPageOnlyHeader)
+	{
+		// not an Ogg Vorbis or Opus stream, the headers of several streams are mixed (the pages cannot be written without the other streams),
+		// the headers are incomplete or the first page has more than the identification header
+		CTools::instance().setLastError(ERR_INVALID_FORMAT);
+		Result = false;
 	}
 	else
-		CTools::instance().setLastError(errno);
-
+	{
+		// Opus: data behind the comments are kept if the lowest bit of their first byte is set (RFC 7845 5.2), otherwise they are padding
+		opusExtra.Clear();
+		if (opus && commentPacket.GetLength() > 8)
+		{
+			const BYTE *comments = commentPacket.m_pData + 8;
+			const size_t length = commentPacket.GetLength() - 8;
+			const size_t end = CommentsEnd(comments, length);
+			if (end < length && (comments[end] & 1) != 0)
+				opusExtra.AddMemory(comments + end, length - end);
+		}
+		/* Prepare tag data and save to file */
+		BuildTag();
+		Result = RebuildFile(FileName);
+		opusExtra.Clear();
+	}
+	opus = wasOpus;
+	preSkip = wasPreSkip;
+	firstAudioPos = wasFirstAudioPos;
 	return Result;
 }
 
