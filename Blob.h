@@ -116,6 +116,7 @@ public:
 	CAtlString GetUtf8StringAt(size_t nPos, size_t nLength);   // UTF-8
 	bool isUtf8();                                             // all bytes are valid UTF-8
 	void Clear() { Free(); };
+	void Truncate(size_t length) { if (length < m_CurrentLength) m_CurrentLength = length; }   // shortens the content (the buffer stays)
 	size_t GetLength() { return m_CurrentLength; };
 	// replaces the content with nLen bytes (at most) of the file; false if no memory for them (see FileReadAt)
 	bool FileRead(size_t nLen, CFile *Stream);

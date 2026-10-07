@@ -4775,12 +4775,12 @@ extern "C" short __stdcall ID3V2GetEncodingW(u32 FrameID)
  * | Key | ID | Defaultvalue | Description |
  * |---|---|---|---|
  * | 0 | MPEGEXACTREAD | 0 | a non-zero value activates reading all MPEG frames (see below); replaces SetMPEGAnalyzeAllFrames |
- * | 1 | ID3V2PADDINGSIZE | 4096 | the padding size in bytes for an ID3v2 tag |
+ * | 1 | ID3V2PADDINGSIZE | 4096 | the padding size in bytes for an ID3v2 tag (at most 16 MB) |
  * | 2 | WRITEBLOCKSIZE | 524288 | the block size in bytes for internal file copy |
  * | 3 | DOEVENTSMILLIS | 250 | milliseconds between two runs of the message processing (see below) |
  * | 4 | MAXTEXTBUFFER | 262144 | the maximum text size in bytes |
- * | 5 | WMAPADDINGSIZE | 4096 | the padding size in bytes for a WMA tag |
- * | 6 | MP4PADDINGSIZE | 4096 | the padding size in bytes for an MP4 tag |
+ * | 5 | WMAPADDINGSIZE | 4096 | the padding size in bytes for a WMA tag (at most 16 MB) |
+ * | 6 | MP4PADDINGSIZE | 4096 | the padding size in bytes for an MP4 tag (at most 16 MB) |
  * | 7 | ANSICODEPAGE | 1252 | the code page of ISO-8859-1 / ANSI strings, 0 = the code page of the system (see below) |
  * | 8 | ID3V2LINKEDPICTURES | 0 | 1 = read the picture that an ID3v2 APIC frame or a FLAC picture block links to (MIME type <tt>--></tt>) from disk |
  * | 9 | ID3V1MAXTEXTLENGTH | 90 | 30 to 90 = the longest title, artist and album that is written to an ID3v1 tag (see below) |

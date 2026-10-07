@@ -1197,3 +1197,44 @@ TEST_CASE("ID3v2: the language of COMM, USER, USLT and SYLT is read with the cod
     CHECK(take(ID3V2GetUserFrameLanguageW(1)) == L"dйu");
     CHECK(take(ID3V2GetSyncLyricLanguageW(1)) == L"dйu");
 }
+
+TEST_CASE("ID3v2: saving into another file replaces its tag, also if that tag is larger than the analyzed file", "[id3v2][spec][write]")
+{
+    // the analyzed file has 12.5 KB, the tag of the other file 100 KB: it was taken for corrupt (larger than "the file") and stayed in the
+    // file behind the new tag
+    auto a = writeTemp("spec_other_a.mp3", makeMp3(30));
+    auto b = writeTagged("spec_other_b.mp3", tagBytes(3, 0, frame("TIT2", { 0x00, 'O', 'l', 'd' }, 0, 3), 100 * 1024));
+    REQUIRE(AUDIOAnalyzeFileW(a.c_str()) == MPEG);
+    ID3V2SetTextFrameW(ID3F_TIT2, L"New");
+    REQUIRE(ID3V2SaveChangesToFileW(b.c_str()) != 0);
+    const Bytes f = readFile(b);
+    CHECK(findBytes(f, bytesOf("ID3"), 1) == static_cast<size_t>(-1));   // only the tag at the start
+    CHECK(findBytes(f, bytesOf("Old")) == static_cast<size_t>(-1));
+    CHECK(audioIntact(b));
+    REQUIRE(AUDIOAnalyzeFileW(b.c_str()) == MPEG);
+    CHECK(take(ID3V2GetTextFrameW(ID3F_TIT2)) == L"New");
+}
+
+TEST_CASE("ID3v2.3: unsynchronisation of the whole tag is undone (stuffed zero bytes, also at the end of the tag)", "[id3v2][spec][unsync]")
+{
+    // TIT2 "a" FF FF "b" (5 bytes after the resynchronisation), every FF followed by a stuffed 00; a last FF 00 at the end of the tag
+    Bytes stuffedFrame = bytesOf("TIT2");
+    put(stuffedFrame, Bytes({ 0, 0, 0, 5, 0, 0 }));
+    put(stuffedFrame, Bytes({ 0x00, 'a', 0xFF, 0x00, 0xFF, 0x00, 'b' }));
+    Bytes body = stuffedFrame;
+    put(body, Bytes(20, 0));
+    body.push_back(0xFF);
+    body.push_back(0x00);
+    auto p = writeTagged("spec_unsync_inplace.mp3", tagBytes(3, 0x80, body));
+    REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+    CHECK(take(ID3V2GetTextFrameW(ID3F_TIT2)) == L"aÿÿb");
+}
+
+TEST_CASE("ID3v2: the padding size is at most 16 MB", "[id3v2][spec][config]")
+{
+    const long old = GetConfigValueW(1);
+    SetConfigValueW(1, 0x7FFFFFFF);
+    const long clamped = GetConfigValueW(1);
+    SetConfigValueW(1, old);
+    CHECK(clamped == 16 * 1024 * 1024);
+}

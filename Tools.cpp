@@ -555,6 +555,9 @@ void CTools::setConfigValue(long key, long value)
 	}
 	else if (key >= 0 && key < MAX_CONFIG_VALUES)
 	{
+		// a padding is written as part of the tag: a size of many MB is not useful, and above the limit of a blob (1 GB) the tag could not be built
+		if ((key == CONFIG_ID3V2PADDINGSIZE || key == CONFIG_WMAPADDINGSIZE || key == CONFIG_MP4PADDINGSIZE) && value > MAX_PADDING_SIZE)
+			value = MAX_PADDING_SIZE;
 		// block size must be > 0, otherwise the copy loops run forever
 		if (key == CONFIG_ID3V2WRITEBLOCKSIZE)
 		{

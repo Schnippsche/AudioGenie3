@@ -91,7 +91,9 @@ bool CID3V2::ReadHeader(CFile *Stream)
 		Size = TagDataSize + 10;
 		if (Version == TAG_VERSION_2_4 && (CTools::ID3V2Flags & 0x10) == 0x10)
 			Size+= 10; // footer present (id3v2.4)
-		if (Size > CTools::FileSize)
+		// compared with the file that is read (when a tag is saved into another file, CTools::FileSize is the size of the analyzed file)
+		const __int64 fileLength = CTools::fileLength(Stream);
+		if (fileLength < 0 || Size > fileLength)
 		{
 			CTools::instance().writeError(L"ID3V2 tag is corrupt, because the ID3V2 size is bigger than filesize!");
 			Size = 0;			
@@ -196,22 +198,22 @@ static bool applyUnsynchronisation(CBlob &data)
 	return true;
 }
 
-// Transforms all FF 00 sequences into FF
+// Transforms all FF 00 sequences into FF. In place: the data only get shorter, so no copy of a tag of many MB is needed (and no
+// allocation that could fail); every byte is written to a position that has already been read.
 static void resyncTag(CBlob* data)
 {
+	BYTE *p = data->m_pData;
 	const size_t length = data->GetLength();
-	BYTE *dest = new BYTE[length + 1];
-	const BYTE *src = data->m_pData;
-	const BYTE *end = src + length;
-	size_t ln = 0;
-	while (src < end)
+	if (p == NULL)
+		return;
+	size_t to = 0;
+	for (size_t from = 0; from < length; to++)
 	{
-		dest[ln++] = *src;
-		src += (src[0] == 0xFF && (src + 1 < end) && src[1] == 0) ? 2 : 1;
+		const bool stuffed = p[from] == 0xFF && from + 1 < length && p[from + 1] == 0;
+		p[to] = p[from];
+		from += stuffed ? 2 : 1;
 	}
-	data->Clear();
-	data->AddMemory(dest, (long)ln);
-	delete [] dest;
+	data->Truncate(to);
 }
 
 // true if a frame that ends at 'end' (position in the tag body) is followed by something that can follow a frame: the end of the tag, the
@@ -433,6 +435,14 @@ bool CID3V2::SaveTag(LPCWSTR FileName)
 	newData->AddBlob(body);
 	if (paddingSize > 0)
 		newData->AddValue(0, paddingSize);
+	// the header already gives tagSize: a tag that could not be built completely (no memory) must not be written, the readers would
+	// take the audio data behind it for the rest of the tag
+	if (newData->GetLength() != tagSize)
+	{
+		delete newData;
+		CTools::instance().setLastError(ERR_NOT_ENOUGH_MEMORY, (unsigned)tagSize);
+		return false;
+	}
 	bool result;
 	if (needRebuild)
 		result = RebuildFile(FileName, newData);
@@ -448,9 +458,16 @@ bool CID3V2::ReplaceTag(LPCWSTR FileName, CBlob* data)
 	CTools::instance().writeDebug(_T("Replace id3v2 Tag")); 
 	if ( (Stream = CFile::openFile(FileName, CFile::Mode::ReadWrite, CFile::Share::Read)) != NULL)
 	{
-		data->FileWrite(data->GetLength(), Stream);
-		Stream->flush();
+		// the new tag has the size of the old one and overwrites it; a write error (e.g. a full disk) is reported, and the bytes go to the disk
+		const size_t length = data->GetLength();
+		const bool ok = data->FileWrite(length, Stream) == length && Stream->sync();
+		const int error = errno;
 		CFile::closeFile(Stream);
+		if (!ok)
+		{
+			CTools::instance().setLastError(error != 0 ? error : EIO);
+			return false;
+		}
 		return true;
 	}
 	CTools::instance().setLastError(errno);

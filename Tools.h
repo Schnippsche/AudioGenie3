@@ -140,6 +140,7 @@ enum CONFIGKEYS {
 };
 
 #define MAX_CONFIG_VALUES 10
+static const long MAX_PADDING_SIZE = 0x1000000;   // ID3V2PADDINGSIZE, WMAPADDINGSIZE and MP4PADDINGSIZE: at most 16 MB
 
 class CTools
 {
