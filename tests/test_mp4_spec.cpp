@@ -165,6 +165,7 @@ struct Mp4 {
     bool extendedMdat = false;    // mdat with an extended size
     bool sizeZeroMdat = false;    // the size of the mdat is 0: up to the end of the file
     size_t padding = 0;           // a free box in front of the mdat
+    bool mvex = false;            // moov.mvex: the movie has fragments
     uint32_t movieTimescale = 1000;
     uint32_t movieDuration = 10000;
 };
@@ -187,6 +188,7 @@ Bytes moovOf(const Mp4& m, uint64_t mdatPayloadPos)
         put(body, trak(t, mdatPayloadPos, at));
         for (size_t s : t.chunkSizes) at += s;
     }
+    if (m.mvex) put(body, box("mvex", fullBox("trex", 0, 0, [] { Bytes p = be32(1); put(p, be32(1)); put(p, zeros(12)); return p; }())));
     put(body, udta(m.items));
     return box("moov", body);
 }
@@ -543,5 +545,164 @@ TEST_CASE("MP4: damaged files", "[mp4][spec]")
         auto p = writeTemp("mp4_bigbox.m4a", g);
         AUDIOAnalyzeFileW(p.c_str());   // must not crash or hang
         SUCCEED();
+    }
+}
+
+TEST_CASE("MP4: a fragmented file is not written", "[mp4][spec][write]")
+{
+    // the offsets in the fragments (moof, sidx, mfra) are not adjusted: before, every save destroyed the audio data of such a file
+    struct Case { const char* name; bool mvex; const char* topBox; };
+    const Case cases[] = {
+        { "moov.mvex", true, nullptr },
+        { "a movie fragment (moof) behind the moov", false, "moof" },
+        { "a segment index (sidx)", false, "sidx" },
+        { "a random access box (mfra) at the end", false, "mfra" },
+    };
+    for (const Case& c : cases) {
+        INFO(c.name);
+        Mp4 m;
+        m.mvex = c.mvex;
+        Bytes f = mp4File(m);
+        if (c.topBox) put(f, box(c.topBox, fullBox("mfhd", 0, 0, be32(1))));
+        auto p = writeTemp("mp4_fragmented.m4a", f);
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MP4M4A);
+        MP4SetTextFrameW(MP4_TITLE, L"A much longer title than before, so that the movie box grows and the media data have to move");
+        CHECK(MP4SaveChangesW() == 0);
+        CHECK(AUDIOGetLastErrorNumberW() == 206);
+        const bool unchanged = (readFile(p) == f);
+        CHECK(unchanged);
+    }
+}
+
+TEST_CASE("MP4: the media data in two mdat boxes, the moov between them", "[mp4][spec][write]")
+{
+    // ftyp, mdat 1 (the first two chunks), moov, mdat 2 (the last chunk): when the moov grows, only the second mdat moves; the chunk
+    // offsets into it must move, those into the first one must stay (before, all offsets got the delta of the first mdat)
+    for (bool co64 : { false, true }) {
+        INFO("co64 " << co64);
+        Mp4 m;
+        m.tracks[0].co64 = co64;
+        const Bytes media = mediaData(m);
+        const size_t split = m.tracks[0].chunkSizes[0] + m.tracks[0].chunkSizes[1];
+        const Bytes part1(media.begin(), media.begin() + static_cast<std::ptrdiff_t>(split));
+        const Bytes part2(media.begin() + static_cast<std::ptrdiff_t>(split), media.end());
+        Bytes f = ftyp();
+        const uint64_t mdat1Payload = f.size() + 8;
+        put(f, box("mdat", part1));
+        Bytes moov = moovOf(m, mdat1Payload);
+        const uint64_t mdat2Payload = f.size() + moov.size() + 8;
+        // the offsets of the first two chunks point into mdat 1, the last one into mdat 2: patch the last offset in the moov
+        const uint64_t lastOld = mdat1Payload + split;
+        const Bytes needle = co64 ? be64(lastOld) : be32(static_cast<uint32_t>(lastOld));
+        auto it = std::search(moov.begin(), moov.end(), needle.begin(), needle.end());
+        REQUIRE(it != moov.end());
+        const Bytes repl = co64 ? be64(mdat2Payload) : be32(static_cast<uint32_t>(mdat2Payload));
+        std::copy(repl.begin(), repl.end(), it);
+        put(f, moov);
+        put(f, box("mdat", part2));
+        checkChunks(f, m);
+
+        auto p = writeTemp("mp4_twomdat.m4a", f);
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MP4M4A);
+        MP4SetTextFrameW(MP4_TITLE, L"A much longer title than before, so that the movie box grows and the media data have to move");
+        MP4SetTextFrameW(MP4_COMMENT, wide(std::string(5000, 'c')).c_str());
+        REQUIRE(MP4SaveChangesW() != 0);
+        const Bytes g = readFile(p);
+        checkChunks(g, m);
+        Bytes payloads;
+        for (const Box& b : readBoxes(g, 0, g.size()))
+            if (b.type == "mdat") payloads.insert(payloads.end(), g.begin() + static_cast<std::ptrdiff_t>(b.offset + b.headerSize), g.begin() + static_cast<std::ptrdiff_t>(b.offset + b.size));
+        const bool sameMedia = (payloads == media);
+        CHECK(sameMedia);
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MP4M4A);
+        CHECK(take(MP4GetTextFrameW(MP4_COMMENT)).size() == 5000);
+
+        // and shorter again
+        MP4SetTextFrameW(MP4_COMMENT, L"");
+        MP4SetTextFrameW(MP4_TITLE, L"S");
+        REQUIRE(MP4SaveChangesW() != 0);
+        checkChunks(readFile(p), m);
+    }
+}
+
+TEST_CASE("MP4: an mdat with the size 0 in front of an ID3v1 tag", "[mp4][spec][write]")
+{
+    // the mdat reaches to the end of the file in front of the tag: the tag is not part of the media data
+    Mp4 m;
+    m.sizeZeroMdat = true;
+    Bytes f = mp4File(m);
+    Bytes v1 = { 'T', 'A', 'G' };
+    put(v1, "Old title");
+    v1.resize(128, 0);
+    put(f, v1);
+    auto p = writeTemp("mp4_size0_v1.m4a", f);
+    REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MP4M4A);
+    CHECK(std::fabs(AUDIOGetDurationW() - 10.0) < 0.001);
+    MP4SetTextFrameW(MP4_TITLE, L"A much longer title than before, so that the movie box grows and the media data have to move");
+    MP4SetTextFrameW(MP4_COMMENT, wide(std::string(5000, 'c')).c_str());
+    REQUIRE(MP4SaveChangesW() != 0);
+    const Bytes g = readFile(p);
+    REQUIRE(g.size() > 128);
+    const bool tagAtEnd = std::equal(v1.begin(), v1.end(), g.end() - 128);
+    CHECK(tagAtEnd);
+    checkChunks(g, m);
+    // the media data end in front of the tag
+    auto top = readBoxes(g, 0, g.size() - 128);
+    const Box* mdat = find(top, "mdat");
+    REQUIRE(mdat != nullptr);
+    const bool sameMedia = (Bytes(g.begin() + static_cast<std::ptrdiff_t>(mdat->offset + mdat->headerSize), g.end() - 128) == mediaData(m));
+    CHECK(sameMedia);
+    REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MP4M4A);
+    CHECK(take(MP4GetTextFrameW(MP4_COMMENT)).size() == 5000);
+    CHECK(std::fabs(AUDIOGetDurationW() - 10.0) < 0.001);
+}
+
+TEST_CASE("MP4: saving into another file uses the tags of that file", "[mp4][spec][write]")
+{
+    // the analyzed file has an ID3v2 tag in front, the other one does not (and the other way round): the atoms of the target file start
+    // behind its own tag, not behind the one of the analyzed file
+    Mp4 m;
+    const Bytes plain = mp4File(m);
+    Bytes v2 = { 'I', 'D', '3', 3, 0, 0, 0, 0, 0x08, 0x00 };   // 1024 bytes of tag data (padding)
+    v2.resize(10 + 1024, 0);
+    // behind the tag the chunk offsets are larger by the size of the tag
+    Bytes shifted = plain;
+    const auto plainOffsets = chunkOffsets(plain);   // not in the loop header: the vector of a temporary would not live long enough
+    REQUIRE(plainOffsets.size() == 1);
+    for (uint64_t offset : plainOffsets[0]) {
+        const Bytes needle = be32(static_cast<uint32_t>(offset));
+        auto it = std::search(shifted.begin(), shifted.end(), needle.begin(), needle.end());
+        REQUIRE(it != shifted.end());
+        const Bytes repl = be32(static_cast<uint32_t>(offset + v2.size()));
+        std::copy(repl.begin(), repl.end(), it);
+    }
+    Bytes tagged = v2;
+    put(tagged, shifted);
+    for (bool analyzedTagged : { true, false }) {
+        INFO("the analyzed file has the ID3v2 tag: " << analyzedTagged);
+        auto a = writeTemp("mp4_save_a.m4a", analyzedTagged ? tagged : plain);
+        auto b = writeTemp("mp4_save_b.m4a", analyzedTagged ? plain : tagged);
+        const size_t prefix = analyzedTagged ? 0 : v2.size();
+        REQUIRE(AUDIOAnalyzeFileW(a.c_str()) == MP4M4A);
+        MP4SetTextFrameW(MP4_TITLE, L"A much longer title than before, so that the movie box grows and the media data have to move");
+        MP4SetTextFrameW(MP4_COMMENT, wide(std::string(5000, 'c')).c_str());
+        REQUIRE(MP4SaveChangesToFileW(b.c_str()) != 0);
+        const Bytes g = readFile(b);
+        REQUIRE(g.size() > prefix);
+        const bool prefixKept = std::equal(v2.begin(), v2.begin() + static_cast<std::ptrdiff_t>(prefix), g.begin());
+        CHECK(prefixKept);
+        const Bytes atoms(g.begin() + static_cast<std::ptrdiff_t>(prefix), g.end());
+        const bool sameMedia = (mdatPayload(atoms) == mediaData(m));
+        CHECK(sameMedia);
+        // the offsets are absolute in the file: the media must be found at them in the whole file
+        const auto all = chunkOffsets(atoms);
+        REQUIRE(all.size() == 1);
+        for (size_t k = 0; k < all[0].size(); k++) {
+            REQUIRE(all[0][k] < g.size());
+            CHECK(g[all[0][k]] == static_cast<uint8_t>(m.tracks[0].marker + k));
+        }
+        REQUIRE(AUDIOAnalyzeFileW(b.c_str()) == MP4M4A);
+        CHECK(take(MP4GetTextFrameW(MP4_COMMENT)).size() == 5000);
+        CHECK(std::fabs(AUDIOGetDurationW() - 10.0) < 0.001);
     }
 }

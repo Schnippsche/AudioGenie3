@@ -22,6 +22,7 @@
 #include "MP4_MainContainer.h"
 #include "mp4_atomfactory.h"
 #include "mp4atom.h"
+#include "mp4_mdat.h"
 
 CMP4_MainContainer::CMP4_MainContainer(void)
 {
@@ -80,17 +81,34 @@ void CMP4_MainContainer::adjustPadding(__int64 size)
 	}
 }
 
-__int64 CMP4_MainContainer::sizeBeforeMdat()
+bool CMP4_MainContainer::mdatsKeepPositions(__int64 base)
 {
-	__int64 size = 0;
+	__int64 pos = base;
+	bool any = false;
 	const size_t counts = _children.GetCount();
 	for (size_t i = 0; i < counts; i++)
 	{
 		if (_children[i]->getFrameID() == MP4_MDAT)
-			return size;
-		size += (__int64)_children[i]->getSize();
+		{
+			any = true;
+			if (cMDAT(_children[i])->getPosition() != pos)
+				return false;
+		}
+		pos += (__int64)_children[i]->getSize();
 	}
-	return -1;
+	return any;
+}
+
+bool CMP4_MainContainer::isFragmented()
+{
+	const size_t counts = _children.GetCount();
+	for (size_t i = 0; i < counts; i++)
+	{
+		const u32 id = _children[i]->getFrameID();
+		if (id == 'moof' || id == 'mfra' || id == 'sidx')
+			return true;
+	}
+	return find(_T("moov.mvex")) != NULL;
 }
 
 void CMP4_MainContainer::save(CFile *stream)

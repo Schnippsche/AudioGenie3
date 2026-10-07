@@ -34,9 +34,21 @@ CMP4_STCO::~CMP4_STCO(void)
 {
 }
 
-bool CMP4_STCO::move(__int64 delta, CFile *Destination)
+// the delta of the mdat atom that the offset points into; outside of all of them the delta of the first one (as with a single mdat atom)
+static __int64 deltaOf(const std::vector<CMP4_Move> &moves, __int64 offset)
 {
-	if (_blob.GetLength() < 8 || delta == 0)
+	for (const CMP4_Move &m : moves)
+		if (offset >= m.start && offset < m.end)
+			return m.delta;
+	return moves.empty() ? 0 : moves[0].delta;
+}
+
+bool CMP4_STCO::move(const std::vector<CMP4_Move> &moves, CFile *Destination)
+{
+	bool moved = false;
+	for (const CMP4_Move &m : moves)
+		moved = moved || m.delta != 0;
+	if (_blob.GetLength() < 8 || !moved)
 		return true;
 	const size_t entrySize = _is64 ? 8 : 4;
 	u32 count = _blob.Get4B(4);
@@ -51,7 +63,8 @@ bool CMP4_STCO::move(__int64 delta, CFile *Destination)
 	{
 		if (_is64)
 		{
-			const __int64 entry = (__int64)(((u64)_blob.Get4B(8 + (size_t)lfd * 8) << 32) | _blob.Get4B(12 + (size_t)lfd * 8)) + delta;
+			const __int64 old = (__int64)(((u64)(u32)_blob.Get4B(8 + (size_t)lfd * 8) << 32) | (u32)_blob.Get4B(12 + (size_t)lfd * 8));
+			const __int64 entry = old + deltaOf(moves, old);
 			if (entry < 0)
 				return false;
 			tmp.Add4B((u32)((u64)entry >> 32));
@@ -59,7 +72,8 @@ bool CMP4_STCO::move(__int64 delta, CFile *Destination)
 		}
 		else
 		{
-			const __int64 entry = (__int64)_blob.Get4B(8 + (size_t)lfd * 4) + delta;
+			const __int64 old = (__int64)(u32)_blob.Get4B(8 + (size_t)lfd * 4);
+			const __int64 entry = old + deltaOf(moves, old);
 			if (entry < 0 || entry > 0xFFFFFFFFll)
 				return false;   // a 32 bit table cannot hold the offset
 			tmp.Add4B((u32)entry);

@@ -201,11 +201,11 @@ void CMP4_Container::load(CFile *Stream, u64 offset, u64 size)
 			atomSize = ((u64)header.Get4B(0) << 32) | header.Get4B(4);
 			headerLength = 16;
 		}
-		else if (atomSize == 0) // This is the last atom, it reaches to the end of the file
+		else if (atomSize == 0) // This is the last atom, it reaches to the end of the file (in front of the tags at the end: the end of the container)
 		{
-			if ((u64)CTools::FileSize <= _offset)
+			if (endPos <= _offset)
 				return;
-			atomSize = (u64)CTools::FileSize - _offset;
+			atomSize = endPos - _offset;
 		}
 		// an atom is at least as large as its header and must lie inside the container
 		if (atomSize < headerLength || _offset + atomSize > endPos)

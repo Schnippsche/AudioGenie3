@@ -34,6 +34,8 @@
 #include "mp4_mdhd.h"
 #include "mp4_mdat.h"
 #include "mp4_stco.h"
+#include "ID3V1.h"
+#include <vector>
 
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
@@ -67,7 +69,7 @@ bool CMP4::ReadFromFile(CFile *Stream)
 	CMP4_AtomFactory::lastAudioPos = CTools::FileSize;
 	/* Read file data */
 	//Stream->seek(CTools::ID3v2Size);
-	mainContainer->load(Stream, CTools::ID3v2Size, (u64)(CTools::FileSize - CTools::ID3v1Size));
+	mainContainer->load(Stream, CTools::ID3v2Size, (u64)(CTools::FileSize - CTools::ID3v1Size - CTools::ID3v2Size));
 	return (mainContainer->find(FTYP_PFAD) != NULL);	
 }
 
@@ -521,16 +523,38 @@ void CMP4::RemoveTag()
 	mainContainer->removeAtom(_T("moov.udta"));	
 }
 
+// the size of an ID3v2 tag at the start of the file (0 if there is none): the atoms begin behind it
+static __int64 id3v2SizeOf(CFile *Stream)
+{
+	BYTE h[10];
+	if (CTools::readAt(Stream, 0, h, 10) != 10 || h[0] != 'I' || h[1] != 'D' || h[2] != '3' || h[3] == 0xFF || h[4] == 0xFF || ((h[6] | h[7] | h[8] | h[9]) & 0x80) != 0)
+		return 0;
+	__int64 size = 10 + ((__int64)h[6] << 21) + ((__int64)h[7] << 14) + ((__int64)h[8] << 7) + h[9];
+	if (h[3] == 4 && (h[5] & 0x10) != 0)
+		size += 10;   // footer (v2.4)
+	return size;
+}
+
 bool CMP4::SaveToFile(LPCWSTR FileName)
 {
 	// determine the start of the data area
 	CFile *Source;
 	CFile *Destination;
 	CAtlString NewFileName(FileName);
-	//long FrameOldSize = 0;
 	if ( (Source = CFile::openFile(FileName, CFile::Mode::ReadWrite, CFile::Share::All)) == NULL)
 	{
 		CTools::instance().setLastError(errno);
+		return false;
+	}
+	// the tags in front of and behind the atoms of this file (FileName is not always the analyzed file: its sizes and those of the analysis are
+	// not used, CTools::FileSize stays the size of the analyzed file)
+	const __int64 fileSize = Source->size();
+	const __int64 atomsStart = id3v2SizeOf(Source);
+	const __int64 atomsEnd = fileSize - CID3V1::DetectSize(Source);
+	if (fileSize < 0 || atomsEnd <= atomsStart)
+	{
+		CTools::instance().setLastError(ERR_INVALID_FORMAT);
+		CFile::closeFile(Source);
 		return false;
 	}
 	// save old taggings
@@ -540,21 +564,35 @@ bool CMP4::SaveToFile(LPCWSTR FileName)
 	{
 		oldTaggings = atom->copy();
 	}
-	Source->seek(CTools::ID3v2Size);
-	CTools::FileSize = CTools::fileLength(Source);
+	Source->seek(atomsStart);
 	CMP4_MainContainer *newData = new CMP4_MainContainer();
-	newData->load(Source, CTools::ID3v2Size, (u64)(CTools::FileSize - CTools::ID3v1Size));
-	atom = newData->find(MDAT_PFAD);
-	if (atom == NULL)
+	newData->load(Source, (u64)atomsStart, (u64)(atomsEnd - atomsStart));
+	// all mdat atoms (a file can have more than one): the positions and sizes of the old file, the source of their data
+	std::vector<CMP4_MDAT*> mdats;
+	for (int index = 1; ; index++)
 	{
-		CTools::instance().setLastError(ERR_INVALID_FORMAT);
+		CMP4Atom *found = newData->find(MDAT_PFAD, index);
+		if (found == NULL)
+			break;
+		mdats.push_back(cMDAT(found));
+	}
+	// a fragmented file has offsets in its fragments (moof, mfra, sidx) that are not adjusted when the data move: it is not written
+	// (before, every save destroyed the audio data of such a file)
+	const bool fragmented = newData->isFragmented();
+	if (mdats.empty() || fragmented)
+	{
+		CTools::instance().setLastError(fragmented ? ERR_MP4WRITE_NOT_SUPPORTED : ERR_INVALID_FORMAT);
 		delete newData;
+		delete oldTaggings;
 		CFile::closeFile(Source);
 		return false;
 	}
-	CMP4_MDAT *mdat = cMDAT(atom);
-	__int64 oldMDATPosition = mdat->getPosition();
-	mdat->setSourceFile(FileName);
+	std::vector<CMP4_Move> moves;
+	for (CMP4_MDAT *m : mdats)
+	{
+		m->setSourceFile(FileName);
+		moves.push_back({ m->getPosition(), m->getPosition() + (__int64)m->getSize(), 0 });
+	}
 	u64 sizeBefore = newData->getSize();
 	// delete wrong paddings
 	atom = newData->find(_T("moov.udta.meta.free"));
@@ -567,8 +605,8 @@ bool CMP4::SaveToFile(LPCWSTR FileName)
 		newData->replaceAtom(oldTaggings);
 	}
 	else
-	{	
-		// no tagging data wanted	
+	{
+		// no tagging data wanted
 		newData->removeAtom(_T("moov.udta"));
 	}
 	u64 sizeAfter = newData->getSize();
@@ -581,56 +619,56 @@ bool CMP4::SaveToFile(LPCWSTR FileName)
 	bool rebuild = (sizeAfter > sizeBefore || (sizeBefore - sizeAfter > 0 && sizeBefore - sizeAfter < 8) || optimalSize < sizeBefore || paddingBlockSize == 0);
 	if (!rebuild)
 	{
-		// the padding fills the space that the smaller tag has left (in front of the mdat atom). If the atoms in front of the mdat atom change their
-		// size (the metadata are behind the mdat atom), the mdat atom would move inside of the file: the data cannot be copied inside of the same
-		// file (the new padding overwrites the start of the old data) and the chunk offsets would be wrong, so the file is rebuilt
+		// the padding fills the space that the smaller tag has left (in front of the mdat atom). If the atoms in front of an mdat atom change their
+		// size (the metadata are behind the mdat atom, or between two of them), the mdat atom would move inside of the file: the data cannot be
+		// copied inside of the same file (the new padding overwrites the start of the old data) and the chunk offsets would be wrong, so the file is rebuilt
 		newData->adjustPadding((sizeBefore > sizeAfter) ? (__int64)(sizeBefore - sizeAfter) - 8 : -1);
-		if ((__int64)CTools::ID3v2Size + newData->sizeBeforeMdat() != oldMDATPosition)
+		if (!newData->mdatsKeepPositions(atomsStart))
 		{
 			newData->adjustPadding(-1);
 			rebuild = true;
 		}
 	}
 	if (rebuild)
-	{ 
-		CTools::instance().writeDebug(_T("Rebuild mp4 tag")); 
-		mdat->setSameFile(false);
+	{
+		CTools::instance().writeDebug(_T("Rebuild mp4 tag"));
+		for (CMP4_MDAT *m : mdats)
+			m->setSameFile(false);
 		// rebuild File
 		/* Create file streams */
 		if ( (Destination = CTools::createTemporary(FileName, CFile::Mode::Write, NewFileName)) == NULL)
 		{
-			delete newData;		
+			delete newData;
 			CTools::instance().setLastError(errno);
 			CFile::closeFile(Source);
 			return false;
 		};
 		/* adjust padding  */
-		newData->adjustPadding((paddingBlockSize > 0) ? (__int64)paddingBlockSize - 8 : -1);		
+		newData->adjustPadding((paddingBlockSize > 0) ? (__int64)paddingBlockSize - 8 : -1);
+		// the tags in front of and behind the atoms (ID3v2, ID3v1) are kept (before, they were lost when the file was rebuilt)
+		bool tagsCopied = Source->seek(0) && CTools::copyStream(Source, Destination, atomsStart);
 		/* Copy atom blocks */
 		newData->save(Destination);
-		_flushall();
-		/* if mdat position is different and stco is present, then adjust the stco atom */
-		CMP4_MDAT* newMdat = cMDAT(newData->find(MDAT_PFAD));
+		tagsCopied = tagsCopied && Source->seek(atomsEnd) && CTools::copyStream(Source, Destination, fileSize - atomsEnd);
+		if (!tagsCopied)
+			Destination->setFailed(EIO);   // the new file must not replace the original
+		// the chunk offsets of all tracks (32 bit tables stco and 64 bit tables co64) move with the mdat atom they point into
 		bool offsetsOk = true;
-		// adjust the chunk offsets of all tracks: 32 bit tables (stco) and 64 bit tables (co64)
-		if (newMdat != NULL && newMdat->getPosition() != oldMDATPosition)
+		for (size_t i = 0; i < mdats.size(); i++)
+			moves[i].delta = mdats[i]->getPosition() - moves[i].start;
+		for (int track = 1; offsetsOk; track++)
 		{
-			const __int64 delta = (__int64)newMdat->getPosition() - (__int64)oldMDATPosition;
-			for (int track = 1; offsetsOk; track++)
-			{
-				CMP4_STCO* table = cSTCO(newData->find(STCO_PFAD, track));
-				if (table == NULL)
-					break;
-				offsetsOk = table->move(delta, Destination);
-			}
-			for (int track = 1; offsetsOk; track++)
-			{
-				CMP4_STCO* table = cSTCO(newData->find(CO64_PFAD, track));
-				if (table == NULL)
-					break;
-				offsetsOk = table->move(delta, Destination);
-			}
-			_flushall();
+			CMP4_STCO* table = cSTCO(newData->find(STCO_PFAD, track));
+			if (table == NULL)
+				break;
+			offsetsOk = table->move(moves, Destination);
+		}
+		for (int track = 1; offsetsOk; track++)
+		{
+			CMP4_STCO* table = cSTCO(newData->find(CO64_PFAD, track));
+			if (table == NULL)
+				break;
+			offsetsOk = table->move(moves, Destination);
 		}
 		delete newData;
 		if (!offsetsOk)
@@ -644,19 +682,21 @@ bool CMP4::SaveToFile(LPCWSTR FileName)
 		}
 		return CTools::finishRewrite(Source, Destination, NewFileName, FileName);
 	}
-	CTools::instance().writeDebug(_T("Rewrite mp4 tag")); 
-	// the mdat atom stays where it is: the audio data are not copied
-	mdat->setSameFile(true);
-	errno = 0;
-	Source->seek(CTools::ID3v2Size);
+	CTools::instance().writeDebug(_T("Rewrite mp4 tag"));
+	// the mdat atoms stay where they are: the audio data are not copied
+	for (CMP4_MDAT *m : mdats)
+		m->setSameFile(true);
+	Source->seek(atomsStart);
 	newData->save(Source);
-	Source->flush();
+	// the atoms are written over the old ones: a write error is reported, and the bytes go to the disk
+	const bool ok = Source->sync();
+	const int error = errno;
 	CFile::closeFile(Source);
 	newData->remove();
 	delete newData;
-	if (errno != 0)
+	if (!ok)
 	{
-		CTools::instance().setLastError(errno);
+		CTools::instance().setLastError(error != 0 ? error : EIO);
 		return false;
 	}
 	return true;

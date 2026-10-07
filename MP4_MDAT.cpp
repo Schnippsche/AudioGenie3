@@ -59,13 +59,20 @@ void CMP4_MDAT::save(CFile *Destination)
 	if (newPos == (__int64)_position && _sameFile)
 	{
 		// move to the end of the block
-		Destination->seek(_position + _size);	
+		Destination->seek(_position + _size);
+		return;
+	}
+	// The data cannot be copied inside of the same file (the start of the old data would be overwritten), and without a source file
+	// there is nothing to copy: the new file would lack audio data, it must not replace the original (before, an mdat atom without a
+	// source was left out and the next atoms were written over the data of the file).
+	if (_sameFile || _sourcefile.IsEmpty())
+	{
+		Destination->setFailed(EIO);
 		return;
 	}
 	// different positions, so copy from old to new
 	__int64 frameSize = _size;
 	long blockSize = CTools::configValues[CONFIG_ID3V2WRITEBLOCKSIZE];
-	if (!_sourcefile.IsEmpty())
 	{
 		CBlob tmp(blockSize);	
 		CFile *Source;

@@ -28,6 +28,9 @@ public:
 	CMP4Atom* find(CAtlString atomID, int count = 1);
 	void save(CFile *stream);
 	void adjustPadding(__int64 size);
-	__int64 sizeBeforeMdat();   // the size of the atoms in front of the mdat atom (the position of the mdat atom without the data in front of the file), -1 without mdat
+	// true if the atoms, written from position base on, leave every mdat atom where it is (they can be written into the same file then)
+	bool mdatsKeepPositions(__int64 base);
+	// a fragmented file (moof, mfra, sidx or moov.mvex): its offsets in the fragments are not adjusted when data move
+	bool isFragmented();
 	void checkMetaBox();
 };

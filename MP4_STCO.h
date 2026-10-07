@@ -20,6 +20,13 @@
 
 #pragma once
 #include "mp4atom.h"
+#include <vector>
+
+// an mdat atom of the old file (its bytes start to end) and how far it has moved in the new file
+struct CMP4_Move
+{
+	__int64 start, end, delta;
+};
 
 class CMP4_STCO :
 	public CMP4Atom
@@ -27,8 +34,9 @@ class CMP4_STCO :
 public:
 	CMP4_STCO(u32 id = 'stco');	// 'stco' (32 bit offsets) or 'co64' (64 bit offsets)
 	~CMP4_STCO(void);
-	// adds delta to all offsets; false if an offset does not fit into the table any more
-	bool move(__int64 delta, CFile *Destination);
+	// moves every offset by the delta of the mdat atom it points into (an offset outside of all of them by the delta of the first one) and
+	// writes the table again at its place; false if an offset does not fit into the table any more
+	bool move(const std::vector<CMP4_Move> &moves, CFile *Destination);
 	void save(CFile *Destination);
 private:
 	__int64 _position;

@@ -75,7 +75,7 @@ static const LPCWSTR ERR_TEXT[] = {
 	_T(""), // _T("too much frames!"), 
 	_T("tag doesn't exist!"), 
 	_T(""),//_T("wma tag writing not supported in this version!"), 
-	_T(""),//_T("mp4 tag writing not supported in this version!"), 
+	_T("fragmented mp4 files cannot be written (the file is not changed)!"),
 	_T("id is out of range!"), 
 	_T("parser Error: wrong format for id3v2 sync lyrics!"), 
 	_T("tag not allowed in this audio format!"), 
