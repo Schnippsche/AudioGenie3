@@ -225,6 +225,7 @@ private:
 	LameData FLame{};
 	__int64 lameHeaderStart{};                                          /* position of the frame with the LAME tag */
 	long lameHeaderSize{};
+	long lameCrcOffset{};                                               /* position of the CRC of the LAME tag in its frame */
 	tagFrameData Frame{};
 	/* internal functions */
 	long Get4B(BYTE v[]);
@@ -256,6 +257,7 @@ private:
 	void CheckPadding(long start, BYTE Data[]);
 	bool PaddingRequired(int count);
 	bool SetBit(LPCWSTR FileName, int HdrPos, BYTE BitPos, bool neu);
+	bool LocateFirstFrame(CFile *Stream, __int64 start, __int64 fileSize);
 	__int64 firstAudioPos{}, lastAudioPos{};
 public:
 	CMPEGAudio();

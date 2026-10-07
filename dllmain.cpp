@@ -2372,7 +2372,12 @@ extern "C" short __stdcall MPEGIsVBRW()
 extern "C" short __stdcall MPEGSetCopyrightedW(LPCWSTR FileName, short newValue)
 {
 	REFUSE_IN_HOST_HANDLER(0);
-	return b2s(mpeg.SetCopyrightBit(getValidPointer(FileName), (newValue != 0) ));
+	FileName = getValidPointer(FileName);
+	const bool result = mpeg.SetCopyrightBit(FileName, (newValue != 0));
+	// the analysis shows the changed bit (the bit is set with an object of its own)
+	if (result && !lastFile.IsEmpty() && lastFile.CompareNoCase(FileName) == 0)
+		AUDIOAnalyzeFileW(FileName);
+	return b2s(result);
 }
 
 
@@ -2388,7 +2393,12 @@ extern "C" short __stdcall MPEGSetCopyrightedW(LPCWSTR FileName, short newValue)
 extern "C" short __stdcall MPEGSetOriginalW(LPCWSTR FileName, short newValue)
 {
 	REFUSE_IN_HOST_HANDLER(0);
-	return b2s(mpeg.SetOriginalBit(getValidPointer(FileName), (newValue != 0) ));
+	FileName = getValidPointer(FileName);
+	const bool result = mpeg.SetOriginalBit(FileName, (newValue != 0));
+	// the analysis shows the changed bit (the bit is set with an object of its own)
+	if (result && !lastFile.IsEmpty() && lastFile.CompareNoCase(FileName) == 0)
+		AUDIOAnalyzeFileW(FileName);
+	return b2s(result);
 }
 
 
@@ -2404,7 +2414,12 @@ extern "C" short __stdcall MPEGSetOriginalW(LPCWSTR FileName, short newValue)
 extern "C" short __stdcall MPEGSetPrivateW(LPCWSTR FileName, short newValue)
 {
 	REFUSE_IN_HOST_HANDLER(0);
-	return b2s(mpeg.SetPrivateBit(getValidPointer(FileName), (newValue != 0) ));
+	FileName = getValidPointer(FileName);
+	const bool result = mpeg.SetPrivateBit(FileName, (newValue != 0));
+	// the analysis shows the changed bit (the bit is set with an object of its own)
+	if (result && !lastFile.IsEmpty() && lastFile.CompareNoCase(FileName) == 0)
+		AUDIOAnalyzeFileW(FileName);
+	return b2s(result);
 }
 
 

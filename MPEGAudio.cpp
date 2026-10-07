@@ -48,6 +48,7 @@ void CMPEGAudio::ResetData()
 	memset(&FLame, 0, sizeof(FLame));
 	lameHeaderStart = 0;
 	lameHeaderSize = 0;
+	lameCrcOffset = 0;
 	memset(&Frame, 0, sizeof(Frame));
 	memset(&FrameData, 0, sizeof(FrameData));
 	memset(VendorID, 0, 10);
@@ -327,14 +328,15 @@ bool CMPEGAudio::IsHeaderPlausible()
 	return true;
 }
 
-// CRC-16 as LAME writes it: polynomial $8005, start value 0, most significant bit first
+// CRC-16 as LAME writes it (the table crc16_lookup of VbrTag.c): CRC-16/ARC, polynomial $8005 reflected ($A001), start value 0, least
+// significant bit first. Before, the polynomial was used with the most significant bit first: no CRC of a real file matched.
 static unsigned short LameCrc16(unsigned short crc, const BYTE *data, size_t length)
 {
 	for (size_t i = 0; i < length; i++)
 	{
-		crc ^= (unsigned short)(data[i] << 8);
+		crc ^= data[i];
 		for (int bit = 0; bit < 8; bit++)
-			crc = (unsigned short)((crc & 0x8000) ? ((crc << 1) ^ 0x8005) : (crc << 1));
+			crc = (unsigned short)((crc & 1) ? ((crc >> 1) ^ 0xA001) : (crc >> 1));
 	}
 	return crc;
 }
@@ -392,6 +394,7 @@ void CMPEGAudio::ParseLameTag(long frameIndex, long xingIndex, BYTE Data[])
 	FLame.TagCrcValid = (LameCrc16(0, Data + frameIndex, (size_t)(ext + 34 - frameIndex)) == (unsigned short)((p[34] << 8) | p[35]));
 	lameHeaderStart = Frame.FramePosition;
 	lameHeaderSize = Frame.FrameSize;
+	lameCrcOffset = ext + 34 - frameIndex;
 }
 
 // Checks the CRC-16 of the music data: from the frame behind the LAME tag frame up to the music length of the tag
@@ -832,36 +835,72 @@ bool CMPEGAudio::SetOriginalBit(LPCWSTR FileName, bool neu)
 	return SetBit(FileName, 3, 4, neu);
 }
 
-// sets or clears one bit of the first frame header directly in the file
+// searches the first frame of a file that is not the analyzed one (only the start: no scan of the frames, nothing at the end of the file)
+bool CMPEGAudio::LocateFirstFrame(CFile *Stream, __int64 start, __int64 fileSize)
+{
+	ResetData();
+	StartPosition = start;
+	const __int64 maxSearch = start + fileSize / 2;
+	for (;;)
+	{
+		long Transferred = (long)CTools::readAt(Stream, StartPosition, FrameData, DATASIZE);
+		if (Transferred < 0)
+			Transferred = 0;
+		memset(FrameData + Transferred, 0, sizeof(FrameData) - Transferred);
+		FindFrame();
+		if (Frame.Found || Transferred != DATASIZE || StartPosition >= maxSearch)
+			return Frame.Found;
+		StartPosition += MAX_MPEG_FRAME_LENGTH;
+	}
+}
+
+// Sets or clears one bit of the first frame header directly in the file. The file is searched with an object of its own, behind its own
+// ID3v2 tag: before, the analysis object was used (its values were replaced by those of the file, and the search started at the tags of the
+// analyzed file). If the frame carries a LAME tag with a valid CRC, which covers the frame header, the CRC is calculated again.
 bool CMPEGAudio::SetBit(LPCWSTR FileName, int HdrPos, BYTE BitPos, bool neu)
 {
-	BYTE HeaderData[4];
-	bool result = false;
 	CFile *Stream;
-	if ( (Stream = CFile::openFile(FileName, CFile::Mode::ReadWrite, CFile::Share::Read)) != NULL)
+	if ( (Stream = CFile::openFile(FileName, CFile::Mode::ReadWrite, CFile::Share::Read)) == NULL)
 	{
-		result = ReadFromFile(Stream);
-		if (Frame.Found == false)
-		{
-			CFile::closeFile(Stream);
-			return false;
-		}
-		// the header is at StartPosition
-		Stream->seek(Frame.FramePosition);
-		Stream->read(HeaderData, 4);
-		if (neu)
-			HeaderData[HdrPos] |= BitPos;
-		else
-			HeaderData[HdrPos] &= ~BitPos;
-
-		Stream->seek(Frame.FramePosition);
-		Stream->write(HeaderData, 4);
-		Stream->flush();
-		CFile::closeFile(Stream);
-		return true;
+		CTools::instance().setLastError(errno);
+		return false;
 	}
-	CTools::instance().setLastError(errno);
-	return result;
+	CMPEGAudio target;
+	if (!target.LocateFirstFrame(Stream, CTools::id3v2SizeOf(Stream), Stream->size()))
+	{
+		CFile::closeFile(Stream);
+		CTools::instance().setLastError(ERR_INVALID_FORMAT);
+		return false;
+	}
+	// the header, and with a valid LAME tag the frame up to its CRC
+	const bool lame = target.FLame.Found && target.FLame.TagCrcValid && target.lameCrcOffset > 4;
+	const size_t length = lame ? (size_t)target.lameCrcOffset + 2 : 4;
+	BYTE data[MAX_MPEG_FRAME_LENGTH + 4];
+	if (length > sizeof(data) || !Stream->seek(target.Frame.FramePosition) || Stream->read(data, length) != length)
+	{
+		CFile::closeFile(Stream);
+		CTools::instance().setLastError(EIO);
+		return false;
+	}
+	if (neu)
+		data[HdrPos] |= BitPos;
+	else
+		data[HdrPos] &= ~BitPos;
+	if (lame)
+	{
+		const unsigned short crc = LameCrc16(0, data, (size_t)target.lameCrcOffset);
+		data[target.lameCrcOffset] = (BYTE)(crc >> 8);
+		data[target.lameCrcOffset + 1] = (BYTE)crc;
+	}
+	const bool ok = Stream->seek(target.Frame.FramePosition) && Stream->write(data, length) == length && Stream->sync();
+	const int error = errno;
+	CFile::closeFile(Stream);
+	if (!ok)
+	{
+		CTools::instance().setLastError(error != 0 ? error : EIO);
+		return false;
+	}
+	return true;
 }
 
 bool CMPEGAudio::IsValid()

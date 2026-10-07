@@ -608,8 +608,8 @@ namespace {
 uint16_t crc16(uint16_t crc, const uint8_t* d, size_t n)
 {
     for (size_t i = 0; i < n; i++) {
-        crc = static_cast<uint16_t>(crc ^ (d[i] << 8));
-        for (int b = 0; b < 8; b++) crc = static_cast<uint16_t>((crc & 0x8000) ? ((crc << 1) ^ 0x8005) : (crc << 1));
+        crc = static_cast<uint16_t>(crc ^ d[i]);
+        for (int b = 0; b < 8; b++) crc = static_cast<uint16_t>((crc & 1) ? ((crc >> 1) ^ 0xA001) : (crc >> 1));
     }
     return crc;
 }
@@ -692,10 +692,10 @@ LameFile lameFile(const Spec& s, const Lame& l, const char* id, int audioFrames,
 
 }  // namespace
 
-TEST_CASE("LAME tag: the CRC-16 of LAME (polynomial 8005, start value 0)", "[mpeg][spec][lame]")
+TEST_CASE("LAME tag: the CRC-16 of LAME (CRC-16/ARC: polynomial 8005 reflected, start value 0)", "[mpeg][spec][lame]")
 {
     const char* check = "123456789";
-    CHECK(crc16(0, reinterpret_cast<const uint8_t*>(check), 9) == 0xFEE8);
+    CHECK(crc16(0, reinterpret_cast<const uint8_t*>(check), 9) == 0xBB3D);
 }
 
 TEST_CASE("LAME tag: all fields", "[mpeg][spec][lame]")
@@ -1004,4 +1004,59 @@ TEST_CASE("Estimated number of frames: counted from the first frame, for every p
             // a constant bit rate file without padding bit estimates one frame more at most (the duration is calculated from the size)
             CHECK(std::abs(MPEGGetFramesW() - frames) <= 1);
         }
+}
+
+TEST_CASE("MPEG: setting the copyright bit keeps a valid LAME tag CRC", "[mpeg][spec][lame][write]")
+{
+    // the CRC of the LAME tag covers the frame header: it is calculated again when a bit of the header changes
+    ExactRead defaultRead(false);
+    Spec s;
+    Lame l;
+    const LameFile f = lameFile(s, l, "Xing", 30);
+    auto p = writeTemp("mpegspec_setbit_lame.mp3", f.file);
+    REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+    REQUIRE(MPEGIsLameTagCrcValidW() != 0);
+    CHECK(MPEGIsCopyrightedW() == 0);
+    REQUIRE(MPEGSetCopyrightedW(p.c_str(), 1) != 0);
+    CHECK(MPEGIsCopyrightedW() != 0);   // the analyzed file is read again
+    CHECK(MPEGIsLameTagCrcValidW() != 0);
+    CHECK(MPEGIsLameMusicCrcValidW() != 0);
+    const Bytes g = readFile(p);
+    REQUIRE(g.size() == f.file.size());
+    CHECK((g[3] & 0x08) != 0);
+    // only the header and the CRC of the tag have changed
+    size_t changed = 0;
+    for (size_t i = 0; i < g.size(); i++) if (g[i] != f.file[i]) changed++;
+    CHECK(changed <= 3);
+}
+
+TEST_CASE("MPEG: setting a bit in another file searches that file and keeps the analysis", "[mpeg][spec][write]")
+{
+    // The other file has an ID3v2 tag that contains frames (for example in a picture), the analyzed file has none. Before, the search in
+    // the other file started at the tags of the analyzed file and changed a frame inside of the tag, and the analysis showed the other file.
+    ExactRead defaultRead(false);
+    Spec s;
+    const Bytes audioA = framesOf(s, 40);
+    auto pa = writeTemp("mpegspec_setbit_a.mp3", audioA);
+    Spec inTag = s;
+    inTag.bitrateIndex = 5;
+    const Bytes fake = framesOf(inTag, 4);
+    Bytes tag = { 'I', 'D', '3', 3, 0, 0, 0, 0, 0x10, 0x00 };   // 2048 bytes of tag data
+    Bytes body(2048, 0);
+    std::copy(fake.begin(), fake.end(), body.begin() + 100);
+    tag.insert(tag.end(), body.begin(), body.end());
+    Bytes b = tag;
+    const Bytes audioB = framesOf(s, 40);
+    b.insert(b.end(), audioB.begin(), audioB.end());
+    auto pb = writeTemp("mpegspec_setbit_b.mp3", b);
+    REQUIRE(AUDIOAnalyzeFileW(pa.c_str()) == MPEG);
+    const long positionA = MPEGGetFramePositionW();
+    REQUIRE(MPEGSetCopyrightedW(pb.c_str(), 1) != 0);
+    CHECK(MPEGGetFramePositionW() == positionA);
+    CHECK(MPEGIsCopyrightedW() == 0);
+    const Bytes g = readFile(pb);
+    REQUIRE(g.size() == b.size());
+    const bool tagUnchanged = std::equal(tag.begin(), tag.end(), g.begin());
+    CHECK(tagUnchanged);
+    CHECK((g[tag.size() + 3] & 0x08) != 0);
 }
