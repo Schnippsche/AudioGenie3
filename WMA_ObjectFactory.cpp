@@ -108,7 +108,7 @@ CAtlString CWMA_ObjectFactory::GetValue(CAtlString FieldName)
 void  CWMA_ObjectFactory::DeleteField(size_t index)
 {
 	ATLASSERT(index >= 0 && index < tagdatas.GetCount() );
-	//	delete tagdatas.GetAt(index);
+	delete tagdatas.GetAt(index);   // before, the field was not freed
 	tagdatas.RemoveAt(index);	
 }
 
@@ -185,7 +185,8 @@ TagPictureStruct* CWMA_ObjectFactory::ExtractPicture(CBlob* data)
 	int startPos = 5;
 	tps.Mime = data->getNextString(TEXT_ENCODED_UTF16LE, startPos);
 	tps.Description = data->getNextString(TEXT_ENCODED_UTF16LE, startPos);
-	if (startPos + tps.PicSize > data->GetLength())
+	// 64 bit: a size near 4 GB made the 32 bit sum wrap around and passed the check (the picture was read beyond the field)
+	if ((unsigned __int64)startPos + tps.PicSize > (unsigned __int64)data->GetLength())
 	{
 		CTools::instance().setLastError(ERR_WMA_PARSE);
 		tps.PicSize = 0;

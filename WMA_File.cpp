@@ -153,15 +153,18 @@ bool CWMA_File::SaveToFile(LPCWSTR FileName)
 		CTools::instance().setLastError(errno);
 		return false;
 	}
-
-	Stream->seek(CTools::ID3v2Size);
-	u32 oldHeaderSize = (u32)header.loadHeaderOnly(Stream);
-	if (oldHeaderSize == 0) 
+	// the header of the file that is written, behind its own ID3v2 tag (it need not be the analyzed file)
+	const __int64 fileSize = Stream->size();
+	const __int64 start = CTools::id3v2SizeOf(Stream);
+	Stream->seek(start);
+	const __int64 oldHeaderSize = header.loadHeaderOnly(Stream);
+	if (oldHeaderSize <= 0 || start + oldHeaderSize > fileSize)
 	{
+		CTools::instance().setLastError(ERR_WMA_PARSE);
 		CFile::closeFile(Stream);
 		return false;
 	}
-	long audioPos = CTools::ID3v2Size + oldHeaderSize;
+	const __int64 audioPos = start + oldHeaderSize;
 	CWMA_Object *obj = NULL;
 	// save the current objects, if present
 	CWMA_MetadataLibrary *newMetas = NULL;
@@ -173,9 +176,8 @@ bool CWMA_File::SaveToFile(LPCWSTR FileName)
 			newContent = new CWMA_ContentDescription(obj->getData());
 	}
 	// The extended content fields (WM/Composer and the like) live in the global CWMA_ObjectFactory::tagdatas list, not in the object
-	// installed in "header": a fresh object (default constructor, builds itself from that list) always has the current values, while
-	// the header's existing object may be a byte snapshot taken on an earlier save that a SetUserItem() afterwards cannot reach anymore
-	// (it only updates the list). Whether an ExtContentDescription object was installed before does not matter here.
+	// installed in "header": a fresh object (default constructor) builds itself from that list. getData() builds the bytes now, while the
+	// list still holds the values of the analysis.
 	newExtContent = new CWMA_ExtContentDescription();
 	if (newExtContent->getData()->GetLength() == 0)
 	{
@@ -183,10 +185,9 @@ bool CWMA_File::SaveToFile(LPCWSTR FileName)
 		delete newExtContent;
 		newExtContent = NULL;
 	}
-	if ((obj = header.findObject(WMA_HEADER_EXTENSION_ID)) != NULL)
+	if (header.findObject(WMA_HEADER_EXTENSION_ID) != NULL)
 	{
 		// (the header extension object itself is not needed: a new metadata library object replaces its content)
-		// same reasoning as for the extended content fields above: a fresh object always reflects the current tagdatas list
 		newMetas = new CWMA_MetadataLibrary();
 		if (newMetas->getData()->GetLength() == 0)
 		{
@@ -195,46 +196,70 @@ bool CWMA_File::SaveToFile(LPCWSTR FileName)
 		}
 	}
 
-	ResetData();
-	Stream->seek(CTools::ID3v2Size);
-	header.load(Stream, toSizeClamped(CTools::FileSize));
-	// throw out all paddings	
-	size_t oldPadding = 0;
-	while ((obj = header.findObject(WMA_PADDING_ID)) != NULL)
+	// The header of the file is read into an object of its own: its fields go into the global list, so the list of the analysis is put
+	// aside and taken back afterwards. Before, the header and the fields of the analysis were replaced by those of the written file (after
+	// saving into another file, the analyzed file showed its duration and lost the changed fields).
+	CAtlArray<CWMA_TagData*> &tags = CWMA_ObjectFactory::instance().tagdatas;
+	CAtlArray<CWMA_TagData*> analysisTags;
+	for (size_t i = 0; i < tags.GetCount(); i++)
+		analysisTags.Add(tags[i]);
+	tags.RemoveAll();
+	const bool result = WriteHeader(Stream, FileName, start, oldHeaderSize, audioPos, newContent, newExtContent, newMetas);
+	CWMA_ObjectFactory::instance().Reset();   // the fields of the written file
+	for (size_t i = 0; i < analysisTags.GetCount(); i++)
+		tags.Add(analysisTags[i]);
+	return result;
+}
+
+// Writes the header of the file in Stream (start: behind its ID3v2 tag) with the new tag objects (the objects belong to it then) and closes
+// Stream: in place if the new header fits into the old one with a padding object, otherwise into a new file.
+bool CWMA_File::WriteHeader(CFile *Stream, LPCWSTR FileName, __int64 start, __int64 oldHeaderSize, __int64 audioPos, CWMA_ContentDescription *newContent,
+	CWMA_ExtContentDescription *newExtContent, CWMA_MetadataLibrary *newMetas)
+{
+	CWMA_Header fileHeader;
+	CWMA_Object *obj = NULL;
+	Stream->seek(start);
+	if (!fileHeader.load(Stream, (size_t)oldHeaderSize))
 	{
-		oldPadding += obj->getDataSize();
-		header.deleteObject(WMA_PADDING_ID);
+		delete newContent;
+		delete newExtContent;
+		delete newMetas;
+		CTools::instance().setLastError(ERR_WMA_PARSE);
+		CFile::closeFile(Stream);
+		return false;
 	}
-	obj = header.findObject(WMA_HEADER_EXTENSION_ID);
+	// throw out all paddings	
+	while (fileHeader.findObject(WMA_PADDING_ID) != NULL)
+		fileHeader.deleteObject(WMA_PADDING_ID);
+	obj = fileHeader.findObject(WMA_HEADER_EXTENSION_ID);
 	if (obj != NULL)
 	{
 		CWMA_Header_Extension* he = static_cast<CWMA_Header_Extension*>(obj);
-		while ((obj = he->findObject(WMA_PADDING_ID)) != NULL)
-		{
-			oldPadding += obj->getDataSize();
+		while (he->findObject(WMA_PADDING_ID) != NULL)
 			he->deleteObject(WMA_PADDING_ID);
-		}
 		if (newMetas != NULL)
 		{
 			he->replaceObject(newMetas);
+			newMetas = NULL;
 		}
 		else
 			he->deleteObject(WMA_METADATA_LIBRARY_ID);
 	}
+	delete newMetas;   // a file without a header extension: the metadata library has no place
 	// replace new elements
 	if (newContent != NULL)
-		header.replaceObject(newContent);
+		fileHeader.replaceObject(newContent);
 	if (newExtContent != NULL)
-		header.replaceObject(newExtContent);
+		fileHeader.replaceObject(newExtContent);
 	else
-		header.deleteObject(WMA_EXTENDED_CONTENT_DESCRIPTION_ID);   // all fields were removed
+		fileHeader.deleteObject(WMA_EXTENDED_CONTENT_DESCRIPTION_ID);   // all fields were removed
 
 	size_t blockSize = CTools::configValues[CONFIG_ID3V2WRITEBLOCKSIZE];
 	CBlob newHeader(blockSize);
-	header.save(&newHeader);
+	fileHeader.save(&newHeader);
 	CWMA_Padding *newPadding = NULL;
 	long paddingBlockSize = CTools::configValues[CONFIG_WMAPADDINGSIZE];
-	if (newHeader.GetLength() + 26 > oldHeaderSize) // the padding object needs 24 bytes for itself and at least 1 byte of padding
+	if ((__int64)newHeader.GetLength() + 26 > oldHeaderSize) // the padding object needs 24 bytes for itself and at least 1 byte of padding
 	{   
 		ATLTRACE(L"rebuild file...\n");
 		// Rebuild
@@ -242,20 +267,20 @@ bool CWMA_File::SaveToFile(LPCWSTR FileName)
 		if (paddingBlockSize > 0)
 		{
 			newPadding = new CWMA_Padding(paddingBlockSize);
-			header.replaceObject(newPadding);
+			fileHeader.replaceObject(newPadding);
 		}
 		else
-			header.deleteObject(WMA_PADDING_ID);
+			fileHeader.deleteObject(WMA_PADDING_ID);
 
 		newHeader.Clear();
-		header.save(&newHeader);
+		fileHeader.save(&newHeader);
 		// the file size in the file properties changes with the size of the header
-		CWMA_Object *fileProperties = header.findObject(WMA_FILE_PROPERTIES_ID);
+		CWMA_Object *fileProperties = fileHeader.findObject(WMA_FILE_PROPERTIES_ID);
 		if (fileProperties != NULL)
 		{
-			static_cast<CWMA_FileProperties*>(fileProperties)->addToFileSize((__int64)newHeader.GetLength() - (__int64)oldHeaderSize);
+			static_cast<CWMA_FileProperties*>(fileProperties)->addToFileSize((__int64)newHeader.GetLength() - oldHeaderSize);
 			newHeader.Clear();
-			header.save(&newHeader);
+			fileHeader.save(&newHeader);
 		}
 		CFile *Destination;
 		CAtlString NewFileName(FileName);
@@ -265,10 +290,10 @@ bool CWMA_File::SaveToFile(LPCWSTR FileName)
 			CFile::closeFile(Stream);
 			return false;
 		}
-		bool copied = newHeader.FileWrite(newHeader.GetLength(), Destination) == newHeader.GetLength();
-		// the rest of the file: the data object and everything behind it
-		Stream->seek(audioPos);
-		copied = copied && CTools::copyStream(Stream, Destination, -1);
+		// the ID3v2 tag in front (before, it was lost), the new header, then the data object and everything behind it
+		bool copied = Stream->seek(0) && CTools::copyStream(Stream, Destination, start);
+		copied = copied && newHeader.FileWrite(newHeader.GetLength(), Destination) == newHeader.GetLength();
+		copied = copied && Stream->seek(audioPos) && CTools::copyStream(Stream, Destination, -1);
 		if (!copied)
 		{
 			CFile::closeFile(Destination);
@@ -279,22 +304,24 @@ bool CWMA_File::SaveToFile(LPCWSTR FileName)
 		}
 		return CTools::finishRewrite(Stream, Destination, NewFileName, FileName);
 	}
-	else
+	ATLTRACE(L"rewrite file...\n");
+	// insert suitable padding
+	const __int64 newPaddingSize = oldHeaderSize - (__int64)newHeader.GetLength() - 24;
+	if (newPaddingSize > 0)
 	{
-		ATLTRACE(L"rewrite file...\n");
-		// insert suitable padding
-		const __int64 newPaddingSize = (__int64)oldHeaderSize - (__int64)newHeader.GetLength() - 24;
-		if (newPaddingSize > 0)
-		{
-			newPadding = new CWMA_Padding((u32)newPaddingSize);
-			header.replaceObject(newPadding);
-		}
-		newHeader.Clear();
-		header.save(&newHeader);
-		Stream->seek(CTools::ID3v2Size);	
-		newHeader.FileWrite(newHeader.GetLength(), Stream);
-		_flushall();
-		CFile::closeFile(Stream);	
+		newPadding = new CWMA_Padding((u32)newPaddingSize);
+		fileHeader.replaceObject(newPadding);
+	}
+	newHeader.Clear();
+	fileHeader.save(&newHeader);
+	// the header is written over the old one: a write error is reported, and the bytes go to the disk
+	const bool ok = Stream->seek(start) && newHeader.FileWrite(newHeader.GetLength(), Stream) == newHeader.GetLength() && Stream->sync();
+	const int error = errno;
+	CFile::closeFile(Stream);
+	if (!ok)
+	{
+		CTools::instance().setLastError(error != 0 ? error : EIO);
+		return false;
 	}
 	return true;
 }

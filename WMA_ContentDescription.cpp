@@ -74,23 +74,23 @@ bool CWMA_ContentDescription::load(CFile *Stream, size_t maxLen)
 	//ATLTRACE(L"Read DescriptionLength=%i\n", DescriptionLength);
 	//ATLTRACE(L"Read RatingLength=%i\n", RatingLength);
 	_data.FileRead(TitleLength, Stream);
-	_data.AddValue(0, 2);
+	_data.AddValue(0, 3);   // an odd length: the last character and the terminator are complete
 	Title = (LPCWSTR)_data.m_pData;
 	//ATLTRACE(L"Title:%s\n", Title);
 	_data.FileRead(AuthorLength, Stream);
-	_data.AddValue(0, 2);
+	_data.AddValue(0, 3);   // an odd length: the last character and the terminator are complete
 	Author = (LPCWSTR)_data.m_pData;
 	//ATLTRACE(L"Author:%s\n", Author);
 	_data.FileRead(CopyrightLength, Stream);
-	_data.AddValue(0, 2);
+	_data.AddValue(0, 3);   // an odd length: the last character and the terminator are complete
 	Copyright = (LPCWSTR)_data.m_pData;
 	//ATLTRACE(L"Copyright:%s\n", Copyright);
 	_data.FileRead(DescriptionLength, Stream);
-	_data.AddValue(0, 2);
+	_data.AddValue(0, 3);   // an odd length: the last character and the terminator are complete
 	Description = (LPCWSTR)_data.m_pData;
 	//ATLTRACE(L"Description:%s\n", Description);
 	_data.FileRead(RatingLength, Stream);
-	_data.AddValue(0, 2);
+	_data.AddValue(0, 3);   // an odd length: the last character and the terminator are complete
 	Rating = (LPCWSTR)_data.m_pData;
 	// ATLTRACE(L"Rating:%s\n", Rating);
 	_mustBuild = true;

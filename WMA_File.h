@@ -77,5 +77,7 @@ private:
 	 CWMA_Header header;
 	 __int64 DataPosition{};
 	 bool _valid;
+	 bool WriteHeader(CFile *Stream, LPCWSTR FileName, __int64 start, __int64 oldHeaderSize, __int64 audioPos, CWMA_ContentDescription *newContent,
+		 CWMA_ExtContentDescription *newExtContent, CWMA_MetadataLibrary *newMetas);
 };
 

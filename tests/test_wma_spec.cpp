@@ -480,3 +480,96 @@ TEST_CASE("WMA: damaged headers are not written", "[wma][spec][write]")
         SUCCEED();
     }
 }
+
+TEST_CASE("WMA: saving into another file keeps the values of the analyzed file", "[wma][spec][write]")
+{
+    // before, the header and the fields of the analysis were replaced by those of the written file
+    WmaSpec sa;
+    WmaSpec sb;
+    sb.props.playDuration = 80000000;   // 8 s
+    sb.ext = { { L"WM/Composer", 0, utf16(L"Composer of B") } };
+    auto pa = writeTemp("wma_save_a.wma", wmaFile(sa));
+    auto pb = writeTemp("wma_save_b.wma", wmaFile(sb));
+    REQUIRE(AUDIOAnalyzeFileW(pa.c_str()) == WMA);
+    WMASetUserItemW(L"WM/Composer", L"Composer of A");
+    WMASetUserItemW(L"WM/Title", L"Title of A");
+    REQUIRE(WMASaveChangesToFileW(pb.c_str()) != 0);
+    CHECK(std::fabs(AUDIOGetDurationW() - 5.0) < 0.001);
+    CHECK(take(WMAGetUserItemW(L"WM/Composer")) == L"Composer of A");
+    CHECK(take(WMAGetUserItemW(L"WM/AlbumTitle")) == L"Record");
+    REQUIRE(AUDIOAnalyzeFileW(pb.c_str()) == WMA);
+    CHECK(std::fabs(AUDIOGetDurationW() - 8.0) < 0.001);
+    CHECK(take(WMAGetUserItemW(L"WM/Composer")) == L"Composer of A");
+    CHECK(take(WMAGetUserItemW(L"WM/Title")) == L"Title of A");
+}
+
+TEST_CASE("WMA: an ID3v2 tag in front is kept when the header is written", "[wma][spec][write]")
+{
+    Bytes v2 = { 'I', 'D', '3', 3, 0, 0, 0, 0, 0x08, 0x00 };   // 1024 bytes of tag data (padding)
+    v2.resize(10 + 1024, 0);
+    const Bytes wma = wmaFile(WmaSpec());
+    for (bool rebuild : { false, true }) {
+        INFO("the file is rebuilt: " << rebuild);
+        Bytes f = v2;
+        put(f, wma);
+        auto p = writeTemp("wma_id3.wma", f);
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == WMA);
+        WMASetUserItemW(L"WM/Composer", rebuild ? std::wstring(20000, L'c').c_str() : L"C");
+        REQUIRE(WMASaveChangesW() != 0);
+        const Bytes g = readFile(p);
+        REQUIRE(g.size() > v2.size());
+        const bool v2Kept = std::equal(v2.begin(), v2.end(), g.begin());
+        CHECK(v2Kept);
+        const Bytes rest(g.begin() + static_cast<std::ptrdiff_t>(v2.size()), g.end());
+        const Layout l = layout(rest);
+        const Layout l0 = layout(wma);
+        const bool sameData = (tail(rest, l) == tail(wma, l0));
+        CHECK(sameData);
+        CHECK((rest.size() == wma.size()) == !rebuild);
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == WMA);
+        CHECK(take(WMAGetUserItemW(L"WM/Composer")).size() == (rebuild ? 20000u : 1u));
+    }
+}
+
+TEST_CASE("WMA: a picture whose size is near 4 GB is not taken", "[wma][spec]")
+{
+    // type, size, MIME type, description, 10 bytes of picture: the size 0xFFFFFFF0 passed the 32 bit check before (the sum wrapped around)
+    Bytes pic = { 3 };
+    le32(pic, 0xFFFFFFF0u);
+    put(pic, utf16(L"image/jpeg"));
+    put(pic, utf16(L""));
+    pic.resize(pic.size() + 10, 0x55);
+    WmaSpec s;
+    s.ext.push_back({ L"WM/Picture", 1, pic });
+    auto p = writeTemp("wma_bigpic.wma", wmaFile(s));
+    REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == WMA);
+    CHECK(WMAGetPictureCountW() == 1);
+    CHECK(WMAGetPictureSizeW(1) == 0);
+    std::vector<BYTE> buffer(64);
+    CHECK(WMAGetPictureArrayW(buffer.data(), 0xFFFFFFFFu, 1) == 0);
+}
+
+TEST_CASE("WMA: a text of odd length in the content description", "[wma][spec]")
+{
+    // 7 bytes: three characters and half of a fourth, no terminator; the text ends inside of the field
+    Bytes cd;
+    le16(cd, 7); le16(cd, 0); le16(cd, 0); le16(cd, 0); le16(cd, 0);
+    put(cd, utf16(L"Song", false));
+    cd.pop_back();
+    WmaSpec s;
+    Bytes f = wmaFile(s);
+    const Layout l = layout(f);
+    const Obj* c = find(l, G_CONTENT);
+    REQUIRE(c != nullptr);
+    Bytes g(f.begin(), f.begin() + static_cast<std::ptrdiff_t>(c->offset));
+    put(g, object(G_CONTENT, cd));
+    put(g, Bytes(f.begin() + static_cast<std::ptrdiff_t>(c->offset + c->size), f.end()));
+    // the header size and the file size
+    const uint64_t headerSize = l.headerSize - c->size + 24 + cd.size();
+    for (int i = 0; i < 8; i++) g[16 + static_cast<size_t>(i)] = static_cast<uint8_t>(headerSize >> (8 * i));
+    auto p = writeTemp("wma_oddtitle.wma", g);
+    REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == WMA);
+    const std::wstring title = take(WMAGetUserItemW(L"WM/Title"));
+    CHECK(title.substr(0, 3) == L"Son");
+    CHECK(title.size() <= 4);
+}
