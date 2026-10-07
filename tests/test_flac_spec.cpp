@@ -423,7 +423,7 @@ TEST_CASE("FLAC: padding of more than 24 bit, blocks that do not fit into 24 bit
         CHECK(blocks.back().size <= 0xFFFFFF);
         CHECK(slice(g, audio, g.size()) == slice(f, audio0, f.size()));
     }
-    SECTION("a picture of more than 16 MB: saving fails, the file stays as it is") {
+    SECTION("a picture of more than 16 MB is not added (error 220), the file can still be saved") {
         FlacSpec s;
         const Bytes f = flacFile(s);
         auto p = writeTemp("flac_bigpic.flac", f);
@@ -431,8 +431,14 @@ TEST_CASE("FLAC: padding of more than 24 bit, blocks that do not fit into 24 bit
         Bytes png = { 0x89, 'P', 'N', 'G', 0x0D, 0x0A, 0x1A, 0x0A };
         png.resize(17u << 20, 0x77);
         FLACAddPictureArrayW(png.data(), static_cast<uint32_t>(png.size()), L"big", 3);
-        CHECK(FLACSaveChangesW() == 0);
-        CHECK(readFile(p) == f);
+        CHECK(AUDIOGetLastErrorNumberW() == 220);
+        CHECK(FLACGetPictureCountW() == 0);
+        CHECK(FLACSaveChangesW() != 0);
+        size_t audio, audio0;
+        const Bytes g = readFile(p);
+        readBlocks(g, audio);
+        readBlocks(f, audio0);
+        CHECK(slice(g, audio, g.size()) == slice(f, audio0, f.size()));   // the audio data are intact
     }
 }
 
@@ -484,7 +490,23 @@ TEST_CASE("FLAC: the picture block has the width, height, depth and colors of th
     Bytes jpegProgressive = { 0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10, 'J', 'F', 'I', 'F', 0, 1, 1, 0, 0, 1, 0, 1, 0, 0,
                               0xFF, 0xC2, 0x00, 0x11, 0x08, 0x00, 0x90, 0x01, 0x2C, 0x03, 1, 0x22, 0, 2, 0x11, 1, 3, 0x11, 1, 0xFF, 0xDA };
     Bytes jpegBaseline = jpegProgressive; jpegBaseline[21] = 0xC0;
+    // WebP: "RIFF", size, "WEBP", the first chunk; 300 x 144
+    auto webp = [](const char* chunk, const Bytes& chunkData) {
+        Bytes w;
+        put(w, "RIFF"); le32(w, 200); put(w, "WEBP"); put(w, chunk); le32(w, static_cast<uint32_t>(chunkData.size()));
+        put(w, chunkData);
+        w.resize(200, 0);
+        return w;
+    };
+    const Bytes webpLossy = webp("VP8 ", { 0x10, 0x02, 0x00, 0x9D, 0x01, 0x2A, 0x2C, 0x01, 0x90, 0x00 });   // frame tag, start code, 300, 144
+    Bytes vp8l = { 0x2F };
+    le32(vp8l, 299u | (143u << 14) | (1u << 28));   // width - 1, height - 1, alpha
+    const Bytes webpLossless = webp("VP8L", vp8l);
+    const Bytes webpExtended = webp("VP8X", { 0x10, 0, 0, 0, 0x2B, 0x01, 0x00, 0x8F, 0x00, 0x00 });   // alpha, width - 1 = 299, height - 1 = 143
     const Case cases[] = {
+        { "WebP lossy (VP8)", webpLossy, "image/webp", 300, 144, 24, 0 },
+        { "WebP lossless with alpha (VP8L)", webpLossless, "image/webp", 300, 144, 32, 0 },
+        { "WebP extended with alpha (VP8X)", webpExtended, "image/webp", 300, 144, 32, 0 },
         { "PNG RGBA", pngHeader(300, 144, 8, 6), "image/png", 300, 144, 32, 0 },
         { "PNG gray 16 bit", pngHeader(300, 144, 16, 0), "image/png", 300, 144, 16, 0 },
         { "PNG palette", pngHeader(300, 144, 8, 3, 17), "image/png", 300, 144, 8, 17 },
@@ -616,6 +638,52 @@ TEST_CASE("FLAC: the MIME type of a picture is read with the code page it is wri
     REQUIRE(format == FLAC);
     REQUIRE(count == 1);
     CHECK(read == L"image/xй");
+}
+
+TEST_CASE("FLAC: a picture description in the ANSI code page (not UTF-8) is kept and written back as UTF-8", "[flac][spec][picture][codepage]")
+{
+    Bytes pic;
+    be32(pic, 3);
+    be32(pic, 9); put(pic, "image/png");
+    be32(pic, 4); put(pic, "Caf\xE9");   // Latin-1, not valid UTF-8
+    be32(pic, 0); be32(pic, 0); be32(pic, 0); be32(pic, 0);
+    be32(pic, 8); put(pic, Bytes({ 0x89, 'P', 'N', 'G', 1, 2, 3, 4 }));
+    Bytes f = flacFile(FlacSpec());
+    const Bytes b = block(6, false, pic);
+    f.insert(f.begin() + 4 + 4 + 34, b.begin(), b.end());
+    auto p = writeTemp("flac_desc_ansi.flac", f);
+    REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == FLAC);
+    CHECK(take(FLACGetPictureDescriptionW(1)) == L"Café");
+    AUDIOSetTitleW(L"New");
+    REQUIRE(AUDIOSaveChangesW() != 0);
+    Picture saved;
+    REQUIRE(readPicture(readFile(p), saved));
+    CHECK(saved.description == "Caf\xC3\xA9");
+}
+
+TEST_CASE("FLAC: a picture larger than a metadata block (16 MB) is not added; no array is no crash", "[flac][spec][picture]")
+{
+    auto p = writeTemp("flac_large_picture.flac", flacFile(FlacSpec()));
+    REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == FLAC);
+    Bytes picture(16 * 1024 * 1024, 0x11);   // with the 32 bytes of the fields and the MIME type larger than 16777215
+    picture[0] = 0xFF; picture[1] = 0xD8; picture[2] = 0xFF;
+    FLACAddPictureArrayW(picture.data(), static_cast<u32>(picture.size()), L"big", 3);
+    CHECK(AUDIOGetLastErrorNumberW() == 220);
+    CHECK(FLACGetPictureCountW() == 0);
+    const fs::path file = writeTemp("flac_large_picture.jpg", Bytes({ 0xFF, 0xD8, 0xFF }));
+    fs::resize_file(file, 17 * 1024 * 1024);
+    CHECK(FLACAddPictureFileW(file.c_str(), L"big", 3, 0) == 0);
+    CHECK(AUDIOGetLastErrorNumberW() == 220);
+    CHECK(FLACGetPictureCountW() == 0);
+    REQUIRE(AUDIOSaveChangesW() != 0);   // the file can still be saved
+    fs::remove(file);
+
+    // a small picture: the array functions with no array report an error instead of copying to NULL
+    Bytes png = { 0x89, 'P', 'N', 'G', 1, 2, 3, 4 };
+    FLACAddPictureArrayW(png.data(), static_cast<u32>(png.size()), L"small", 3);
+    REQUIRE(FLACGetPictureCountW() == 1);
+    CHECK(FLACGetPictureArrayW(nullptr, 1 << 20, 1) == -1);
+    CHECK(AUDIOGetLastErrorNumberW() == 219);
 }
 
 TEST_CASE("FLAC: a Vorbis comment block does not read into the next block", "[flac][spec]")

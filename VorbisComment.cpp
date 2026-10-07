@@ -88,22 +88,10 @@ void CVorbisComment::BuildVorbisComments(CBlob &Data)
 
 // the list of the comments as the specification defines it: vendor (length, UTF-8), number of the comments, the comments (length, UTF-8 "NAME=value")
 // Vorbis comments are UTF-8. Old encoders wrote them in the ANSI code page (for example German umlauts as ISO-8859-1): the text that is not valid
-// UTF-8 is converted as ANSI text (the field itself is kept as it was read, see structField) and does not count as an error.
+// UTF-8 is converted as ANSI text (the field itself is kept as it was read, see structField) and does not count as an error (CBlob::ConvertUtf8OrAnsi).
 static CAtlString ConvertVorbisText(CBlob &blob)
 {
-	const int oldError = CTools::getLastError();
-	const CAtlString oldText = CTools::GetLastErrorText();
-	CAtlString text = blob.ConvertToUnicodeString(TEXT_ENCODED_UTF8);
-	if (text.IsEmpty() && blob.GetLength() > 0 && CTools::getLastError() == ERR_TEXTCONVERT)
-	{
-		CAtlString ansi = blob.ConvertToUnicodeString(TEXT_ENCODED_ANSI);
-		if (!ansi.IsEmpty())
-		{
-			CTools::restoreLastError(oldError, oldText);
-			return ansi;
-		}
-	}
-	return text;
+	return blob.ConvertUtf8OrAnsi();
 }
 
 void CVorbisComment::AnalyzeVorbisComments(const BYTE *data, size_t length)

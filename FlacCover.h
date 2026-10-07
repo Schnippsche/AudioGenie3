@@ -44,7 +44,9 @@ public:
 	void setPictureData(const BYTE *arr, size_t length);
 	bool setFileLink(LPCWSTR fileName);
 	CAtlString getMime();
-	void CFlacCover::Save(CBlob * destination);
+	void Save(CBlob * destination);
+	size_t storedSize();                          // the size of the block that Save writes
+	static const size_t BLOCK_MAX = 0xFFFFFF;     // the length of a metadata block has 24 bits
 private:
 	bool _isLink{};
 	CAtlString _mime;

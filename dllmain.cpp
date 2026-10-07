@@ -1302,13 +1302,20 @@ extern "C" BSTR __stdcall FLACGetItemKeysW()
  *
  * - -1 = only a link to the image will be stored
  * - 0 = the image data will be stored
- * @return normally -1, 0 on error
+ * @return normally -1, 0 on error (a picture block has at most 16777215 bytes with the MIME type and the description: a bigger picture
+ * is not added, error 220)
  */
 extern "C" short __stdcall FLACAddPictureFileW(LPCWSTR FileName, LPCWSTR Description, short PictureType, short asLink)
 {
 	REFUSE_IN_HOST_HANDLER(0);
 	CFlacCover *pic = new CFlacCover( (BYTE)PictureType, Description);
 	bool result = (asLink) ? pic->setFileLink(getValidPointer(FileName)) : pic->setPictureFile(getValidPointer(FileName));
+	// a picture block larger than the 24 bit length of a metadata block could not be saved (and would stop every save of the file)
+	if (result && pic->storedSize() > CFlacCover::BLOCK_MAX)
+	{
+		CTools::instance().setLastError(ERR_FRAME_TOO_BIG);
+		result = false;
+	}
 	if (result)
 		flac.replaceCover(pic);
 	else
@@ -1330,14 +1337,28 @@ extern "C" short __stdcall FLACAddPictureFileW(LPCWSTR FileName, LPCWSTR Descrip
  * @param PictureType picture type from 0 to 20, see @ref picturetypes
  * @return -1 if frame was replaced, 0 if frame was added
  *
- * The MIME type, the width, the height, the color depth and the number of the colors (indexed pictures) are determined from the picture data. A picture block
- * has at most 16777215 bytes: with a bigger picture saving fails.
+ * The MIME type, the width, the height, the color depth and the number of the colors (indexed pictures) are determined from the picture data
+ * (JPEG, PNG, GIF, BMP, TIFF, WebP). A picture block has at most 16777215 bytes (with the MIME type and the description): a bigger picture
+ * is not added, the last error is 220.
  */
 extern "C" short __stdcall FLACAddPictureArrayW(BYTE *arr, u32 Length, LPCWSTR Description, short PictureType)
 {
 	REFUSE_IN_HOST_HANDLER(0);
+	// a picture block larger than the 24 bit length of a metadata block could not be saved (and would stop every save of the file):
+	// nothing is added, the last error is 220 (the result 0 alone means "added")
+	if (Length > CFlacCover::BLOCK_MAX)
+	{
+		CTools::instance().setLastError(ERR_FRAME_TOO_BIG);
+		return b2s(false);
+	}
 	CFlacCover *pic = new CFlacCover( (BYTE)PictureType, getValidPointer(Description));
 	pic->setPictureData(arr, Length);
+	if (pic->storedSize() > CFlacCover::BLOCK_MAX)
+	{
+		delete pic;
+		CTools::instance().setLastError(ERR_FRAME_TOO_BIG);
+		return b2s(false);
+	}
 	return b2s(flac.replaceCover(pic));
 }
 

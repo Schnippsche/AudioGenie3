@@ -339,7 +339,7 @@ long CID3_Frame::getData(BYTE *destination, long maxLen)
 {
 	decode();
 	long ln = (long)_data.GetLength();
-	if (ln > maxLen)
+	if (ln > maxLen || (destination == NULL && ln > 0))   // no array: as if it were too small
 	{
 		CTools::instance().setLastError(ERR_NOT_ENOUGH_MEMORY, (unsigned)ln);   // the array of the caller is too small: the size it needs
 		return 0;

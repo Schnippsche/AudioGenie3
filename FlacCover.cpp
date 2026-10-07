@@ -60,7 +60,6 @@ CFlacCover::CFlacCover(CBlob *tmpData)
 	};
 	type = tmpData->Get4B(0);
 	int start = 8;
-	int dummy = 0;
 	size_t ln = clampLen(start, tmpData->Get4B(4)); // Length
 	_mime = tmpData->GetAnsiStringAt(start, ln); // ASCII Mime (with the code page it is written with)
 	start+=(int)ln;
@@ -68,7 +67,8 @@ CFlacCover::CFlacCover(CBlob *tmpData)
 	start+=4;
 	data.Clear();
 	data.AddMemory(tmpData->m_pData + start, ln);
-	description = data.getNextString(TEXT_ENCODED_UTF8, dummy);
+	// UTF-8; a description that old programs wrote in the ANSI code page is not lost (it is written back as UTF-8)
+	description = data.ConvertUtf8OrAnsi();
 	start+=(int)ln;
 	width = tmpData->Get4B(start); // width
 	height = tmpData->Get4B(start + 4); // height
@@ -122,7 +122,7 @@ CAtlString CFlacCover::getMime()
 long CFlacCover::getPictureArray(BYTE *arr, size_t maxLen)
 {
 	size_t ln = data.GetLength();
-	if (ln > maxLen)
+	if (ln > maxLen || (arr == NULL && ln > 0))   // no array: as if it were too small
 	{
 		CTools::instance().setLastError(ERR_NOT_ENOUGH_MEMORY, (unsigned)ln);   // the array of the caller is too small: the size it needs
 		return -1;
@@ -152,7 +152,7 @@ bool CFlacCover::setPictureFile(LPCWSTR fileName)
 	_isLink = false;
 	_pictureLink.Empty();
 	// a file that cannot be read completely gives no picture (FLACAddPictureFileW would otherwise replace a picture with an empty one)
-	if (!CTools::readWholeFile(fileName, data, CTools::PICTURE_FILE_MAX))
+	if (!CTools::readWholeFile(fileName, data, BLOCK_MAX))   // a larger picture does not fit into a metadata block
 		return false;
 	// rebuild the MIME type
 	_mime = CTools::instance().ExtractMimeFromPicture(data.m_pData, data.GetLength());
@@ -321,7 +321,55 @@ void CFlacCover::calcInfos()
 				colornumbers = data.GetR4B(46) != 0 ? data.GetR4B(46) : (1u << colordepth);
 		}
 		break;
+	case IMAGE_WEBP:
+		// "RIFF", size, "WEBP", then the first chunk (name and size, its data from byte 20 on): VP8 (lossy: frame tag, start code 9D 01 2A,
+		// width and height with 14 bits), VP8L (lossless: signature 2F, width - 1 and height - 1 with 14 bits each, the alpha bit) or VP8X
+		// (extended: flags with the alpha bit 0x10, 3 bytes reserved, width - 1 and height - 1 of the canvas with 24 bits each)
+		if (length >= 30)
+		{
+			const BYTE *p = data.m_pData;
+			if (memcmp(p + 12, "VP8 ", 4) == 0 && p[23] == 0x9D && p[24] == 0x01 && p[25] == 0x2A)
+			{
+				width = (p[26] | (p[27] << 8)) & 0x3FFF;
+				height = (p[28] | (p[29] << 8)) & 0x3FFF;
+			}
+			else if (memcmp(p + 12, "VP8L", 4) == 0 && p[20] == 0x2F)
+			{
+				const u32 bits = (u32)p[21] | ((u32)p[22] << 8) | ((u32)p[23] << 16) | ((u32)p[24] << 24);
+				width = (int)(bits & 0x3FFF) + 1;
+				height = (int)((bits >> 14) & 0x3FFF) + 1;
+				colordepth = (bits & (1u << 28)) ? 32 : 24;
+			}
+			else if (memcmp(p + 12, "VP8X", 4) == 0)
+			{
+				width = (int)((u32)p[24] | ((u32)p[25] << 8) | ((u32)p[26] << 16)) + 1;
+				height = (int)((u32)p[27] | ((u32)p[28] << 8) | ((u32)p[29] << 16)) + 1;
+				colordepth = (p[20] & 0x10) ? 32 : 24;
+			}
+		}
+		break;
 	}
+}
+
+// the size of the picture block (without its header) as Save writes it: type, the lengths and the 4 values (32 bytes), MIME type,
+// description, the picture or the link
+size_t CFlacCover::storedSize()
+{
+	CBlob text;
+	text.AddEncodedString(TEXT_ENCODED_ANSI, _mime, TEXT_WITHOUT_ENCODING, TEXT_WITHOUT_NULLBYTES);
+	size_t size = 32 + text.GetLength();
+	text.Clear();
+	text.AddEncodedString(TEXT_ENCODED_UTF8, description, TEXT_WITHOUT_ENCODING, TEXT_WITHOUT_NULLBYTES);
+	size += text.GetLength();
+	if (_isLink)
+	{
+		text.Clear();
+		text.AddEncodedString(TEXT_ENCODED_UTF8, _pictureLink, TEXT_WITHOUT_ENCODING, TEXT_WITHOUT_NULLBYTES);
+		size += text.GetLength();
+	}
+	else
+		size += data.GetLength();
+	return size;
 }
 
 void CFlacCover::Save(CBlob * destination)

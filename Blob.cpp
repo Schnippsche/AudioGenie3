@@ -671,6 +671,23 @@ CAtlString CBlob::ConvertToUnicodeString(TextEncoding encoding)
 	return getNextString(encoding, pos);
 }
 
+CAtlString CBlob::ConvertUtf8OrAnsi()
+{
+	const int oldError = CTools::getLastError();
+	const CAtlString oldText = CTools::GetLastErrorText();
+	CAtlString text = ConvertToUnicodeString(TEXT_ENCODED_UTF8);
+	if (text.IsEmpty() && GetLength() > 0 && CTools::getLastError() == ERR_TEXTCONVERT)
+	{
+		CAtlString ansi = ConvertToUnicodeString(TEXT_ENCODED_ANSI);
+		if (!ansi.IsEmpty())
+		{
+			CTools::restoreLastError(oldError, oldText);
+			return ansi;
+		}
+	}
+	return text;
+}
+
 void CBlob::AddFixedAnsiString(const CAtlString source, size_t maxLen)
 {
 	CAtlString tmp = source.Left((int)maxLen);

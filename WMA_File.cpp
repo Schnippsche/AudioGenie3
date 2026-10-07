@@ -374,12 +374,13 @@ size_t CWMA_File::GetPictureArray(BYTE *arr, u32 maxLen, short index)
 	TagPictureStruct *tps = getPictureTag(index);
 	if (tps == NULL)
 		return 0;
-	if (tps->PicSize > maxLen)
+	if (tps->PicSize > maxLen || (arr == NULL && tps->PicSize > 0))   // no array: as if it were too small
 	{
 		CTools::instance().setLastError(ERR_NOT_ENOUGH_MEMORY, (unsigned)tps->PicSize);   // the array of the caller is too small: the size it needs
 		return 0;
 	}
-	memcpy(arr, tps->PicDaten, tps->PicSize);
+	if (tps->PicSize > 0)
+		memcpy(arr, tps->PicDaten, tps->PicSize);
 	return tps->PicSize;	
 }
 CAtlString CWMA_File::GetPictureMime(int index)

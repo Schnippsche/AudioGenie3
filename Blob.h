@@ -124,6 +124,9 @@ public:
 	bool isEmpty()    { return (m_CurrentLength == 0); };
 	bool isNotEmpty() { return (m_CurrentLength > 0); };
 	CAtlString ConvertToUnicodeString(TextEncoding encoding);
+	// a text that should be UTF-8 (Vorbis comments, the description of a FLAC picture): text that is not valid UTF-8 (written by old programs in
+	// the ANSI code page) is converted with ANSICODEPAGE and is not an error
+	CAtlString ConvertUtf8OrAnsi();
 	void AddFixedAnsiString(const CAtlString source, size_t maxLen);
 	void AddEncodedString(TextEncoding encoding, const CAtlString source, EncodingByte withEncodingByte = EncodingByte::With, NullBytes withNullBytes = NullBytes::With);
 	CAtlString getNextString(TextEncoding encoding, int& startPos);

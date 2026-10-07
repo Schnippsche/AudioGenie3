@@ -243,8 +243,9 @@ long CMP4::GetPictureArray(BYTE *destination, long maxLen, short Index)
 	// 4 bytes version/flags = byte hex version + 24-bit hex flags
 	// 0D (13) = jpeg ,  0E (14) = png
 	// 4 bytes reserved = 32-bit value set to zero
-	long ln =(long)atom->_blob.GetLength() - 8;
-	if (ln > maxLen)
+	// an atom with fewer than 8 bytes has no picture (before, the negative length was returned as the size)
+	long ln = (atom->_blob.GetLength() > 8) ? (long)atom->_blob.GetLength() - 8 : 0;
+	if (ln > maxLen || (destination == NULL && ln > 0))   // no array: as if it were too small
 	{
 		CTools::instance().setLastError(ERR_NOT_ENOUGH_MEMORY, (unsigned)ln);   // the array of the caller is too small: the size it needs
 		return -1;
