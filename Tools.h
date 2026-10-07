@@ -89,7 +89,7 @@ static const LPCWSTR ERR_TEXT[] = {
 	_T("not enough memory for allocating %u bytes"),
 	_T("frame is too big "),
 	_T("atom data is unknown format"),
-	_T("id3v2 compressed frames are not supported"),
+	_T("id3v2 compressed frame not decompressed (corrupt, encrypted or too large): it is kept as it is"),
 	_T("chapter frame corrupt, framesize is bigger than id3v2 size"),
 	_T("utf-8 is not allowed in this id3v2 format!"),
 	_T("id3v2 frame '%c%c%c%c' at pos %u is corrupt, framesize is bigger than id3v2 size"),

@@ -25,7 +25,6 @@
 #include "ID3v2.h"
 #include "Tools.h"
 #include "ID3_FrameFactory.h"
-#include <vector>
 extern "C" {
 #include "puff.h"   // third-party (Mark Adler, zlib license, see THIRD-PARTY-NOTICES.md): raw DEFLATE decoder, no dependencies
 }
@@ -172,14 +171,22 @@ static u32 readSynchsafe(const BYTE *p)
 }
 
 // RFC 1950 (zlib format) checksum of the decompressed data, to confirm puff() decoded a genuine zlib stream rather than
-// something that merely happened to parse as one
+// something that merely happened to parse as one. The sums are reduced only every 5552 bytes (the most bytes for which b cannot
+// overflow 32 bits, as in zlib) instead of two divisions per byte.
 static u32 adler32(const BYTE *data, size_t len)
 {
 	u32 a = 1, b = 0;
-	for (size_t i = 0; i < len; i++)
+	while (len > 0)
 	{
-		a = (a + data[i]) % 65521u;
-		b = (b + a) % 65521u;
+		size_t n = (len < 5552) ? len : 5552;
+		len -= n;
+		while (n-- > 0)
+		{
+			a += *data++;
+			b += a;
+		}
+		a %= 65521u;
+		b %= 65521u;
 	}
 	return (b << 16) | a;
 }
@@ -189,8 +196,16 @@ static u32 adler32(const BYTE *data, size_t len)
 // skipped here and the checksum is verified separately. The exact decompressed size is not trusted from the frame's own
 // "data length" field (present but not authoritative if the frame is corrupt); it is instead determined with a first,
 // output-less call to puff(), the same way its own documentation describes for this purpose. A generous but finite cap
-// guards against a corrupt or adversarial frame claiming an enormous size (a "decompression bomb").
+// guards against a corrupt or adversarial frame claiming an enormous size (a "decompression bomb"): for one frame, and for all
+// frames of a tag together (40 frames of 60 MB each, 2.4 MB in the file, took 2.4 GB of memory and crashed the 32 bit DLL).
 static const size_t MAX_DECOMPRESSED_FRAME_SIZE = 64 * 1024 * 1024;
+static const size_t MAX_DECOMPRESSED_TAG_SIZE = 64 * 1024 * 1024;
+static size_t decompressedInTag = 0;   // the bytes that the frames of the current tag have decompressed so far
+
+void CID3_Frame::newTag()
+{
+	decompressedInTag = 0;
+}
 
 static bool inflateZlibFrame(const BYTE *source, long size, CBlob &result)
 {
@@ -203,11 +218,14 @@ static bool inflateZlibFrame(const BYTE *source, long size, CBlob &result)
 	unsigned long srcLen = deflateSize;
 	if (puff(NIL, &destLen, deflateSrc, &srcLen) != 0)
 		return false;
-	if (destLen > MAX_DECOMPRESSED_FRAME_SIZE)
+	if (destLen > MAX_DECOMPRESSED_FRAME_SIZE || destLen > MAX_DECOMPRESSED_TAG_SIZE - decompressedInTag)
 		return false;
 
 	CBlob decompressed;
 	decompressed.AddValue(0, destLen);   // reserve exactly destLen bytes to decompress into
+	// without the memory the buffer is NULL, and puff() would only count again (and adler32 read NULL)
+	if (decompressed.GetLength() != destLen)
+		return false;
 	unsigned long outLen = destLen;
 	srcLen = deflateSize;
 	if (puff(decompressed.m_pData, &outLen, deflateSrc, &srcLen) != 0 || outLen != destLen)
@@ -222,6 +240,9 @@ static bool inflateZlibFrame(const BYTE *source, long size, CBlob &result)
 
 	result.Clear();
 	result.AddMemory(decompressed.m_pData, destLen);
+	if (result.GetLength() != destLen)
+		return false;
+	decompressedInTag += destLen;
 	return true;
 }
 
@@ -269,27 +290,33 @@ void CID3_Frame::load(BYTE* source, long size)
 		if (_grouped)
 			_groupId = source[pos++];
 	}
+	_blob.AddMemory(source + pos, size - pos);
+	isDecoded = false;
+	// Unsynchronisation (v2.4: of the frame) is applied last when a frame is written, after compression and encryption, so it is reversed
+	// first: the data are plain from now on and the frame is written without the flag
+	if (isUnsynchronized())
+		resync();
+	_unsyncResolved = true;
 	// a compressed frame that is also encrypted cannot be decompressed here: the encryption method is vendor specific and
 	// unknown to this library, so the bytes are not even valid DEFLATE data yet
-	if (_compressed && !_encrypted && inflateZlibFrame(source + pos, size - pos, _blob))
+	if (_compressed && !_encrypted)
 	{
-		// _blob now holds the decompressed data; nothing else to do
-	}
-	else
-	{
-		if (_compressed)
+		CBlob plain;
+		if (inflateZlibFrame(_blob.m_pData, (long)_blob.GetLength(), plain))
+		{
+			// the frame is written uncompressed (the library has no compressor), without the flag and the size field, otherwise
+			// other readers would try to decompress plain data
+			_blob.Clear();
+			_blob.AddBlob(plain);
+			_compressed = false;
+			_dataLength = (u32)_blob.GetLength();
+		}
+		else
 			CTools::instance().setLastError(ERR_COMPRESSED_FRAME_CORRUPT);
-		_blob.AddMemory(source + pos, size - pos);
 	}
-	isDecoded = false;
+	else if (_compressed)
+		CTools::instance().setLastError(ERR_COMPRESSED_FRAME_CORRUPT);
 	mustRebuild = false;
-	// unsynchronisation is reversed here for every frame, so that the data are plain from now on and the frame is written without the flag
-	if (isUnsynchronized())
-	{
-		resync();
-		mustRebuild = false;
-	}
-	_unsyncResolved = true;
 }
 
 void CID3_Frame::save(CFile *stream)
@@ -331,13 +358,13 @@ bool CID3_Frame::setData(BYTE *source, unsigned int maxLen)
 	return true;
 }
 
-void CID3_Frame::storeFrame(CBlob *tmp)
+bool CID3_Frame::storeFrame(CBlob *tmp)
 {
 	u32 id = CID3_FrameFactory::instance().findTagForVersion(_frameID);
 	if (id != F_NONE && !canStoreFor(CTools::ID3V2newTagVersion))
 	{
 		CTools::instance().writeWarning(L"frame '%s' ignored because its data cannot be converted into id3v2.%i", (LPCTSTR)getFrameIDString(), CTools::ID3V2newTagVersion);
-		return;
+		return true;
 	}
 	if (id != F_NONE)
 	{
@@ -377,6 +404,12 @@ void CID3_Frame::storeFrame(CBlob *tmp)
 			if (_grouped) extra.AddValue(_groupId);
 		}
 		const long frameSize = dataSize + (long)extra.GetLength();
+		// the size field has 3 bytes in v2.2 (16 MB) and 28 bits in v2.4 (256 MB): a larger frame would get a wrong size and make the tag unreadable
+		if ((version == TAG_VERSION_2_2 && dataSize > 0xFFFFFF) || (version == TAG_VERSION_2_4 && frameSize > 0x0FFFFFFF))
+		{
+			CTools::instance().writeError(L"frame '%s' with %li bytes is too large for id3v2.%i", (LPCTSTR)getFrameIDString(), frameSize, (int)version);
+			return false;
+		}
 		switch (version)
 		{
 		case TAG_VERSION_2_2:
@@ -408,24 +441,27 @@ void CID3_Frame::storeFrame(CBlob *tmp)
 	{
 		CTools::instance().writeWarning(L"frame '%s' ignored because it is not supported in id3v2.%i", (LPCTSTR)getFrameIDString(), CTools::ID3V2newTagVersion);
 	}
+	return true;
 }
 
 //	To be used when reading an ID3v2-tag
 //	Transforms all FF 00 sequences into FF
 void CID3_Frame::resync()
 {
-	std::vector<BYTE> dest;
-	dest.reserve(_blob.GetLength());
-	const BYTE *src = _blob.m_pData;
-	const BYTE *end = src + _blob.GetLength();
-	while (src < end)
+	// in place: the data only get shorter (no copy that could fail for a frame of many MB)
+	BYTE *p = _blob.m_pData;
+	const size_t length = _blob.GetLength();
+	if (p != NULL)
 	{
-		dest.push_back(*src);
-		src += (src[0] == 0xFF && (src + 1 < end) && src[1] == 0) ? 2 : 1;
+		size_t to = 0;
+		for (size_t from = 0; from < length; to++)
+		{
+			const bool stuffed = p[from] == 0xFF && from + 1 < length && p[from + 1] == 0;
+			p[to] = p[from];
+			from += stuffed ? 2 : 1;
+		}
+		_blob.Truncate(to);
 	}
-	_blob.Clear();
-	if (!dest.empty())
-		_blob.AddMemory(dest.data(), dest.size());
 	mustRebuild = true;
 }
 

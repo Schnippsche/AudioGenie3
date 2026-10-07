@@ -1238,3 +1238,118 @@ TEST_CASE("ID3v2: the padding size is at most 16 MB", "[id3v2][spec][config]")
     SetConfigValueW(1, old);
     CHECK(clamped == 16 * 1024 * 1024);
 }
+
+TEST_CASE("ID3v2: a decompressed frame is written back uncompressed (without the flag)", "[id3v2][spec][compression]")
+{
+    // v2.3: TIT2 compressed ("Hello World"), TPE1 plain; only TPE1 is changed
+    Bytes tit2 = be32(12);
+    put(tit2, kCompressedHelloWorld);
+    Bytes body = frame("TIT2", tit2, 0x0080, 3);
+    put(body, frame("TPE1", { 0x00, 'A' }, 0, 3));
+    auto p = writeTagged("spec_compressed_save.mp3", tagBytes(3, 0, body, 100));
+    REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+    REQUIRE(ID3V2SetFormatAndEncodingW(2, 0) != 0);   // id3v2.3, ISO-8859-1 (an earlier test may have changed them)
+    ID3V2SetTextFrameW(ID3F_TPE1, L"B");
+    REQUIRE(ID3V2SaveChangesW() != 0);
+    const Bytes f = readFile(p);
+    const size_t i = findBytes(f, bytesOf("TIT2"));
+    REQUIRE(i != static_cast<size_t>(-1));
+    Bytes expected = bytesOf("TIT2");
+    put(expected, be32(12));
+    put(expected, Bytes({ 0x00, 0x00 }));   // no flags
+    expected.push_back(0x00);
+    put(expected, bytesOf("Hello World"));
+    CHECK(Bytes(f.begin() + static_cast<std::ptrdiff_t>(i), f.begin() + static_cast<std::ptrdiff_t>(i + expected.size())) == expected);
+    REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+    CHECK(take(ID3V2GetTextFrameW(ID3F_TIT2)) == L"Hello World");
+}
+
+TEST_CASE("ID3v2.4: a compressed frame with unsynchronisation: the unsynchronisation is reversed before the decompression", "[id3v2][spec][compression][unsync]")
+{
+    // zlib.compress(b"\x00iZtiZtOjOWoPrN1r6CF2", 9), unsynchronised: in the DEFLATE data the bytes FF 00 follow (the zero byte is
+    // added by the unsynchronisation, after the 12th byte): decompressed before the resynchronisation the stream is corrupt
+    const Bytes stream = { 0x78, 0xda, 0x63, 0xc8, 0x8c, 0x2a, 0x01, 0x22, 0xff, 0x2c, 0xff, 0x00, 0xf0, 0xfc, 0x80, 0x22, 0x3f, 0xc3,
+                           0x22, 0x33, 0x67, 0x37, 0x23, 0x00, 0x4e, 0x40, 0x06, 0xe1 };
+    Bytes data = synchsafe(21);
+    put(data, stream);
+    // flags: compressed (0x08), unsynchronised (0x02), data length indicator (0x01)
+    auto p = writeTagged("spec_compressed_unsync.mp3", tagBytes(4, 0, frame("TIT2", data, 0x000B, 4), 100));
+    REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+    CHECK(take(ID3V2GetTextFrameW(ID3F_TIT2)) == L"iZtiZtOjOWoPrN1r6CF2");
+}
+
+namespace {
+// a zlib stream (RFC 1950) whose DEFLATE data (one block with the fixed Huffman codes) decompress to prefix + zeroRuns * 258 zero bytes:
+// the prefix as literals, a zero byte, then copies of length 258 at distance 1 (13 bits each). Compressed it has about 1/160 of the size.
+Bytes zlibOfZeros(const Bytes& prefix, size_t zeroRuns)
+{
+    Bytes out = { 0x78, 0x01 };
+    uint32_t bitBuffer = 0;
+    int bits = 0;
+    auto putBits = [&](uint32_t value, int count) {
+        bitBuffer |= value << bits;
+        bits += count;
+        while (bits >= 8) { out.push_back(static_cast<uint8_t>(bitBuffer)); bitBuffer >>= 8; bits -= 8; }
+    };
+    auto putCode = [&](uint32_t code, int length) {   // Huffman codes are written with the most significant bit first
+        uint32_t reversed = 0;
+        for (int i = 0; i < length; i++) reversed |= ((code >> i) & 1) << (length - 1 - i);
+        putBits(reversed, length);
+    };
+    putBits(1, 1);   // last block
+    putBits(1, 2);   // fixed Huffman codes
+    Bytes plain = prefix;
+    plain.push_back(0);
+    for (uint8_t b : plain) {
+        if (b < 144) putCode(0x30 + b, 8); else putCode(0x190 + b - 144, 9);
+    }
+    for (size_t i = 0; i < zeroRuns; i++) {
+        putCode(0xC5, 8);   // length 258 (symbol 285)
+        putCode(0, 5);      // distance 1
+    }
+    putCode(0, 7);          // end of block (256)
+    if (bits > 0) out.push_back(static_cast<uint8_t>(bitBuffer));
+    // Adler-32 of the plain data
+    uint32_t a = 1, s = 0;
+    for (uint8_t b : plain) { a = (a + b) % 65521; s = (s + a) % 65521; }
+    for (size_t i = 0; i < zeroRuns * 258; i++) s = (s + a) % 65521;   // a zero byte leaves a unchanged
+    const uint32_t adler = (s << 16) | a;
+    put(out, be32(adler));
+    return out;
+}
+}  // namespace
+
+TEST_CASE("ID3v2: the decompressed data of all compressed frames of a tag are limited to 64 MB together", "[id3v2][spec][compression]")
+{
+    // two TXXX frames that decompress to 40 MB each: the first is decompressed, the second stays as it is (before: no limit for the
+    // tag, 40 frames of 60 MB in a file of 2.4 MB took 2.4 GB of memory, 80 frames crashed the 32 bit DLL)
+    const size_t runs = 40 * 1024 * 1024 / 258;
+    const Bytes prefix = { 0x00, 'A', 0x00 };   // encoding, description "A", terminator, then the value (zero bytes)
+    Bytes data = synchsafe(static_cast<uint32_t>(prefix.size() + 1 + runs * 258));
+    put(data, zlibOfZeros(prefix, runs));
+    const Bytes txxx = frame("TXXX", data, 0x0009, 4);
+    Bytes body = txxx;
+    put(body, txxx);
+    auto p = writeTagged("spec_compressed_limit.mp3", tagBytes(4, 0, body, 100));
+    REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+    REQUIRE(ID3V2GetFrameCountW(ID3F_TXXX) == 2);
+    CHECK(take(ID3V2GetUserTextDescriptionW(1)) == L"A");
+    CHECK(take(ID3V2GetUserTextDescriptionW(2)) != L"A");   // not decompressed
+}
+
+TEST_CASE("ID3v2.2: a frame larger than 16 MB (the size field has 3 bytes) is refused, the file is not changed", "[id3v2][spec][write]")
+{
+    auto p = writeTagged("spec_v22_large.mp3", tagBytes(3, 0, frame("TIT2", { 0x00, 'T' }, 0, 3), 100));
+    const Bytes before = readFile(p);
+    struct DefaultVersionAfterwards { ~DefaultVersionAfterwards() { ID3V2SetFormatAndEncodingW(2, 0); } } restore;   // id3v2.3
+    REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+    REQUIRE(ID3V2SetFormatAndEncodingW(1, 0) != 0);   // 1 = id3v2.2
+    Bytes picture(17 * 1024 * 1024, 0x11);
+    picture[0] = 0xFF; picture[1] = 0xD8; picture[2] = 0xFF;
+    ID3V2AddPictureArrayW(picture.data(), static_cast<u32>(picture.size()), L"big", 3);   // 0: added (-1: replaced)
+    REQUIRE(ID3V2GetFrameCountW(ID3F_APIC) == 1);
+    CHECK(ID3V2SaveChangesW() == 0);
+    CHECK(AUDIOGetLastErrorNumberW() == 220);
+    const bool unchanged = readFile(p) == before;   // not compared in CHECK: Catch2 would print 17 MB
+    CHECK(unchanged);
+}

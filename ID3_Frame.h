@@ -57,7 +57,10 @@ public:
 	u32 _dataLength;                     // decompressed size or data length indicator
 	long getData(BYTE *destination, long maxLen);
 	bool setData(BYTE *source, unsigned int maxLen);
-	void storeFrame(CBlob *tmp);
+	// writes the frame for the new tag version; false if it is too large for the size field of that version (v2.2 16 MB, v2.4 256 MB)
+	bool storeFrame(CBlob *tmp);
+	// the frames that follow belong to a new tag: the limit of the decompressed data of all compressed frames of a tag starts again
+	static void newTag();
 	CAtlString getFrameIDString();
 	/* analyzes the data from the blob */
 	virtual void decode() {} ;

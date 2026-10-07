@@ -82,7 +82,7 @@ public:
 	CAtlString GetGenre();
 	void SetText(u32 ID, LPCWSTR newText);
 	void SetURL(u32 ID, LPCWSTR newURL);
-	void storeFrames(CBlob *blob);
+	bool storeFrames(CBlob *blob);   // false if a frame is too large for the new tag version
 	CAtlString getAllFrameIDs();
 	u32 calcTagSize();
 	void convertFramesForVersion();

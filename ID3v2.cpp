@@ -237,6 +237,7 @@ static bool frameEndsCleanly(CBlob* data, u32 dataSize, unsigned __int64 end)
 
 void CID3V2::parseTags(CBlob* data)
 {
+	CID3_Frame::newTag();   // the limit of the decompressed data applies to the frames of this tag together
 	u32 DataPosition = 0;
 	int headerSize = ( Version == TAG_VERSION_2_2) ? 6 : 10;
 	u32 dataSize = (u32)data->GetLength();
@@ -407,7 +408,11 @@ bool CID3V2::SaveTag(LPCWSTR FileName)
 	// can grow it, so the exact final size has to come from what was actually built rather than from calcTagSize()'s
 	// analytical estimate (still correct: identical to it whenever nothing needs unsynchronising, see below)
 	CBlob body;
-	storeFrames(&body);
+	if (!storeFrames(&body))
+	{
+		CTools::instance().setLastError(ERR_FRAME_TOO_BIG);   // the file is not changed
+		return false;
+	}
 	const bool unsynchronised = (CTools::ID3V2newTagVersion != TAG_VERSION_2_4) && applyUnsynchronisation(body);
 	u32 tagSize = 10 + (u32)body.GetLength();
 	bool needRebuild = false;
@@ -429,6 +434,12 @@ bool CID3V2::SaveTag(LPCWSTR FileName)
 		paddingSize = oldTagSize - tagSize;
 		tagSize = oldTagSize;
 		needRebuild = false;
+	}
+	// the size in the header is a synchsafe integer of 28 bits (all versions): a larger tag would get a wrong size
+	if (tagSize - 10 > 0x0FFFFFFF)
+	{
+		CTools::instance().setLastError(ERR_FRAME_TOO_BIG);
+		return false;
 	}
 	CBlob *newData = new CBlob(tagSize);
 	WriteHeader(newData, tagSize - 10, unsynchronised);
@@ -755,11 +766,13 @@ bool CID3V2::replaceFrame(CID3_Frame *frame)
 	return false;
 }
 
-void CID3V2::storeFrames(CBlob *blob)
+bool CID3V2::storeFrames(CBlob *blob)
 {
+	bool ok = true;
 	size_t counts = _frames.GetCount();
 	for (size_t i = 0; i < counts; i++)
-		_frames[i]->storeFrame(blob);
+		ok = _frames[i]->storeFrame(blob) && ok;
+	return ok;
 }
 
 u32 CID3V2::calcTagSize()
