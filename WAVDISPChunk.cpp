@@ -66,6 +66,14 @@ bool CWAVDISPChunk::load(CFile *Stream, u64 offset, u64 size)
 	return true;
 }
 
+CWAVChunk* CWAVDISPChunk::clone()
+{
+	CWAVDISPChunk *copy = new CWAVDISPChunk();
+	copy->_type = _type;
+	copy->_data.AddBlob(_data);
+	return copy;
+}
+
 CAtlString CWAVDISPChunk::getText()
 {
 	if (_type == CF_TEXT && _data.GetLength() > 4)

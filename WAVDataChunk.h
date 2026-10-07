@@ -33,7 +33,6 @@ public:
 	u64 getSize();
 	u64 getOffset() { return _offset; };
 	u64 getPayloadSize() { return _size; };   // the size of the audio data alone, without the chunk header (the 64 bit value from 'ds64' for RF64 files)
-	void copyPositionFrom(const CWAVDataChunk &other) { _offset = other._offset; _size = other._size; };
 protected:
 	u64 _size;
 	u64 _offset{};

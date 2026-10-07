@@ -30,6 +30,7 @@ public:
 	u32 getType() { return _type; };
 	CAtlString getText();
 	void setText(LPCWSTR text);
+	CWAVChunk* clone();
 protected:
 	u32 _type;
 };

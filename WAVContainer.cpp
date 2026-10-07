@@ -50,6 +50,15 @@ u64 CWAVContainer::getSize()
 	return size;
 }
 
+CWAVChunk* CWAVContainer::clone()
+{
+	CWAVContainer *copy = new CWAVContainer(_chunkID);
+	size_t counts = _children.GetCount();
+	for (size_t i = 0; i < counts; i++)
+		copy->_children.Add(_children[i]->clone());
+	return copy;
+}
+
 CWAVChunk* CWAVContainer::find(u32 ID)
 {
 	CWAVChunk* chunk = NULL;

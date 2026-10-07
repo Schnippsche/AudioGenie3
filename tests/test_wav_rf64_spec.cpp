@@ -120,19 +120,17 @@ TEST_CASE("RF64: sample rate, channels, duration and bit rate come from the ds64
 
 TEST_CASE("RF64: a data size that a 32 bit RIFF file could never declare (over 4 GiB)", "[wav][rf64][spec]")
 {
-    // the physical bytes are not actually written (that would make the test slow); the container only has to trust ds64 for the duration,
-    // and it must refuse to read past the real end of the file (a chunk that claims more than the file has is rejected, see the next test)
+    // the physical bytes are not actually written (that would make the test slow); the container must not read past the real end of the
+    // file: the audio data reach to the end of the file, as for a recording that was cut off
     Rf64Spec s;
     s.declaredDataSize = 5ull * 1024 * 1024 * 1024;   // 5 GiB, does not fit into a 32 bit chunk size field
     s.declaredRiffSize = s.declaredDataSize + 1000;   // consistent with a file that really is that big
     auto f = rf64File(s);
-    // shrink the physical file back down (only the ds64 promise stays huge) and make sure it is rejected: the data chunk would reach
-    // past the end of the actual file, which must not be accepted as valid
+    // only the ds64 promise is huge, the file has 1000 sample frames: the duration is the one of the bytes that are there
     auto p = writeTemp("rf64_huge_promise.wav", f);
-    // the format is still identified (the header up to 'data' parses fine), but the file is not valid: a 'data' chunk that reaches
-    // past the real end of the file is rejected, as for any other corrupt or truncated file
     REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == WAV);
-    CHECK(AUDIOIsValidFormatW() == 0);
+    CHECK(AUDIOIsValidFormatW() != 0);
+    CHECK(std::fabs(AUDIOGetDurationW() - 1000.0 / 44100) < 0.001);
 }
 
 TEST_CASE("RF64: writing tags keeps the format RF64 and the audio data untouched", "[wav][rf64][spec][write]")

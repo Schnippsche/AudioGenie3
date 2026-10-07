@@ -58,7 +58,7 @@ CAtlString CWAVBEXTChunk::getASCIIText(BYTE nr)
 	}
 	size_t startPos = BEXT_CODES[nr][0];
 	size_t maxLen = BEXT_CODES[nr][1];
-	if (startPos > _data.GetLength() )
+	if (startPos >= _data.GetLength())
 		return EMPTY;
 	CAtlString result;
 	if (nr == WAV_BEXT_TIMEREFERENCE)
@@ -72,7 +72,8 @@ CAtlString CWAVBEXTChunk::getASCIIText(BYTE nr)
 		return result;
 	}
 	CBlob tmp;
-	if (maxLen == 0)
+	// a chunk that is shorter than the structure: only its bytes (before, the bytes behind its end were read)
+	if (maxLen == 0 || startPos + maxLen > _data.GetLength())
 		tmp.AddMemory(_data.m_pData + startPos, _data.GetLength() - startPos);
 	else
 		tmp.AddMemory(_data.m_pData + startPos, maxLen);
@@ -91,12 +92,9 @@ void CWAVBEXTChunk::setASCIIText(CAtlString newText, BYTE nr)
 	size_t startPos = BEXT_CODES[nr][0];
 	size_t maxLen = BEXT_CODES[nr][1];
 	CBlob tmp;
-	// pad to 602 bytes
+	// a shorter chunk is filled up with zeros (before, its fields were deleted)
 	if (_data.GetLength() < 602)
-	{
-		_data.Clear();
 		_data.AddValue(0, 602 - _data.GetLength());
-	}
 	if (nr == WAV_BEXT_TIMEREFERENCE)
 	{
 		tmp.AddR8B(_wtoi64(newText));

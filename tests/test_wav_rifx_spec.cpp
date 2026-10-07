@@ -113,7 +113,7 @@ TEST_CASE("RIFX: the LIST/INFO tag is read despite the big endian chunk sizes", 
     CHECK(take(WAVGetTextFrameW(WAV_INAM)) == L"Song");
 }
 
-TEST_CASE("RIFX: a data chunk that reaches past the real end of the file is rejected", "[wav][rifx][spec]")
+TEST_CASE("RIFX: a data chunk that reaches past the real end of the file ends at the end of the file", "[wav][rifx][spec]")
 {
     RifxSpec s; s.sampleFrames = 1000;
     Bytes f = rifxFile(s);
@@ -121,9 +121,11 @@ TEST_CASE("RIFX: a data chunk that reaches past the real end of the file is reje
     const size_t dataSizePos = f.size() - pcmSamples(1000, 2, 16).size() - 4;
     REQUIRE(std::memcmp(f.data() + dataSizePos - 4, "data", 4) == 0);
     f[dataSizePos] = 0x7F; f[dataSizePos + 1] = 0xFF; f[dataSizePos + 2] = 0xFF; f[dataSizePos + 3] = 0xFF;
+    // the audio data reach to the end of the file (a recording that was cut off), as players read them
     auto p = writeTemp("rifx_huge_promise.wav", f);
     REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == WAV);
-    CHECK(AUDIOIsValidFormatW() == 0);
+    CHECK(AUDIOIsValidFormatW() != 0);
+    CHECK(std::fabs(AUDIOGetDurationW() - 1000.0 / 44100) < 0.001);
 }
 
 TEST_CASE("RIFX: writing tags keeps the format RIFX and the audio data untouched", "[wav][rifx][spec][write]")

@@ -36,6 +36,8 @@ public:
 	virtual void save(CBlob *blob);	
 	virtual bool save(CFile *Source, CFile *Destination);
 	virtual void Remove();
+	// a copy of the chunk (the ID and the bytes; a container with copies of its chunks)
+	virtual CWAVChunk* clone();
 	u32 getID() { return _chunkID; };
 	CBlob* getData() { return &_data; };
 	// true while the current WAV file is a 'RIFX' file (big endian RIFF variant used by old Mac/SGI tools): the outer header and every

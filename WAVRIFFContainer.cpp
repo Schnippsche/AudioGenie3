@@ -32,6 +32,8 @@ CWAVRIFFContainer::CWAVRIFFContainer(void)
 	_isRF64 = false;
 	_isRIFX = false;
 	_sampleCount64 = 0;
+	_tailStart = 0;
+	_complete = true;
 }
 
 CWAVRIFFContainer::~CWAVRIFFContainer(void)
@@ -86,7 +88,19 @@ void CWAVRIFFContainer::save(CBlob *blob)
 	}
 }
 
-bool CWAVRIFFContainer::load(CFile *Stream, u64 offset, u64 size)
+// a chunk ID has four printable ASCII characters: anything else (zeros, data behind the RIFF chunk) is not a chunk
+static bool isChunkID(u32 id)
+{
+	for (int k = 0; k < 4; k++)
+	{
+		const BYTE c = (BYTE)(id >> (8 * k));
+		if (c < 0x20 || c > 0x7E)
+			return false;
+	}
+	return true;
+}
+
+bool CWAVRIFFContainer::load(CFile *Stream, u64 offset, u64 endPos)
 {
 	// RIFF container, structure is mandatory:
 	// 4 bytes 'RIFF', or 'RF64' for files of 4 GB or more (EBU Tech 3306): the size field is 0xFFFFFFFF then and the real sizes are in the
@@ -96,6 +110,8 @@ bool CWAVRIFFContainer::load(CFile *Stream, u64 offset, u64 size)
 	// 4 bytes length
 	// 4 bytes 'WAVE' as text
 	// then the remaining chunks/subchunks
+	_tailStart = endPos;
+	_complete = true;
 	CBlob header;
 	header.FileReadAt(Stream, (__int64)offset, 12);
 	if (header.GetLength() != 12)
@@ -109,17 +125,18 @@ bool CWAVRIFFContainer::load(CFile *Stream, u64 offset, u64 size)
 	s_bigEndian = _isRIFX;
 	_chunkID = 'WAVE';
 	offset+=12;
-	const u64 endPos = size;
 	u64 realDataSize = 0;
 	bool haveRealDataSize = false;
 	u32 chunkID;
 	u64 dataSize, nextReadPos;
-	while (offset + 8 < endPos)
+	while (offset + 8 <= endPos)
 	{
 		header.FileReadAt(Stream, (__int64)offset, 8);
 		if (header.GetLength() < 8)
 			break;
 		chunkID = (u32)header.Get4B(0);
+		if (!isChunkID(chunkID))
+			break;   // no chunk (for example zeros behind the RIFF chunk): the rest is kept as it is
 		dataSize = _isRIFX ? (u32)header.Get4B(4) : (u32)header.GetR4B(4);
 		nextReadPos = offset + 8;
 		if (chunkID == 'ds64' && dataSize >= 28 && nextReadPos + dataSize <= endPos)
@@ -134,44 +151,125 @@ bool CWAVRIFFContainer::load(CFile *Stream, u64 offset, u64 size)
 				haveRealDataSize = true;
 			}
 		}
-		else if (chunkID == 'data' && dataSize == 0xFFFFFFFFull && haveRealDataSize)
-			dataSize = realDataSize;
+		else if (chunkID == 'data')
+		{
+			if (dataSize == 0xFFFFFFFFull && haveRealDataSize)
+				dataSize = realDataSize;
+			// The audio data of a recording that was cut off, or of a file written while streaming (size 0xFFFFFFFF or 0, the header was
+			// never updated), reach to the end of the file (as players read them): the saved file gets the real size. Before, such a 'data'
+			// chunk was ignored and a save wrote the file without the audio data.
+			const u64 available = endPos - nextReadPos;
+			bool toEnd = (dataSize > available);
+			if (dataSize == 0 && available >= 8)
+			{
+				// size 0: an empty chunk if another chunk follows, otherwise the audio data behind it
+				CBlob next;
+				next.FileReadAt(Stream, (__int64)nextReadPos, 8);
+				const u64 nextSize = (next.GetLength() == 8) ? (_isRIFX ? (u32)next.Get4B(4) : (u32)next.GetR4B(4)) : 0;
+				toEnd = (next.GetLength() < 8 || !isChunkID((u32)next.Get4B(0)) || nextReadPos + 8 + nextSize > endPos);
+			}
+			if (toEnd)
+			{
+				CTools::instance().writeWarning(L"the size of the 'data' chunk (%I64u) is not the size of the audio data in the file (%I64u)", dataSize, available);
+				dataSize = available;
+			}
+		}
 		if (nextReadPos + dataSize > endPos)
 		{
-			CTools::instance().writeWarning(L"corrupt or invalid chunk '%c%c%c%c' at position %I64u ignored", BYTE(chunkID >> 24), BYTE(chunkID >> 16), BYTE(chunkID >> 8), BYTE(chunkID), offset);
-			offset = endPos;
+			// a chunk that does not fit into the file: it and the rest of the file are kept as they are
+			CTools::instance().writeWarning(L"corrupt or invalid chunk '%c%c%c%c' at position %I64u kept unchanged", BYTE(chunkID >> 24), BYTE(chunkID >> 16), BYTE(chunkID >> 8), BYTE(chunkID), offset);
+			break;
+		}
+		CWAVChunk *chunk;
+		if (chunkID == 'LIST')
+			chunk = new CWAVContainer(chunkID);
+		else if (chunkID == 'data')
+			chunk = new CWAVDataChunk();
+		else if (chunkID =='cart')
+			chunk = new CWAVCARTChunk();
+		else if (chunkID =='bext' )
+			chunk = new CWAVBEXTChunk();
+		else if (chunkID =='DISP')
+			chunk = new CWAVDISPChunk();
+		else if (chunkID == 'fmt ')
+		{
+			formatChunk = new CWAVFormatChunk();
+			chunk = formatChunk;
 		}
 		else
+			chunk = new CWAVChunk(chunkID);
+		CTools::instance().doEvents();
+		if (!chunk->load(Stream, nextReadPos, dataSize))
 		{
-			CWAVChunk *chunk;
 			if (chunkID == 'LIST')
-				chunk = new CWAVContainer(chunkID);
-			else if (chunkID == 'data')
-				chunk = new CWAVDataChunk();
-			else if (chunkID =='cart')
-				chunk = new CWAVCARTChunk();
-			else if (chunkID =='bext' )
-				chunk = new CWAVBEXTChunk();
-			else if (chunkID =='DISP')
-				chunk = new CWAVDISPChunk();
-			else if (chunkID == 'fmt ')
 			{
-				formatChunk = new CWAVFormatChunk();
-				chunk = formatChunk;
-			}
-			else
+				// a list whose chunks do not fit into it: kept as it was read (its texts are not shown)
+				delete chunk;
 				chunk = new CWAVChunk(chunkID);
-
-			_children.Add(chunk);
-			CTools::instance().doEvents();
-			chunk->load(Stream, nextReadPos, dataSize);
-			offset = nextReadPos + dataSize;
-			if (offset % 2 == 1)
-				offset++;
-
+				_complete = chunk->load(Stream, nextReadPos, dataSize);
+			}
+			else if (chunkID != 'fmt ')
+				_complete = false;   // not enough memory for the chunk: a saved file would lack it
 		}
+		_children.Add(chunk);
+		// a chunk of odd size is followed by a pad byte (counted from the chunk, not from the start of the file: an ID3v2 tag in front can have
+		// an odd size)
+		offset = nextReadPos + dataSize + (dataSize % 2);
 	}
+	if (offset < endPos)
+		_tailStart = offset;
 	return true;
+}
+
+// the chunks with the tags that are changed: the INFO list, 'cart', 'bext' and the 'DISP' chunk with text
+static bool isTagChunk(CWAVChunk *chunk)
+{
+	switch (chunk->getID())
+	{
+	case 'INFO':
+	case 'cart':
+	case 'bext':
+		return true;
+	case 'DISP':
+		return static_cast<CWAVDISPChunk*>(chunk)->getType() == CF_TEXT;
+	default:
+		return false;
+	}
+}
+
+void CWAVRIFFContainer::takeTagChunks(CWAVRIFFContainer &other)
+{
+	// the tag chunks of this file are removed; the new ones take the place of the first one (or the place in front of the 'data' chunk)
+	size_t insertAt = (size_t)-1;
+	for (size_t i = 0; i < _children.GetCount(); )
+	{
+		if (isTagChunk(_children[i]))
+		{
+			if (insertAt == (size_t)-1)
+				insertAt = i;
+			delete _children[i];
+			_children.RemoveAt(i);
+			continue;
+		}
+		i++;
+	}
+	if (insertAt == (size_t)-1)
+	{
+		insertAt = _children.GetCount();
+		for (size_t i = 0; i < _children.GetCount(); i++)
+			if (_children[i]->getID() == 'data')
+			{
+				insertAt = i;
+				break;
+			}
+	}
+	size_t counts = other._children.GetCount();
+	for (size_t i = 0; i < counts; i++)
+	{
+		CWAVChunk *chunk = other._children[i];
+		if (isTagChunk(chunk) && chunk->getSize() > (chunk->getID() == 'INFO' ? 12u : 0u))
+			_children.InsertAt(insertAt++, chunk->clone());
+	}
 }
 
 // Decides whether the file has to be written as RF64 (its total size is 4 GB or more, or it was read as RF64: once RF64 it stays RF64, the

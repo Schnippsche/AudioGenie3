@@ -61,7 +61,7 @@ CAtlString CWAVCARTChunk::getASCIIText(BYTE nr)
 	}
 	size_t startPos = CART_CODES[nr][0];
 	size_t maxLen = CART_CODES[nr][1];
-	if (startPos > _data.GetLength() )
+	if (startPos >= _data.GetLength())
 		return EMPTY;
 	CAtlString result;
 	if (nr == WAV_CART_LEVELREFERENCE)
@@ -77,7 +77,8 @@ CAtlString CWAVCARTChunk::getASCIIText(BYTE nr)
 		return result;
 	}
 	CBlob tmp;
-	if (maxLen == 0)
+	// a chunk that is shorter than the structure: only its bytes (before, the bytes behind its end were read)
+	if (maxLen == 0 || startPos + maxLen > _data.GetLength())
 		tmp.AddMemory(_data.m_pData + startPos, _data.GetLength() - startPos);
 	else
 		tmp.AddMemory(_data.m_pData + startPos, maxLen);
@@ -96,12 +97,9 @@ void CWAVCARTChunk::setASCIIText(CAtlString newText, BYTE nr)
 	size_t startPos = CART_CODES[nr][0];
 	size_t maxLen = CART_CODES[nr][1];
 	CBlob tmp;
-	// pad to 2048 bytes
+	// a shorter chunk is filled up with zeros (before, its fields were deleted)
 	if (_data.GetLength() < 2048)
-	{
-		_data.Clear();
 		_data.AddValue(0, 2048 - _data.GetLength());
-	}
 	if (nr == WAV_CART_LEVELREFERENCE)
 	{
 		tmp.AddR4B(_wtoi(newText));

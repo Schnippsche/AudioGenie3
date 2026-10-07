@@ -51,6 +51,13 @@ u64 CWAVChunk::getSize()
 	return size;
 }
 
+CWAVChunk* CWAVChunk::clone()
+{
+	CWAVChunk *copy = new CWAVChunk(_chunkID);
+	copy->_data.AddBlob(_data);
+	return copy;
+}
+
 CWAVChunk* CWAVChunk::find(u32 ID)
 {
 	return (ID == _chunkID) ? this : NULL;

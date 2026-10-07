@@ -27,6 +27,7 @@
 #include "wavdatachunk.h"
 #include "wavcartchunk.h"
 #include "WAVDISPChunk.h"
+#include "ID3V1.h"
 
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
@@ -542,46 +543,45 @@ CAtlString CWAVFile::getINFOChunkIDs()
 
 bool CWAVFile::SaveToFile(LPCWSTR FileName)
 {
-	// determine the start of the data area
 	CFile *Source;
 	CFile *Destination;
 	CAtlString NewFileName(FileName);
-	//long FrameOldSize = 0;
 	if ( (Source = CFile::openFile(FileName, CFile::Mode::ReadWrite, CFile::Share::All)) == NULL)
 	{
 		CTools::instance().setLastError(errno);
 		return false;
 	}
-	Source->seek(CTools::ID3v2Size);
-	CTools::FileSize = CTools::fileLength(Source);
+	// The chunks of the file that is written, behind its own ID3v2 tag and in front of its own ID3v1 tag (it need not be the analyzed file;
+	// CTools::FileSize stays the size of the analyzed file). Only the tag chunks are taken from the analysis: the other chunks (format, audio
+	// data, markers) are those of this file. Before, all chunks of the analyzed file were written, a file with another format got the wrong one.
+	const __int64 fileSize = Source->size();
+	const __int64 start = CTools::id3v2SizeOf(Source);
+	const __int64 end = fileSize - CID3V1::DetectSize(Source);
 	CWAVRIFFContainer *newData = new CWAVRIFFContainer();
-	if (!newData->load(Source, CTools::ID3v2Size, (u64)(CTools::FileSize -  CTools::ID3v1Size)))
+	if (fileSize < 0 || end <= start || !newData->load(Source, (u64)start, (u64)end) || !newData->isComplete())
 	{
-		CTools::instance().setLastError(ERR_INVALID_FORMAT);
-		newData->Remove();
+		CTools::instance().setLastError(newData->isComplete() ? ERR_INVALID_FORMAT : ENOMEM);
 		delete newData;
 		CFile::closeFile(Source);
 		return false;
 	}
-	// the position of the audio data can have moved since the file was analyzed (a previous save that was not followed by a fresh
-	// analysis, or a save of a file that is not the one AUDIOAnalyzeFileW was last called with): take it from this fresh parse of the
-	// file as it is now, so the copy below reads the real audio data instead of whatever now sits at the old position
-	CWAVChunk *freshData = newData->find('data');
-	CWAVChunk *oldData = mainContainer->find('data');
-	if (freshData != NULL && oldData != NULL)
-		static_cast<CWAVDataChunk*>(oldData)->copyPositionFrom(*static_cast<CWAVDataChunk*>(freshData));
-	newData->Remove();
-	delete newData;
+	newData->takeTagChunks(*mainContainer);
 
 	CTools::instance().writeDebug(_T("Rebuild wav tag"));
-	// rebuild File
-	/* Create file streams */
 	if ( (Destination = CTools::createTemporary(FileName, CFile::Mode::Write, NewFileName)) == NULL)
 	{
 		CTools::instance().setLastError(errno);
+		delete newData;
 		CFile::closeFile(Source);
 		return false;
 	};
-	mainContainer->save(Source, Destination);
+	// the ID3v2 tag in front, the chunks, then the bytes behind the chunks and the ID3v1 tag unchanged (before, both tags were lost)
+	bool copied = Source->seek(0) && CTools::copyStream(Source, Destination, start);
+	newData->save(Source, Destination);
+	const __int64 tailStart = (__int64)newData->getTailStart();
+	copied = copied && Source->seek(tailStart) && CTools::copyStream(Source, Destination, fileSize - tailStart);
+	if (!copied)
+		Destination->setFailed(EIO);   // the new file must not replace the original
+	delete newData;
 	return CTools::finishRewrite(Source, Destination, NewFileName, FileName);
 }

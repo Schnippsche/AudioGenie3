@@ -33,6 +33,7 @@ public:
 	virtual void save(CBlob *blob);
 	virtual bool save(CFile *Source, CFile *Destination);
 	void Remove();
+	CWAVChunk* clone();
 	CWAVChunk* find(u32 ID);
 	CAtlArray<CWAVChunk *> _children;
 };
