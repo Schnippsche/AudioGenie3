@@ -366,17 +366,7 @@ bool CWMA_File::GetPicture(int index, LPCWSTR fileName)
 	TagPictureStruct *tps = getPictureTag(index);
 	if (tps == NULL)
 		return false;
-	CFile *Stream;
-	ATLTRACE(_T("open %s CFile::Mode::Write\n"), fileName);
-	if ( (Stream = CFile::openFile(fileName, CFile::Mode::Write, CFile::Share::All)) != NULL)
-	{
-		Stream->write(tps->PicDaten, tps->PicSize);
-		Stream->flush();
-		CFile::closeFile(Stream);
-		return true;
-	}
-	CTools::instance().setLastError(errno);
-	return false;
+	return CTools::writeFile(fileName, tps->PicDaten, tps->PicSize);
 }
 
 size_t CWMA_File::GetPictureArray(BYTE *arr, u32 maxLen, short index)

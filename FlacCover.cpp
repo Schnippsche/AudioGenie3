@@ -111,17 +111,7 @@ CFlacCover::~CFlacCover(void)
 
 bool CFlacCover::getPictureFile(LPCWSTR fileName)
 {
-	CFile *Stream;
-	ATLTRACE(_T("open %s CFile::Mode::Write\n"), fileName);
-	if ( (Stream = CFile::openFile(fileName, CFile::Mode::Write, CFile::Share::All)) != NULL)
-	{
-		data.FileWrite(data.GetLength(), Stream);	  
-		Stream->flush();
-		CFile::closeFile(Stream);
-		return true;
-	}
-	CTools::instance().setLastError(errno);
-	return false;
+	return CTools::writeFile(fileName, data.m_pData, data.GetLength());
 }
 
 CAtlString CFlacCover::getMime()
@@ -159,22 +149,15 @@ CAtlString CFlacCover::getPictureTypeAsText()
 
 bool CFlacCover::setPictureFile(LPCWSTR fileName)
 {
-	CFile *Stream;
-	ATLTRACE(_T("open %s CFile::Mode::Read\n"), fileName);
-	data.Clear();
 	_isLink = false;
 	_pictureLink.Empty();
-	if ( (Stream = CFile::openFile(fileName, CFile::Mode::Read, CFile::Share::All)) != NULL)
-	{
-		data.FileRead(toSizeClamped(Stream->size()), Stream); 
-		CFile::closeFile(Stream);
-		// rebuild the MIME type
-		_mime = CTools::instance().ExtractMimeFromPicture(data.m_pData, data.GetLength());
-		calcInfos();
-		return true;
-	}
-	CTools::instance().setLastError(errno);
-	return false;
+	// a file that cannot be read completely gives no picture (FLACAddPictureFileW would otherwise replace a picture with an empty one)
+	if (!CTools::readWholeFile(fileName, data, CTools::PICTURE_FILE_MAX))
+		return false;
+	// rebuild the MIME type
+	_mime = CTools::instance().ExtractMimeFromPicture(data.m_pData, data.GetLength());
+	calcInfos();
+	return true;
 }
 
 // the picture data from memory: the MIME type, the size and the colors are determined from the data as for a picture from a file
@@ -193,7 +176,6 @@ void CFlacCover::setPictureData(const BYTE *arr, size_t length)
 
 bool CFlacCover::setFileLink(LPCWSTR fileName)
 {
-	CFile *Stream;
 	data.Clear();
 	_isLink = true;
 	_pictureLink.Empty();
@@ -201,14 +183,14 @@ bool CFlacCover::setFileLink(LPCWSTR fileName)
 	{
 		_pictureLink = fileName;
 		_mime = MIME_LINK;
-		if ( (Stream = CFile::openFile(fileName, CFile::Mode::Read, CFile::Share::All)) != NULL)
-		{
-			data.FileRead(toSizeClamped(Stream->size()), Stream); 
-			CFile::closeFile(Stream);
-		}
+		// the picture behind the link is loaded for the getters only, up to the size of a linked picture; the link is stored anyway
+		const int lastError = CTools::getLastError();
+		const CAtlString lastErrorText = CTools::GetLastErrorText();
+		if (!CTools::readWholeFile(fileName, data, CTools::LINKED_PICTURE_MAX))
+			CTools::restoreLastError(lastError, lastErrorText);
 		calcInfos();
 		return true;
-	}	
+	}
 	CTools::instance().setLastError(ERR_INVALID_FILENAME);
 	return false;
 }

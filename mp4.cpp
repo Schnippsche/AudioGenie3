@@ -145,18 +145,14 @@ bool CMP4::GetPicture(LPCWSTR file, int Index)
 		atom = cont->_children[Index - 1];
 	else
 		return false;
-	// write from memory to file
-	CFile *Stream;
-	if ( (Stream = CFile::openFile(file, CFile::Mode::Write, CFile::Share::Read)) != NULL)
+	// write from memory to file: the picture behind the 8 bytes of type and locale (an atom with fewer bytes has no picture; before, the
+	// negative length became a huge size_t and the write read behind the buffer)
+	if (atom->_blob.GetLength() < 8)
 	{
-		long ln = (long)atom->_blob.GetLength() - 8;
-		long res = (long)Stream->write(atom->_blob.m_pData + 8, ln);
-		Stream->flush();
-		CFile::closeFile(Stream);
-		return (res == ln);
+		CTools::instance().setLastError(ERR_INVALID_FORMAT);
+		return false;
 	}
-	CTools::instance().setLastError(errno);
-	return false;
+	return CTools::writeFile(file, atom->_blob.m_pData + 8, atom->_blob.GetLength() - 8);
 }
 
 bool CMP4::AddPictureFile(LPCWSTR FileName)
@@ -408,7 +404,7 @@ void CMP4::SetTrack(LPCWSTR newTrack)
 
 CAtlString CMP4::GetGenre()
 {
-	// genre either as ï¿½gen (text) or as gnre (number)
+	// genre either as ©gen (text) or as gnre (number)
 	// look for a text frame first
 	CMP4Atom* atom = mainContainer->find(TEXT_GENRE_PFAD);
 	if (atom != NULL)

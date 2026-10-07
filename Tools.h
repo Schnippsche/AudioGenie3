@@ -54,7 +54,8 @@ enum ERR_NUMBERS {
 	ERR_BUSY = 228
 };
 
-static const LPCWSTR IMAGE_SHORT[] = { L"XXX", L"JPG", L"GIF", L"PNG", L"BMP",L"TIF",L"-->"} ;
+// the image format of ID3v2.2 has 3 characters; WebP has none of its own there
+static const LPCWSTR IMAGE_SHORT[] = { L"XXX", L"JPG", L"GIF", L"PNG", L"BMP",L"TIF",L"-->", L"XXX"} ;
 
 #define IMAGE_UNKNOWN 0
 #define IMAGE_JPG 1
@@ -63,9 +64,10 @@ static const LPCWSTR IMAGE_SHORT[] = { L"XXX", L"JPG", L"GIF", L"PNG", L"BMP",L"
 #define IMAGE_BMP 4
 #define IMAGE_TIFF 5
 #define IMAGE_LINK 6
+#define IMAGE_WEBP 7
 
 
-static const LPCWSTR IMAGE_LONG[] = { L"XXX", L"image/jpeg", L"image/gif", L"image/png", L"image/bmp",L"image/tiff",L"-->"} ;
+static const LPCWSTR IMAGE_LONG[] = { L"XXX", L"image/jpeg", L"image/gif", L"image/png", L"image/bmp",L"image/tiff",L"-->", L"image/webp"} ;
 
 static const LPCWSTR ERR_TEXT[] = {  
 	_T("id3v1-tag missing! must be present before you can save a lyrics-tag!"), 
@@ -217,6 +219,13 @@ public:
 	void reset();
 	// Loads the picture that a tag links to (MIME type -->) into data; false if it is not loaded (data is empty then).
 	static bool readLinkedPicture(const CAtlString &link, CBlob &data);
+	// writes length bytes into the file fileName (created or emptied, e.g. a picture that the application exports); false on an error
+	// (the last error is set), the incomplete file is removed then
+	static bool writeFile(LPCWSTR fileName, const BYTE *data, size_t length);
+	// reads the whole file into data (e.g. a picture that the application adds); false if it cannot be opened, is larger than maxSize, there
+	// is no memory or it is read incompletely (the last error is set, data is empty then)
+	static bool readWholeFile(LPCWSTR fileName, CBlob &data, __int64 maxSize);
+	static const __int64 PICTURE_FILE_MAX = 0x0FFFFFFF;   // a picture file that is added: the largest frame of ID3v2.4 (28 bits)
 	static const __int64 LINKED_PICTURE_MAX = 64 * 1024 * 1024;   // a larger linked file is not loaded
 	static CAtlString ExtractMimeFromPicture(const BYTE *buf, size_t length);
 	static CAtlString ExtractSmallMimeFromPicture(const BYTE *buf, size_t length);

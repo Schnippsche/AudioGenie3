@@ -1353,3 +1353,86 @@ TEST_CASE("ID3v2.2: a frame larger than 16 MB (the size field has 3 bytes) is re
     const bool unchanged = readFile(p) == before;   // not compared in CHECK: Catch2 would print 17 MB
     CHECK(unchanged);
 }
+
+namespace {
+// an APIC frame of ID3v2.3: encoding 1 (UTF-16 with BOM, so that the frame is rebuilt when the tag is saved with ISO-8859-1), MIME type,
+// picture type 3, description "Cover", picture data
+Bytes apic23(const std::string& mime, const Bytes& picture)
+{
+    Bytes a = { 0x01 };
+    put(a, mime.c_str());
+    a.push_back(0);
+    a.push_back(3);
+    put(a, Bytes({ 0xFF, 0xFE, 'C', 0, 'o', 0, 'v', 0, 'e', 0, 'r', 0, 0, 0 }));
+    put(a, picture);
+    return frame("APIC", a, 0, 3);
+}
+
+std::string apicMimeInFile(const Bytes& f)
+{
+    const size_t i = findBytes(f, bytesOf("APIC"));
+    if (i == static_cast<size_t>(-1)) return "";
+    std::string mime;
+    for (size_t k = i + 11; k < f.size() && f[k] != 0; k++) mime += static_cast<char>(f[k]);
+    return mime;
+}
+}  // namespace
+
+TEST_CASE("ID3v2: a rebuilt APIC frame keeps the MIME type of a picture format the library does not recognize", "[id3v2][spec][picture]")
+{
+    Bytes webp = bytesOf("RIFF");
+    put(webp, Bytes({ 100, 0, 0, 0 }));
+    put(webp, bytesOf("WEBPVP8 "));
+    webp.resize(108, 0);
+    Bytes avif = Bytes({ 0, 0, 0, 0x1C });
+    put(avif, bytesOf("ftypavif"));
+    avif.resize(108, 0);
+    struct Case { const char* name; const char* mime; Bytes picture; };
+    const Case cases[] = { { "WebP (recognized now)", "image/webp", webp }, { "AVIF (not recognized)", "image/avif", avif } };
+    for (const Case& c : cases) {
+        DYNAMIC_SECTION(c.name) {
+            Bytes body = frame("TIT2", { 0x00, 'T' }, 0, 3);
+            put(body, apic23(c.mime, c.picture));
+            auto p = writeTagged("spec_apic_mime.mp3", tagBytes(3, 0, body, 100));
+            REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+            REQUIRE(ID3V2SetFormatAndEncodingW(2, 0) != 0);   // id3v2.3, ISO-8859-1: the APIC frame (UTF-16) is rebuilt
+            ID3V2SetTextFrameW(ID3F_TIT2, L"New");
+            REQUIRE(ID3V2SaveChangesW() != 0);
+            CHECK(apicMimeInFile(readFile(p)) == c.mime);
+            REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+            CHECK(take(ID3V2GetPictureMimeW(1)) == std::wstring(c.mime, c.mime + strlen(c.mime)));
+            CHECK(ID3V2GetPictureSizeW(1) == 108);
+        }
+    }
+}
+
+TEST_CASE("ID3v2: a picture file that is too large is refused, the picture with the same description stays", "[id3v2][spec][picture]")
+{
+    Bytes body = frame("TIT2", { 0x00, 'T' }, 0, 3);
+    put(body, apic23("image/png", Bytes({ 0x89, 'P', 'N', 'G', 1, 2, 3, 4 })));
+    auto p = writeTagged("spec_apic_large.mp3", tagBytes(3, 0, body, 100));
+    const fs::path big = writeTemp("spec_apic_large.bin", Bytes({ 0xFF, 0xD8, 0xFF }));
+    fs::resize_file(big, 0x10000000);   // 256 MB: larger than a frame of ID3v2.4 can be
+    REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+    CHECK(ID3V2AddPictureFileW(big.c_str(), L"Cover", 3, 0) == 0);
+    CHECK(AUDIOGetLastErrorNumberW() == 220);
+    REQUIRE(ID3V2GetFrameCountW(ID3F_APIC) == 1);
+    CHECK(ID3V2GetPictureSizeW(1) == 8);   // the PNG of the file, not replaced
+    fs::remove(big);
+}
+
+TEST_CASE("ID3v2: a picture is written into a file completely", "[id3v2][spec][picture]")
+{
+    const Bytes png = { 0x89, 'P', 'N', 'G', 1, 2, 3, 4, 5, 6 };
+    Bytes body = frame("TIT2", { 0x00, 'T' }, 0, 3);
+    put(body, apic23("image/png", png));
+    auto p = writeTagged("spec_apic_export.mp3", tagBytes(3, 0, body, 100));
+    REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+    const fs::path out = tempDir() / "spec_apic_export.png";
+    REQUIRE(ID3V2GetPictureFileW(out.c_str(), 1) != 0);
+    CHECK(readFile(out) == png);
+    // a folder that does not exist: an error, no file
+    const fs::path missing = tempDir() / "does_not_exist" / "x.png";
+    CHECK(ID3V2GetPictureFileW(missing.c_str(), 1) == 0);
+    CHECK(AUDIOGetLastErrorNumberW() != 0);
+}

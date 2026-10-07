@@ -175,22 +175,20 @@ void CID3F_APIC::encode()
 		decode();
 		_blob.Clear();
 		_blob.AddValue(encodingByte(encodingID));
-		if (CTools::ID3V2newTagVersion == TAG_VERSION_2_2)
-		{
-			if (_isLink)
-				_mime = MIME_LINK;
-			else
-				_mime = CTools::instance().ExtractSmallMimeFromPicture(_data.m_pData, _data.GetLength());
+		// the MIME type from the picture data; a format that is not recognized keeps the MIME type it has (e.g. image/avif of another
+		// tagger), as long as it fits the version: v2.2 has a format of 3 characters, v2.3/v2.4 a MIME type with a '/'
+		const bool v22 = CTools::ID3V2newTagVersion == TAG_VERSION_2_2;
+		const int type = CTools::instance().CalcMimeFromPicture(_data.m_pData, _data.GetLength());
+		if (_isLink)
+			_mime = MIME_LINK;
+		else if (type != IMAGE_UNKNOWN && !(v22 && type == IMAGE_WEBP))
+			_mime = v22 ? IMAGE_SHORT[type] : IMAGE_LONG[type];
+		else if (v22 ? (_mime.GetLength() != 3 || _mime.Find('/') >= 0) : (_mime.Find('/') < 0))
+			_mime = v22 ? IMAGE_SHORT[IMAGE_UNKNOWN] : IMAGE_LONG[IMAGE_UNKNOWN];
+		if (v22)
 			_blob.AddFixedAnsiString(_mime, 3);
-		}
 		else
-		{
-			if (_isLink)
-				_mime = MIME_LINK;
-			else
-				_mime = CTools::instance().ExtractMimeFromPicture(_data.m_pData, _data.GetLength());
-			_blob.AddEncodedString(TEXT_ENCODED_ANSI, _mime, TEXT_WITHOUT_ENCODING, TEXT_WITH_NULLBYTES);		
-		}
+			_blob.AddEncodedString(TEXT_ENCODED_ANSI, _mime, TEXT_WITHOUT_ENCODING, TEXT_WITH_NULLBYTES);
 		_blob.AddValue(_pictureType);
 		_blob.AddEncodedString(encodingID, _description, TEXT_WITHOUT_ENCODING, TEXT_WITH_NULLBYTES);
 		if (_isLink)
@@ -262,47 +260,26 @@ void CID3F_APIC::setPictureType(BYTE newType)
 bool CID3F_APIC::getPictureFile(LPCWSTR fileName)
 {
 	decode();
-	CFile *Stream;
-	ATLTRACE(_T("open %s CFile::Mode::Write\n"), fileName);
-	if ( (Stream = CFile::openFile(fileName, CFile::Mode::Write, CFile::Share::All)) != NULL)
-	{
-		_data.FileWrite(_data.GetLength(), Stream);	  
-		Stream->flush();
-		CFile::closeFile(Stream);
-		return true;
-	}
-	CTools::instance().setLastError(errno);
-	return false;
-
+	return CTools::writeFile(fileName, _data.m_pData, _data.GetLength());
 }
 
 bool CID3F_APIC::setPictureFile(LPCWSTR fileName)
 {
 	decode();
-	CFile *Stream;
-	ATLTRACE(_T("open %s CFile::Mode::Read\n"), fileName);
-	_data.Clear();
 	_isLink = false;
 	_pictureLink.Empty();
-	if ( (Stream = CFile::openFile(fileName, CFile::Mode::Read, CFile::Share::All)) != NULL)
-	{
-		_data.FileRead(toSizeClamped(Stream->size()), Stream); 
-		CFile::closeFile(Stream);
-		// rebuild the MIME type
-		if (CTools::ID3V2oldTagVersion == TAG_VERSION_2_2)
-			_mime = CTools::instance().ExtractSmallMimeFromPicture(_data.m_pData, _data.GetLength());
-		else
-			_mime = CTools::instance().ExtractMimeFromPicture(_data.m_pData, _data.GetLength());
-		return true;
-	}
-	CTools::instance().setLastError(errno);
-	return false;
+	// a file that cannot be read completely gives no frame (ID3V2AddPictureFileW would otherwise replace a picture with an empty one)
+	if (!CTools::readWholeFile(fileName, _data, CTools::PICTURE_FILE_MAX))
+		return false;
+	// the MIME type of the picture (encode sets it for the version of the tag that is written)
+	_mime = CTools::instance().ExtractMimeFromPicture(_data.m_pData, _data.GetLength());
+	mustRebuild = true;
+	return true;
 }
 
 bool CID3F_APIC::setFileLink(LPCWSTR fileName)
 {
 	decode();
-	CFile *Stream;
 	_data.Clear();
 	_isLink = true;
 	_pictureLink.Empty();
@@ -310,13 +287,14 @@ bool CID3F_APIC::setFileLink(LPCWSTR fileName)
 	{
 		_pictureLink = fileName;
 		_mime = MIME_LINK;
-		if ( (Stream = CFile::openFile(fileName, CFile::Mode::Read, CFile::Share::All)) != NULL)
-		{
-			_data.FileRead(toSizeClamped(Stream->size()), Stream); 
-			CFile::closeFile(Stream);
-		}
+		// the picture behind the link is loaded for the getters only, up to the size of a linked picture; the link is stored anyway
+		const int lastError = CTools::getLastError();
+		const CAtlString lastErrorText = CTools::GetLastErrorText();
+		if (!CTools::readWholeFile(fileName, _data, CTools::LINKED_PICTURE_MAX))
+			CTools::restoreLastError(lastError, lastErrorText);
+		mustRebuild = true;
 		return true;
-	}	
+	}
 	CTools::instance().setLastError(ERR_INVALID_FILENAME);
 	return false;
 }

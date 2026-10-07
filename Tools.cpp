@@ -496,6 +496,55 @@ bool CTools::readLinkedPicture(const CAtlString &link, CBlob &data)
 	return ok;
 }
 
+bool CTools::writeFile(LPCWSTR fileName, const BYTE *data, size_t length)
+{
+	CFile *stream = CFile::openFile(fileName, CFile::Mode::Write, CFile::Share::Read);
+	if (stream == NULL)
+	{
+		setLastError(errno);
+		return false;
+	}
+	errno = 0;
+	const bool ok = (length == 0 || (data != NULL && stream->write(data, length) == length)) && stream->flush();
+	const int error = errno;
+	CFile::closeFile(stream);
+	if (!ok)
+	{
+		CFile::removeFile(fileName);
+		setLastError(error != 0 ? error : EIO);
+	}
+	return ok;
+}
+
+bool CTools::readWholeFile(LPCWSTR fileName, CBlob &data, __int64 maxSize)
+{
+	data.Clear();
+	CFile *stream = CFile::openFile(fileName, CFile::Mode::Read, CFile::Share::All);
+	if (stream == NULL)
+	{
+		setLastError(errno);
+		return false;
+	}
+	const __int64 size = stream->size();
+	bool ok = (size >= 0 && size <= maxSize);
+	if (!ok)
+		setLastError(ERR_FRAME_TOO_BIG);
+	else if (!data.FileRead((size_t)size, stream))
+	{
+		ok = false;
+		setLastError(ERR_NOT_ENOUGH_MEMORY, (unsigned)size);
+	}
+	else if ((__int64)data.GetLength() != size || stream->failed())
+	{
+		ok = false;
+		setLastError(EIO);
+	}
+	CFile::closeFile(stream);
+	if (!ok)
+		data.Clear();
+	return ok;
+}
+
 CAtlString CTools::ExtractMimeFromPicture(const BYTE *buf, size_t length)
 {
 	return IMAGE_LONG[CalcMimeFromPicture(buf, length)];
@@ -525,6 +574,8 @@ int CTools::CalcMimeFromPicture(const BYTE *buf, size_t length)
 		return IMAGE_TIFF;   // big endian
 	if (length >= 3 && buf[0] == '-' && buf[1] == '-' && buf[2] == '>')
 		return IMAGE_LINK;
+	if (length >= 12 && memcmp(buf, "RIFF", 4) == 0 && memcmp(buf + 8, "WEBP", 4) == 0)
+		return IMAGE_WEBP;
 	return IMAGE_UNKNOWN;
 }
 
