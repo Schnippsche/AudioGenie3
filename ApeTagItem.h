@@ -37,8 +37,8 @@ public:
 	CAtlString Key;
 	CBlob Value;
 
-	bool ReadFromFile(CFile *Stream);
-	bool WriteToFile(CFile *Stream);
+	// reads the item at the position of the sequence (CSequentialRead); readValue false: only the layout is read, the value is skipped
+	bool ReadFromFile(CFile *Stream, bool readValue = true);
 	bool isBinary();
 	void Reset();
 };

@@ -29,8 +29,8 @@ bool CApeTagInfo::ReadFromFile(CFile *Stream)
 {
   errno = 0;
   CBlob tmp;
-  tmp.FileRead(32, Stream);
-  if (memcmp(tmp.m_pData, APE_ID, 8) != 0)  // must be "APETAGEX"
+  // 32 bytes (a blob that was not read has no buffer at all) and "APETAGEX"
+  if (!tmp.FileRead(32, Stream) || tmp.GetLength() != 32 || memcmp(tmp.m_pData, APE_ID, 8) != 0)
 	  return false;
   Version = (long)tmp.GetR4B(8);            // Tag version
   Size = (long)tmp.GetR4B(12);              // Tag size including footer

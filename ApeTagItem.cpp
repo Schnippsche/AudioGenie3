@@ -41,20 +41,23 @@ CApeTagItem::~CApeTagItem()
 
 }
 
-bool CApeTagItem::ReadFromFile(CFile *Stream)
+bool CApeTagItem::ReadFromFile(CFile *Stream, bool readValue)
 {
   errno = 0;
   CBlob tmp;
-  tmp.FileRead(8, Stream);
   Flags = 0;
+  if (!tmp.FileRead(8, Stream) || tmp.GetLength() != 8)
+	  return false;
+  // the size of the file that is read (CTools::FileSize is the size of the analyzed file; a tag is also checked in another file before it is removed)
+  const __int64 fileLength = CTools::fileLength(Stream);
   Size = (long)tmp.GetR4B(0);   // size of the item value in bytes
-  if (Size < 0 || ((__int64)CTools::seqTell(Stream) + Size + CTools::ID3v1Size) > (__int64)CTools::FileSize )
+  if (Size < 0 || (__int64)CTools::seqTell(Stream) + Size > fileLength)
 	  return false;
   Flags = (long)tmp.GetR4B(4);  // item flags
   Key.Empty();
   // the key ends with a zero byte; keys are short, anything else is corrupt. It is read as a block (not byte by byte, up to the end of the file).
   const __int64 keyStart = CTools::seqTell(Stream);
-  const __int64 left = (__int64)CTools::FileSize - keyStart;
+  const __int64 left = fileLength - keyStart;
   BYTE keyBlock[257];
   const size_t got = (left > 0) ? CTools::seqRead(Stream, keyBlock, left < (__int64)sizeof(keyBlock) ? (size_t)left : sizeof(keyBlock)) : 0;
   size_t keyLength = 0;
@@ -66,18 +69,17 @@ bool CApeTagItem::ReadFromFile(CFile *Stream)
   CBlob keyBytes;
   keyBytes.AddMemory(keyBlock, keyLength);
   Key = keyBytes.GetAnsiStringAt(0, keyLength);
-  CTools::seqSeek(Stream, keyStart + (__int64)keyLength + 1);
-  Value.FileRead(Size, Stream);  
-  return (errno == 0);
-}
-
-bool CApeTagItem::WriteToFile(CFile *Stream)
-{
-  errno = 0;
-  CBlob tmp;
-  tmp.AddR4B(Size);        // size of the item value in bytes
-  tmp.AddR4B(Flags);       // item flags
-  tmp.FileWrite(8, Stream);
+  const __int64 valueStart = keyStart + (__int64)keyLength + 1;
+  if (!readValue)
+  {
+    // only the layout of the items is checked: the value is skipped
+    CTools::seqSeek(Stream, valueStart + Size);
+    return true;
+  }
+  CTools::seqSeek(Stream, valueStart);
+  // the whole value (no memory or a file that ends too early: no item, instead of one with an empty value that a save would write)
+  if (!Value.FileRead(Size, Stream) || (long)Value.GetLength() != Size)
+    return false;
   return (errno == 0);
 }
 

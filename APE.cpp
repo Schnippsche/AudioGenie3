@@ -84,6 +84,35 @@ bool CAPE::FindTailFooter(CFile *Stream, int id3v1Size, bool checkLyrics, __int6
 	return false;
 }
 
+bool CAPE::ValidTail(CFile *Stream, __int64 footerPos, const CApeTagInfo &info, __int64 minStart, __int64 &tagStart)
+{
+	tagStart = footerPos;
+	if (info.Size < APE_TAG_FOOTER_SIZE || info.Fields < 0 || info.Fields > (info.Size - APE_TAG_FOOTER_SIZE) / APE_MIN_ITEM_SIZE)
+		return false;
+	const __int64 itemsStart = footerPos + APE_TAG_FOOTER_SIZE - (__int64)info.Size;
+	if (itemsStart < minStart)
+		return false;
+	{
+		// the items are read without their values (only their layout counts here)
+		CSequentialRead sequence(Stream, itemsStart);
+		for (long i = 0; i < info.Fields; i++)
+		{
+			CApeTagItem item;
+			if (!item.ReadFromFile(Stream, false) || CTools::seqTell(Stream) > footerPos)
+				return false;
+		}
+		if (CTools::seqTell(Stream) != footerPos)
+			return false;
+	}
+	tagStart = itemsStart;
+	// the header: only if the flags say so and it is there (a flag without a header must not make a removal cut 32 bytes of audio data)
+	BYTE id[8];
+	if (((unsigned long)info.Flags & 0x80000000ul) != 0 && itemsStart - APE_TAG_HEADER_SIZE >= minStart
+		&& CTools::readAt(Stream, itemsStart - APE_TAG_HEADER_SIZE, id, 8) == 8 && memcmp(id, APE_ID, 8) == 0)
+		tagStart = itemsStart - APE_TAG_HEADER_SIZE;
+	return true;
+}
+
 bool CAPE::ReadFooter(CFile *Stream)
 {
 	/* Read footer data */
@@ -91,8 +120,14 @@ bool CAPE::ReadFooter(CFile *Stream)
 	// the Lyrics3 tag is read before this one: it is only looked for if there is one
 	if (!FindTailFooter(Stream, CTools::ID3v1Size, CTools::LyricsSize > 0, _footerPos, lyricsAfter))
 		return false;
-	CSequentialRead sequence(Stream, _footerPos);
-	return TagInfo.ReadFromFile(Stream);
+	{
+		CSequentialRead sequence(Stream, _footerPos);
+		if (!TagInfo.ReadFromFile(Stream))
+			return false;
+	}
+	// in the analyzed file the tag comes behind the tags at the beginning; in another file it is checked from the start of the file on
+	const __int64 minStart = (Stream == CTools::analysisStream) ? CTools::audioStart() : 0;
+	return ValidTail(Stream, _footerPos, TagInfo, minStart, _tagStart);
 }
 
 // position and size of the tag at the end of the file if a Lyrics3 tag is behind it; false for every other case
@@ -103,18 +138,20 @@ bool CAPE::LocateTail(LPCWSTR FileName, __int64 &start, __int64 &total)
 		return false;
 	__int64 footerPos, lyricsAfter;
 	CApeTagInfo info;
+	__int64 tagStart = 0;
 	bool found = FindTailFooter(Source, CID3V1::DetectSize(Source), true, footerPos, lyricsAfter) && lyricsAfter > 0;
 	if (found)
 	{
 		Source->seek(footerPos);
-		found = info.ReadFromFile(Source);
+		// only a tag whose parts fit together is written again at its place (the size of a damaged footer would cut other data)
+		found = info.ReadFromFile(Source) && ValidTail(Source, footerPos, info, 0, tagStart);
 	}
 	CFile::closeFile(Source);
 	if (!found)
 		return false;
-	total = (__int64)(unsigned long)info.Size + (((unsigned long)info.Flags & 0x80000000ul) ? APE_TAG_HEADER_SIZE : 0);
-	start = footerPos + APE_TAG_FOOTER_SIZE - total;
-	return (start >= 0 && total >= APE_TAG_FOOTER_SIZE);
+	start = tagStart;
+	total = footerPos + APE_TAG_FOOTER_SIZE - tagStart;
+	return true;
 }
 
 // APE item keys: 2 to 255 characters in the range $20 to $7E; ID3, TAG, OggS and MP+ are not allowed
@@ -207,6 +244,12 @@ bool CAPE::ReadFields(CFile *Stream, __int64 headOffset)
 	// the items of a tag at the beginning follow its header, the items of a tag at the end are counted back from the end of the file;
 	// they are read in sequence, from the cache of the start or of the end of the file
 	CSequentialRead sequence(Stream, headOffset >= 0 ? headOffset + APE_TAG_HEADER_SIZE : _footerPos + APE_TAG_FOOTER_SIZE - TagInfo.Size);
+	// not more items than fit into the size of the tag (a damaged count would make millions of items)
+	if (TagInfo.Size < APE_TAG_FOOTER_SIZE || TagInfo.Fields < 0 || TagInfo.Fields > (TagInfo.Size - APE_TAG_FOOTER_SIZE) / APE_MIN_ITEM_SIZE)
+	{
+		ResetData();
+		return false;
+	}
 	/* Read all stored fields */
 	for (Iterator = 0; Iterator < TagInfo.Fields; Iterator++)
 	{
@@ -349,13 +392,16 @@ void CAPE::BuildFooter()
 	TagInfo.Reset();
 	TagInfo.Version = version;
 	TagInfo.Size = APE_TAG_FOOTER_SIZE;
+	CBlob key;
 	for (Iterator = 0; Iterator < _items.GetCount(); Iterator++)
 	{
 		item = _items.GetAt(Iterator);
 		TagInfo.Size+=(long)item->Value.GetLength();
-		TagInfo.Size+=(long)item->Key.GetLength();
-		TagInfo.Size+= 9; // 4 + 4 + 1		
-
+		// the key in bytes as BuildTagData writes it (ANSICODEPAGE: a code page of East Asia has 2 bytes for a character)
+		key.Clear();
+		key.AddEncodedString(TEXT_ENCODED_ANSI, item->Key, TEXT_WITHOUT_ENCODING, TEXT_WITHOUT_NULLBYTES);
+		TagInfo.Size+=(long)key.GetLength();
+		TagInfo.Size+= 9; // 4 + 4 + 1
 	}
 	TagInfo.Fields = (long)_items.GetCount();
 }
@@ -413,7 +459,7 @@ bool CAPE::ReadFromFile(CFile *Stream)
 	if (ReadFooter(Stream))
 	{
 		// the whole tag: items, footer and the header (if the flags say so)
-		CTools::APESize = TagInfo.Size + (((unsigned long)TagInfo.Flags & 0x80000000ul) ? APE_TAG_HEADER_SIZE : 0);
+		CTools::APESize = (int)(_footerPos + APE_TAG_FOOTER_SIZE - _tagStart);   // checked by ValidTail (a header only if it is there)
 		FVersion = TagInfo.Version;
 		/* Get information from fields */
 		return ReadFields(Stream, -1);
@@ -452,14 +498,13 @@ bool CAPE::RemoveFromFile(LPCWSTR FileName, bool saveID3v1Tag)
 		CTools::ID3v1Size = 0;
 		tmpid3v1.ReadFromFile(Source);
 
+		// ReadFooter checks the tag (ValidTail): the file is only cut at the first byte of a tag whose parts fit together
 		bool result = ReadFooter(Source);
 		CFile::closeFile(Source);
 		if (result)
 		{
-			if ( (TagInfo.Flags >> 31) != 0 )
-				TagInfo.Size+= APE_TAG_HEADER_SIZE;
 			// delete APE + ID3v1 tag!
-			result = TruncateFile(FileName, tmpid3v1.GetSize() + TagInfo.Size);
+			result = TruncateFile(FileName, tmpid3v1.GetSize() + (int)(_footerPos + APE_TAG_FOOTER_SIZE - _tagStart));
 			// write the ID3v1 tag back if it exists and is wanted
 			if (saveID3v1Tag && tmpid3v1.GetSize() > 0)
 				tmpid3v1.SaveToFile(FileName);

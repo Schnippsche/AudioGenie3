@@ -30,6 +30,7 @@ static const char *APE_ID = "APETAGEX";                                   // APE
 
 #define APE_TAG_FOOTER_SIZE  32                                // APE tag footer
 #define APE_TAG_HEADER_SIZE  32                                // APE tag header
+#define APE_MIN_ITEM_SIZE    11                                // value size and flags (8), a key of at least 2 characters, its zero byte
 
 class CApeTagInfo
 {

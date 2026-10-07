@@ -60,6 +60,12 @@ private:
 	CBlob Data;
 	bool ReadFooter(CFile *Stream);
 	__int64 _footerPos;	// position of the footer of an APE tag at the end of the file
+	__int64 _tagStart{};	// the first byte of that tag (its header, if it has one): checked by ValidTail
+	// A tag at the end of the file is only taken (read, removed, written again at its place) if its parts fit together: the size covers at
+	// least the footer, the tag does not start in front of minStart, Fields items (at most as many as fit into the size) end exactly at the
+	// footer, and a header is counted only where the flags say and "APETAGEX" is found. tagStart gets the first byte of the tag. The size of
+	// a damaged footer would otherwise make a removal cut the audio data.
+	static bool ValidTail(CFile *Stream, __int64 footerPos, const CApeTagInfo &info, __int64 minStart, __int64 &tagStart);
 	bool LocateTail(LPCWSTR FileName, __int64 &start, __int64 &total);
 	bool ReadFields(CFile *Stream, __int64 headOffset);
 	bool ReadHeadTag(CFile *Stream, __int64 offset, __int64 length);

@@ -1287,3 +1287,96 @@ TEST_CASE("ID3v1 and Lyrics3: the texts are read with the code page they are wri
         CHECK(take(LYRICSGetTitleW()) == L"йц");
     }
 }
+
+namespace {
+// the APE tag behind the audio data of a file (as writeParts writes it): the positions of its header (or -1) and of its footer
+struct ApeLayout { long long header = -1, footer = -1; uint32_t size = 0, headerSize = 0; };
+ApeLayout apeLayout(const Bytes& f)
+{
+    ApeLayout l;
+    const Bytes id = bytesOf("APETAGEX");
+    for (size_t i = 0; i + 32 <= f.size(); i++) {
+        if (!std::equal(id.begin(), id.end(), f.begin() + static_cast<std::ptrdiff_t>(i))) continue;
+        const uint32_t size = f[i + 12] | (f[i + 13] << 8) | (f[i + 14] << 16) | (static_cast<uint32_t>(f[i + 15]) << 24);
+        if (l.header < 0 && l.footer < 0 && (f[i + 23] & 0x20)) { l.header = static_cast<long long>(i); l.headerSize = size; }
+        else { l.footer = static_cast<long long>(i); l.size = size; }
+    }
+    return l;
+}
+}  // namespace
+
+TEST_CASE("APE: a footer whose size is too large is no tag, removing it does not cut the audio data", "[tags][spec][ape]")
+{
+    // the size of the footer (and of the header) is 10000 bytes larger than the tag: it would reach into the audio data
+    auto inflate = [](Bytes tag, uint32_t extra) {
+        for (size_t at : { static_cast<size_t>(12), tag.size() - 20 }) {
+            uint32_t size = tag[at] | (tag[at + 1] << 8) | (tag[at + 2] << 16) | (static_cast<uint32_t>(tag[at + 3]) << 24);
+            size += extra;
+            for (int i = 0; i < 4; i++) tag[at + i] = static_cast<uint8_t>(size >> (8 * i));
+        }
+        return tag;
+    };
+    const Bytes tag = inflate(apeTag(2000, { apeItem("Title", text("Hello")) }), 10000);
+    SECTION("at the end of the file") {
+        auto p = writeParts("ape_inflated.mp3", Bytes(), tag);
+        const Bytes before = readFile(p);
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        CHECK(APEExistsW() == 0);
+        CHECK(APERemoveTagFromFileW(p.c_str()) == 0);
+        CHECK(readFile(p) == before);
+    }
+    SECTION("with a Lyrics3 tag behind it (the region of the tag is written again)") {
+        auto p = writeParts("ape_inflated_lyrics.mp3", Bytes(), concat({ tag, lyrics200({ lyricsField("LYR", "text") }), kV1() }));
+        const Bytes before = readFile(p);
+        REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+        CHECK(APEExistsW() == 0);
+        APERemoveTagFromFileW(p.c_str());
+        const Bytes after = readFile(p);
+        const Bytes a = audio();
+        REQUIRE(after.size() >= a.size());
+        CHECK(std::equal(a.begin(), a.end(), after.begin()));   // the audio data are intact
+        CHECK(after.size() == before.size());                    // nothing was removed
+    }
+}
+
+TEST_CASE("APE: a footer that announces a header which is not there: only the tag is removed", "[tags][spec][ape]")
+{
+    Bytes tag = apeTag(2000, { apeItem("Title", text("Hello")) });   // header, item, footer (the footer flag says: with header)
+    tag.erase(tag.begin(), tag.begin() + 32);                        // the header is missing
+    auto p = writeParts("ape_no_header.mp3", Bytes(), tag);
+    REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+    CHECK(take(APEGetTitleW()) == L"Hello");
+    REQUIRE(APERemoveTagFromFileW(p.c_str()) != 0);
+    CHECK(readFile(p) == audio());   // before: 32 bytes of the audio data were cut as "the header"
+}
+
+TEST_CASE("APE: a footer with a huge number of fields is no tag", "[tags][spec][ape]")
+{
+    Bytes tag = apeTag(2000, { apeItem("Title", text("Hello")) });
+    for (size_t at : { static_cast<size_t>(16), tag.size() - 16 })   // the number of fields of header and footer
+        for (int i = 0; i < 4; i++) tag[at + i] = 0x7F;
+    auto p = writeParts("ape_fields.mp3", Bytes(), tag);
+    REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+    CHECK(APEExistsW() == 0);
+}
+
+TEST_CASE("APE: the size of a written tag counts the keys in bytes (code page 932 with 2 bytes for a character)", "[tags][spec][ape][codepage]")
+{
+    // the key "K" + 0x82 0xA0 (a Hiragana character in Shift-JIS, not allowed in a key, kept as it is)
+    AnsiCodePage cp(932);
+    Bytes key = bytesOf("K");
+    key.push_back(0x82);
+    key.push_back(0xA0);
+    auto p = writeParts("ape_cp932.mp3", Bytes(), apeTag(2000, { apeItem(std::string(key.begin(), key.end()), text("v")), apeItem("Title", text("T")) }));
+    REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+    REQUIRE(APEExistsW() != 0);
+    APESetTitleW(L"New");
+    REQUIRE(APESaveChangesW() != 0);
+    const ApeLayout l = apeLayout(readFile(p));
+    REQUIRE(l.header >= 0);
+    REQUIRE(l.footer > l.header);
+    CHECK(l.size == static_cast<uint32_t>(l.footer + 32 - (l.header + 32)));   // items and footer, in bytes
+    CHECK(l.headerSize == l.size);
+    REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == MPEG);
+    CHECK(take(APEGetTitleW()) == L"New");
+}
