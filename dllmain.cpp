@@ -97,6 +97,7 @@ BYTE GetFileFormat(CFile *Stream)
 // The values of the analysis that the detection of a format changes. GetFormat is called by the save functions for the file they write, which
 // need not be the analyzed one: before, it left the tag sizes of that file in them (a FLAC file that was analyzed could not be saved any more
 // after a save into a file with another ID3v2 tag), and the extension of the analyzed file was replaced.
+namespace {
 struct CAnalysisValues
 {
 	__int64 fileSize = CTools::FileSize, firstMpegAudioPos = CTools::firstMpegAudioPos;
@@ -115,6 +116,7 @@ struct CAnalysisValues
 		endung = extension;
 	}
 };
+}  // namespace
 
 BYTE GetFormat(LPCWSTR FileName)
 {
@@ -581,28 +583,6 @@ static bool syncID3v1IfPresent(LPCWSTR FileName)
 	return id3v1.SaveToFile(FileName);
 }
 
-/**
- * @brief store the changes in a file, depending on format of the destination file:
- *
- * | audio format | changes saved as |
- * |---|---|
- * | MP3 | ID3v2 tag, and any APE and/or ID3v1 tag that already exists in the file |
- * | WMA | WMA Fields |
- * | MONKEY | APE tag, and any ID3v1 tag that already exists in the file |
- * | FLAC | Vorbis Comment |
- * | WAV | wav chunk |
- * | OGG (Vorbis, Opus) | Vorbis Comment |
- * | MPP | ID3v2 tag, and any ID3v1 tag that already exists in the file |
- * | AAC | APE tag, and any ID3v1 tag that already exists in the file (an existing ID3v2 tag is left unchanged and takes precedence when reading) |
- * | MP4 | MP4 atoms |
- * | WavPack | APE tag, and any ID3v1 tag that already exists in the file |
- * | TTA | ID3v2 tag, and any ID3v1 tag that already exists in the file |
- *
- * @ingroup AUDIO
- * @since 2.0.1.0
- * @param FileName name of the file
- * @return 0 on error, otherwise -1
- */
 // A file of another format than the analyzed one: its own fields are read first, so that only the eight general fields change and its other fields
 // (pictures, other items) stay. Before, the object of that format had no fields of the file, and the save left only the general fields. The
 // analyzed file is read again afterwards: the general fields stay as they were set, changes of its own fields that were not saved are lost.
@@ -636,6 +616,33 @@ static bool SaveGeneralFieldsIntoOtherFormat(LPCWSTR FileName)
 	return result;
 }
 
+/**
+ * @brief store the changes in a file, depending on format of the destination file:
+ *
+ * | audio format | changes saved as |
+ * |---|---|
+ * | MP3 | ID3v2 tag, and any APE and/or ID3v1 tag that already exists in the file |
+ * | WMA | WMA Fields |
+ * | MONKEY | APE tag, and any ID3v1 tag that already exists in the file |
+ * | FLAC | Vorbis Comment |
+ * | WAV | wav chunk |
+ * | OGG (Vorbis, Opus) | Vorbis Comment |
+ * | MPP | ID3v2 tag, and any ID3v1 tag that already exists in the file |
+ * | AAC | APE tag, and any ID3v1 tag that already exists in the file (an existing ID3v2 tag is left unchanged and takes precedence when reading) |
+ * | MP4 | MP4 atoms |
+ * | WavPack | APE tag, and any ID3v1 tag that already exists in the file |
+ * | TTA | ID3v2 tag, and any ID3v1 tag that already exists in the file |
+ *
+ * Into a file of another format than the analyzed one only the eight general fields (title, artist, album, comment, genre, track,
+ * year, composer) are written: the file is read first, so that its other fields (pictures, other items) stay. The analyzed file is
+ * read again afterwards: the general fields stay as they were set, changes of its own fields that were not saved are lost. An ID3v1
+ * or APE tag is kept in sync if the written file has one.
+ *
+ * @ingroup AUDIO
+ * @since 2.0.1.0
+ * @param FileName name of the file
+ * @return 0 on error, otherwise -1
+ */
 extern "C" short __stdcall AUDIOSaveChangesToFileW(LPCWSTR FileName)
 {
 	REFUSE_IN_HOST_HANDLER(0);

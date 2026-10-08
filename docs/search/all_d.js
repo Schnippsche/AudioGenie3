@@ -1,7 +1,7 @@
 var searchData=
 [
   ['libraries_20local_20ssd_20warm_20cache_0',['Comparison with other libraries (local SSD, warm cache)',['../index.html#autotoc_md9',1,'']]],
-  ['license_1',['License',['../index.html#autotoc_md26',1,'']]],
+  ['license_1',['License',['../index.html#autotoc_md27',1,'']]],
   ['local_20ssd_20warm_20cache_2',['local SSD warm cache',['../index.html#autotoc_md9',1,'Comparison with other libraries (local SSD, warm cache)'],['../index.html#autotoc_md10',1,'Other formats (local SSD, warm cache)']]],
   ['lyrics3_20tag_3',['Lyrics3 tag',['../group___l_y_r_i_c_s.html',1,'']]],
   ['lyricsexistsw_4',['LYRICSExistsW',['../group___l_y_r_i_c_s.html#gae0dc42e6a3f10d18215f6621c641bb2e',1,'dllmain.cpp']]],

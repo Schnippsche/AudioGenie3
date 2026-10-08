@@ -25,7 +25,7 @@
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">AudioGenie3<span id="projectnumber">&#160;3.0.4</span>
+   <div id="projectname">AudioGenie3<span id="projectnumber">&#160;3.1.0</span>
    </div>
    <div id="projectbrief">Library for analyzing and tagging audio files (DLL API)</div>
   </td>
@@ -490,7 +490,7 @@ Functions</h2></td></tr>
 </dl>
 <ul>
 <li>-1 = only a link to the image will be stored</li>
-<li>0 = the image data will be stored <dl class="section return"><dt>Returns</dt><dd>normally -1, 0 on error </dd></dl>
+<li>0 = the image data will be stored <dl class="section return"><dt>Returns</dt><dd>normally -1, 0 on error (a picture block has at most 16777215 bytes with the MIME type and the description: a bigger picture is not added, error 220) </dd></dl>
 </li>
 </ul>
 
@@ -538,7 +538,7 @@ Functions</h2></td></tr>
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>-1 if frame was replaced, 0 if frame was added</dd></dl>
-<p>The MIME type, the width, the height, the color depth and the number of the colors (indexed pictures) are determined from the picture data. A picture block has at most 16777215 bytes: with a bigger picture saving fails. </p>
+<p>The MIME type, the width, the height, the color depth and the number of the colors (indexed pictures) are determined from the picture data (JPEG, PNG, GIF, BMP, TIFF, WebP). A picture block has at most 16777215 bytes (with the MIME type and the description): a bigger picture is not added, the last error is 220. </p>
 
 </div>
 </div>

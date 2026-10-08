@@ -22,7 +22,7 @@ var searchData=
   ['what_20s_20new_20since_202_200_204_19',['What&apos;s new since 2.0.4',['../index.html#autotoc_md1',1,'']]],
   ['with_20a_20variable_20bit_20rate_20vbr_20',['MP3 files with a variable bit rate (VBR)',['../index.html#autotoc_md6',1,'']]],
   ['with_20other_20libraries_20local_20ssd_20warm_20cache_21',['Comparison with other libraries (local SSD, warm cache)',['../index.html#autotoc_md9',1,'']]],
-  ['without_20a_20gain_20not_20adopted_22',['Tried without a gain (not adopted)',['../index.html#autotoc_md12',1,'']]],
+  ['without_20a_20gain_20not_20adopted_22',['Tried without a gain (not adopted)',['../index.html#autotoc_md13',1,'']]],
   ['wma_23',['WMA',['../group___w_m_a.html',1,'']]],
   ['wmaaddpicturearrayw_24',['WMAAddPictureArrayW',['../group___w_m_a.html#gaa5ff1eac085777e1196d56a1cf3bc925',1,'dllmain.cpp']]],
   ['wmaaddpicturefilew_25',['WMAAddPictureFileW',['../group___w_m_a.html#ga3863088c286363c47887fa44d6a40272',1,'dllmain.cpp']]],
@@ -42,5 +42,6 @@ var searchData=
   ['wmasavechangesw_39',['WMASaveChangesW',['../group___w_m_a.html#ga5d64abd5900bf4d34d03a13496edd7c1',1,'dllmain.cpp']]],
   ['wmasetuseritemw_40',['WMASetUserItemW',['../group___w_m_a.html#ga559911bbdc5c91f627b80dd822b07932',1,'dllmain.cpp']]],
   ['works_41',['How it works',['../index.html#autotoc_md5',1,'']]],
-  ['wrappers_42',['Wrappers',['../index.html#autotoc_md16',1,'']]]
+  ['wrappers_42',['Wrappers',['../index.html#autotoc_md17',1,'']]],
+  ['written_20again_43',['Saving files that are written again',['../index.html#autotoc_md11',1,'']]]
 ];

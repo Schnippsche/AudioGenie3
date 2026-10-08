@@ -25,7 +25,7 @@
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">AudioGenie3<span id="projectnumber">&#160;3.0.4</span>
+   <div id="projectname">AudioGenie3<span id="projectnumber">&#160;3.1.0</span>
    </div>
    <div id="projectbrief">Library for analyzing and tagging audio files (DLL API)</div>
   </td>
@@ -177,7 +177,7 @@ Functions</h2></td></tr>
 <tr class="markdownTableRowOdd">
 <td class="markdownTableBodyNone">0  </td><td class="markdownTableBodyNone">MPEGEXACTREAD  </td><td class="markdownTableBodyNone">0  </td><td class="markdownTableBodyNone">a non-zero value activates reading all MPEG frames (see below); replaces SetMPEGAnalyzeAllFrames  </td></tr>
 <tr class="markdownTableRowEven">
-<td class="markdownTableBodyNone">1  </td><td class="markdownTableBodyNone">ID3V2PADDINGSIZE  </td><td class="markdownTableBodyNone">4096  </td><td class="markdownTableBodyNone">the padding size in bytes for an ID3v2 tag  </td></tr>
+<td class="markdownTableBodyNone">1  </td><td class="markdownTableBodyNone">ID3V2PADDINGSIZE  </td><td class="markdownTableBodyNone">4096  </td><td class="markdownTableBodyNone">the padding size in bytes for an ID3v2 tag (at most 16 MB)  </td></tr>
 <tr class="markdownTableRowOdd">
 <td class="markdownTableBodyNone">2  </td><td class="markdownTableBodyNone">WRITEBLOCKSIZE  </td><td class="markdownTableBodyNone">524288  </td><td class="markdownTableBodyNone">the block size in bytes for internal file copy  </td></tr>
 <tr class="markdownTableRowEven">
@@ -185,13 +185,13 @@ Functions</h2></td></tr>
 <tr class="markdownTableRowOdd">
 <td class="markdownTableBodyNone">4  </td><td class="markdownTableBodyNone">MAXTEXTBUFFER  </td><td class="markdownTableBodyNone">262144  </td><td class="markdownTableBodyNone">the maximum text size in bytes  </td></tr>
 <tr class="markdownTableRowEven">
-<td class="markdownTableBodyNone">5  </td><td class="markdownTableBodyNone">WMAPADDINGSIZE  </td><td class="markdownTableBodyNone">4096  </td><td class="markdownTableBodyNone">the padding size in bytes for a WMA tag  </td></tr>
+<td class="markdownTableBodyNone">5  </td><td class="markdownTableBodyNone">WMAPADDINGSIZE  </td><td class="markdownTableBodyNone">4096  </td><td class="markdownTableBodyNone">the padding size in bytes for a WMA tag (at most 16 MB)  </td></tr>
 <tr class="markdownTableRowOdd">
-<td class="markdownTableBodyNone">6  </td><td class="markdownTableBodyNone">MP4PADDINGSIZE  </td><td class="markdownTableBodyNone">4096  </td><td class="markdownTableBodyNone">the padding size in bytes for an MP4 tag  </td></tr>
+<td class="markdownTableBodyNone">6  </td><td class="markdownTableBodyNone">MP4PADDINGSIZE  </td><td class="markdownTableBodyNone">4096  </td><td class="markdownTableBodyNone">the padding size in bytes for an MP4 tag (at most 16 MB)  </td></tr>
 <tr class="markdownTableRowEven">
 <td class="markdownTableBodyNone">7  </td><td class="markdownTableBodyNone">ANSICODEPAGE  </td><td class="markdownTableBodyNone">1252  </td><td class="markdownTableBodyNone">the code page of ISO-8859-1 / ANSI strings, 0 = the code page of the system (see below)  </td></tr>
 <tr class="markdownTableRowOdd">
-<td class="markdownTableBodyNone">8  </td><td class="markdownTableBodyNone">ID3V2LINKEDPICTURES  </td><td class="markdownTableBodyNone">0  </td><td class="markdownTableBodyNone">1 = read the picture that an ID3v2 APIC frame links to (MIME type <span class="tt">--&gt;</span>) from disk  </td></tr>
+<td class="markdownTableBodyNone">8  </td><td class="markdownTableBodyNone">ID3V2LINKEDPICTURES  </td><td class="markdownTableBodyNone">0  </td><td class="markdownTableBodyNone">1 = read the picture that an ID3v2 APIC frame or a FLAC picture block links to (MIME type <span class="tt">--&gt;</span>) from disk  </td></tr>
 <tr class="markdownTableRowEven">
 <td class="markdownTableBodyNone">9  </td><td class="markdownTableBodyNone">ID3V1MAXTEXTLENGTH  </td><td class="markdownTableBodyNone">90  </td><td class="markdownTableBodyNone">30 to 90 = the longest title, artist and album that is written to an ID3v1 tag (see below)  </td></tr>
 </table>
@@ -200,9 +200,9 @@ Functions</h2></td></tr>
 <p><b>ID3V1MAXTEXTLENGTH</b></p>
 <p>The ID3v1 tag has 30 characters for title, artist and album. A longer text is stored in the enhanced tag ("TAG+", 227 bytes in front of the ID3v1 tag) up to 90 characters; a longer text is cut. With the value 30 a longer text is cut at 30 characters and the enhanced tag is written only if a speed, a genre text or a time is set (ID3V1SetSpeedW, ID3V1SetEnhancedGenreW, ID3V1SetStartTimeW, ID3V1SetEndTimeW). Values outside of 30 to 90 are set to the nearest limit. The value does not change reading: an existing enhanced tag is always read.</p>
 <p><b>ID3V2LINKEDPICTURES</b></p>
-<p>An ID3v2 picture frame can contain a link to a file instead of the picture (MIME type <span class="tt">--&gt;</span>). The link comes from the tag of the audio file, so it is not followed by default (the picture size is 0); otherwise a manipulated file could make an application read any file of the computer. Set the value to 1 to load such pictures.</p>
+<p>An ID3v2 picture frame or a FLAC picture block can contain a link to a file instead of the picture (MIME type <span class="tt">--&gt;</span>). The link comes from the tag of the audio file, so it is not followed by default (the picture size is 0); otherwise a manipulated file could make an application read any file of the computer. Set the value to 1 to load such pictures. Even then a link that starts with \ or / (a network path such as <span class="tt">\\server\share</span>, or a device) is not followed, because Windows would log on to the server with the credentials of the user, and a linked file larger than 64 MB is not loaded. Local paths and mapped network drives (such as <span class="tt">Z:\Covers\cover.jpg</span>) work.</p>
 <p><b>DOEVENTSMILLIS</b></p>
-<p>During a long operation (reading a large file, calculating the MD5 value, rewriting a file) the library lets the thread that called it process its window messages, like DoEvents of Visual Basic, so that the user interface of the application (for example a progress bar) stays alive. This happens at most once in the given number of milliseconds; the value 0 means at every opportunity, a very large value practically switches it off. Each time all messages that are waiting for the thread are dispatched, but not more than 100. A message handler of the application can start another library call: that inner call does not process messages again. A WM_QUIT message is posted again, so that the message loop of the application still receives it. A thread without a message loop (for example a worker thread) has no waiting messages, nothing happens there.</p>
+<p>During a long operation (reading a large file, calculating the MD5 value, rewriting a file) the library lets the thread that called it process its window messages, like DoEvents of Visual Basic, so that the user interface of the application stays alive (it is repainted and does not become "not responding"). The library reports no progress within one call: a progress bar can only advance between two calls. This happens at most once in the given number of milliseconds; the value 0 means at every opportunity, a very large value practically switches it off. Each time all messages that are waiting for the thread are dispatched, but not more than 100. A message handler of the application may call the getters then; a function that changes the data or writes a file does nothing and fails with error 228 (busy), because it would work on the data of the running operation. A WM_QUIT message is posted again, so that the message loop of the application still receives it. A thread without a message loop (for example a worker thread) has no waiting messages, nothing happens there.</p>
 <p><b>MPEGEXACTREAD</b></p>
 <p>Set this value <b>before</b> <a class="el" href="group___a_u_d_i_o.html#ga9073413421b0cd63fcb4b139c85b640c" title="read an audio-file and all known tags">AUDIOAnalyzeFileW()</a>; it only affects MPEG audio files (MP1/MP2/MP3).</p>
 <p>By default the duration, the number of frames and the bit rate are taken from a Xing or VBRI header, if the file has one. For files without such a header they are calculated from the file size and the bit rate of the first frame. This is exact for files with a constant bit rate (CBR); an encoder that never sets the padding bit is recognized from the first frames and the frames are counted by their length. Additional data after the last frame (up to 128 KB, junk or tags that are not recognized) is found without reading the whole file; if there is more, the duration is too long. A file with a variable bit rate (VBR) that lacks the header is noticed if the bit rate differs between the first frames and the last frames of the file (they are read anyway): then all frames are counted as with MPEGEXACTREAD (<a class="el" href="group___m_p_e_g.html#gac735785cf669fdb61325e63556c6414b" title="returns -1 if it is variable bitrate">MPEGIsVBRW()</a> returns -1). If the bit rate changes only in the middle of the file it is not noticed: the values are an estimate and the file is treated as CBR (<a class="el" href="group___m_p_e_g.html#gac735785cf669fdb61325e63556c6414b" title="returns -1 if it is variable bitrate">MPEGIsVBRW()</a> returns 0).</p>
@@ -263,7 +263,7 @@ Functions</h2></td></tr>
 <tr class="markdownTableRowEven">
 <td class="markdownTableBodyNone">7  </td><td class="markdownTableBodyNone">ANSICODEPAGE  </td><td class="markdownTableBodyNone">the code page of ISO-8859-1 / ANSI strings  </td></tr>
 <tr class="markdownTableRowOdd">
-<td class="markdownTableBodyNone">8  </td><td class="markdownTableBodyNone">ID3V2LINKEDPICTURES  </td><td class="markdownTableBodyNone">1 if linked pictures are read from disk  </td></tr>
+<td class="markdownTableBodyNone">8  </td><td class="markdownTableBodyNone">ID3V2LINKEDPICTURES  </td><td class="markdownTableBodyNone">1 if linked pictures (ID3v2, FLAC) are read from disk  </td></tr>
 <tr class="markdownTableRowEven">
 <td class="markdownTableBodyNone">9  </td><td class="markdownTableBodyNone">ID3V1MAXTEXTLENGTH  </td><td class="markdownTableBodyNone">the longest text that is written to an ID3v1 tag  </td></tr>
 </table>

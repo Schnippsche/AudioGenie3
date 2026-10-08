@@ -31,7 +31,11 @@ more) to catch what synthetic tests alone miss.
 - **Serious bugs fixed that could lose data or corrupt a file**: saving an APE tag next to an ID3v1 tag cut 128 bytes
   of audio; an in-place MP4 save could move the media data without updating the chunk table; a WMA save with a write
   block size of 0 lost the audio data and reported success anyway; a second FLAC or WMA save without re-analyzing the
-  file first could damage it or lose extended tag fields and pictures.
+  file first could damage it or lose extended tag fields and pictures. 3.1.0 reviewed every class that reads or writes
+  files: a WAV save deleted the audio data of a cut or streamed recording; MP4 files with several `mdat` boxes got
+  wrong chunk offsets and fragmented MP4 files were destroyed by every save (they are refused now); an ID3v2 tag in
+  front of an MP4, WAV or WMA file was lost when it was rebuilt; removing an APE tag with a wrong size cut audio data;
+  a save into another file than the analyzed one used the tag sizes of the analyzed file.
 - **Real-world quirks handled**: ID3v2.3 tags of old iTunes versions (the 3 character frame IDs of v2.2 with a zero byte in a v2.3
   header), ID3v2.4 tags with ordinary instead of synchsafe frame sizes, v2.4 tags that set the unsynchronisation flag only in the
   tag header, junk that looks like an MPEG frame in front of the audio, and MP3 files with more than 128 KB of junk behind
@@ -47,7 +51,7 @@ more) to catch what synthetic tests alone miss.
   of 13.0 per file), takes 43 % less time than 2.0.4, and is two and a half times as fast as TagLib, four times as fast as JAudioTagger and
   almost eight times as fast as mutagen (see "Performance"; a profile showed that 93 % of the former time was spent in system calls).
 - **Open source and far more thoroughly tested**: LGPL-2.1-or-later; a Catch2 test suite that grew from about 5,400
-  assertions (3.0.0) to over 20,000 today, run on 32 and 64 bit with AddressSanitizer and fuzzing; a contract check
+  assertions (3.0.0) to over 30,000 today, run on 32 and 64 bit with AddressSanitizer and fuzzing; a contract check
   that every wrapper (C/C++, C#, VB.NET, Delphi, VB6, XProfan) matches the exports; tools to scan and compare whole
   real-world music libraries between versions and against other libraries (TagLib, mutagen, pymediainfo, Mp3tag) and a complete
   decoding by ffmpeg.
@@ -126,7 +130,9 @@ The DLL is **single-threaded by design** and keeps the data of the last analyzed
 2. All `AUDIOGet...W` / `ID3V2Get...W` / ... functions read from that remembered state.
 3. `AUDIOSet...W` and the other setters change the state in memory only.
 4. `AUDIOSaveChangesW()` writes the changes back into the analyzed file, and returns 0 on error, otherwise -1.
-   `AUDIOSaveChangesToFileW(path)` writes into another file.
+   `AUDIOSaveChangesToFileW(path)` writes into another file. A file of another format than the analyzed one gets only
+   the eight general fields (title, artist, album, comment, genre, track, year, composer) and keeps its other fields; the
+   analyzed file is read again afterwards, so changes of its format-specific fields that were not saved yet are lost.
 
 If the new tags fit into the room of the old ones (padding), the file is changed in place. Otherwise it is written again into a
 temporary file next to it (`<name>~`, or `~1`, `~2`, ... if that name is taken; an existing file is never overwritten), which is

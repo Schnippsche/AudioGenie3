@@ -25,7 +25,7 @@
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">AudioGenie3<span id="projectnumber">&#160;3.0.4</span>
+   <div id="projectname">AudioGenie3<span id="projectnumber">&#160;3.1.0</span>
    </div>
    <div id="projectbrief">Library for analyzing and tagging audio files (DLL API)</div>
   </td>
@@ -272,6 +272,7 @@ Functions</h2></td></tr>
 <tr class="markdownTableRowOdd">
 <td class="markdownTableBodyNone">TTA  </td><td class="markdownTableBodyNone">ID3v2 tag, and any ID3v1 tag that already exists in the file  </td></tr>
 </table>
+<p>Into a file of another format than the analyzed one only the eight general fields (title, artist, album, comment, genre, track, year, composer) are written: the file is read first, so that its other fields (pictures, other items) stay. The analyzed file is read again afterwards: the general fields stay as they were set, changes of its own fields that were not saved are lost. An ID3v1 or APE tag is kept in sync if the written file has one.</p>
 <dl class="section since"><dt>Since</dt><dd>2.0.1.0 </dd></dl>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
@@ -474,6 +475,7 @@ Functions</h2></td></tr>
 </div><div class="memdoc">
 
 <p>get the error number of the last error </p>
+<p>Besides the errors of the system (errno values) the library has its own numbers from 201 on. 228 (busy): during an analysis or a save the library lets the application process its window messages (see DOEVENTSMILLIS in SetConfigValueW); a message handler that calls a function which changes the data or writes a file then (all functions but the getters) gets this error, and the function does nothing. Such a call would work on the data of the running operation. Getters may be called.</p>
 <dl class="section since"><dt>Since</dt><dd>2.0.1.0 </dd></dl>
 <dl class="section return"><dt>Returns</dt><dd>error number </dd></dl>
 
