@@ -381,6 +381,23 @@ long CWAVFile::GetBitRate()
 	return fmt->BytesPerSecond / 125;
 }
 
+__int64 CWAVFile::GetFirstAudioPosition()
+{
+	CWAVChunk *chunk = mainContainer->find('data');
+	if (chunk == NULL)
+		return CAudio::GetFirstAudioPosition();
+	return (__int64)static_cast<CWAVDataChunk*>(chunk)->getOffset();
+}
+
+__int64 CWAVFile::GetLastAudioPosition()
+{
+	CWAVChunk *chunk = mainContainer->find('data');
+	if (chunk == NULL)
+		return CAudio::GetLastAudioPosition();
+	CWAVDataChunk *data = static_cast<CWAVDataChunk*>(chunk);
+	return (__int64)(data->getOffset() + data->getPayloadSize()) - 1;
+}
+
 bool CWAVFile::IsValid()
 { 
 	// valid if a data tag is present

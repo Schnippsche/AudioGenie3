@@ -95,4 +95,8 @@ public:
 	void setDisplayText(LPCWSTR newText);
 	CAtlString getBextText(BYTE nr);
 	void setBextText(BYTE nr, CAtlString newText);
+	// the audio data: the payload of the 'data' chunk (for AUDIOGetMD5ValueW; before, the whole file with the other chunks was hashed, so
+	// every save of a tag changed the hash)
+	__int64 GetFirstAudioPosition();
+	__int64 GetLastAudioPosition();
 };

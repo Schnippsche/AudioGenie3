@@ -213,3 +213,19 @@ TEST_CASE("WAV: a short 'cart' chunk is read only up to its end and keeps its fi
     CHECK(take(WAVGetCartChunkEntryW(1)) == L"Cart title");
     CHECK(take(WAVGetCartChunkEntryW(3)) == L"CUT1");
 }
+
+TEST_CASE("WAV: the MD5 of the audio data is the one of the payload of the 'data' chunk", "[wav][spec][write]")
+{
+    // before, the whole file was hashed (with the header and the tag chunks): every save of a tag changed it
+    const Bytes audio = pcm(176400);
+    auto p = writeTemp("wav_md5.wav", riff({ fmtChunk(2, 44100), chunk("data", audio) }));
+    auto q = writeTemp("wav_md5_payload.raw", audio);
+    const std::wstring payloadHash = take(GetMD5ValueFromFileW(q.c_str()));   // the hash of the whole file: the audio data alone
+    REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == WAV);
+    const std::wstring before = take(AUDIOGetMD5ValueW());
+    CHECK(before == payloadHash);
+    WAVSetTextFrameW(WAV_INAM, L"A title that changes the file");
+    REQUIRE(WAVSaveChangesW() != 0);
+    REQUIRE(AUDIOAnalyzeFileW(p.c_str()) == WAV);
+    CHECK(take(AUDIOGetMD5ValueW()) == before);
+}
