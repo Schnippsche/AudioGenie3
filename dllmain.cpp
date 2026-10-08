@@ -94,14 +94,41 @@ BYTE GetFileFormat(CFile *Stream)
 	return result;
 }
 
+// The values of the analysis that the detection of a format changes. GetFormat is called by the save functions for the file they write, which
+// need not be the analyzed one: before, it left the tag sizes of that file in them (a FLAC file that was analyzed could not be saved any more
+// after a save into a file with another ID3v2 tag), and the extension of the analyzed file was replaced.
+struct CAnalysisValues
+{
+	__int64 fileSize = CTools::FileSize, firstMpegAudioPos = CTools::firstMpegAudioPos;
+	long id3v2Size = CTools::ID3v2Size;
+	int id3v1Size = CTools::ID3v1Size, lyricsSize = CTools::LyricsSize, apeSize = CTools::APESize, apeHeadSize = CTools::APEHeadSize;
+	CAtlString extension = endung;
+	~CAnalysisValues()
+	{
+		CTools::FileSize = fileSize;
+		CTools::firstMpegAudioPos = firstMpegAudioPos;
+		CTools::ID3v2Size = id3v2Size;
+		CTools::ID3v1Size = id3v1Size;
+		CTools::LyricsSize = lyricsSize;
+		CTools::APESize = apeSize;
+		CTools::APEHeadSize = apeHeadSize;
+		endung = extension;
+	}
+};
+
 BYTE GetFormat(LPCWSTR FileName)
 {
 	CFile sourceFile;
 	CFile *Source = &sourceFile;
 	BYTE result = AUDIO_FORMAT_UNKNOWN;
 	FileName = getValidPointer(FileName);
+	const CAnalysisValues analysis;   // restored at the end
 	if (sourceFile.openRead(FileName))
 	{
+		// the detection works with the values of this file
+		CTools::FileSize = CTools::fileLength(Source);
+		CTools::ID3v2Size = 0;
+		CTools::ID3v1Size = CTools::LyricsSize = CTools::APESize = 0;
 		result = GetFileFormat(Source);
 		if (result == AUDIO_FORMAT_UNKNOWN || result == AUDIO_FORMAT_WAV) // either AAC or MPEG or MPEG with a WAV header in front 
 		{
@@ -506,9 +533,27 @@ ende:
 // incidental APE tag that some other tool wrote (e.g. just an "encoder" item from ffmpeg), and CAPE::SaveToFile's tail rewrite
 // is only exercised and safe for the MPEG-style layout (audio, then optional APE/Lyrics3/ID3v1) it was written for - trying it
 // on a TTA file corrupted the audio data in testing.
+// whether the file that is written has an APE tag (at the end, or at the start behind an ID3v2 tag) or an ID3v1 tag: before, the tags of the
+// analyzed file counted, so a save into another file added an ID3v1 tag that file did not have (and did not update one it had)
+static bool fileHasTag(LPCWSTR FileName, bool apeTag)
+{
+	CFile *Stream = CFile::openFile(FileName, CFile::Mode::Read, CFile::Share::All);
+	if (Stream == NULL)
+		return false;
+	const int id3v1Size = CID3V1::DetectSize(Stream);
+	bool found = (id3v1Size > 0);
+	if (apeTag)
+	{
+		__int64 footerPos, lyricsAfter, offset, length;
+		found = CAPE::FindTailFooter(Stream, id3v1Size, true, footerPos, lyricsAfter) || CAPE::FindHeadTag(Stream, offset, length);
+	}
+	CFile::closeFile(Stream);
+	return found;
+}
+
 static bool syncAPEIfPresent(LPCWSTR FileName)
 {
-	if (!ape.Exists())
+	if (!fileHasTag(FileName, true))
 		return true;
 	ape.SetTagItem(APE_ALBUM, Album);
 	ape.SetTagItem(APE_ARTIST, Artist);
@@ -523,7 +568,7 @@ static bool syncAPEIfPresent(LPCWSTR FileName)
 
 static bool syncID3v1IfPresent(LPCWSTR FileName)
 {
-	if (!id3v1.Exists())
+	if (!fileHasTag(FileName, false))
 		return true;
 	id3v1.SetTitle(Title);
 	id3v1.SetArtist(Artist);
@@ -558,14 +603,50 @@ static bool syncID3v1IfPresent(LPCWSTR FileName)
  * @param FileName name of the file
  * @return 0 on error, otherwise -1
  */
+// A file of another format than the analyzed one: its own fields are read first, so that only the eight general fields change and its other fields
+// (pictures, other items) stay. Before, the object of that format had no fields of the file, and the save left only the general fields. The
+// analyzed file is read again afterwards: the general fields stay as they were set, changes of its own fields that were not saved are lost.
+extern "C" short __stdcall AUDIOSaveChangesToFileW(LPCWSTR FileName);
+
+static bool SaveGeneralFieldsIntoOtherFormat(LPCWSTR FileName)
+{
+	const CAtlString target(FileName);
+	const CAtlString analyzed(lastFile);
+	CAtlString *fields[8] = { &Title, &Artist, &Album, &Comment, &Genre, &Track, &Year, &Composer };
+	CAtlString values[8];
+	for (int i = 0; i < 8; i++)
+		values[i] = *fields[i];
+	bool result = false;
+	if (AUDIOAnalyzeFileW(target) != AUDIO_FORMAT_UNKNOWN)
+	{
+		for (int i = 0; i < 8; i++)
+			*fields[i] = values[i];
+		result = AUDIOSaveChangesToFileW(target) != 0;
+	}
+	else
+		CTools::instance().setLastError(ERR_TAG_NOT_ALLOWED);
+	const long error = CTools::instance().getLastError();
+	if (!analyzed.IsEmpty())
+		AUDIOAnalyzeFileW(analyzed);
+	else
+		ClearAllTags();
+	for (int i = 0; i < 8; i++)
+		*fields[i] = values[i];
+	CTools::instance().setLastError(error);
+	return result;
+}
+
 extern "C" short __stdcall AUDIOSaveChangesToFileW(LPCWSTR FileName)
 {
 	REFUSE_IN_HOST_HANDLER(0);
 	CTools::instance().setLastError(0);
 	FileName = getValidPointer(FileName);
-	Format = (short)GetFormat(FileName);
+	// the format of the written file (Format stays the one of the analyzed file; before, it was replaced)
+	const short targetFormat = (short)GetFormat(FileName);
+	if (targetFormat != Format && targetFormat != AUDIO_FORMAT_UNKNOWN && targetFormat != AUDIO_FORMAT_INVALID)
+		return b2s(SaveGeneralFieldsIntoOtherFormat(FileName));
 	bool result;
-	switch (Format)
+	switch (targetFormat)
 	{
 	case AUDIO_FORMAT_WMA:
 		wma.SetUserItem(WM_ALBUMTITLE, Album);
@@ -589,7 +670,10 @@ extern "C" short __stdcall AUDIOSaveChangesToFileW(LPCWSTR FileName)
 		flac.SetUserItem(VORBIS_TRACKNUMBER, Track);
 		flac.SetUserItem(VORBIS_DATE, Year); 
 		flac.SetUserItem(VORBIS_COMPOSER, Composer); 
-		return b2s(flac.SaveToFile(FileName));
+		result = flac.SaveToFile(FileName);
+		if (result && !lastFile.IsEmpty() && lastFile.CompareNoCase(FileName) == 0)
+			AUDIOAnalyzeFileW(FileName);
+		return b2s(result);
 	case AUDIO_FORMAT_OGGVORBIS:
 	case AUDIO_FORMAT_OGGOPUS:
 		ogg.SetUserItem(VORBIS_ALBUM, Album);
@@ -690,7 +774,7 @@ extern "C" short __stdcall AUDIOSaveChangesToFileW(LPCWSTR FileName)
 		// by ffmpeg) is not something CAPE::SaveToFile's tail rewrite is exercised or safe for outside the MPEG-style layout
 		// (audio, then optional APE/Lyrics3/ID3v1) it assumes; ID3v1 has no such assumption (it always sits at the very end
 		// of the file, independent of everything else) and is safe to sync for any of these formats.
-		if (result && Format == AUDIO_FORMAT_MPEG)
+		if (result && targetFormat == AUDIO_FORMAT_MPEG)
 			result = syncAPEIfPresent(FileName);
 		if (result)
 			result = syncID3v1IfPresent(FileName);
@@ -1523,7 +1607,13 @@ extern "C" short __stdcall FLACSaveChangesToFileW(LPCWSTR FileName)
 	REFUSE_IN_HOST_HANDLER(0);
 	FileName = getValidPointer(FileName);
 	if (GetFormat(FileName) == AUDIO_FORMAT_FLAC)
-		return b2s(flac.SaveToFile(FileName));
+	{
+		const bool result = flac.SaveToFile(FileName);
+		// the analysis shows the file as it is now (the position of the audio data can have changed)
+		if (result && !lastFile.IsEmpty() && lastFile.CompareNoCase(FileName) == 0)
+			AUDIOAnalyzeFileW(FileName);
+		return b2s(result);
+	}
 	CTools::instance().setLastError(ERR_TAG_NOT_ALLOWED);
 	return b2s(false);  
 }

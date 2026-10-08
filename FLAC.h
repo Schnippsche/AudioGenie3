@@ -65,6 +65,7 @@ private:
   long VendorLength;
   long anzComments;
   long oldLen;
+  __int64 saveTagSize;                                // the ID3v2 tag in front of the metadata of the file that is written
   __int64 firstAudioPosition;
   __int64 readPosition;                               // the position in the file while the metadata blocks are read (absolute reads, see CTools::readAt)
   bool mustRebuild;
@@ -77,7 +78,7 @@ private:
   void AnalyzeComment();
   void AnalyzeStreamInfo();
   void BuildComment();
-  bool CurrentMetadataSize(LPCWSTR FileName, long &size);
+  bool CurrentMetadataSize(LPCWSTR FileName, long &size, __int64 &tagSize);
   bool RebuildFile(LPCWSTR FileName);
   bool ReplaceTag(LPCWSTR FileName);
   void BuildBlockHeader(int Len, BYTE typ);

@@ -409,7 +409,7 @@ bool CFLAC::BuildFrame(bool withComment)
 }
 
 // the end of the metadata blocks in the file as it is now (an earlier save may have changed its size)
-bool CFLAC::CurrentMetadataSize(LPCWSTR FileName, long &size)
+bool CFLAC::CurrentMetadataSize(LPCWSTR FileName, long &size, __int64 &tagSize)
 {
 	CFile *Stream = CFile::openFile(FileName, CFile::Mode::Read, CFile::Share::All);
 	if (Stream == NULL)
@@ -420,7 +420,9 @@ bool CFLAC::CurrentMetadataSize(LPCWSTR FileName, long &size)
 	bool ok = false;
 	BYTE header[4];
 	const __int64 fileLength = CTools::fileLength(Stream);   // an earlier save may have changed the size of the file
-	__int64 pos = CTools::ID3v2Size;
+	// behind the ID3v2 tag of this file (it need not be the analyzed one; CTools::ID3v2Size belongs to the analysis)
+	tagSize = CTools::id3v2SizeOf(Stream);
+	__int64 pos = tagSize;
 	Stream->seek(pos);
 	if (Stream->read(header, 4) == 4 && memcmp(header, FLAC_ID, 4) == 0)
 	{
@@ -442,7 +444,7 @@ bool CFLAC::CurrentMetadataSize(LPCWSTR FileName, long &size)
 	}
 	CFile::closeFile(Stream);
 	if (ok)
-		size = (long)(pos - CTools::ID3v2Size);
+		size = (long)(pos - tagSize);
 	return ok;
 }
 
@@ -450,21 +452,27 @@ bool CFLAC::SaveToFile(LPCWSTR FileName)
 {
 	// the end of the metadata has to be known exactly
 	long currentSize = 0;
-	if (!metadataComplete || !CurrentMetadataSize(FileName, currentSize))
+	__int64 tagSize = 0;
+	if (!metadataComplete || !CurrentMetadataSize(FileName, currentSize, tagSize))
 	{
 		CTools::instance().setLastError(ERR_INVALID_FORMAT);
 		return false;
 	}
+	// the metadata of the file that is written; the values of the analysis stay (before, the position of the audio data of the analysis was
+	// replaced by the one of the written file)
+	const long analysisLen = oldLen;
 	oldLen = currentSize;
-	firstAudioPosition = CTools::ID3v2Size + oldLen;
+	saveTagSize = tagSize;
+	bool result;
 	if (!BuildFrame(true))
 	{
 		CTools::instance().setLastError(ERR_FRAME_TOO_BIG);
-		return false;
+		result = false;
 	}
-	if (mustRebuild)
-		return RebuildFile(FileName);
-	return ReplaceTag(FileName);
+	else
+		result = mustRebuild ? RebuildFile(FileName) : ReplaceTag(FileName);
+	oldLen = analysisLen;
+	return result;
 }
 
 bool CFLAC::RebuildFile(LPCWSTR FileName)
@@ -487,13 +495,9 @@ bool CFLAC::RebuildFile(LPCWSTR FileName)
 		return false;
 	};
 	// if an ID3v2 tag is present, carry it along as well
-	if (CTools::ID3v2Size > 0)
-	{
-		if (!tmp.FileRead(CTools::ID3v2Size, Source) || tmp.GetLength() != (size_t)CTools::ID3v2Size)
-			Destination->setFailed(EIO);   // the ID3v2 tag would be lost: finishRewrite keeps the original
-		else
-			tmp.FileWrite(CTools::ID3v2Size, Destination);
-	}
+	if (saveTagSize > 0 && !CTools::copyStream(Source, Destination, saveTagSize))
+		Destination->setFailed(EIO);   // the ID3v2 tag would be lost: finishRewrite keeps the original
+	Source->seek(saveTagSize);
 	// skip old block
 	Source->seek(Source->tell() + (oldLen));
 	Daten.FileWrite(Daten.GetLength(), Destination);
@@ -514,11 +518,13 @@ bool CFLAC::ReplaceTag(LPCWSTR FileName)
 	CFile *Stream;
 	if ( (Stream = CFile::openFile(FileName, CFile::Mode::ReadWrite, CFile::Share::Read)) != NULL)
 	{
-		Stream->seek(CTools::ID3v2Size);
-		Daten.FileWrite(Daten.GetLength(), Stream);
-		Stream->flush();
+		// the metadata are written over the old ones: a write error is reported, and the bytes go to the disk
+		const bool ok = Stream->seek(saveTagSize) && Daten.FileWrite(Daten.GetLength(), Stream) == Daten.GetLength() && Stream->sync();
+		const int error = errno;
 		CFile::closeFile(Stream);
-		return true;
+		if (!ok)
+			CTools::instance().setLastError(error != 0 ? error : EIO);
+		return ok;
 	}
 	CTools::instance().setLastError(errno);
 	return false;
